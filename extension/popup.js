@@ -95,7 +95,7 @@
     if (!extractedJson) return;
 
     var importHash = '#import=' + encodeURIComponent(extractedJson);
-    var baseUrl = 'https://getlore.app';
+    var baseUrl = 'https://lore-app-r5dl.vercel.app';
 
     chrome.tabs.query({}, function (tabs) {
       var existing = tabs.find(function (t) {
