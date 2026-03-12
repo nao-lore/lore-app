@@ -1,0 +1,477 @@
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import Sidebar from './Sidebar';
+import Workspace from './Workspace';
+import HistoryView from './HistoryView';
+import SettingsPanel from './SettingsPanel';
+import MasterNoteView from './MasterNoteView';
+import ProjectsView from './ProjectsView';
+import TodoView from './TodoView';
+import TrashView from './TrashView';
+import ProjectSummaryListView from './ProjectSummaryListView';
+import ProjectHomeView from './ProjectHomeView';
+import TimelineView from './TimelineView';
+import DashboardView from './DashboardView';
+import HelpView from './HelpView';
+import WeeklyReportView from './WeeklyReportView';
+import KnowledgeBaseView from './KnowledgeBaseView';
+import CommandPalette from './CommandPalette';
+import { Toast } from './Toast';
+import { useToast } from './useToast';
+import ConfirmDialog from './ConfirmDialog';
+import Onboarding from './Onboarding';
+import { isOnboardingDone } from './onboardingState';
+import { loadLogs, loadProjects, loadTodos, loadMasterNotes, getUiLang, setUiLang, getTheme, setTheme as saveTheme, purgeExpiredTrash, updateLog, getLog } from './storage';
+import type { ThemePref } from './storage';
+import type { FontSize } from './types';
+import { t } from './i18n';
+import type { Lang } from './i18n';
+
+const FONT_SIZE_KEY = 'threadlog_font_size';
+const LAST_VIEW_KEY = 'threadlog_last_view';
+const LAST_PROJECT_KEY = 'threadlog_last_project';
+const SIDEBAR_KEY = 'threadlog_sidebar';
+
+const FONT_SIZE_ZOOM: Record<FontSize, number> = { small: 0.87, medium: 1, large: 1.13 };
+
+function safeGetItem(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { console.error(`Failed to read localStorage key: ${key}`); return null; }
+}
+function safeSetItem(key: string, value: string): void {
+  try { localStorage.setItem(key, value); } catch { console.error(`Failed to write localStorage key: ${key}`); }
+}
+function safeRemoveItem(key: string): void {
+  try { localStorage.removeItem(key); } catch { console.error(`Failed to remove localStorage key: ${key}`); }
+}
+
+type View = 'input' | 'detail' | 'settings' | 'history' | 'masternote' | 'projects' | 'todos' | 'trash' | 'summarylist' | 'projecthome' | 'timeline' | 'help' | 'weeklyreport' | 'knowledgebase' | 'dashboard';
+
+function resolveUiLang(): Lang {
+  return getUiLang();
+}
+
+function resolveEffectiveTheme(pref: ThemePref): 'light' | 'dark' {
+  if (pref === 'light' || pref === 'dark') return pref;
+  // Time-based: 7:00–19:00 local time = light, otherwise dark
+  const hour = new Date().getHours();
+  return (hour >= 7 && hour < 19) ? 'light' : 'dark';
+}
+
+export default function App() {
+  const [view, setView] = useState<View>(() => {
+    const saved = safeGetItem(LAST_VIEW_KEY);
+    if (saved && saved !== 'detail' && saved !== 'masternote' && saved !== 'projecthome' && saved !== 'knowledgebase') return saved as View;
+    return 'input';
+  });
+  const [prevView, setPrevView] = useState<View>('input');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    const saved = safeGetItem(SIDEBAR_KEY);
+    return saved !== 'hidden' && saved !== 'collapsed';
+  });
+  const [sidebarHidden, setSidebarHidden] = useState(() => safeGetItem(SIDEBAR_KEY) === 'hidden');
+  const [logsVersion, setLogsVersion] = useState(0);
+  const [inputKey, setInputKey] = useState(0);
+  const [lang, setLangState] = useState<Lang>(resolveUiLang);
+  const [themePref, setThemePref] = useState<ThemePref>(getTheme);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(() => safeGetItem(LAST_PROJECT_KEY) || null);
+  const [fontSize, setFontSizeState] = useState<FontSize>(() => {
+    const saved = safeGetItem(FONT_SIZE_KEY);
+    if (saved === 'small' || saved === 'medium' || saved === 'large') return saved;
+    return 'medium';
+  });
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const { toast, showToast } = useToast();
+  const inputDirtyRef = useRef(false);
+  const [pendingNav, setPendingNav] = useState<(() => void) | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
+  const logs = loadLogs();
+  const projects = loadProjects();
+  const todos = loadTodos();
+  const masterNotes = loadMasterNotes();
+  void logsVersion;
+
+  // Tab title: show pending TODO count
+  const pendingCount = useMemo(() => todos.filter((td) => !td.done).length, [todos]);
+  useEffect(() => {
+    document.title = pendingCount > 0 ? `Lore (${pendingCount})` : 'Lore';
+  }, [pendingCount]);
+
+  // Overdue TODO banner
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const overdueTodos = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return todos.filter((td) => !td.done && td.dueDate && td.dueDate < today);
+  }, [todos]);
+  const [bannerDismissed, setBannerDismissed] = useState(() =>
+    sessionStorage.getItem('threadlog_overdue_dismissed') === todayKey
+  );
+  const showOverdueBanner = overdueTodos.length > 0 && !bannerDismissed;
+
+  // Apply font size via zoom on #root (compensate height for viewport)
+  useEffect(() => {
+    const root = document.getElementById('root');
+    if (!root) return;
+    const z = FONT_SIZE_ZOOM[fontSize];
+    root.style.zoom = String(z);
+    root.style.height = z === 1 ? '100vh' : `calc(100vh / ${z})`;
+  }, [fontSize]);
+
+  const handleFontSizeChange = (size: FontSize) => {
+    setFontSizeState(size);
+    safeSetItem(FONT_SIZE_KEY, size);
+  };
+
+  // Save last view to localStorage
+  useEffect(() => {
+    safeSetItem(LAST_VIEW_KEY, view);
+  }, [view]);
+
+  useEffect(() => {
+    if (activeProjectId) safeSetItem(LAST_PROJECT_KEY, activeProjectId);
+    else safeRemoveItem(LAST_PROJECT_KEY);
+  }, [activeProjectId]);
+
+  // Purge expired trash on app load
+  useEffect(() => { purgeExpiredTrash(); }, []);
+
+  // Chrome extension import: navigate to Create Log when #import= hash is detected
+  useEffect(() => {
+    const handleExtensionImport = () => {
+      if (window.location.hash.startsWith('#import=')) {
+        // Force navigate to input view so Workspace mounts and handles the import
+        setSelectedId(null);
+        setInputKey((k) => k + 1);
+        inputDirtyRef.current = false;
+        setView('input');
+      }
+    };
+    // Check on mount (in case app loaded with hash already set)
+    handleExtensionImport();
+    window.addEventListener('hashchange', handleExtensionImport);
+    return () => window.removeEventListener('hashchange', handleExtensionImport);
+  }, []);
+
+  // Show onboarding on first launch (0 logs + flag not set)
+  useEffect(() => {
+    if (logs.length === 0 && !isOnboardingDone()) {
+      setShowOnboarding(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // only on mount
+
+  // Apply data-theme attribute; re-check hourly for time-based "system" mode
+  useEffect(() => {
+    const apply = () => {
+      const effective = resolveEffectiveTheme(themePref);
+      document.documentElement.setAttribute('data-theme', effective);
+    };
+    apply();
+
+    if (themePref === 'system') {
+      // Re-evaluate every 60 min to catch day/night transitions
+      const timer = setInterval(apply, 60 * 60 * 1000);
+      return () => clearInterval(timer);
+    }
+  }, [themePref]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      // Cmd+K: toggle command palette
+      if (mod && e.key === 'k') {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+        return;
+      }
+      // Cmd+N: new log
+      if (mod && e.key === 'n') {
+        e.preventDefault();
+        handleNewLog();
+        return;
+      }
+      // Cmd+,: settings
+      if (mod && e.key === ',') {
+        e.preventDefault();
+        goToRaw('settings');
+        return;
+      }
+
+      // Don't handle non-modifier keys if input/textarea focused
+      const active = document.activeElement;
+      const inInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+
+      // ?: show shortcuts (only when not typing)
+      if (e.key === '?' && !mod && !inInput) {
+        e.preventDefault();
+        setShortcutsOpen((v) => !v);
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        // Priority: close shortcuts modal, then palette
+        if (shortcutsOpen) { setShortcutsOpen(false); return; }
+        if (paletteOpen) { setPaletteOpen(false); return; }
+        if (inInput) return;
+        if (document.querySelector('.modal-overlay, .action-sheet-overlay, .context-menu, .confirm-dialog')) return;
+        if (view !== 'input') {
+          e.preventDefault();
+          if (view === 'detail') {
+            goToRaw(prevView === 'detail' ? (activeProjectId ? 'projecthome' : 'history') : prevView);
+          } else if (view === 'projecthome') {
+            setActiveProjectId(null);
+            goToRaw('input');
+          } else {
+            goToRaw(prevView === view ? 'input' : prevView);
+          }
+        }
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paletteOpen, shortcutsOpen, view, prevView, activeProjectId]);
+
+  const handleThemeChange = (v: ThemePref) => {
+    setThemePref(v);
+    saveTheme(v);
+  };
+
+  const refreshLogs = useCallback(() => setLogsVersion((v) => v + 1), []);
+
+  const goToRaw = (next: View) => {
+    setPrevView(view);
+    setView(next);
+  };
+
+  // Reset scroll position when view changes
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [view]);
+
+  // Navigation with dirty-input guard: only guard when leaving the input view
+  const goTo = (next: View) => {
+    if (view === 'input' && inputDirtyRef.current && next !== 'input') {
+      setPendingNav(() => () => goToRaw(next));
+      return;
+    }
+    goToRaw(next);
+  };
+
+  const handleSelect = (id: string) => {
+    const doNav = () => { setSelectedId(id); goToRaw('detail'); setPaletteOpen(false); };
+    if (view === 'input' && inputDirtyRef.current) {
+      setPendingNav(() => doNav);
+      return;
+    }
+    doNav();
+  };
+  const handleNewLog = () => { setSelectedId(null); setInputKey((k) => k + 1); goToRaw('input'); inputDirtyRef.current = false; };
+  const handleSaved = (id: string) => { setSelectedId(id); refreshLogs(); inputDirtyRef.current = false; };
+  const handleDeleted = () => { setSelectedId(null); setInputKey((k) => k + 1); goToRaw('input'); refreshLogs(); showToast('Deleted'); inputDirtyRef.current = false; };
+  const handleBack = () => { goTo(prevView === 'detail' ? (activeProjectId ? 'projecthome' : 'history') : prevView); };
+
+  const handleUiLangChange = (v: Lang) => {
+    setUiLang(v);
+    setLangState(v);
+  };
+
+  const handleTagFilter = (tag: string) => {
+    setTagFilter(tag);
+    setActiveProjectId(null);
+    goToRaw('history');
+  };
+
+  const handleOpenMasterNote = (projectId: string) => {
+    setActiveProjectId(projectId);
+    goTo('masternote');
+  };
+
+  const handleOpenKnowledgeBase = (projectId: string) => {
+    setActiveProjectId(projectId);
+    goTo('knowledgebase');
+  };
+
+  const handleOpenProjectLogs = (projectId: string) => {
+    setActiveProjectId(projectId);
+    goTo('projecthome');
+    setPaletteOpen(false);
+  };
+
+  const handlePaletteSelectProject = (projectId: string) => {
+    handleOpenProjectLogs(projectId);
+  };
+
+  const renderWorkspace = () => {
+    if (view === 'settings') return <SettingsPanel onBack={() => goTo(prevView === 'settings' ? 'input' : prevView)} lang={lang} onUiLangChange={handleUiLangChange} themePref={themePref} onThemeChange={handleThemeChange} fontSize={fontSize} onFontSizeChange={handleFontSizeChange} showToast={showToast} onShowOnboarding={() => setShowOnboarding(true)} />;
+    if (view === 'help') return <HelpView onBack={() => goTo(prevView === 'help' ? 'input' : prevView)} lang={lang} onShowOnboarding={() => setShowOnboarding(true)} />;
+    if (view === 'history') return <HistoryView logs={logs} onSelect={handleSelect} onBack={() => goTo('input')} onRefresh={refreshLogs} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onOpenMasterNote={handleOpenMasterNote} onOpenProject={handleOpenProjectLogs} tagFilter={tagFilter} onClearTagFilter={() => setTagFilter(null)} onTagFilter={setTagFilter} onDuplicate={(newId) => { refreshLogs(); handleSelect(newId); }} />;
+    if (view === 'todos') return <TodoView logs={logs} onBack={() => goTo(prevView === 'todos' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} />;
+    if (view === 'dashboard') return <DashboardView logs={logs} projects={projects} todos={todos} masterNotes={masterNotes} lang={lang} onOpenLog={handleSelect} onOpenProject={handleOpenProjectLogs} onOpenTodos={() => goTo('todos')} onOpenSummaryList={() => goTo('summarylist')} onOpenHistory={() => goTo('history')} onNewLog={() => goTo('input')} onToggleAction={(logId, actionIndex) => {
+      const log = getLog(logId);
+      if (!log) return;
+      const current = log.checkedActions || [];
+      const next = current.includes(actionIndex) ? current.filter((i) => i !== actionIndex) : [...current, actionIndex];
+      updateLog(logId, { checkedActions: next });
+      refreshLogs();
+    }} />;
+    if (view === 'timeline') return <TimelineView logs={logs} projects={projects} todos={todos} masterNotes={masterNotes} onBack={() => goTo(prevView === 'timeline' ? 'input' : prevView)} onOpenLog={handleSelect} onOpenProject={handleOpenProjectLogs} onOpenSummary={handleOpenMasterNote} onNewLog={() => goTo('input')} lang={lang} />;
+    if (view === 'weeklyreport') return <WeeklyReportView logs={logs} projects={projects} todos={todos} onBack={() => goTo(prevView === 'weeklyreport' ? 'input' : prevView)} lang={lang} showToast={showToast} />;
+    if (view === 'trash') return <TrashView onBack={() => goTo(prevView === 'trash' ? 'input' : prevView)} onRefresh={refreshLogs} lang={lang} showToast={showToast} />;
+    if (view === 'summarylist') return <ProjectSummaryListView projects={projects} logs={logs} onBack={() => goTo(prevView === 'summarylist' ? 'input' : prevView)} onOpenSummary={handleOpenMasterNote} lang={lang} />;
+    if (view === 'projects') return <ProjectsView projects={projects} logs={logs} onBack={() => goTo(prevView === 'projects' ? 'input' : prevView)} onSelectProject={handleOpenProjectLogs} onOpenMasterNote={handleOpenMasterNote} onRefresh={refreshLogs} lang={lang} showToast={showToast} />;
+    if (view === 'projecthome' && activeProjectId) {
+      const project = projects.find((p) => p.id === activeProjectId);
+      if (project) return <ProjectHomeView project={project} logs={logs} onBack={() => { setActiveProjectId(null); goTo('input'); }} onOpenLog={handleSelect} onOpenSummary={handleOpenMasterNote} onOpenKnowledgeBase={handleOpenKnowledgeBase} onNewLog={handleNewLog} onRefresh={refreshLogs} lang={lang} showToast={showToast} />;
+    }
+    if (view === 'masternote' && activeProjectId) {
+      const project = projects.find((p) => p.id === activeProjectId);
+      if (project) return <MasterNoteView project={project} logs={logs} onBack={() => goTo(prevView === 'masternote' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} />;
+    }
+    if (view === 'knowledgebase' && activeProjectId) {
+      const project = projects.find((p) => p.id === activeProjectId);
+      if (project) return <KnowledgeBaseView project={project} logs={logs} onBack={() => goTo(prevView === 'knowledgebase' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} />;
+    }
+    return <Workspace key={inputKey} mode={view === 'detail' ? 'detail' : 'input'} selectedId={selectedId} onSaved={handleSaved} onDeleted={handleDeleted} onOpenLog={handleSelect} onBack={handleBack} prevView={prevView} lang={lang} activeProjectId={activeProjectId} projects={projects} onRefresh={refreshLogs} showToast={showToast} onDirtyChange={(dirty: boolean) => { inputDirtyRef.current = dirty; }} onTagFilter={handleTagFilter} onOpenMasterNote={handleOpenMasterNote} />;
+  };
+
+  return (
+    <div style={{ display: 'flex', height: '100%' }}>
+      {sidebarHidden && (
+        <div
+          className="sidebar-reveal-bar"
+          onClick={() => { setSidebarHidden(false); setSidebarOpen(true); safeSetItem(SIDEBAR_KEY, 'open'); }}
+          title={t('showSidebar', lang)}
+        />
+      )}
+      {!sidebarOpen && !sidebarHidden && (
+        <div style={{ width: 52, minWidth: 52, height: '100%', borderRight: '1px solid var(--border-default)', background: 'var(--bg-sidebar)', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 14 }}>
+          <button className="toggle-btn" onClick={() => { setSidebarOpen(true); safeSetItem(SIDEBAR_KEY, 'open'); }} title={t('showSidebar', lang)} aria-label={t('ariaShowSidebar', lang)}>◫</button>
+        </div>
+      )}
+      {sidebarOpen && (
+        <Sidebar
+          logs={logs} projects={projects} todos={todos} selectedId={selectedId}
+          activeProjectId={activeProjectId}
+          activeView={view}
+          onSelect={handleSelect} onNewLog={handleNewLog}
+          onOpenSettings={() => setView('settings')}
+          onOpenHistory={() => { setActiveProjectId(null); setView('history'); }}
+          onOpenProjects={() => goTo('projects')}
+          onOpenTodos={() => goTo('todos')}
+          onOpenProjectSummaryList={() => goTo('summarylist')}
+          onOpenDashboard={() => goTo('dashboard')}
+          onOpenTimeline={() => goTo('timeline')}
+          onOpenWeeklyReport={() => goTo('weeklyreport')}
+          onOpenTrash={() => goTo('trash')}
+          onOpenHelp={() => goTo('help')}
+          onCollapse={() => { setSidebarOpen(false); safeSetItem(SIDEBAR_KEY, 'collapsed'); }}
+          onHide={() => { setSidebarOpen(false); setSidebarHidden(true); safeSetItem(SIDEBAR_KEY, 'hidden'); }}
+          onSelectProject={handleOpenProjectLogs}
+          onOpenMasterNote={handleOpenMasterNote}
+          onRefresh={refreshLogs}
+          onDeleted={handleDeleted}
+          lang={lang}
+          showToast={showToast}
+        />
+      )}
+      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', background: 'var(--bg-app)' }}>
+        <div style={{ minHeight: '100%', display: 'flex', justifyContent: 'center' }}>
+          {renderWorkspace()}
+        </div>
+      </div>
+      {showOverdueBanner && (
+        <div className="overdue-banner">
+          <span>
+            {lang === 'ja'
+              ? `期限切れのTODOが${overdueTodos.length}件あります`
+              : `${overdueTodos.length} overdue TODO${overdueTodos.length !== 1 ? 's' : ''}`}
+          </span>
+          <button
+            className="overdue-banner-link"
+            onClick={() => goTo('todos')}
+          >
+            {lang === 'ja' ? '→ TODOを確認する' : '→ View TODOs'}
+          </button>
+          <button
+            className="overdue-banner-close"
+            onClick={() => {
+              setBannerDismissed(true);
+              sessionStorage.setItem('threadlog_overdue_dismissed', todayKey);
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+      <Toast {...toast} />
+      {paletteOpen && (
+        <CommandPalette
+          logs={logs}
+          projects={projects}
+          masterNotes={masterNotes}
+          onSelectLog={handleSelect}
+          onSelectProject={handlePaletteSelectProject}
+          onSelectSummary={handleOpenMasterNote}
+          onClose={() => setPaletteOpen(false)}
+          lang={lang}
+        />
+      )}
+      {showOnboarding && (
+        <Onboarding
+          lang={lang}
+          onClose={() => setShowOnboarding(false)}
+          onOpenSettings={() => { setShowOnboarding(false); goToRaw('settings'); }}
+          onStartCreate={() => { setShowOnboarding(false); handleNewLog(); }}
+        />
+      )}
+      {pendingNav && (
+        <ConfirmDialog
+          title={lang === 'ja' ? '入力中の内容が消えます' : 'Unsaved input will be lost'}
+          description={lang === 'ja' ? 'このまま移動しますか？' : 'Are you sure you want to navigate away?'}
+          confirmLabel={lang === 'ja' ? 'このまま移動' : 'Leave'}
+          cancelLabel={lang === 'ja' ? 'キャンセル' : 'Cancel'}
+          danger={false}
+          onConfirm={() => { const nav = pendingNav; setPendingNav(null); inputDirtyRef.current = false; nav(); }}
+          onCancel={() => setPendingNav(null)}
+        />
+      )}
+      {shortcutsOpen && (
+        <div className="modal-overlay" onClick={() => setShortcutsOpen(false)}>
+          <div className="shortcuts-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 16px', fontSize: 16 }}>{t('shortcutsTitle', lang)}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {([
+                { keys: '⌘ N', desc: t('shortcutNewLog', lang) },
+                { keys: '⌘ K', desc: t('shortcutSearch', lang) },
+                { keys: '⌘ ,', desc: t('shortcutSettings', lang) },
+                { keys: '?', desc: t('shortcutShortcuts', lang) },
+                { keys: 'Esc', desc: t('shortcutEscape', lang) },
+              ]).map((s) => (
+                <div key={s.keys} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 14, color: 'var(--text-body)' }}>{s.desc}</span>
+                  <kbd style={{
+                    fontSize: 12, fontFamily: 'inherit', padding: '2px 8px',
+                    borderRadius: 4, background: 'var(--bg-sidebar)', border: '1px solid var(--border-default)',
+                    color: 'var(--text-secondary)', minWidth: 32, textAlign: 'center',
+                  }}>{s.keys}</kbd>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 16, textAlign: 'right' }}>
+              <button className="btn" onClick={() => setShortcutsOpen(false)} style={{ fontSize: 13 }}>
+                {lang === 'ja' ? '閉じる' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,261 @@
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { FileText, ArrowRight } from 'lucide-react';
+import type { Project, LogEntry } from './types';
+import { t, tf } from './i18n';
+import type { Lang } from './i18n';
+import { getMasterNote } from './storage';
+import DropdownMenu from './DropdownMenu';
+
+function daysSince(ts: number): number {
+  return Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
+}
+
+interface ProjectSummaryListViewProps {
+  projects: Project[];
+  logs: LogEntry[];
+  onBack: () => void;
+  onOpenSummary: (projectId: string) => void;
+  lang: Lang;
+}
+
+type SummarySortKey = 'updated_desc' | 'updated_asc' | 'name';
+
+export default function ProjectSummaryListView({ projects, logs, onBack, onOpenSummary, lang }: ProjectSummaryListViewProps) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<SummarySortKey>('updated_desc');
+  const [filterUnreflected, setFilterUnreflected] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  // Close picker on outside click or Escape
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPickerOpen(false);
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [pickerOpen]);
+
+  const logCountFor = (pid: string) => logs.filter((l) => l.projectId === pid).length;
+
+  const countUnreflectedHandoffs = (projectId: string, noteUpdatedAt: number) =>
+    logs.filter((l) => l.projectId === projectId && l.outputMode === 'handoff' && new Date(l.createdAt).getTime() > noteUpdatedAt).length;
+
+
+  // Only projects that have a summary
+  const withSummaryRaw = useMemo(() =>
+    projects
+      .map((p) => ({ project: p, note: getMasterNote(p.id) }))
+      .filter((x): x is { project: Project; note: NonNullable<ReturnType<typeof getMasterNote>> } => !!x.note),
+    [projects],
+  );
+
+  const withSummary = useMemo(() => {
+    let items = [...withSummaryRaw];
+    if (filterUnreflected) {
+      items = items.filter((x) => countUnreflectedHandoffs(x.project.id, x.note.updatedAt) > 0);
+    }
+    switch (sortKey) {
+      case 'updated_asc':
+        items.sort((a, b) => a.note.updatedAt - b.note.updatedAt);
+        break;
+      case 'name':
+        items.sort((a, b) => a.project.name.localeCompare(b.project.name));
+        break;
+      case 'updated_desc':
+      default:
+        items.sort((a, b) => b.note.updatedAt - a.note.updatedAt);
+    }
+    return items;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [withSummaryRaw, sortKey, filterUnreflected, logs]);
+
+  // Projects without a summary (for the picker)
+  const withoutSummary = projects.filter((p) => !getMasterNote(p.id));
+
+  const sortOptions = [
+    { key: 'updated_desc', label: lang === 'ja' ? '更新日（新しい順）' : 'Updated (newest)' },
+    { key: 'updated_asc', label: lang === 'ja' ? '更新日（古い順）' : 'Updated (oldest)' },
+    { key: 'name', label: lang === 'ja' ? 'プロジェクト名' : 'Project name' },
+  ];
+
+  return (
+    <div className="workspace-content-wide">
+      <div className="page-header">
+        <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
+          ← {t('back', lang)}
+        </button>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div>
+            <h2>{t('projectSummaryListTitle', lang)}</h2>
+            <p className="page-subtitle">{t('projectSummaryListDesc', lang)}</p>
+          </div>
+          {projects.length > 0 && (
+            <div ref={pickerRef} style={{ position: 'relative' }}>
+              <button
+                className="btn btn-primary"
+                style={{ fontSize: 13 }}
+                onClick={() => setPickerOpen(!pickerOpen)}
+              >
+                {t('projectSummaryNew', lang)}
+              </button>
+              {pickerOpen && (
+                <div className="mn-export-dropdown" style={{ minWidth: 240 }}>
+                  <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                    {t('projectSummarySelectProject', lang)}
+                  </div>
+                  {withoutSummary.length === 0 ? (
+                    <div style={{ padding: '8px 14px', fontSize: 13, color: 'var(--text-placeholder)' }}>
+                      {lang === 'ja' ? '未作成のプロジェクトはありません' : 'All projects have summaries'}
+                    </div>
+                  ) : (
+                    withoutSummary.map((p) => (
+                      <button
+                        key={p.id}
+                        className="mn-export-item"
+                        onClick={() => { setPickerOpen(false); onOpenSummary(p.id); }}
+                      >
+                        <FileText size={14} />
+                        <span>{p.name}</span>
+                        <span className="meta" style={{ marginLeft: 'auto', fontSize: 11 }}>
+                          {tf('logCount', lang, logCountFor(p.id))}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                  {withSummary.length > 0 && (
+                    <>
+                      <div className="mn-export-divider" />
+                      {withSummary.map(({ project: p }) => (
+                        <button
+                          key={p.id}
+                          className="mn-export-item"
+                          onClick={() => { setPickerOpen(false); onOpenSummary(p.id); }}
+                          style={{ color: 'var(--text-secondary)' }}
+                        >
+                          <FileText size={14} />
+                          <span>{p.name}</span>
+                          <span className="meta" style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--success-text)' }}>
+                            {t('projectSummaryExists', lang)}
+                          </span>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Toolbar: sort + filter */}
+      {withSummaryRaw.length > 0 && (
+        <div className="content-card" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
+          <DropdownMenu
+            label={lang === 'ja' ? '並べ替え' : 'Sort'}
+            value={sortKey}
+            options={sortOptions}
+            onChange={(k) => setSortKey(k as SummarySortKey)}
+          />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}>
+            <input
+              type="checkbox"
+              checked={filterUnreflected}
+              onChange={(e) => setFilterUnreflected(e.target.checked)}
+              style={{ accentColor: 'var(--accent)' }}
+            />
+            {lang === 'ja' ? '未反映ハンドオフあり' : 'Has unreflected handoffs'}
+          </label>
+        </div>
+      )}
+
+      {withSummary.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-icon">&#128196;</div>
+          <p>{t('projectSummaryNoSummaries', lang)}</p>
+          <p className="page-subtitle">{t('projectSummaryNoSummariesDesc', lang)}</p>
+          {projects.length > 0 && (
+            <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={() => setPickerOpen(true)}>
+              {t('projectSummaryNew', lang)}
+            </button>
+          )}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {withSummary.map(({ project: p, note }) => {
+            const count = logCountFor(p.id);
+            const unreflected = countUnreflectedHandoffs(p.id, note.updatedAt);
+            const days = daysSince(note.updatedAt);
+            const isStale = days >= 7 && unreflected > 0;
+            return (
+              <div
+                key={p.id}
+                className="card"
+                style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', borderLeft: isStale ? '3px solid var(--warning-text)' : undefined }}
+                onClick={() => onOpenSummary(p.id)}
+              >
+                <div style={{
+                  width: 36, height: 36, borderRadius: 8,
+                  background: unreflected > 0 ? 'var(--warning-bg)' : 'var(--success-bg)',
+                  border: `1px solid ${unreflected > 0 ? 'var(--warning-border)' : 'var(--success-border)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <FileText size={16} style={{ color: unreflected > 0 ? 'var(--warning-text)' : 'var(--success-text)' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-secondary)', marginBottom: 2 }}>
+                    {p.name}
+                  </div>
+                  <div className="meta" style={{ fontSize: 11, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span>{tf('logCount', lang, count)}</span>
+                    <span>{tf('mnUpdatedAt', lang, new Date(note.updatedAt).toLocaleDateString())}</span>
+                    {days > 0 && (
+                      <span style={{ color: days >= 7 ? 'var(--warning-text)' : 'var(--text-placeholder)' }}>
+                        ({lang === 'ja' ? `${days}日前` : `${days}d ago`})
+                      </span>
+                    )}
+                  </div>
+                  {note.overview && (
+                    <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-secondary)', margin: '6px 0 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {note.overview}
+                    </p>
+                  )}
+                  {unreflected > 0 && (
+                    <div style={{ marginTop: 6, fontSize: 11, color: 'var(--warning-text)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                      <span>⚠</span>
+                      <span>
+                        {lang === 'ja'
+                          ? `未反映のHandoff ${unreflected}件 — 更新推奨`
+                          : `${unreflected} unreflected handoff${unreflected > 1 ? 's' : ''} — update recommended`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <button
+                    className={unreflected > 0 ? 'btn btn-primary' : 'btn'}
+                    style={{ fontSize: 12, padding: '4px 10px', minHeight: 24, display: 'flex', alignItems: 'center', gap: 4 }}
+                    onClick={(e) => { e.stopPropagation(); onOpenSummary(p.id); }}
+                  >
+                    {unreflected > 0
+                      ? (lang === 'ja' ? '更新する' : 'Update')
+                      : (lang === 'ja' ? '開く' : 'Open')}
+                    <ArrowRight size={12} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

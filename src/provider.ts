@@ -1,0 +1,481 @@
+/**
+ * AI Provider adapter — abstracts Anthropic / Gemini / OpenAI API differences.
+ *
+ * All callers use callProvider() which dispatches to the active provider.
+ * Provider and per-provider API keys are stored in localStorage.
+ */
+
+export type ProviderName = 'anthropic' | 'gemini' | 'openai';
+
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
+
+const GEMINI_MODELS = [
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash-latest',
+];
+const GEMINI_MODEL = GEMINI_MODELS[0];
+const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
+const OPENAI_MODEL = 'gpt-4o-mini';
+
+export const PROVIDER_LABELS: Record<ProviderName, string> = {
+  anthropic: 'Claude',
+  gemini: 'Gemini',
+  openai: 'OpenAI',
+};
+
+export const PROVIDER_MODEL_LABELS: Record<ProviderName, string> = {
+  anthropic: ANTHROPIC_MODEL,
+  gemini: GEMINI_MODEL,
+  openai: OPENAI_MODEL,
+};
+
+export const PROVIDER_KEY_PLACEHOLDER: Record<ProviderName, string> = {
+  anthropic: 'sk-ant-...',
+  gemini: 'AIza...',
+  openai: 'sk-...',
+};
+
+// ---------------------------------------------------------------------------
+// Common request shape (what callers provide)
+// ---------------------------------------------------------------------------
+
+export interface ProviderRequest {
+  apiKey: string;
+  system: string;
+  userMessage: string;
+  maxTokens: number;
+}
+
+export type StreamCallback = (chunk: string, accumulated: string) => void;
+
+// ---------------------------------------------------------------------------
+// Anthropic
+// ---------------------------------------------------------------------------
+
+async function callAnthropic(req: ProviderRequest): Promise<string> {
+  const body = {
+    model: ANTHROPIC_MODEL,
+    max_tokens: req.maxTokens,
+    system: req.system,
+    messages: [{ role: 'user', content: req.userMessage }],
+  };
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': req.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    handleHttpError(res.status, text);
+  }
+
+  const data = await res.json();
+  const output = data.content?.[0]?.text ?? '';
+  if (!output) throw new Error('[AI Response] Empty response from API. Try again.');
+  return output;
+}
+
+// ---------------------------------------------------------------------------
+// Gemini
+// ---------------------------------------------------------------------------
+
+async function callGeminiWithModel(req: ProviderRequest, model: string): Promise<Response> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+  const body = {
+    system_instruction: {
+      parts: [{ text: req.system }],
+    },
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: req.userMessage }],
+      },
+    ],
+    generationConfig: {
+      maxOutputTokens: req.maxTokens,
+      thinkingConfig: { thinkingBudget: 0 },
+    },
+  };
+
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': req.apiKey,
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+async function callGemini(req: ProviderRequest): Promise<string> {
+  let res: Response | null = null;
+  let usedModel = GEMINI_MODEL;
+
+  // Try each model in order; only fall back on 404 (model not found)
+  for (const model of GEMINI_MODELS) {
+    usedModel = model;
+    res = await callGeminiWithModel(req, model);
+    if (res.status === 404) {
+      console.warn(`[Gemini] model=${model} returned 404, trying next fallback...`);
+      continue;
+    }
+    break;
+  }
+
+  if (!res) throw new Error('[Gemini] No models available.');
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    console.error(`[Gemini Error] model=${usedModel} status=${res.status} body:`, text);
+    handleHttpError(res.status, text);
+  }
+
+  console.log(`[Gemini] using model=${usedModel}`);
+  const data = await res.json();
+  const output = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  if (!output) {
+    console.error('[Gemini] Unexpected response shape:', JSON.stringify(data).slice(0, 500));
+    throw new Error('[AI Response] Empty response from Gemini. Try again.');
+  }
+  return output;
+}
+
+// ---------------------------------------------------------------------------
+// OpenAI
+// ---------------------------------------------------------------------------
+
+async function callOpenAI(req: ProviderRequest): Promise<string> {
+  const body = {
+    model: OPENAI_MODEL,
+    max_tokens: req.maxTokens,
+    messages: [
+      { role: 'system', content: req.system },
+      { role: 'user', content: req.userMessage },
+    ],
+  };
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${req.apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    handleHttpError(res.status, text);
+  }
+
+  const data = await res.json();
+  const output = data.choices?.[0]?.message?.content ?? '';
+  if (!output) throw new Error('[AI Response] Empty response from OpenAI. Try again.');
+  return output;
+}
+
+// ---------------------------------------------------------------------------
+// Gemini Streaming
+// ---------------------------------------------------------------------------
+
+async function callGeminiStreamWithModel(req: ProviderRequest, model: string, onChunk: StreamCallback): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
+
+  const body = {
+    system_instruction: {
+      parts: [{ text: req.system }],
+    },
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: req.userMessage }],
+      },
+    ],
+    generationConfig: {
+      maxOutputTokens: req.maxTokens,
+      thinkingConfig: { thinkingBudget: 0 },
+    },
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': req.apiKey,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    // Return empty to signal fallback needed for 404
+    if (res.status === 404) return '';
+    console.error(`[Gemini Stream Error] model=${model} status=${res.status} body:`, text);
+    handleHttpError(res.status, text);
+  }
+
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error('[Stream] ReadableStream not supported');
+
+  const decoder = new TextDecoder();
+  let accumulated = '';
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (!data || data === '[DONE]') continue;
+
+      try {
+        const event = JSON.parse(data);
+        const text = event.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) {
+          accumulated += text;
+          onChunk(text, accumulated);
+        }
+      } catch (e) {
+        if (e instanceof SyntaxError) continue;
+        throw e;
+      }
+    }
+  }
+
+  return accumulated;
+}
+
+async function callGeminiStream(req: ProviderRequest, onChunk: StreamCallback): Promise<string> {
+  for (const model of GEMINI_MODELS) {
+    const result = await callGeminiStreamWithModel(req, model, onChunk);
+    if (result === '' && model !== GEMINI_MODELS[GEMINI_MODELS.length - 1]) {
+      console.warn(`[Gemini Stream] model=${model} returned 404, trying next fallback...`);
+      continue;
+    }
+    if (!result) throw new Error('[AI Response] Empty streaming response from Gemini. Try again.');
+    console.log(`[Gemini Stream] using model=${model}`);
+    return result;
+  }
+  throw new Error('[Gemini] No models available.');
+}
+
+// ---------------------------------------------------------------------------
+// Anthropic Streaming
+// ---------------------------------------------------------------------------
+
+async function callAnthropicStream(req: ProviderRequest, onChunk: StreamCallback): Promise<string> {
+  const body = {
+    model: ANTHROPIC_MODEL,
+    max_tokens: req.maxTokens,
+    stream: true,
+    system: req.system,
+    messages: [{ role: 'user', content: req.userMessage }],
+  };
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': req.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    handleHttpError(res.status, text);
+  }
+
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error('[Stream] ReadableStream not supported');
+
+  const decoder = new TextDecoder();
+  let accumulated = '';
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (data === '[DONE]') continue;
+
+      try {
+        const event = JSON.parse(data);
+        if (event.type === 'content_block_delta' && event.delta?.text) {
+          accumulated += event.delta.text;
+          onChunk(event.delta.text, accumulated);
+        }
+        if (event.type === 'error') {
+          throw new Error(`[Stream Error] ${event.error?.message || 'Unknown'}`);
+        }
+      } catch (e) {
+        if (e instanceof SyntaxError) continue; // skip non-JSON lines
+        throw e;
+      }
+    }
+  }
+
+  if (!accumulated) throw new Error('[AI Response] Empty streaming response from API. Try again.');
+  return accumulated;
+}
+
+// ---------------------------------------------------------------------------
+// Shared error handling
+// ---------------------------------------------------------------------------
+
+function handleHttpError(status: number, body: string): never {
+  // Parse error message if JSON
+  let errorMessage = '';
+  let retryDelaySec = 0;
+  try {
+    const errJson = JSON.parse(body);
+    errorMessage = errJson?.error?.message || '';
+    console.error(`[API Error] type=${errJson?.error?.type || errJson?.error?.status} message=${errorMessage}`);
+    // Extract retryDelay from Gemini 429 responses
+    // Format: { error: { details: [{ retryDelay: "30s" }] } }
+    const details = errJson?.error?.details;
+    if (Array.isArray(details)) {
+      for (const d of details) {
+        const rd = d?.retryDelay;
+        if (typeof rd === 'string') {
+          const match = rd.match(/^(\d+)s$/);
+          if (match) retryDelaySec = parseInt(match[1], 10);
+        }
+      }
+    }
+    // Also check Retry-After style in message (e.g. "retry after 30s")
+    if (!retryDelaySec && errorMessage) {
+      const msgMatch = errorMessage.match(/retry\s+after\s+(\d+)/i);
+      if (msgMatch) retryDelaySec = parseInt(msgMatch[1], 10);
+    }
+  } catch { /* not JSON */ }
+
+  if (status === 401 || status === 403) throw new Error('[API Key] Invalid or expired. Check your key in Settings.');
+  if (status === 429) {
+    if (retryDelaySec > 0) {
+      console.log(`[Rate Limit] API requested retry after ${retryDelaySec}s`);
+      throw new Error(`[Rate Limit:${retryDelaySec}]`);
+    }
+    throw new Error('[Rate Limit]');
+  }
+  if (status === 529 || status === 503) throw new Error('[Overloaded]');
+  if (status === 413 || body.includes('too long') || body.includes('too large')) {
+    throw new Error('[Too Long] Input too large for the API.');
+  }
+  throw new Error(`[API Error] ${status}: ${(errorMessage || body).slice(0, 500)}`);
+}
+
+// ---------------------------------------------------------------------------
+// Public API — single entry point
+// ---------------------------------------------------------------------------
+
+/** Get the active provider from localStorage */
+export function getActiveProvider(): ProviderName {
+  try {
+    const v = localStorage.getItem('threadlog_provider');
+    if (v === 'anthropic' || v === 'gemini' || v === 'openai') return v;
+  } catch { /* ignore */ }
+  return 'gemini';
+}
+
+/** Set the active provider */
+export function setActiveProvider(name: ProviderName): void {
+  try { localStorage.setItem('threadlog_provider', name); } catch { /* ignore */ }
+}
+
+/** Get API key for a specific provider */
+export function getProviderApiKey(provider: ProviderName): string {
+  try { return localStorage.getItem(`threadlog_api_key_${provider}`) || ''; } catch { return ''; }
+}
+
+/** Set API key for a specific provider */
+export function setProviderApiKey(provider: ProviderName, key: string): void {
+  try { localStorage.setItem(`threadlog_api_key_${provider}`, key); } catch { /* ignore */ }
+}
+
+/** Migrate: if old single key exists, move it to anthropic slot */
+function migrateOldApiKey(): void {
+  let old: string | null = null;
+  try { old = localStorage.getItem('threadlog_api_key'); } catch { return; }
+  if (!old) return;
+  // Detect provider from key prefix
+  if (old.startsWith('AIza')) {
+    if (!getProviderApiKey('gemini')) setProviderApiKey('gemini', old);
+  } else if (old.startsWith('sk-ant-')) {
+    if (!getProviderApiKey('anthropic')) setProviderApiKey('anthropic', old);
+  } else if (old.startsWith('sk-')) {
+    if (!getProviderApiKey('openai')) setProviderApiKey('openai', old);
+  } else {
+    // Unknown prefix — put in current provider slot
+    const active = getActiveProvider();
+    if (!getProviderApiKey(active)) setProviderApiKey(active, old);
+  }
+  try { localStorage.removeItem('threadlog_api_key'); } catch { /* ignore */ }
+}
+
+// Run migration once on load
+migrateOldApiKey();
+
+const MODEL_MAP: Record<ProviderName, string> = {
+  anthropic: ANTHROPIC_MODEL,
+  gemini: GEMINI_MODEL,
+  openai: OPENAI_MODEL,
+};
+
+export async function callProvider(req: ProviderRequest): Promise<string> {
+  const provider = getActiveProvider();
+  console.log(`[Provider:${provider}] model=${MODEL_MAP[provider]} maxTokens=${req.maxTokens} systemLen=${req.system.length} msgLen=${req.userMessage.length}`);
+
+  switch (provider) {
+    case 'anthropic':
+      return callAnthropic(req);
+    case 'openai':
+      return callOpenAI(req);
+    case 'gemini':
+    default:
+      return callGemini(req);
+  }
+}
+
+/** Streaming variant — calls onChunk with each text delta. Falls back to non-streaming for OpenAI. */
+export async function callProviderStream(req: ProviderRequest, onChunk: StreamCallback): Promise<string> {
+  const provider = getActiveProvider();
+  console.log(`[Provider:${provider}:stream] model=${MODEL_MAP[provider]} maxTokens=${req.maxTokens} systemLen=${req.system.length} msgLen=${req.userMessage.length}`);
+
+  if (provider === 'anthropic') {
+    return callAnthropicStream(req, onChunk);
+  }
+  if (provider === 'gemini') {
+    return callGeminiStream(req, onChunk);
+  }
+  // OpenAI fallback: non-streaming call, fire onChunk once with full result
+  const result = await callProvider(req);
+  onChunk(result, result);
+  return result;
+}

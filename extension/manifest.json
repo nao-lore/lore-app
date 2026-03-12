@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Lore Capture",
+  "version": "0.1.0",
+  "description": "Capture AI chat conversations and send to Lore",
+  "permissions": ["activeTab", "scripting", "tabs"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

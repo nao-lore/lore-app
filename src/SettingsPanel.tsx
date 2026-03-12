@@ -1,0 +1,695 @@
+import { useState, useRef } from 'react';
+import { Check, Download, Upload, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
+import { getLang, setLang, getUiLang, exportAllData, validateBackup, importData, getDataUsage, formatBytes } from './storage';
+import { resetOnboarding } from './onboardingState';
+import type { ThemePref, LoreBackup } from './storage';
+import {
+  getActiveProvider, setActiveProvider,
+  getProviderApiKey, setProviderApiKey,
+  PROVIDER_LABELS, PROVIDER_KEY_PLACEHOLDER,
+  PROVIDER_MODEL_LABELS,
+} from './provider';
+import type { ProviderName } from './provider';
+import { t, tf } from './i18n';
+import type { Lang } from './i18n';
+import type { FontSize } from './types';
+
+import {
+  getNotionApiKey, setNotionApiKey,
+  getNotionDatabaseId, setNotionDatabaseId,
+  getSlackWebhookUrl, setSlackWebhookUrl,
+} from './integrations';
+
+const PROVIDER_DESC_KEYS: Record<ProviderName, 'providerDescGemini' | 'providerDescAnthropic' | 'providerDescOpenai'> = {
+  gemini: 'providerDescGemini',
+  anthropic: 'providerDescAnthropic',
+  openai: 'providerDescOpenai',
+};
+
+interface SettingsPanelProps {
+  onBack: () => void;
+  lang: Lang;
+  onUiLangChange: (lang: Lang) => void;
+  themePref: ThemePref;
+  onThemeChange: (theme: ThemePref) => void;
+  fontSize: FontSize;
+  onFontSizeChange: (size: FontSize) => void;
+  showToast?: (msg: string) => void;
+  onShowOnboarding?: () => void;
+}
+
+export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref, onThemeChange, fontSize, onFontSizeChange, showToast, onShowOnboarding }: SettingsPanelProps) {
+  const [activeProvider, setActiveProviderState] = useState<ProviderName>(getActiveProvider);
+  const [keys, setKeys] = useState<Record<ProviderName, string>>(() => ({
+    anthropic: getProviderApiKey('anthropic'),
+    gemini: getProviderApiKey('gemini'),
+    openai: getProviderApiKey('openai'),
+  }));
+  const [savedProvider, setSavedProvider] = useState<ProviderName | null>(null);
+  const [currentUiLang, setCurrentUiLang] = useState<Lang>(getUiLang());
+  const [currentOutputLang, setCurrentOutputLang] = useState<string>(getLang());
+  const [otherProvidersOpen, setOtherProvidersOpen] = useState(() => {
+    // Default closed; open only if active provider is not gemini
+    return getActiveProvider() !== 'gemini' && getActiveProvider() !== undefined;
+  });
+  const [importError, setImportError] = useState<string | null>(null);
+  const [pendingImport, setPendingImport] = useState<{ backup: LoreBackup; mode: 'merge' | 'overwrite' } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Notion
+  const [notionKey, setNotionKeyState] = useState(getNotionApiKey);
+  const [notionDbId, setNotionDbIdState] = useState(getNotionDatabaseId);
+  const [notionSaved, setNotionSaved] = useState(false);
+
+  // Slack
+  const [slackWebhook, setSlackWebhookState] = useState(getSlackWebhookUrl);
+  const [slackSaved, setSlackSaved] = useState(false);
+
+  const [keyErrors, setKeyErrors] = useState<Record<ProviderName, string>>({ anthropic: '', gemini: '', openai: '' });
+  const [notionError, setNotionError] = useState('');
+  const [slackError, setSlackError] = useState('');
+
+  const handleProviderChange = (p: ProviderName) => {
+    setActiveProviderState(p);
+    setActiveProvider(p);
+  };
+
+  const validateApiKey = (p: ProviderName, key: string): string => {
+    if (!key.trim()) return '';
+    if (p === 'gemini' && !key.startsWith('AIza')) return lang === 'ja' ? 'Gemini APIキーの形式が正しくありません（AIzaで始まる必要があります）' : 'Invalid Gemini API key format (must start with AIza)';
+    if (p === 'anthropic' && !key.startsWith('sk-ant')) return lang === 'ja' ? 'Claude APIキーの形式が正しくありません' : 'Invalid Claude API key format';
+    if (p === 'openai' && !key.startsWith('sk-')) return lang === 'ja' ? 'OpenAI APIキーの形式が正しくありません' : 'Invalid OpenAI API key format';
+    return '';
+  };
+
+  const handleSaveKey = (p: ProviderName) => {
+    const err = validateApiKey(p, keys[p]);
+    if (err) {
+      setKeyErrors((prev) => ({ ...prev, [p]: err }));
+      return;
+    }
+    setKeyErrors((prev) => ({ ...prev, [p]: '' }));
+    setProviderApiKey(p, keys[p]);
+    setSavedProvider(p);
+    setTimeout(() => setSavedProvider(null), 2000);
+  };
+
+  const handleKeyChange = (p: ProviderName, value: string) => {
+    setKeys((prev) => ({ ...prev, [p]: value }));
+  };
+
+  const handleUiLangChange = (v: Lang) => {
+    setCurrentUiLang(v);
+    onUiLangChange(v);
+  };
+
+  const handleOutputLangChange = (v: string) => {
+    setCurrentOutputLang(v);
+    setLang(v);
+  };
+
+  const handleExport = () => {
+    const backup = exportAllData();
+    const json = JSON.stringify(backup, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `lore-backup-${date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast?.(t('dataExportSuccess', lang));
+  };
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImportError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result as string);
+        if (!validateBackup(parsed)) {
+          setImportError(t('dataImportError', lang));
+          return;
+        }
+        // Show merge/overwrite choice
+        setPendingImport({ backup: parsed, mode: 'merge' });
+      } catch {
+        setImportError(t('dataImportError', lang));
+      }
+    };
+    reader.readAsText(file);
+    // Reset file input so same file can be re-selected
+    e.target.value = '';
+  };
+
+  const handleImportConfirm = () => {
+    if (!pendingImport) return;
+    const result = importData(pendingImport.backup, pendingImport.mode);
+    setPendingImport(null);
+    showToast?.(tf('dataImportSuccess', lang, result.logs, result.projects, result.todos));
+  };
+
+  return (
+    <div className="workspace-content">
+      <div className="page-header">
+        <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
+          ← {t('back', lang)}
+        </button>
+        <h2>{t('settingsTitle', lang)}</h2>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Provider selector */}
+        <div className="content-card">
+          <div className="content-card-header">{t('providerLabel', lang)}</div>
+          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+            {t('providerDesc', lang)}
+          </p>
+
+          {/* Gemini — primary/recommended */}
+          {(() => {
+            const p: ProviderName = 'gemini';
+            const isActive = activeProvider === p;
+            const hasKey = !!keys[p];
+            return (
+              <div style={{ marginBottom: 12 }}>
+                <button
+                  className="provider-option"
+                  data-active={isActive}
+                  onClick={() => handleProviderChange(p)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+                    padding: '12px 14px', borderRadius: 10,
+                    border: isActive ? '2px solid var(--accent)' : '1px solid var(--border-default)',
+                    background: isActive ? 'var(--sidebar-active)' : 'none',
+                    cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
+                    transition: 'all 0.12s',
+                  }}
+                >
+                  <div style={{
+                    width: 18, height: 18, borderRadius: '50%',
+                    border: isActive ? '2px solid var(--accent)' : '2px solid var(--border-default)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    {isActive && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {PROVIDER_LABELS[p]}
+                      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)' }}>{t('providerRecommended', lang)}</span>
+                    </div>
+                    <div className="meta" style={{ fontSize: 11 }}>
+                      {PROVIDER_MODEL_LABELS[p]}
+                    </div>
+                    <div className="meta" style={{ fontSize: 12, marginTop: 2, color: 'var(--text-muted)' }}>
+                      {t('providerDescGemini', lang)}
+                    </div>
+                  </div>
+                  <span className="meta" style={{
+                    fontSize: 11, flexShrink: 0,
+                    color: hasKey ? 'var(--success-text)' : 'var(--text-placeholder)',
+                  }}>
+                    {hasKey ? t('providerKeyConfigured', lang) : t('providerKeyNotSet', lang)}
+                  </span>
+                </button>
+              </div>
+            );
+          })()}
+
+          {/* Other providers — collapsible */}
+          <button
+            onClick={() => setOtherProvidersOpen(!otherProvidersOpen)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '6px 2px', fontFamily: 'inherit',
+              fontSize: 13, fontWeight: 600, color: 'var(--text-muted)',
+            }}
+          >
+            {otherProvidersOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            {t('providerOtherProviders', lang)}
+          </button>
+
+          {otherProvidersOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+              <div style={{ fontSize: 12, color: 'var(--warning-text, orange)', padding: '4px 8px', lineHeight: 1.5 }}>
+                {lang === 'ja'
+                  ? '⚠️ 現在、Claude・OpenAIは動作が不安定です。Geminiの使用を強く推奨します。'
+                  : '⚠️ Claude and OpenAI are currently unstable. We strongly recommend using Gemini.'}
+              </div>
+              {(['anthropic', 'openai'] as ProviderName[]).map((p) => {
+                const isActive = activeProvider === p;
+                const hasKey = !!keys[p];
+                return (
+                  <button
+                    key={p}
+                    className="provider-option"
+                    data-active={isActive}
+                    onClick={() => handleProviderChange(p)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+                      padding: '10px 14px', borderRadius: 10,
+                      border: isActive ? '2px solid var(--accent)' : '1px solid var(--border-default)',
+                      background: isActive ? 'var(--sidebar-active)' : 'none',
+                      cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
+                      transition: 'all 0.12s',
+                    }}
+                  >
+                    <div style={{
+                      width: 18, height: 18, borderRadius: '50%',
+                      border: isActive ? '2px solid var(--accent)' : '2px solid var(--border-default)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      {isActive && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {PROVIDER_LABELS[p]}
+                        {p === 'anthropic' && (
+                          <span title={t('providerClaudeWarning', lang)} style={{ cursor: 'help', fontSize: 14 }}>⚠️</span>
+                        )}
+                      </div>
+                      <div className="meta" style={{ fontSize: 11 }}>
+                        {PROVIDER_MODEL_LABELS[p]}
+                      </div>
+                      <div className="meta" style={{ fontSize: 12, marginTop: 2, color: 'var(--text-muted)' }}>
+                        {t(PROVIDER_DESC_KEYS[p], lang)}
+                      </div>
+                      {p === 'anthropic' && (
+                        <div style={{ fontSize: 11, marginTop: 3, color: 'var(--warning-text, #d97706)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <AlertTriangle size={11} />
+                          {t('providerClaudeWarning', lang)}
+                        </div>
+                      )}
+                    </div>
+                    <span className="meta" style={{
+                      fontSize: 11, flexShrink: 0,
+                      color: hasKey ? 'var(--success-text)' : 'var(--text-placeholder)',
+                    }}>
+                      {hasKey ? t('providerKeyConfigured', lang) : t('providerKeyNotSet', lang)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* API Keys */}
+        <div className="content-card">
+          <div className="content-card-header">{t('apiKeyLabel', lang)}</div>
+          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+            {t('apiKeyDesc', lang)}
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Gemini first */}
+            {(['gemini', 'anthropic', 'openai'] as ProviderName[]).map((p) => (
+              <div key={p}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)' }}>
+                    {PROVIDER_LABELS[p]}
+                  </span>
+                  {p === 'gemini' && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 600,
+                      padding: '1px 6px', borderRadius: 4,
+                      background: 'var(--accent)', color: '#fff',
+                    }}>
+                      {t('providerRecommended', lang)}
+                    </span>
+                  )}
+                  {activeProvider === p && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 600,
+                      padding: '1px 6px', borderRadius: 4,
+                      background: 'var(--accent)', color: '#fff',
+                    }}>
+                      {lang === 'ja' ? '使用中' : 'Active'}
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    className="input"
+                    type="password"
+                    value={keys[p]}
+                    onChange={(e) => { handleKeyChange(p, e.target.value); setKeyErrors((prev) => ({ ...prev, [p]: '' })); }}
+                    onBlur={() => { const err = validateApiKey(p, keys[p]); setKeyErrors((prev) => ({ ...prev, [p]: err })); }}
+                    placeholder={PROVIDER_KEY_PLACEHOLDER[p]}
+                    style={{ flex: 1, maxWidth: 420, fontSize: 13 }}
+                  />
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => handleSaveKey(p)}
+                    style={{ fontSize: 12, padding: '5px 12px', minHeight: 28, flexShrink: 0 }}
+                  >
+                    {t('saveKey', lang)}
+                  </button>
+                  {savedProvider === p && (
+                    <span style={{ color: 'var(--success-text)', fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Check size={14} /> {t('saved', lang)}
+                    </span>
+                  )}
+                </div>
+                {keyErrors[p] && (
+                  <p style={{ color: 'var(--error-text)', fontSize: 12, margin: '4px 0 0' }}>{keyErrors[p]}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Theme */}
+        <div className="content-card">
+          <div className="content-card-header">{t('themeLabel', lang)}</div>
+          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+            {t('themeDesc', lang)}
+          </p>
+          <div className="seg-control">
+            {(['light', 'dark', 'system'] as const).map((v) => (
+              <button
+                key={v}
+                className={`seg-control-btn${themePref === v ? ' active-worklog' : ''}`}
+                onClick={() => onThemeChange(v)}
+              >
+                {v === 'light' ? t('themeLight', lang) : v === 'dark' ? t('themeDark', lang) : t('themeSystem', lang)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Font Size */}
+        <div className="content-card">
+          <div className="content-card-header">{t('fontSizeLabel', lang)}</div>
+          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+            {t('fontSizeDesc', lang)}
+          </p>
+          <div className="seg-control">
+            {(['small', 'medium', 'large'] as const).map((v) => (
+              <button
+                key={v}
+                className={`seg-control-btn${fontSize === v ? ' active-worklog' : ''}`}
+                onClick={() => onFontSizeChange(v)}
+              >
+                {v === 'small' ? t('fontSizeSmall', lang) : v === 'medium' ? t('fontSizeMedium', lang) : t('fontSizeLarge', lang)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* UI Language */}
+        <div className="content-card">
+          <div className="content-card-header">{t('uiLanguageLabel', lang)}</div>
+          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+            {t('uiLanguageDesc', lang)}
+          </p>
+          <div className="seg-control">
+            {(['ja', 'en'] as const).map((v) => (
+              <button
+                key={v}
+                className={`seg-control-btn${currentUiLang === v ? ' active-worklog' : ''}`}
+                onClick={() => handleUiLangChange(v)}
+              >
+                {v === 'ja' ? t('langJa', lang) : t('langEn', lang)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Output Language */}
+        <div className="content-card">
+          <div className="content-card-header">{t('outputLanguageLabel', lang)}</div>
+          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+            {t('outputLanguageDesc', lang)}
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <button
+              className={`seg-control-btn${currentOutputLang === 'auto' ? ' active-worklog' : ''}`}
+              style={{ padding: '6px 12px', fontSize: 12, borderRadius: 6, border: '1px solid var(--border-default)' }}
+              onClick={() => handleOutputLangChange('auto')}
+            >
+              {t('langAuto', lang)}
+            </button>
+            {[
+              { code: 'ja', label: '🇯🇵 日本語' },
+              { code: 'en', label: '🇺🇸 English' },
+              { code: 'es', label: '🇪🇸 Español' },
+              { code: 'fr', label: '🇫🇷 Français' },
+              { code: 'de', label: '🇩🇪 Deutsch' },
+              { code: 'zh', label: '🇨🇳 中文' },
+              { code: 'ko', label: '🇰🇷 한국어' },
+              { code: 'pt', label: '🇧🇷 Português' },
+            ].map((v) => (
+              <button
+                key={v.code}
+                className={`seg-control-btn${currentOutputLang === v.code ? ' active-worklog' : ''}`}
+                style={{ padding: '6px 12px', fontSize: 12, borderRadius: 6, border: '1px solid var(--border-default)' }}
+                onClick={() => handleOutputLangChange(v.code)}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Notion Integration */}
+        <div className="content-card">
+          <div className="content-card-header">{t('notionLabel', lang)}</div>
+          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+            {t('notionDesc', lang)}
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                {t('notionApiKey', lang)}
+              </div>
+              <input
+                className="input"
+                type="password"
+                value={notionKey}
+                onChange={(e) => { setNotionKeyState(e.target.value); setNotionError(''); }}
+                onBlur={() => { if (notionKey.trim() && !notionKey.startsWith('ntn_') && !notionKey.startsWith('secret_')) setNotionError(lang === 'ja' ? 'Notion APIキーの形式が正しくありません' : 'Invalid Notion API key format'); }}
+                placeholder={t('notionApiKeyPlaceholder', lang)}
+                style={{ maxWidth: 420, fontSize: 13 }}
+              />
+              {notionError && (
+                <p style={{ color: 'var(--error-text)', fontSize: 12, margin: '4px 0 0' }}>{notionError}</p>
+              )}
+            </div>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                {t('notionDatabaseId', lang)}
+              </div>
+              <input
+                className="input"
+                type="text"
+                value={notionDbId}
+                onChange={(e) => setNotionDbIdState(e.target.value)}
+                placeholder={t('notionDatabaseIdPlaceholder', lang)}
+                style={{ maxWidth: 420, fontSize: 13 }}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                className="btn btn-primary"
+                style={{ fontSize: 12, padding: '5px 12px', minHeight: 28 }}
+                onClick={() => {
+                  if (notionKey.trim() && !notionKey.startsWith('ntn_') && !notionKey.startsWith('secret_')) {
+                    setNotionError(lang === 'ja' ? 'Notion APIキーの形式が正しくありません' : 'Invalid Notion API key format');
+                    return;
+                  }
+                  setNotionError('');
+                  setNotionApiKey(notionKey);
+                  setNotionDatabaseId(notionDbId);
+                  setNotionSaved(true);
+                  setTimeout(() => setNotionSaved(false), 2000);
+                }}
+              >
+                {t('saveKey', lang)}
+              </button>
+              {notionSaved && (
+                <span style={{ color: 'var(--success-text)', fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Check size={14} /> {t('saved', lang)}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Slack Integration */}
+        <div className="content-card">
+          <div className="content-card-header">{t('slackLabel', lang)}</div>
+          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+            {t('slackDesc', lang)}
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                {t('slackWebhookUrl', lang)}
+              </div>
+              <input
+                className="input"
+                type="password"
+                value={slackWebhook}
+                onChange={(e) => { setSlackWebhookState(e.target.value); setSlackError(''); }}
+                onBlur={() => { if (slackWebhook.trim() && !slackWebhook.startsWith('https://hooks.slack.com')) setSlackError(lang === 'ja' ? 'Slack Webhook URLの形式が正しくありません' : 'Invalid Slack Webhook URL format'); }}
+                placeholder={t('slackWebhookPlaceholder', lang)}
+                style={{ maxWidth: 480, fontSize: 13 }}
+              />
+              {slackError && (
+                <p style={{ color: 'var(--error-text)', fontSize: 12, margin: '4px 0 0' }}>{slackError}</p>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                className="btn btn-primary"
+                style={{ fontSize: 12, padding: '5px 12px', minHeight: 28 }}
+                onClick={() => {
+                  if (slackWebhook.trim() && !slackWebhook.startsWith('https://hooks.slack.com')) {
+                    setSlackError(lang === 'ja' ? 'Slack Webhook URLの形式が正しくありません' : 'Invalid Slack Webhook URL format');
+                    return;
+                  }
+                  setSlackError('');
+                  setSlackWebhookUrl(slackWebhook);
+                  setSlackSaved(true);
+                  setTimeout(() => setSlackSaved(false), 2000);
+                }}
+              >
+                {t('saveKey', lang)}
+              </button>
+              {slackSaved && (
+                <span style={{ color: 'var(--success-text)', fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Check size={14} /> {t('saved', lang)}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Data Management */}
+        <div className="content-card">
+          <div className="content-card-header">{t('dataLabel', lang)}</div>
+          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+            {t('dataStorageNotice', lang)}
+          </p>
+
+          {/* Data Usage */}
+          {(() => {
+            const usage = getDataUsage();
+            const barColor = usage.percentage >= 100 ? 'var(--error-text)' : usage.percentage >= 80 ? '#f59e0b' : 'var(--accent)';
+            const isWarning = usage.percentage >= 80;
+            return (
+              <div style={{ marginBottom: 16, padding: '12px 14px', background: 'var(--sidebar-hover)', borderRadius: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    {t('dataUsageLabel', lang)}
+                  </span>
+                  <span style={{ fontSize: 12, color: isWarning ? barColor : 'var(--text-muted)' , fontWeight: isWarning ? 600 : 400 }}>
+                    {formatBytes(usage.usedBytes)} / {formatBytes(usage.limitBytes)}
+                  </span>
+                </div>
+                <div style={{ height: 6, borderRadius: 3, background: 'var(--border-default)', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${Math.min(usage.percentage, 100)}%`,
+                    background: barColor,
+                    borderRadius: 3,
+                    transition: 'width 0.3s',
+                  }} />
+                </div>
+                {isWarning && (
+                  <p style={{ fontSize: 12, color: barColor, marginTop: 6, marginBottom: 0, fontWeight: 500 }}>
+                    {t('dataUsageWarning', lang)}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Export */}
+          <div style={{ marginBottom: 16 }}>
+            <p className="meta" style={{ marginBottom: 8, fontSize: 13 }}>
+              {t('dataExportDesc', lang)}
+            </p>
+            <button className="btn btn-primary" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Download size={14} /> {t('dataExport', lang)}
+            </button>
+          </div>
+
+          {/* Import */}
+          <div>
+            <p className="meta" style={{ marginBottom: 8, fontSize: 13 }}>
+              {t('dataImportDesc', lang)}
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportFile}
+              style={{ display: 'none' }}
+            />
+            <button className="btn" onClick={() => fileInputRef.current?.click()} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Upload size={14} /> {t('dataImport', lang)}
+            </button>
+            {importError && (
+              <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <AlertTriangle size={14} /> {importError}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Show onboarding again */}
+        {onShowOnboarding && (
+          <div style={{ textAlign: 'center', paddingTop: 4 }}>
+            <button
+              className="btn"
+              onClick={() => { resetOnboarding(); onShowOnboarding(); }}
+              style={{ fontSize: 13 }}
+            >
+              {lang === 'ja' ? 'オンボーディングをもう一度見る' : 'Show onboarding again'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Import confirmation dialog */}
+      {pendingImport && (
+        <div className="modal-overlay" onClick={() => setPendingImport(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <h3 style={{ marginBottom: 12 }}>{t('dataImport', lang)}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+              <button
+                className={`btn${pendingImport.mode === 'merge' ? ' btn-primary' : ''}`}
+                onClick={() => setPendingImport({ ...pendingImport, mode: 'merge' })}
+                style={{ textAlign: 'left', padding: '10px 14px' }}
+              >
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{t('dataImportMerge', lang)}</div>
+                <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>{t('dataImportConfirmMerge', lang)}</div>
+              </button>
+              <button
+                className={`btn${pendingImport.mode === 'overwrite' ? ' btn-primary' : ''}`}
+                onClick={() => setPendingImport({ ...pendingImport, mode: 'overwrite' })}
+                style={{ textAlign: 'left', padding: '10px 14px' }}
+              >
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{t('dataImportOverwrite', lang)}</div>
+                <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>{t('dataImportConfirmOverwrite', lang)}</div>
+              </button>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn" onClick={() => setPendingImport(null)}>{t('cancel', lang)}</button>
+              <button className="btn btn-primary" onClick={handleImportConfirm}>
+                {pendingImport.mode === 'overwrite' ? t('dataImportOverwrite', lang) : t('dataImportMerge', lang)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

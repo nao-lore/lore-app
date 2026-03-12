@@ -1,0 +1,177 @@
+export type OutputMode = 'worklog' | 'handoff';
+
+export interface Trashable {
+  trashedAt?: number;    // timestamp when moved to trash
+}
+
+export interface Project extends Trashable {
+  id: string;
+  name: string;
+  createdAt: number;
+  pinned?: boolean;
+  color?: string;   // preset color key
+  icon?: string;    // emoji icon
+}
+
+export interface SourceReference {
+  fileName?: string;          // original file name(s)
+  sourceType?: string;        // txt, md, docx, json, paste
+  importedAt?: string;        // ISO timestamp
+  originalDate?: string;      // file lastModified as ISO date
+  charCount?: number;         // original input character count
+}
+
+export interface LogEntry extends Trashable {
+  id: string;
+  createdAt: string;
+  updatedAt?: string;
+  importedAt?: string;
+  title: string;
+  projectId?: string;
+  pinned?: boolean;
+  suggestedProjectId?: string;
+  classificationConfidence?: number;
+  sourceText?: string;        // deprecated — no longer saved for new logs
+  sourceReference?: SourceReference;
+  outputMode?: OutputMode;
+  // Worklog fields
+  today: string[];
+  decisions: string[];
+  todo: string[];
+  relatedProjects: string[];
+  tags: string[];
+  // Handoff fields (only when outputMode === 'handoff')
+  currentStatus?: string[];   // 今どこ？ — current state + what's working/not
+  nextActions?: string[];     // 次何やる？
+  completed?: string[];       // 終わったこと
+  blockers?: string[];        // 注意点・未解決
+  constraints?: string[];     // 前提・制約
+  resumeContext?: string[];   // 再開入力 — files/tests/conditions to check first
+  checkedActions?: number[];  // checked nextActions indices
+  // User-added memo (separate from AI-generated content)
+  memo?: string;
+  // Workload level (AI-analyzed)
+  workloadLevel?: 'high' | 'medium' | 'low';
+  // Legacy fields (kept for backward compat with old logs)
+  inProgress?: string[];
+  resumePoint?: string;
+}
+
+export interface SourcedItem {
+  text: string;
+  sourceLogIds: string[];
+}
+
+export interface MasterNote {
+  id: string;
+  projectId: string;
+  overview: string;
+  currentStatus: string;
+  decisions: SourcedItem[];
+  openIssues: SourcedItem[];
+  nextActions: SourcedItem[];
+  relatedLogIds: string[];
+  updatedAt: number;
+}
+
+export interface MasterNoteSnapshot {
+  version: number;
+  note: MasterNote;
+  savedAt: number;
+}
+
+export interface MasterNoteHistory {
+  projectId: string;
+  snapshots: MasterNoteSnapshot[];
+}
+
+export interface LogSummary {
+  logId: string;
+  summary: string;
+  decisions: string[];
+  issues: string[];
+  actions: string[];
+  cachedAt: number;
+}
+
+export interface Todo extends Trashable {
+  id: string;
+  text: string;
+  done: boolean;
+  logId: string;       // empty string for manual todos
+  createdAt: number;
+  dueDate?: string;    // ISO date string (YYYY-MM-DD)
+  priority?: 'high' | 'medium' | 'low';
+  tag?: string;
+  pinned?: boolean;
+  archivedAt?: number; // timestamp when archived
+  sortOrder?: number;  // manual sort order (lower = higher)
+}
+
+export interface WeeklyReport {
+  id: string;
+  weekStart: string;         // ISO date (Monday)
+  weekEnd: string;           // ISO date (Sunday)
+  projectId?: string;        // optional project filter
+  summary: string;
+  achievements: string[];
+  decisions: string[];
+  openItems: string[];
+  completedTodos: string[];
+  pendingTodos: string[];
+  nextWeek: string[];
+  stats: {
+    logCount: number;
+    worklogCount: number;
+    handoffCount: number;
+    todoCompletionRate: number;   // 0–100
+    averageWorkload?: string;     // 'high' | 'medium' | 'low' | undefined
+  };
+  generatedAt: number;        // timestamp
+}
+
+export interface KnowledgeEntry {
+  problem: string;
+  solution: string;
+  sourceLogIds: string[];
+  frequency: number;          // how many logs mentioned this pattern
+}
+
+export interface KnowledgeBase {
+  id: string;
+  projectId: string;
+  patterns: KnowledgeEntry[];     // recurring problems & solutions
+  bestPractices: string[];        // distilled best practices
+  commonDecisions: SourcedItem[]; // recurring decisions
+  generatedAt: number;
+  logCount: number;               // how many logs were analyzed
+}
+
+export interface TransformResult {
+  title: string;
+  today: string[];
+  decisions: string[];
+  todo: string[];
+  relatedProjects: string[];
+  tags: string[];
+}
+
+export interface HandoffResult {
+  title: string;
+  currentStatus: string[];    // 今どこ？
+  nextActions: string[];      // 次何やる？
+  completed: string[];        // 終わったこと
+  blockers: string[];         // 注意点・未解決
+  decisions: string[];        // 決定事項
+  constraints: string[];      // 前提・制約
+  resumeContext: string[];    // 再開入力
+  tags: string[];
+}
+
+export interface BothResult {
+  worklog: TransformResult;
+  handoff: HandoffResult;
+  classification?: { projectId: string | null; confidence: number };
+}
+
+export type FontSize = 'small' | 'medium' | 'large';
