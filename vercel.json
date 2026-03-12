@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run precheck",
+  "buildCommand": "npm run build && npm run lint && npm test",
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
