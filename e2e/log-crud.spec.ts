@@ -18,13 +18,12 @@ function makeLog(overrides: Record<string, unknown> = {}) {
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem('threadlog_onboarding_done', '1');
+    localStorage.setItem('threadlog_sample_seeded', '1');
+  });
   await page.reload();
-  // Dismiss onboarding
-  const skipBtn = page.getByText('Skip');
-  if (await skipBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await skipBtn.click();
-  }
 });
 
 test('seed a log and verify it appears in Logs view', async ({ page }) => {
@@ -33,12 +32,6 @@ test('seed a log and verify it appears in Logs view', async ({ page }) => {
     localStorage.setItem('threadlog_logs', JSON.stringify([log]));
   }, makeLog());
   await page.reload();
-
-  // Dismiss onboarding after reload (no logs initially, but now we have one)
-  const skipBtn = page.getByText('Skip');
-  if (await skipBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await skipBtn.click();
-  }
 
   // Navigate to Logs
   await page.locator('.sidebar-nav-item').filter({ hasText: 'Logs' }).first().click();

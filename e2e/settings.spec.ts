@@ -2,13 +2,12 @@ import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem('threadlog_onboarding_done', '1');
+    localStorage.setItem('threadlog_sample_seeded', '1');
+  });
   await page.reload();
-  // Dismiss onboarding
-  const skipBtn = page.getByText('Skip');
-  if (await skipBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await skipBtn.click();
-  }
 });
 
 function goToSettings(page: import('@playwright/test').Page) {
@@ -39,8 +38,8 @@ test('change theme to Light and verify data-theme attribute', async ({ page }) =
 test('change UI language to Japanese and back to English', async ({ page }) => {
   await goToSettings(page);
 
-  // Switch to Japanese
-  await page.getByRole('button', { name: 'Japanese' }).click();
+  // Switch to Japanese (button shows flag + label)
+  await page.locator('button', { hasText: '日本語' }).click();
 
   // Settings title should now be in Japanese
   await expect(page.getByRole('heading', { name: '設定' })).toBeVisible();
@@ -49,7 +48,7 @@ test('change UI language to Japanese and back to English', async ({ page }) => {
   await expect(page.getByText('← 戻る')).toBeVisible();
 
   // Switch back to English
-  await page.getByRole('button', { name: '英語' }).click();
+  await page.locator('button', { hasText: 'English' }).click();
 
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
 });
@@ -58,7 +57,7 @@ test('language preference persists across page reload', async ({ page }) => {
   await goToSettings(page);
 
   // Switch to Japanese
-  await page.getByRole('button', { name: 'Japanese' }).click();
+  await page.locator('button', { hasText: '日本語' }).click();
   await expect(page.getByRole('heading', { name: '設定' })).toBeVisible();
 
   // Reload the page

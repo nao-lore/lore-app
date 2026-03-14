@@ -3,13 +3,13 @@ import { test, expect } from '@playwright/test';
 test.beforeEach(async ({ page }) => {
   // Clear localStorage before each test, then navigate
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => {
+    localStorage.clear();
+    // Skip onboarding and sample data seeding for clean test state
+    localStorage.setItem('threadlog_onboarding_done', '1');
+    localStorage.setItem('threadlog_sample_seeded', '1');
+  });
   await page.reload();
-  // Dismiss onboarding if it appears
-  const skipBtn = page.getByText('Skip');
-  if (await skipBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await skipBtn.click();
-  }
 });
 
 test('app loads with Lore title', async ({ page }) => {

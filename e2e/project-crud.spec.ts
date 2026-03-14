@@ -2,13 +2,12 @@ import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem('threadlog_onboarding_done', '1');
+    localStorage.setItem('threadlog_sample_seeded', '1');
+  });
   await page.reload();
-  // Dismiss onboarding
-  const skipBtn = page.getByText('Skip');
-  if (await skipBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await skipBtn.click();
-  }
 });
 
 test('create a new project', async ({ page }) => {
