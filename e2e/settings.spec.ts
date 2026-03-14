@@ -38,8 +38,8 @@ test('change theme to Light and verify data-theme attribute', async ({ page }) =
 test('change UI language to Japanese and back to English', async ({ page }) => {
   await goToSettings(page);
 
-  // Switch to Japanese (button shows flag + label)
-  await page.locator('button', { hasText: '日本語' }).click();
+  // Switch to Japanese — first match is the UI language section
+  await page.locator('button', { hasText: '日本語' }).first().click();
 
   // Settings title should now be in Japanese
   await expect(page.getByRole('heading', { name: '設定' })).toBeVisible();
@@ -48,7 +48,7 @@ test('change UI language to Japanese and back to English', async ({ page }) => {
   await expect(page.getByText('← 戻る')).toBeVisible();
 
   // Switch back to English
-  await page.locator('button', { hasText: 'English' }).click();
+  await page.locator('button', { hasText: 'English' }).first().click();
 
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
 });
@@ -57,7 +57,7 @@ test('language preference persists across page reload', async ({ page }) => {
   await goToSettings(page);
 
   // Switch to Japanese
-  await page.locator('button', { hasText: '日本語' }).click();
+  await page.locator('button', { hasText: '日本語' }).first().click();
   await expect(page.getByRole('heading', { name: '設定' })).toBeVisible();
 
   // Reload the page
