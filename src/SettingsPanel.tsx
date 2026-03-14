@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Check, Download, Upload, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
-import { getLang, setLang, getUiLang, exportAllData, validateBackup, importData, getDataUsage, formatBytes, getAutoReportSetting, setAutoReportSetting } from './storage';
+import { getLang, setLang, getUiLang, exportAllData, validateBackup, importData, getDataUsage, formatBytes, getAutoReportSetting, setAutoReportSetting, isDemoMode, setDemoMode } from './storage';
 import { resetOnboarding } from './onboardingState';
 import type { ThemePref, LoreBackup } from './storage';
 import {
@@ -93,6 +93,8 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
     }
     setKeyErrors((prev) => ({ ...prev, [p]: '' }));
     setProviderApiKey(p, keys[p]);
+    // Auto-exit demo mode when a real API key is saved
+    if (isDemoMode() && keys[p].trim()) setDemoMode(false);
     setSavedProvider(p);
     setTimeout(() => setSavedProvider(null), 2000);
   };

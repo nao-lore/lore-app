@@ -4,7 +4,8 @@ import type { TransformBothOptions } from './transform';
 import { ChunkEngine, getChunkTarget, getEngineConcurrency } from './chunkEngine';
 import type { EngineProgress } from './chunkEngine';
 import { findSession } from './chunkDb';
-import { addLog, trashLog, updateLog, getLog, getApiKey, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateTodo as updateTodoStorage, duplicateLog, getAiContext, getMasterNote, linkLogs, unlinkLogs } from './storage';
+import { addLog, trashLog, updateLog, getLog, getApiKey, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateTodo as updateTodoStorage, duplicateLog, getAiContext, getMasterNote, linkLogs, unlinkLogs, isDemoMode } from './storage';
+import { demoTransformBoth, demoTransformHandoff, demoTransformText, demoTransformTodoOnly, demoTransformHandoffTodo, getDemoConversation } from './demoData';
 import { classifyLog, saveCorrection } from './classify';
 import { extractDocxText } from './docx';
 import { parseConversationJson } from './jsonImport';
@@ -197,6 +198,14 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
   // Auto-focus textarea on mount
   useEffect(() => { textareaRef.current?.focus(); }, []);
 
+  // Pre-fill demo conversation if demo mode and empty
+  useEffect(() => {
+    if (isDemoMode() && !text && files.length === 0) {
+      setText(getDemoConversation(lang));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Reset project selection on mount
   useEffect(() => { setSelectedProjectId(undefined); }, []);
 
@@ -306,10 +315,11 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     if (loading) return;
     if (!combined.trim()) { setError('Please enter or import some text.'); return; }
 
-    if (!navigator.onLine) { setError(t('offlineAiUnavailable', lang)); return; }
+    const demo = isDemoMode();
+    if (!demo && !navigator.onLine) { setError(t('offlineAiUnavailable', lang)); return; }
 
     const apiKey = getApiKey();
-    if (!apiKey) { setError('[API Key] Not set. Go to Settings and enter your API key.'); return; }
+    if (!demo && !apiKey) { setError('[API Key] Not set. Go to Settings and enter your API key.'); return; }
 
     // Persist last used action
     setTransformAction(action);
@@ -333,6 +343,67 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     try {
       let lastEntryId: string | null = null;
       let savedHandoffLog: LogEntry | null = null;
+
+      // --- Demo mode — return pre-generated results ---
+      if (demo) {
+        setSimStep(1);
+        if (isBoth) {
+          const bothResult = await demoTransformBoth(lang);
+          setSimStep(4);
+          const handoffEntry = buildHandoffLogEntry(bothResult.handoff, { projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length) });
+          addLog(handoffEntry);
+          savedHandoffLog = handoffEntry;
+          onSaved(handoffEntry.id);
+          setSavedHandoffId(handoffEntry.id);
+          const r = bothResult.worklog;
+          setResult(r); setOutputMode('worklog');
+          const worklogEntry: LogEntry = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), importedAt: new Date().toISOString(), title: r.title, projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length), outputMode: 'worklog', today: r.today, decisions: r.decisions, todo: r.todo, relatedProjects: r.relatedProjects, tags: r.tags };
+          addLog(worklogEntry); addTodosFromLog(worklogEntry.id, r.todo);
+          todoCount = r.todo.length; lastEntryId = worklogEntry.id; onSaved(worklogEntry.id);
+        } else if (isHandoffTodo) {
+          const htr = await demoTransformHandoffTodo(lang);
+          setSimStep(4);
+          const handoffEntry = buildHandoffLogEntry(htr.handoff, { projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length) });
+          addLog(handoffEntry);
+          savedHandoffLog = handoffEntry;
+          onSaved(handoffEntry.id);
+          setSavedHandoffId(handoffEntry.id);
+          setResult(htr.handoff); setOutputMode('handoff');
+          if (htr.todos.length > 0) {
+            addTodosFromLogWithMeta(handoffEntry.id, htr.todos.map(td => ({ title: td.title, priority: td.priority, dueDate: td.dueDate })));
+            todoCount = htr.todos.length;
+          }
+          lastEntryId = handoffEntry.id;
+        } else if (doHandoff) {
+          const r = await demoTransformHandoff(lang);
+          setSimStep(4);
+          const handoffEntry = buildHandoffLogEntry(r, { projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length) });
+          addLog(handoffEntry);
+          savedHandoffLog = handoffEntry;
+          onSaved(handoffEntry.id); lastEntryId = handoffEntry.id;
+          setResult(r); setOutputMode('handoff');
+        } else if (isTodoOnly) {
+          const r = await demoTransformTodoOnly(lang);
+          setSimStep(4);
+          if (r.todos.length > 0) { todoCount = r.todos.length; }
+        } else {
+          const r = await demoTransformText(lang);
+          setSimStep(4);
+          setResult(r); setOutputMode('worklog');
+          const worklogEntry: LogEntry = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), importedAt: new Date().toISOString(), title: r.title, projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length), outputMode: 'worklog', today: r.today, decisions: r.decisions, todo: r.todo, relatedProjects: r.relatedProjects, tags: r.tags };
+          addLog(worklogEntry); addTodosFromLog(worklogEntry.id, r.todo);
+          todoCount = r.todo.length; lastEntryId = worklogEntry.id; onSaved(worklogEntry.id);
+        }
+        // Post-save: generate savedResult for markdown/context buttons
+        if (savedHandoffLog) {
+          const md = formatHandoffMarkdown(savedHandoffLog);
+          setSavedResult({ log: savedHandoffLog, markdown: md, fullContext: null });
+        }
+        setSavedId(lastEntryId);
+        if (todoCount > 0) showToast?.(tf('toastTodosExtracted', lang, todoCount), 'success');
+        setLoading(false);
+        return;
+      }
 
       // --- Combined "both" mode — single API call ---
       if (isBoth) {

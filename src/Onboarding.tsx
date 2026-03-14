@@ -3,6 +3,7 @@ import { t } from './i18n';
 import type { Lang } from './i18n';
 import { useFocusTrap } from './useFocusTrap';
 import { markOnboardingDone } from './onboardingState';
+import { setDemoMode } from './storage';
 
 interface OnboardingProps {
   lang: Lang;
@@ -35,6 +36,12 @@ export default function Onboarding({ lang, onLangChange, onClose }: OnboardingPr
   const [step, setStep] = useState(0);
 
   const finish = useCallback(() => {
+    markOnboardingDone();
+    onClose();
+  }, [onClose]);
+
+  const finishWithDemo = useCallback(() => {
+    setDemoMode(true);
     markOnboardingDone();
     onClose();
   }, [onClose]);
@@ -176,7 +183,7 @@ export default function Onboarding({ lang, onLangChange, onClose }: OnboardingPr
               </button>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {!isLast && (
               <button
                 className="btn"
@@ -187,13 +194,22 @@ export default function Onboarding({ lang, onLangChange, onClose }: OnboardingPr
               </button>
             )}
             {current.final ? (
-              <button
-                className="btn btn-primary"
-                onClick={finish}
-                style={{ fontSize: 13, padding: '6px 20px', fontWeight: 600, borderRadius: 8 }}
-              >
-                {t('onboardingGetStarted', lang)}
-              </button>
+              <>
+                <button
+                  className="btn"
+                  onClick={finishWithDemo}
+                  style={{ fontSize: 13, padding: '6px 16px', color: 'var(--accent)' }}
+                >
+                  {t('tryDemo', lang)}
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={finish}
+                  style={{ fontSize: 13, padding: '6px 20px', fontWeight: 600, borderRadius: 8 }}
+                >
+                  {t('onboardingGetStarted', lang)}
+                </button>
+              </>
             ) : (
               <button
                 className="btn btn-primary"

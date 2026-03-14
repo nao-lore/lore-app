@@ -25,7 +25,7 @@ const DashboardView = lazy(() => import('./DashboardView'));
 const HelpView = lazy(() => import('./HelpView'));
 const WeeklyReportView = lazy(() => import('./WeeklyReportView'));
 const KnowledgeBaseView = lazy(() => import('./KnowledgeBaseView'));
-import { loadLogs, loadProjects, loadTodos, loadMasterNotes, getUiLang, setUiLang, getTheme, setTheme as saveTheme, purgeExpiredTrash, updateLog, getLog, getAutoReportSetting, getLastReportDate, setLastReportDate } from './storage';
+import { loadLogs, loadProjects, loadTodos, loadMasterNotes, getUiLang, setUiLang, getTheme, setTheme as saveTheme, purgeExpiredTrash, updateLog, getLog, getAutoReportSetting, getLastReportDate, setLastReportDate, isDemoMode, setDemoMode } from './storage';
 import type { ThemePref } from './storage';
 import type { FontSize } from './types';
 import { t, tf } from './i18n';
@@ -487,6 +487,19 @@ export default function App() {
         />
       )}
       <div ref={scrollRef} data-main-scroll style={{ flex: 1, overflowY: 'auto', minHeight: 0, background: 'var(--bg-app)' }}>
+        {isDemoMode() && (
+          <div style={{ background: 'var(--accent-bg, rgba(99,102,241,0.08))', borderBottom: '1px solid var(--accent)', padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, fontSize: 13 }}>
+            <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{t('demoBadge', lang)}</span>
+            <span style={{ color: 'var(--text-muted)' }}>{t('demoModeBanner', lang)}</span>
+            <button
+              className="btn"
+              onClick={() => { setDemoMode(false); setLogsVersion((v) => v + 1); }}
+              style={{ fontSize: 12, padding: '2px 10px', color: 'var(--accent)' }}
+            >
+              {t('exitDemoMode', lang)}
+            </button>
+          </div>
+        )}
         <div style={{ height: '100%' }}>
           <ErrorBoundary>
             <Suspense fallback={null}>

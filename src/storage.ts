@@ -812,6 +812,22 @@ export function setTheme(theme: ThemePref): void {
   safeSetItem(THEME_KEY, theme);
 }
 
+// ─── Demo Mode ───
+
+const DEMO_MODE_KEY = 'threadlog_demo_mode';
+
+export function isDemoMode(): boolean {
+  return localStorage.getItem(DEMO_MODE_KEY) === '1';
+}
+
+export function setDemoMode(on: boolean): void {
+  if (on) {
+    safeSetItem(DEMO_MODE_KEY, '1');
+  } else {
+    try { localStorage.removeItem(DEMO_MODE_KEY); } catch { /* ignore */ }
+  }
+}
+
 // ─── Auto Weekly Report ───
 
 const AUTO_REPORT_KEY = 'threadlog_auto_weekly_report';
