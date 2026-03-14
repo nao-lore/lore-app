@@ -6,7 +6,8 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { transformHandoff } from '../transform';
 import type { HandoffResult } from '../types';
 
-const GOOGLE_KEY = process.env.GOOGLE_API_KEY || '';
+// @ts-expect-error process.env is available in Node/Vitest
+const GOOGLE_KEY = (typeof process !== 'undefined' && process.env?.GOOGLE_API_KEY) || '';
 const apiDescribe = GOOGLE_KEY ? describe : describe.skip;
 
 const INPUT_WITH_CONTEXT = [

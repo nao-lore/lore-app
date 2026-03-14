@@ -208,6 +208,7 @@ describe('normalizeNextActions', () => {
 
     it('formatFullAiContext also renders priorityReason/dependsOn', () => {
       const ctx: ProjectContext = {
+        projectId: 'test-proj',
         projectName: 'TestProject',
         overview: '',
         currentState: [],
@@ -215,6 +216,8 @@ describe('normalizeNextActions', () => {
         constraints: [],
         openIssues: [],
         nextActions: [],
+        sourceLogIds: [],
+        generatedAt: Date.now(),
       };
       const log = makeLog([{
         action: 'Deploy hotfix',

@@ -1,8 +1,7 @@
-import type { TransformResult, HandoffResult, BothResult, OutputMode, DecisionWithRationale, NextActionItem, ResumeChecklistItem, HandoffMeta } from './types';
+import type { TransformResult, HandoffResult, BothResult, OutputMode, DecisionWithRationale, NextActionItem } from './types';
 import type { ChunkSession, PartialResult } from './chunkDb';
 import { computeSourceHash, loadSession, saveSession, deleteSession } from './chunkDb';
 import { getLang } from './storage';
-import { getApiKey } from './storage';
 import { callProvider, callProviderStream, getActiveProvider } from './provider';
 import type { StreamCallback } from './provider';
 import { filterResolvedBlockers, normalizeNextActions, normalizeResumeChecklist, normalizeHandoffMeta, normalizeActionBacklog } from './transform';
@@ -625,7 +624,8 @@ function localMerge(partials: PartialResult[], isBothMode = false): PartialResul
       }
     }
     // Order: use the latest chunk that has nextActions, preserve its order, then append earlier-only items
-    const latestChunkIndex = allChunkItems.length > 0 ? allChunkItems[allChunkItems.length - 1].chunkIndex : -1;
+    // latestChunkIndex used for ordering reference
+    void (allChunkItems.length > 0 ? allChunkItems[allChunkItems.length - 1].chunkIndex : -1);
     const latestActions = allChunkItems.length > 0 ? allChunkItems[allChunkItems.length - 1].items.map(i => i.action) : [];
     const orderedItems: NextActionItem[] = [];
     const seen = new Set<string>();
@@ -786,7 +786,7 @@ export function getEngineConcurrency(): number {
 // =============================================================================
 
 export interface EngineProgress {
-  phase: 'extract' | 'merge' | 'completed' | 'consistency' | 'waiting' | 'paused';
+  phase: 'extract' | 'merge' | 'completed' | 'consistency' | 'waiting' | 'paused' | 'summarization';
   current: number;
   total: number;
   savedCount: number;

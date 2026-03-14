@@ -8,7 +8,7 @@ import { addLog, trashLog, updateLog, getLog, getApiKey, addTodosFromLog, addTod
 import { classifyLog, saveCorrection } from './classify';
 import { extractDocxText } from './docx';
 import { parseConversationJson } from './jsonImport';
-import { MoreVertical, Pin, CheckSquare, Square, ExternalLink, Copy, Check, Activity, FolderOpen, X, Link } from 'lucide-react';
+import { MoreVertical, Pin, CheckSquare, Square, ExternalLink, Copy, Check, Activity, X, Link } from 'lucide-react';
 import { getGreeting } from './greeting';
 import ProgressPanel from './ProgressPanel';
 import type { ProgressStep } from './ProgressPanel';
@@ -150,7 +150,7 @@ function formatFileDate(ts: number): string {
   return `${month}/${day} ${hours}:${mins}`;
 }
 
-function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, onSelectProject }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void; onDirtyChange?: (dirty: boolean) => void; onSelectProject?: (projectId: string | null) => void }) {
+function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, onSelectProject: _onSelectProject }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void; onDirtyChange?: (dirty: boolean) => void; onSelectProject?: (projectId: string | null) => void }) {
   const [text, setText] = useState('');
   const [files, setFiles] = useState<ImportedFile[]>([]);
   const [loading, setLoading] = useState(false);
