@@ -8,7 +8,6 @@ interface OnboardingProps {
   lang: Lang;
   onLangChange: (lang: Lang) => void;
   onClose: () => void;
-  onStartCreate: () => void;
 }
 
 interface StepDef {
@@ -31,7 +30,7 @@ const LANG_OPTIONS: { code: Lang; label: string; flag: string }[] = [
   { code: 'pt', label: 'Português', flag: '🇧🇷' },
 ];
 
-export default function Onboarding({ lang, onLangChange, onClose, onStartCreate }: OnboardingProps) {
+export default function Onboarding({ lang, onLangChange, onClose }: OnboardingProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(true);
   const [step, setStep] = useState(0);
 

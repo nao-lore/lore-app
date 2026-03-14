@@ -7,6 +7,7 @@ import { callProvider } from './provider';
 import type { ProviderRequest } from './provider';
 import { extractJson } from './transform';
 import { t } from './i18n';
+import type { Lang } from './i18n';
 
 const SYSTEM_PROMPT = `You are a workload analyzer. Given a work log, estimate the workload/stress level.
 
@@ -60,7 +61,7 @@ export async function analyzeWorkload(log: LogEntry): Promise<'high' | 'medium' 
 
 export type WorkloadLevel = 'high' | 'medium' | 'low';
 
-export const WORKLOAD_CONFIG: Record<WorkloadLevel, { label: (lang: 'ja' | 'en') => string; emoji: string; color: string; bg: string }> = {
+export const WORKLOAD_CONFIG: Record<WorkloadLevel, { label: (lang: Lang) => string; emoji: string; color: string; bg: string }> = {
   high: {
     label: (lang) => t('workloadHigh', lang),
     emoji: '🔴',

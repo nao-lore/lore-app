@@ -578,7 +578,6 @@ export default function App() {
           lang={lang}
           onLangChange={handleUiLangChange}
           onClose={handleOnboardingClose}
-          onStartCreate={() => { handleOnboardingClose(); handleNewLog(); }}
         />
       )}
       {pendingNav && (
