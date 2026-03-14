@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import type { ReactNode } from 'react';
+import { t } from './i18n';
 import type { Lang } from './i18n';
 
 export interface ProgressStep {
@@ -111,7 +112,7 @@ export default function ProgressPanel({ steps, state, lang, actions, dotColor, d
           ...(dotAnimate ? {} : { animation: 'none' }),
         }} />
         <span className="ai-progress-label">
-          {currentStep?.label || (lang === 'ja' ? '処理中...' : 'Processing...')}
+          {currentStep?.label || t('processingFallback', lang)}
         </span>
         {!isDone && totalSteps > 1 && (
           <span className="ai-progress-step-count">

@@ -5,7 +5,7 @@ export function isOnboardingDone(): boolean {
 }
 
 export function markOnboardingDone(): void {
-  localStorage.setItem(ONBOARDING_KEY, '1');
+  try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch { /* ignore */ }
 }
 
 export function resetOnboarding(): void {

@@ -31,29 +31,44 @@ export interface LogEntry extends Trashable {
   pinned?: boolean;
   suggestedProjectId?: string;
   classificationConfidence?: number;
-  sourceText?: string;        // deprecated — no longer saved for new logs
+  /** @deprecated No longer saved for new logs. Read-only for backward compatibility. */
+  sourceText?: string;
   sourceReference?: SourceReference;
   outputMode?: OutputMode;
   // Worklog fields
   today: string[];
   decisions: string[];
+  /**
+   * Structured decisions with rationale. Preferred over `decisions` for new logs.
+   * - New saves: write both decisionRationales and decisions (backward compat)
+   * - Reads: use decisionRationales if present, fall back to decisions
+   */
+  decisionRationales?: DecisionWithRationale[];
   todo: string[];
   relatedProjects: string[];
   tags: string[];
   // Handoff fields (only when outputMode === 'handoff')
   currentStatus?: string[];   // 今どこ？ — current state + what's working/not
   nextActions?: string[];     // 次何やる？
+  nextActionItems?: NextActionItem[];  // immediate only, max 4
+  actionBacklog?: NextActionItem[];   // そのうちやるもの, max 7
   completed?: string[];       // 終わったこと
   blockers?: string[];        // 注意点・未解決
   constraints?: string[];     // 前提・制約
-  resumeContext?: string[];   // 再開入力 — files/tests/conditions to check first
+  resumeContext?: string[];   // 再開入力 — derived from resumeChecklist
+  resumeChecklist?: ResumeChecklistItem[];  // structured resume, max 3
+  handoffMeta?: HandoffMeta;  // session-level context
   checkedActions?: number[];  // checked nextActions indices
+  // Explicitly linked logs (bidirectional backlinks)
+  relatedLogIds?: string[];
   // User-added memo (separate from AI-generated content)
   memo?: string;
   // Workload level (AI-analyzed)
   workloadLevel?: 'high' | 'medium' | 'low';
   // Legacy fields (kept for backward compat with old logs)
+  /** @deprecated Use currentStatus instead. Read-only for backward compatibility. */
   inProgress?: string[];
+  /** @deprecated Use resumeContext instead. Read-only for backward compatibility. */
   resumePoint?: string;
 }
 
@@ -106,6 +121,7 @@ export interface Todo extends Trashable {
   pinned?: boolean;
   archivedAt?: number; // timestamp when archived
   sortOrder?: number;  // manual sort order (lower = higher)
+  snoozedUntil?: number; // timestamp until which the todo is snoozed
 }
 
 export interface WeeklyReport {
@@ -156,15 +172,45 @@ export interface TransformResult {
   tags: string[];
 }
 
+export interface DecisionWithRationale {
+  decision: string;
+  rationale: string | null;
+}
+
+export interface NextActionItem {
+  action: string;
+  whyImportant?: string | null;
+  priorityReason?: string | null;
+  dueBy?: string | null;
+  dependsOn?: string[] | null;
+}
+
+export interface ResumeChecklistItem {
+  action: string;
+  whyNow: string | null;
+  ifSkipped: string | null;
+}
+
+export interface HandoffMeta {
+  sessionFocus: string | null;      // 1文: 今回何を前に進めるべきか
+  whyThisSession: string | null;    // 1文: なぜ今この作業が重要か
+  timePressure: string | null;      // 1文: フェーズ的な時間圧 (dueByとは別)
+}
+
 export interface HandoffResult {
   title: string;
   currentStatus: string[];    // 今どこ？
-  nextActions: string[];      // 次何やる？
+  nextActions: string[];      // 次何やる？ (immediate only, max 4) — derived from nextActionItems
+  nextActionItems?: NextActionItem[];  // immediate only, max 4
+  actionBacklog?: NextActionItem[];    // そのうちやるもの, max 7
   completed: string[];        // 終わったこと
   blockers: string[];         // 注意点・未解決
-  decisions: string[];        // 決定事項
+  decisions: string[];        // 決定事項 (legacy string[] for backward compat)
+  decisionRationales?: DecisionWithRationale[];  // active decisions + 理由, max 6
   constraints: string[];      // 前提・制約
-  resumeContext: string[];    // 再開入力
+  resumeContext: string[];    // 再開入力 — derived from resumeChecklist
+  resumeChecklist?: ResumeChecklistItem[];  // structured resume, max 3
+  handoffMeta?: HandoffMeta;  // session-level context
   tags: string[];
 }
 
@@ -172,6 +218,20 @@ export interface BothResult {
   worklog: TransformResult;
   handoff: HandoffResult;
   classification?: { projectId: string | null; confidence: number };
+}
+
+export interface ProjectContext {
+  projectId: string;
+  projectName: string;
+  overview: string;
+  currentState: string[];
+  keyDecisions: DecisionWithRationale[];
+  constraints: string[];
+  openIssues: string[];
+  nextActions: string[];
+  sourceLogIds: string[];
+  generatedAt: number;
+  lastReviewedAt?: number;
 }
 
 export type FontSize = 'small' | 'medium' | 'large';

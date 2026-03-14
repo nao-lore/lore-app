@@ -1,7 +1,8 @@
-import type { TransformResult, HandoffResult, BothResult } from './types';
+import type { TransformResult, HandoffResult, BothResult, DecisionWithRationale, NextActionItem, ResumeChecklistItem, HandoffMeta, LogEntry } from './types';
 import { getApiKey, getLang } from './storage';
 import { callProvider, callProviderStream } from './provider';
 import type { StreamCallback } from './provider';
+import { normalizeDecisions as normalizeDecisionsUtil } from './utils/decisions';
 
 const SYSTEM_PROMPT = `You extract a factual work log from an AI chat history.
 You are strict and conservative. You only extract what the USER explicitly stated.
@@ -128,14 +129,14 @@ export function filterResolvedBlockers(
   );
 }
 
-function detectLanguage(text: string): 'ja' | 'en' {
+export function detectLanguage(text: string): 'ja' | 'en' {
   const jaPattern = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g;
   const jaMatches = text.match(jaPattern);
   const jaRatio = (jaMatches?.length ?? 0) / text.length;
   return jaRatio > 0.1 ? 'ja' : 'en';
 }
 
-function extractJson(raw: string): string {
+export function extractJson(raw: string): string {
   // 1. Strip markdown code fences (handle ```json ... ``` wrapping)
   let stripped = raw;
   // Remove opening ```json or ``` fence
@@ -227,7 +228,6 @@ export async function transformText(sourceText: string): Promise<TransformResult
   });
 
   try {
-    console.log('RAW AI RESPONSE:', rawText);
     const jsonText = extractJson(rawText);
     const parsed = JSON.parse(jsonText);
     return {
@@ -239,8 +239,7 @@ export async function transformText(sourceText: string): Promise<TransformResult
       tags: parsed.tags || [],
     };
   } catch (error) {
-    console.error('Raw AI response:', rawText);
-    console.error('Parse error:', error);
+    if (import.meta.env.DEV) console.warn('[Transform] Parse error:', error);
     throw new Error('[Parse Error] AI response was not valid JSON. Check console for details.');
   }
 }
@@ -259,13 +258,19 @@ Output format: ONLY valid JSON. No markdown. No code fences. No explanation.
 Schema:
 {
   "title": "string",
+  "handoffMeta": {
+    "sessionFocus": "string or null",
+    "whyThisSession": "string or null",
+    "timePressure": "string or null"
+  },
   "currentStatus": ["string"],
-  "nextActions": ["string"],
+  "resumeChecklist": [{"action": "string", "whyNow": "string (REQUIRED)", "ifSkipped": "string (REQUIRED)"}],
+  "nextActions": [{"action": "string", "whyImportant": "string (infer from context)", "priorityReason": "string or null", "dueBy": "string or null", "dependsOn": ["string"] or null}],
+  "actionBacklog": [{"action": "string", "whyImportant": "string (why in backlog?)", "priorityReason": "string or null", "dueBy": "string or null", "dependsOn": ["string"] or null}],
   "completed": ["string"],
   "blockers": ["string"],
-  "decisions": ["string"],
+  "decisions": [{"decision": "string", "rationale": "string (infer if not stated)"}],
   "constraints": ["string"],
-  "resumeContext": "string",
   "tags": ["string"]
 }
 
@@ -288,60 +293,58 @@ CURRENT STATUS (今どこ？): Describe the PROJECT STATE right now — at this 
   - GOOD: "検索機能は動作中。フィルタUIは未実装。"
   - GOOD: "chunkEngine.tsのmerge処理は安定動作。resumeContext生成は未対応。"
 
-NEXT ACTIONS (次何やる？): Concrete tasks to do NEXT on resume, in priority order. ONLY future actions. Target: 1-4 bullets.
-  - Each item MUST follow the format: "VERB + FILE/FUNCTION NAME + SPECIFIC CHANGE".
-  - ONLY executable actions go here. Risks/concerns → blockers. Constraints/scope → constraints.
-  - ABSOLUTELY FORBIDDEN: "続きを進める", "着手する", "開始する", "Continue working", "Start on", "Proceed with"
-  - BAD: "Continue working on the feature" → NOT EXECUTABLE
-  - BAD: "Improve the UI" → VAGUE
-  - BAD: "Claude APIが不安定な点に注意" → THIS IS A CAUTION → goes to blockers
-  - BAD: "SPA構成を維持する" → THIS IS A CONSTRAINT → goes to constraints
-  - GOOD: "chunkEngine.tsのmergeResults()をフィールドごとに優先度を変えるよう修正する"
-  - GOOD: "Wire parseConversationJson() into Workspace.tsx readFileContent() and update file input accept attribute"
+HANDOFF META: Session-level context for the next person/AI resuming work. These fields are CRITICAL for the reader to understand context. Fill all three whenever possible.
+  - "sessionFocus": 1 sentence. What was this session trying to advance? Infer from the main topics discussed. null only if the session had no coherent focus (very rare).
+  - "whyThisSession": 1 sentence. Why is this work important right now? Infer from context — what larger goal, phase, or dependency makes this session matter? null only if truly unknowable.
+  - "timePressure": 1 sentence. Phase-level urgency, NOT a deadline.
+    GOOD: "ベータユーザー獲得が最優先フェーズ", "公開前に導線確定が必要", "次回テスト前にこの修正が必要"
+    FORBIDDEN: vague words alone ("急ぎ", "重要", "urgent"). Must state WHAT creates the pressure.
+    INFERENCE ALLOWED: If the chat mentions "今週中に", "早めに", "〜の前に" etc., convert to a concrete phase statement. Example: "早めにやりたい" + context about launch → "ローンチ前にこの機能が必要".
+    null ONLY if no time pressure is mentioned or inferable at all.
 
-COMPLETED (終わったこと): What was ACTUALLY IMPLEMENTED, CHANGED, or FIXED during this conversation. MANDATORY — always output this section. Target: 2-6 bullets.
-  - This is the ONLY place for completed work. Any action described with "〜済み", "〜した", "〜修正した", "〜実装した", "〜追加した", "fixed", "added", "implemented", "updated", "created" MUST go here. Do NOT discard completed items — capture them all.
-  - FORBIDDEN: "〜を決定した", "〜を確認した", "〜を特定した", "〜を検討した", "identified", "confirmed", "decided", "investigated", "reviewed" — these are not deliverables.
-  - BAD: "バグを特定した" → INVESTIGATION IS NOT COMPLETION
-  - BAD: "Reviewed the PR" → REVIEW IS NOT A DELIVERABLE
-  - GOOD: "Workspaceのstate更新漏れを修正し、保存後にdetailビューへ遷移するようにした"
-  - GOOD: "Added try-catch to all clipboard.writeText() calls in Workspace.tsx, MasterNoteView.tsx, ProjectHomeView.tsx"
+RESUME CHECKLIST (再開チェックリスト): What to check, verify, or decide FIRST when resuming. Max 3 items.
+  - NOT a copy of nextActions. This is about "confirm → decide" entry points.
+  - Allowed verbs: confirm, verify, check, decide, fix, review — not just "確認する".
+  - Each item MUST be an object with "action", "whyNow", and "ifSkipped".
+  - "whyNow": MANDATORY — never null. Why this check/action is the first thing to do. Infer from context: what downstream task depends on this? What decision is waiting on this?
+  - "ifSkipped": MANDATORY — never null. What specific failure, delay, or wrong decision happens if skipped. Be concrete: name the downstream task or decision that breaks.
+  - GOOD: {"action": "Xアカウントのシャドーバン状態を確認する", "whyNow": "LP公開後の集客導線判断に直結するため", "ifSkipped": "DM送信方針と流入導線の判断がブレる"}
+  - BAD: {"action": "テスト実行", "whyNow": null, "ifSkipped": null} — whyNow/ifSkipped must never be null
 
-BLOCKERS (注意・リスク): Risks, concerns, gotchas, known bugs, edge cases that could trip you up. Things the next person should be WARNED about. Target: 0-3 bullets.
-  - This is for CAUTIONS and RISKS — not for constraints or next actions.
-  - EXCLUDE issues that were RESOLVED or FIXED during the conversation. Only include what is STILL a risk at the END.
-  - BAD: "SPA-only構成を維持する" → THIS IS A CONSTRAINT → goes to constraints
-  - BAD: "検索UIにフィルタ機能を追加する" → THIS IS A NEXT ACTION → goes to nextActions
-  - GOOD: "Claude APIのレート制限が頻発しており、大量変換時にタイムアウトする可能性あり"
-  - GOOD: "localStorage quota may be exceeded if user stores 500+ logs with large memo fields"
+NEXT ACTIONS (次何やる？ — immediate only, max 4): Tasks that MUST be done now or the next decision/task is blocked.
+  - Selection criteria: this task is a prerequisite for other work, an input to a pending decision, or unblocks a blocker.
+  - Each item MUST be an object with "action", "whyImportant", "priorityReason", "dueBy", and "dependsOn" fields.
+  - "action": "VERB + FILE/FUNCTION NAME + SPECIFIC CHANGE".
+  - "whyImportant": Infer from chat context. A task listed as next action always has a reason — state it. What work depends on this? What breaks without it? null ONLY if truly no context exists (rare).
+  - "priorityReason": Why NOW or before others. Infer from ordering, dependencies, or conversation flow. null only if all tasks are equally urgent with no ordering signal.
+  - "dueBy": Only explicit deadlines. null if not stated.
+  - "dependsOn": Only explicit dependencies. null if none.
+  - Tasks that are important but NOT blocking → actionBacklog.
+  - ABSOLUTELY FORBIDDEN: "続きを進める", "着手する", "Continue working"
+  - Max 4 items. If more exist, move non-blocking items to actionBacklog.
 
-DECISIONS (決定事項): ONLY technical judgments, architecture choices, and policy changes that constrain future work. Target: 0-5 bullets.
-  - ONE decision per bullet. NEVER combine multiple decisions into a single item.
-  - ONLY keep: technology choices, architecture decisions, design direction changes, feature scope decisions.
-  - FORBIDDEN: task-level content ("AをBに修正した" → goes to completed), URLs, specific post content, concrete text passages, implementation details.
-  - Finality markers (EN): "decided", "will go with", "fixed on", "confirmed", "settled on"
-  - Finality markers (JA): "に決めた", "でいく", "を固定する", "にする", "で確定"
-  - Ambiguous agreement is NOT a decision.
-  - BAD: "LPのBYOK記述を削除した" → TASK-LEVEL → goes to completed
-  - BAD: "https://example.com/path を参考にした" → URL → exclude
-  - GOOD: "Gemini APIを内蔵し、BYOKオプションは提供しない方針に決定"
-  - GOOD: "SPA構成を維持、バックエンド不使用"
+ACTION BACKLOG (そのうちやるもの, max 7): Important tasks needed soon but NOT the immediate resume starting point.
+  - Same object format as nextActions. whyImportant should be filled — why is this task in the backlog at all?
+  - Selection criteria: needed within next 1-3 sessions, but won't block today's work if deferred.
+  - Max 7 items. If more exist, prioritize by importance and drop the rest.
+  - FORBIDDEN: listing 20+ items. This is a curated backlog, not a full task dump.
 
-CONSTRAINTS (前提・制約): Stable, ongoing constraints that do NOT change between sessions. Technology stack, budget, architecture decisions, scope boundaries. Target: 0-3 bullets.
-  - This is for FIXED RULES that persist — not for risks (→ blockers) or tasks (→ nextActions).
-  - Include explicit "do NOT" instructions if the user stated them.
-  - BAD: "Focus on quality" → MEANINGLESS
-  - BAD: "Claude APIが不安定" → THIS IS A RISK → goes to blockers
-  - GOOD: "No backend/auth/payments — SPA-only for now"
-  - GOOD: "React + Vite + TypeScript構成。外部DB不使用、localStorage永続化"
+COMPLETED (終わったこと): MANDATORY. All completed work. Target: 2-6 bullets.
+  - Any action with "〜済み", "〜した", "fixed", "added", "implemented" MUST go here.
+  - FORBIDDEN: "確認した", "特定した", "reviewed" — not deliverables.
 
-RESUME CONTEXT (再開入力): A short checklist of what to do next. MAX 3 items. Each item starts with a VERB and is one concrete sentence.
-  - Format: one task per line, each starting with a verb (「追加する」「修正する」「実装する」 / "Add", "Fix", "Implement").
-  - MUST include file names and function names where applicable.
-  - BAD: "Check the codebase" → USELESS
-  - BAD: long paragraph summarizing everything → TOO VERBOSE
-  - BAD: more than 3 items → TOO MANY
-  - GOOD: "chunkEngine.tsのlocalMerge()にresumeContextフォールバック処理を追加する\nWorkspace.tsxのHandoffResultDisplayでボタンを1つに統合する\nnpm run buildで型エラーがないか確認する"
+BLOCKERS (注意・リスク): Risks, concerns, gotchas still unresolved at END. 0-3 bullets.
+  - NOT constraints. NOT tasks. EXCLUDE resolved issues.
+
+DECISIONS (決定事項 — active only, max 6): ONLY decisions that STILL constrain future work.
+  - Each MUST be {"decision": "string", "rationale": "string or null"}.
+  - EXCLUDE: completed/overturned decisions, task-level content, URLs.
+  - rationale: extract if stated. If not stated explicitly, infer from context (what was the alternative? what problem did this solve?). null only if no context exists at all.
+  - Finality markers (EN): "decided", "will go with", "settled on"
+  - Finality markers (JA): "に決めた", "でいく", "にする", "で確定"
+
+CONSTRAINTS (前提・制約): Stable rules that persist. 0-3 bullets.
+  - NOT risks (→ blockers). NOT tasks (→ nextActions/actionBacklog).
 
 TAGS rules:
 - Generate two types:
@@ -355,6 +358,156 @@ OUTPUT LANGUAGE RULE:
 - Japanese input → output in Japanese. BUT keep file names (chunkEngine.ts), code identifiers (currentStatus, parseConversationJson), API names, and technical terms (API, JSON, chunk, retry) in English.
 - English input → output in English.
 - Style: Japanese sentences with English technical terms inline. Example: "Workspace.tsx のerror handling を修正済み。rate limit時のretry loopが安定動作する。"`;
+
+/**
+ * Normalize decisions from AI response: handles both new object format and legacy string format.
+ * Returns both legacy `decisions: string[]` and new `decisionRationales` array.
+ */
+function normalizeDecisions(raw: unknown[]): {
+  decisions: string[];
+  decisionRationales: DecisionWithRationale[];
+} {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return { decisions: [], decisionRationales: [] };
+  }
+  // Check if first element is an object (new format)
+  if (typeof raw[0] === 'object' && raw[0] !== null && 'decision' in raw[0]) {
+    const decisionRationales: DecisionWithRationale[] = raw.map((item: unknown) => {
+      const obj = item as Record<string, unknown>;
+      return {
+        decision: String(obj.decision || ''),
+        rationale: typeof obj.rationale === 'string' ? obj.rationale : null,
+      };
+    }).filter(dr => dr.decision.trim());
+    const decisions = decisionRationales.map(dr => dr.decision);
+    return { decisions, decisionRationales };
+  }
+  // Legacy string format fallback
+  const decisions = raw.map(s => String(s)).filter(s => s.trim());
+  const decisionRationales = decisions.map(d => ({ decision: d, rationale: null }));
+  return { decisions, decisionRationales };
+}
+
+/**
+ * Normalize nextActions from AI response: handles both new object format and legacy string format.
+ * Returns both legacy `nextActions: string[]` and new `nextActionItems` array.
+ * Both arrays are always the same length and order, with nextActions[i] === nextActionItems[i].action.
+ */
+export function normalizeNextActions(raw: unknown[]): {
+  nextActions: string[];
+  nextActionItems: NextActionItem[];
+} {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return { nextActions: [], nextActionItems: [] };
+  }
+  // Check if first element is an object with `action` field (new format)
+  if (typeof raw[0] === 'object' && raw[0] !== null && 'action' in raw[0]) {
+    const nextActionItems: NextActionItem[] = raw.map((item: unknown) => {
+      const obj = item as Record<string, unknown>;
+      const depRaw = obj.dependsOn;
+      const dependsOn = Array.isArray(depRaw)
+        ? depRaw.filter((d): d is string => typeof d === 'string' && d.trim() !== '')
+        : null;
+      return {
+        action: String(obj.action || ''),
+        whyImportant: typeof obj.whyImportant === 'string' ? obj.whyImportant : null,
+        priorityReason: typeof obj.priorityReason === 'string' ? obj.priorityReason : null,
+        dueBy: typeof obj.dueBy === 'string' ? obj.dueBy : null,
+        dependsOn: dependsOn && dependsOn.length > 0 ? dependsOn : null,
+      };
+    }).filter(nai => nai.action.trim());
+    const nextActions = nextActionItems.map(nai => nai.action);
+    return { nextActions, nextActionItems };
+  }
+  // Legacy string format fallback
+  const nextActions = raw.map(s => String(s)).filter(s => s.trim());
+  const nextActionItems = nextActions.map(a => ({ action: a, whyImportant: null, priorityReason: null, dueBy: null, dependsOn: null }));
+  return { nextActions, nextActionItems };
+}
+
+/**
+ * Normalize resumeChecklist from AI response.
+ * Handles both new object format and legacy string format.
+ */
+export function normalizeResumeChecklist(raw: unknown): ResumeChecklistItem[] {
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  let items: ResumeChecklistItem[];
+  if (typeof raw[0] === 'object' && raw[0] !== null && 'action' in raw[0]) {
+    items = raw.map((item: unknown) => {
+      const obj = item as Record<string, unknown>;
+      return {
+        action: String(obj.action || ''),
+        whyNow: typeof obj.whyNow === 'string' ? obj.whyNow : null,
+        ifSkipped: typeof obj.ifSkipped === 'string' ? obj.ifSkipped : null,
+      };
+    }).filter(r => r.action.trim());
+  } else {
+    // Legacy string[] fallback
+    items = raw
+      .map(s => String(s)).filter(s => s.trim())
+      .map(s => ({ action: s, whyNow: null, ifSkipped: null }));
+  }
+  // Hard cap: max 3 items
+  return items.slice(0, 3);
+}
+
+/** Normalize handoffMeta from AI response. */
+export function normalizeHandoffMeta(raw: unknown): HandoffMeta {
+  const defaults: HandoffMeta = { sessionFocus: null, whyThisSession: null, timePressure: null };
+  if (!raw || typeof raw !== 'object') return defaults;
+  const obj = raw as Record<string, unknown>;
+  return {
+    sessionFocus: typeof obj.sessionFocus === 'string' && obj.sessionFocus.trim() ? obj.sessionFocus : null,
+    whyThisSession: typeof obj.whyThisSession === 'string' && obj.whyThisSession.trim() ? obj.whyThisSession : null,
+    timePressure: typeof obj.timePressure === 'string' && obj.timePressure.trim() ? obj.timePressure : null,
+  };
+}
+
+/** Normalize actionBacklog — same shape as nextActionItems but capped at 7. */
+export function normalizeActionBacklog(raw: unknown): NextActionItem[] {
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  const { nextActionItems } = normalizeNextActions(raw);
+  return nextActionItems.slice(0, 7);
+}
+
+/**
+ * Build a LogEntry from HandoffResult + context.
+ * Centralizes field assembly so Workspace.tsx only triggers save.
+ */
+export function buildHandoffLogEntry(
+  result: HandoffResult,
+  opts: {
+    projectId?: string;
+    sourceReference?: LogEntry['sourceReference'];
+  },
+): LogEntry {
+  const { decisions, decisionRationales } = normalizeDecisionsUtil(result.decisionRationales, result.decisions);
+  return {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    importedAt: new Date().toISOString(),
+    title: result.title,
+    projectId: opts.projectId,
+    sourceReference: opts.sourceReference,
+    outputMode: 'handoff',
+    today: [],
+    decisions,
+    decisionRationales,
+    todo: [],
+    relatedProjects: [],
+    tags: result.tags || [],
+    currentStatus: result.currentStatus || [],
+    nextActions: result.nextActions,
+    nextActionItems: result.nextActionItems,
+    actionBacklog: result.actionBacklog,
+    completed: result.completed || [],
+    blockers: result.blockers || [],
+    constraints: result.constraints || [],
+    resumeContext: result.resumeContext,
+    resumeChecklist: result.resumeChecklist,
+    handoffMeta: result.handoffMeta,
+  };
+}
 
 export async function transformHandoff(sourceText: string): Promise<HandoffResult> {
   const apiKey = getApiKey();
@@ -375,27 +528,52 @@ export async function transformHandoff(sourceText: string): Promise<HandoffResul
   });
 
   try {
-    console.log('RAW AI RESPONSE:', rawText);
     const jsonText = extractJson(rawText);
     const parsed = JSON.parse(jsonText);
     const completed = parsed.completed || [];
-    const decisions = parsed.decisions || [];
+    const rawDecisions = parsed.decisions || [];
+    const { decisions, decisionRationales } = normalizeDecisions(rawDecisions);
+    const rawNextActions = parsed.nextActions || [];
+    let { nextActions, nextActionItems } = normalizeNextActions(rawNextActions);
+    const resumeChecklist = normalizeResumeChecklist(parsed.resumeChecklist);
+    let actionBacklog = normalizeActionBacklog(parsed.actionBacklog);
+    const handoffMeta = normalizeHandoffMeta(parsed.handoffMeta);
+    if (import.meta.env.DEV) {
+      console.log('[Handoff Debug] raw resumeChecklist:', JSON.stringify(parsed.resumeChecklist));
+      console.log('[Handoff Debug] normalized resumeChecklist:', JSON.stringify(resumeChecklist));
+      console.log('[Handoff Debug] raw handoffMeta:', JSON.stringify(parsed.handoffMeta));
+      console.log('[Handoff Debug] normalized handoffMeta:', JSON.stringify(handoffMeta));
+      console.log('[Handoff Debug] nextActionItems count:', nextActionItems.length, 'actionBacklog count:', actionBacklog.length);
+    }
+    // Enforce max 4 nextActions — overflow goes to actionBacklog
+    if (nextActionItems.length > 4) {
+      const overflow = nextActionItems.slice(4);
+      nextActionItems = nextActionItems.slice(0, 4);
+      nextActions = nextActionItems.map(i => i.action);
+      actionBacklog = [...overflow, ...actionBacklog].slice(0, 7);
+    }
     return {
       title: parsed.title || 'Untitled',
+      handoffMeta,
       currentStatus: parsed.currentStatus || [],
-      nextActions: parsed.nextActions || [],
+      resumeChecklist,
+      resumeContext: resumeChecklist.length > 0
+        ? resumeChecklist.map(r => r.action)
+        : (typeof parsed.resumeContext === 'string'
+          ? (parsed.resumeContext.trim() ? [parsed.resumeContext.trim()] : [])
+          : (parsed.resumeContext || [])),
+      nextActions,
+      nextActionItems,
+      actionBacklog: actionBacklog.length > 0 ? actionBacklog : undefined,
       completed,
       blockers: filterResolvedBlockers(parsed.blockers || [], completed, decisions),
       decisions,
+      decisionRationales,
       constraints: parsed.constraints || [],
-      resumeContext: typeof parsed.resumeContext === 'string'
-        ? (parsed.resumeContext.trim() ? [parsed.resumeContext.trim()] : [])
-        : (parsed.resumeContext || []),
       tags: parsed.tags || [],
     };
   } catch (error) {
-    console.error('Raw AI response:', rawText);
-    console.error('Parse error:', error);
+    if (import.meta.env.DEV) console.warn('[Transform] Parse error:', error);
     throw new Error('[Parse Error] AI response was not valid JSON. Check console for details.');
   }
 }
@@ -419,13 +597,15 @@ Schema:
   },
   "handoff": {
     "title": "string",
+    "handoffMeta": {"sessionFocus": "string or null", "whyThisSession": "string or null", "timePressure": "string or null"},
     "currentStatus": ["string"],
-    "nextActions": ["string"],
+    "resumeChecklist": [{"action": "string", "whyNow": "string (REQUIRED)", "ifSkipped": "string (REQUIRED)"}],
+    "nextActions": [{"action": "string", "whyImportant": "string (infer from context)", "priorityReason": "string or null", "dueBy": "string or null", "dependsOn": ["string"] or null}],
+    "actionBacklog": [{"action": "string", "whyImportant": "string (why in backlog?)", "priorityReason": "string or null", "dueBy": "string or null", "dependsOn": ["string"] or null}],
     "completed": ["string"],
     "blockers": ["string"],
-    "decisions": ["string"],
+    "decisions": [{"decision": "string", "rationale": "string (infer if not stated)"}],
     "constraints": ["string"],
-    "resumeContext": "string",
     "tags": ["string"]
   },
   "classification": {
@@ -445,13 +625,15 @@ TAGS: 4-7 tags. ALL tags MUST be in Japanese. Category (開発, UI, バグ修正
 === HANDOFF RULES ===
 This is a RESTART MEMO — a cockpit checklist for resuming work, NOT a report.
 TITLE: Same as worklog title (reuse).
-CURRENT STATUS (今どこ？): PROJECT STATE right now. 3-5 bullets. ONLY present-tense — NO completed actions ("〜済み", "〜した", "fixed", "added" → COMPLETED). If a name/setting was changed, output only the LATEST version.
-NEXT ACTIONS (次何やる？): ONLY future tasks. "VERB + FILE/FUNCTION + SPECIFIC CHANGE". FORBIDDEN: "続きを進める", "Continue working". Risks → blockers. Constraints → constraints. 1-4 bullets.
-COMPLETED (終わったこと): MANDATORY — always output. All completed work ("〜済み", "〜した", "fixed", "added", "implemented"). Do NOT discard. FORBIDDEN: "確認した", "特定した", "reviewed". 2-6 bullets.
-BLOCKERS (注意・リスク): Risks, concerns, gotchas, known bugs. NOT constraints (→ constraints), NOT tasks (→ nextActions). Only issues STILL unresolved at end. 0-3 bullets.
-DECISIONS: ONE decision per bullet. ONLY technical judgments, architecture choices, policy changes. No task-level content, no URLs, no specific text passages. Same finality rules as worklog. 0-5 bullets.
-CONSTRAINTS (前提・制約): STABLE, ONGOING constraints (tech stack, budget, scope). NOT risks (→ blockers), NOT tasks (→ nextActions). 0-3 bullets.
-RESUME CONTEXT (再開入力): MAX 3 items, each starting with a VERB. Format: one task per line. "chunkEngine.tsのlocalMerge()にフォールバック処理を追加する\nWorkspace.tsxのボタンを統合する". Must include file/function names.
+HANDOFF META: sessionFocus (1 sentence: what to move forward), whyThisSession (1 sentence: why this matters now — infer from context), timePressure (1 sentence: phase-level urgency; FORBIDDEN: vague "急ぎ"/"重要" alone — must state WHAT creates pressure; INFERENCE ALLOWED: convert weak expressions like "今週中に"/"早めに" into concrete phase statements using context; null ONLY if no pressure mentioned or inferable).
+CURRENT STATUS (今どこ？): PROJECT STATE right now. 3-5 bullets. ONLY present-tense — NO completed actions → COMPLETED.
+RESUME CHECKLIST (max 3): What to check/verify/decide FIRST when resuming. Each {"action":"string","whyNow":"string","ifSkipped":"string"}. whyNow and ifSkipped are MANDATORY — NEVER null. Infer from context: what downstream task depends on this? What breaks if skipped? NOT a copy of nextActions.
+NEXT ACTIONS (immediate only, max 4): Tasks that MUST be done now or next work is blocked. Same object format. whyImportant: infer from context (what depends on this?), null only if truly no context. priorityReason: infer ordering signal. Non-blocking tasks → actionBacklog.
+ACTION BACKLOG (max 7): Important but not immediately blocking. Same object format. whyImportant: why is this in the backlog? FORBIDDEN: 20+ items.
+COMPLETED (終わったこと): MANDATORY. All completed work. 2-6 bullets. FORBIDDEN: "確認した", "特定した".
+BLOCKERS: Risks still unresolved at end. 0-3 bullets.
+DECISIONS (active only, max 6): Only decisions still constraining future work. Each {"decision":"string","rationale":"string or null"}. rationale: extract if stated; infer from context if not (what was the alternative?). EXCLUDE completed/overturned decisions.
+CONSTRAINTS: Stable rules. 0-3 bullets.
 TAGS: Can reuse worklog tags.
 
 === CLASSIFICATION RULES ===
@@ -537,7 +719,6 @@ export async function transformTodoOnly(sourceText: string): Promise<TodoOnlyRes
   });
 
   try {
-    console.log('RAW AI RESPONSE (todo_only):', rawText);
     const jsonText = extractJson(rawText);
     const parsed = JSON.parse(jsonText);
     const todos: TodoOnlyItem[] = (parsed.todos || []).map((t: Record<string, unknown>) => ({
@@ -547,8 +728,7 @@ export async function transformTodoOnly(sourceText: string): Promise<TodoOnlyRes
     })).filter((t: TodoOnlyItem) => t.title.trim());
     return { todos };
   } catch (error) {
-    console.error('Raw AI response:', rawText);
-    console.error('Parse error:', error);
+    if (import.meta.env.DEV) console.warn('[Transform] Parse error:', error);
     throw new Error('[Parse Error] AI response was not valid JSON. Check console for details.');
   }
 }
@@ -576,7 +756,6 @@ export interface TransformBothOptions {
 
 export async function transformBoth(sourceText: string, opts?: TransformBothOptions): Promise<BothResult> {
   const { onStream, projects } = opts || {};
-  console.time('[transformBoth] total');
   const apiKey = getApiKey();
   if (!apiKey) {
     throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
@@ -591,20 +770,14 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
 
   const userMessage = `${langInstruction}\n\nExtract both a work log AND a restart memo from the following conversation in a single JSON response.${projectsBlock}\n\nCHAT:\n${sourceText}`;
 
-  console.time('[transformBoth] API call');
   const rawText = onStream
     ? await callProviderStream({ apiKey, system: BOTH_PROMPT, userMessage, maxTokens: 8192 }, onStream)
     : await callProvider({ apiKey, system: BOTH_PROMPT, userMessage, maxTokens: 8192 });
-  console.timeEnd('[transformBoth] API call');
 
   try {
-    console.time('[transformBoth] JSON parse');
-    console.log('RAW AI RESPONSE (both):', rawText.slice(0, 500), `(${rawText.length} chars total)`);
     const jsonText = extractJson(rawText);
     const parsed = JSON.parse(jsonText);
-    console.timeEnd('[transformBoth] JSON parse');
 
-    console.time('[transformBoth] build result');
     const w = parsed.worklog || parsed;
     const h = parsed.handoff || parsed;
 
@@ -620,18 +793,45 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
       },
       handoff: (() => {
         const hCompleted = h.completed || [];
-        const hDecisions = h.decisions || [];
+        const rawHDecisions = h.decisions || [];
+        const { decisions: hDecisions, decisionRationales: hDecisionRationales } = normalizeDecisions(rawHDecisions);
+        const rawHNextActions = h.nextActions || [];
+        let { nextActions: hNextActions, nextActionItems: hNextActionItems } = normalizeNextActions(rawHNextActions);
+        const hResumeChecklist = normalizeResumeChecklist(h.resumeChecklist);
+        let hActionBacklog = normalizeActionBacklog(h.actionBacklog);
+        const hHandoffMeta = normalizeHandoffMeta(h.handoffMeta);
+        if (import.meta.env.DEV) {
+          console.log('[Both Handoff Debug] raw resumeChecklist:', JSON.stringify(h.resumeChecklist));
+          console.log('[Both Handoff Debug] normalized resumeChecklist:', JSON.stringify(hResumeChecklist));
+          console.log('[Both Handoff Debug] raw handoffMeta:', JSON.stringify(h.handoffMeta));
+          console.log('[Both Handoff Debug] normalized handoffMeta:', JSON.stringify(hHandoffMeta));
+          console.log('[Both Handoff Debug] nextActionItems count:', hNextActionItems.length, 'actionBacklog count:', hActionBacklog.length);
+        }
+        // Enforce max 4 nextActions — overflow goes to actionBacklog
+        if (hNextActionItems.length > 4) {
+          const overflow = hNextActionItems.slice(4);
+          hNextActionItems = hNextActionItems.slice(0, 4);
+          hNextActions = hNextActionItems.map(i => i.action);
+          hActionBacklog = [...overflow, ...hActionBacklog].slice(0, 7);
+        }
         return {
           title: h.title || w.title || 'Untitled',
+          handoffMeta: hHandoffMeta,
           currentStatus: h.currentStatus || [],
-          nextActions: h.nextActions || [],
+          resumeChecklist: hResumeChecklist,
+          resumeContext: hResumeChecklist.length > 0
+            ? hResumeChecklist.map(r => r.action)
+            : (typeof h.resumeContext === 'string'
+              ? (h.resumeContext.trim() ? [h.resumeContext.trim()] : [])
+              : (h.resumeContext || [])),
+          nextActions: hNextActions,
+          nextActionItems: hNextActionItems,
+          actionBacklog: hActionBacklog.length > 0 ? hActionBacklog : undefined,
           completed: hCompleted,
           blockers: filterResolvedBlockers(h.blockers || [], hCompleted, hDecisions),
           decisions: hDecisions,
+          decisionRationales: hDecisionRationales,
           constraints: h.constraints || [],
-          resumeContext: typeof h.resumeContext === 'string'
-            ? (h.resumeContext.trim() ? [h.resumeContext.trim()] : [])
-            : (h.resumeContext || []),
           tags: h.tags || w.tags || [],
         };
       })(),
@@ -640,13 +840,9 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
         confidence: typeof c.confidence === 'number' ? Math.max(0, Math.min(1, c.confidence)) : 0,
       } : undefined,
     };
-    console.timeEnd('[transformBoth] build result');
-    console.timeEnd('[transformBoth] total');
     return result;
   } catch (error) {
-    console.timeEnd('[transformBoth] total');
-    console.error('Raw AI response:', rawText);
-    console.error('Parse error:', error);
+    if (import.meta.env.DEV) console.warn('[Transform] Parse error:', error);
     throw new Error('[Parse Error] AI response was not valid JSON. Check console for details.');
   }
 }

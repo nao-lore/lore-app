@@ -20,7 +20,7 @@ interface ProjectsViewProps {
   onOpenMasterNote: (projectId: string) => void;
   onRefresh: () => void;
   lang: Lang;
-  showToast?: (msg: string) => void;
+  showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void;
 }
 
 // ─── Project Context Menu (inline dropdown) ───
@@ -29,7 +29,7 @@ function ProjectContextMenu({ project, logCount, lang, onClose, onAction }: {
   logCount: number;
   lang: Lang;
   onClose: () => void;
-  onAction: (action: string) => void;
+  onAction: (action: string, value?: string) => void;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -49,7 +49,7 @@ function ProjectContextMenu({ project, logCount, lang, onClose, onAction }: {
   }, [onClose]);
 
   return (
-    <div ref={menuRef} className="mn-export-dropdown" style={{ top: '100%', right: 0, minWidth: 200 }}>
+    <div ref={menuRef} className="dropdown-menu" style={{ top: '100%', right: 0, minWidth: 200 }}>
       <button className="mn-export-item" onClick={() => { onAction('viewLogs'); onClose(); }}>
         <FolderOpen size={14} />
         <span>{t('projectOpenLogs', lang)}</span>
@@ -105,7 +105,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
   const handleAddProject = () => {
     const name = newProjectName.trim();
     if (!name) {
-      setProjectNameError(lang === 'ja' ? 'プロジェクト名を入力してください' : 'Please enter a project name');
+      setProjectNameError(t('projectNameRequired', lang));
       return;
     }
     setProjectNameError('');
@@ -113,7 +113,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
     setNewProjectName('');
     setAddingProject(false);
     onRefresh();
-    showToast?.(lang === 'ja' ? 'プロジェクトを作成しました' : 'Project created');
+    showToast?.(t('projectCreated', lang), 'success');
   };
 
   const logCountForProject = (projectId: string) => logs.filter((l) => l.projectId === projectId).length;
@@ -125,7 +125,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
         break;
       case 'pin':
         if (!project.pinned && projects.filter((p) => p.pinned).length >= MAX_PINNED_PROJECTS) {
-          showToast?.(t('pinLimitReached', lang));
+          showToast?.(t('pinLimitReached', lang), 'error');
           break;
         }
         updateProject(project.id, { pinned: !project.pinned });
@@ -153,14 +153,14 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
   const handleRenameProject = (id: string) => {
     const name = editName.trim();
     if (!name) {
-      setProjectNameError(lang === 'ja' ? 'プロジェクト名を入力してください' : 'Please enter a project name');
+      setProjectNameError(t('projectNameRequired', lang));
       return;
     }
     setProjectNameError('');
     renameProject(id, name);
     setEditingId(null);
     onRefresh();
-    showToast?.(lang === 'ja' ? '名前を変更しました' : 'Renamed');
+    showToast?.(t('renamed', lang), 'success');
   };
 
   // Filter
@@ -194,7 +194,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
 
   return (
     <div className="workspace-content-wide">
-      <div className="page-header">
+      <div className="page-header page-header-sticky">
         <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
           ← {t('back', lang)}
         </button>
@@ -216,7 +216,8 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={lang === 'ja' ? 'プロジェクトを検索...' : 'Search projects...'}
+          placeholder={t('searchProjects', lang)}
+          maxLength={200}
           style={{ flex: 1, minWidth: 140 }}
         />
         <DropdownMenu
@@ -232,7 +233,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
             onChange={(e) => setHideEmpty(e.target.checked ? 'true' : 'false')}
             style={{ accentColor: 'var(--accent)' }}
           />
-          {lang === 'ja' ? '空のプロジェクトを非表示' : 'Hide empty projects'}
+          {t('hideEmptyProjects', lang)}
         </label>
       </div>
 
@@ -243,20 +244,21 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
             className="input"
             value={newProjectName}
             onChange={(e) => { setNewProjectName(e.target.value); setProjectNameError(''); }}
-            onBlur={() => { if (newProjectName.trim() === '') setProjectNameError(lang === 'ja' ? 'プロジェクト名を入力してください' : 'Please enter a project name'); }}
+            onBlur={() => { if (newProjectName.trim() === '') setProjectNameError(t('projectNameRequired', lang)); }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleAddProject();
               if (e.key === 'Escape') { setAddingProject(false); setNewProjectName(''); setProjectNameError(''); }
             }}
             placeholder={t('projectNamePlaceholder', lang)}
             autoFocus
+            maxLength={200}
             style={{ flex: 1 }}
           />
           <button className="btn btn-primary" onClick={handleAddProject}>
-            {lang === 'ja' ? '追加' : 'Add'}
+            {t('addBtn', lang)}
           </button>
           <button className="btn" onClick={() => { setAddingProject(false); setNewProjectName(''); setProjectNameError(''); }}>
-            {lang === 'ja' ? 'キャンセル' : 'Cancel'}
+            {t('cancel', lang)}
           </button>
           {projectNameError && (
             <p style={{ color: 'var(--error-text)', fontSize: 12, margin: 0, width: '100%' }}>{projectNameError}</p>
@@ -268,7 +270,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
       {sorted.length === 0 ? (
         <div className="empty-state">
           {!query.trim() && <div className="empty-state-icon">&#128194;</div>}
-          <p>{query.trim() ? (lang === 'ja' ? '該当なし' : 'No matches.') : t('noProjects', lang)}</p>
+          <p>{query.trim() ? t('noMatches', lang) : t('noProjects', lang)}</p>
           {!query.trim() && <p className="page-subtitle">{t('noProjectsDesc', lang)}</p>}
           {!query.trim() && (
             <button className="btn btn-primary" onClick={() => setAddingProject(true)}>
@@ -299,7 +301,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
                   <button
                     className="action-menu-btn"
                     onClick={() => setActionSheetProject(actionSheetProject?.id === p.id ? null : p)}
-                    aria-label={lang === 'ja' ? 'メニューを開く' : 'Open menu'}
+                    aria-label={t('ariaMenu', lang)}
                   >
                     <MoreHorizontal size={16} />
                   </button>
@@ -327,6 +329,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
                     }}
                     onClick={(e) => e.stopPropagation()}
                     autoFocus
+                    maxLength={200}
                     style={{ fontSize: 14, minHeight: 0 }}
                   />
                 ) : (
@@ -357,7 +360,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
           description={t('deleteProjectConfirmDesc', lang)}
           confirmLabel={t('confirmDeleteBtn', lang)}
           cancelLabel={t('cancel', lang)}
-          onConfirm={() => { trashProject(confirmTrashProject.id); setConfirmTrashProject(null); onRefresh(); showToast?.(t('moveToTrash', lang)); }}
+          onConfirm={() => { trashProject(confirmTrashProject.id); setConfirmTrashProject(null); onRefresh(); showToast?.(t('moveToTrash', lang), 'success'); }}
           onCancel={() => setConfirmTrashProject(null)}
         />
       )}

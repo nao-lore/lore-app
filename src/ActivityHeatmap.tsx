@@ -6,6 +6,7 @@ import type { Lang } from './i18n';
 interface ActivityHeatmapProps {
   logs: LogEntry[];
   lang: Lang;
+  onDateClick?: (date: string) => void;
 }
 
 const DAY_LABELS_JA = ['月', '火', '水', '木', '金', '土', '日'];
@@ -25,12 +26,14 @@ function getColor(count: number, max: number): string {
   return 'rgba(124, 92, 252, 0.8)';
 }
 
-export default function ActivityHeatmap({ logs, lang }: ActivityHeatmapProps) {
+export default function ActivityHeatmap({ logs, lang, onDateClick }: ActivityHeatmapProps) {
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [hoveredCell, setHoveredCell] = useState<string | null>(null);
 
-  // Build 7 (days) × 24 (hours) grid
-  const { grid, max } = useMemo(() => {
+  // Build 7 (days) × 24 (hours) grid + track most recent date per cell
+  const { grid, max, recentDateMap } = useMemo(() => {
     const g: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
+    const dateMap = new Map<string, string>(); // "dow-hour" → most recent YYYY-MM-DD
     let mx = 0;
     for (const log of logs) {
       const d = new Date(log.createdAt);
@@ -39,8 +42,14 @@ export default function ActivityHeatmap({ logs, lang }: ActivityHeatmapProps) {
       const hour = d.getHours();
       g[dow][hour]++;
       if (g[dow][hour] > mx) mx = g[dow][hour];
+      const cellKey = `${dow}-${hour}`;
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const existing = dateMap.get(cellKey);
+      if (!existing || dateStr > existing) {
+        dateMap.set(cellKey, dateStr);
+      }
     }
-    return { grid: g, max: mx };
+    return { grid: g, max: mx, recentDateMap: dateMap };
   }, [logs]);
 
   if (logs.length === 0) return null;
@@ -83,26 +92,41 @@ export default function ActivityHeatmap({ logs, lang }: ActivityHeatmapProps) {
               </text>
               {Array.from({ length: 24 }, (_, h) => {
                 const count = grid[dow][h];
+                const cellKey = `${dow}-${h}`;
+                const clickable = count > 0 && !!onDateClick;
+                const isHovered = hoveredCell === cellKey && clickable;
                 return (
                   <rect
-                    key={`${dow}-${h}`}
+                    key={cellKey}
                     x={LABEL_W + h * (CELL_SIZE + GAP)}
                     y={LABEL_H + dow * (CELL_SIZE + GAP)}
                     width={CELL_SIZE}
                     height={CELL_SIZE}
                     rx={4}
                     fill={getColor(count, max)}
-                    style={{ cursor: count > 0 ? 'pointer' : 'default', transition: 'fill 0.15s' }}
+                    stroke={isHovered ? 'rgba(124, 92, 252, 0.7)' : 'transparent'}
+                    strokeWidth={isHovered ? 2 : 0}
+                    opacity={isHovered ? 0.8 : 1}
+                    style={{ cursor: clickable ? 'pointer' : 'default', transition: 'fill 0.15s, opacity 0.15s, stroke 0.15s' }}
                     onMouseEnter={(e) => {
+                      setHoveredCell(cellKey);
                       const rect = (e.target as SVGRectElement).getBoundingClientRect();
-                      const parent = (e.target as SVGRectElement).closest('div')!.getBoundingClientRect();
+                      const parentEl = (e.target as SVGRectElement).closest('div');
+                      if (!parentEl) return;
+                      const parent = parentEl.getBoundingClientRect();
                       setTooltip({
                         x: rect.left - parent.left + CELL_SIZE / 2,
                         y: rect.top - parent.top - 8,
                         text: tf('heatmapTooltip', lang, count),
                       });
                     }}
-                    onMouseLeave={() => setTooltip(null)}
+                    onMouseLeave={() => { setTooltip(null); setHoveredCell(null); }}
+                    onClick={() => {
+                      if (clickable) {
+                        const date = recentDateMap.get(cellKey);
+                        if (date) onDateClick(date);
+                      }
+                    }}
                   />
                 );
               })}

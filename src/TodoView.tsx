@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { usePersistedState } from './usePersistedState';
-import { CheckSquare, Square, MoreHorizontal, MoreVertical, Star, Edit3, Trash2, Flag, Calendar, ExternalLink, Pin, Check, Undo2, Archive, ArchiveRestore, CheckCheck, GripVertical, AlertTriangle, Copy } from 'lucide-react';
+import { CheckSquare, Square, MoreHorizontal, MoreVertical, Star, Edit3, Trash2, Flag, Calendar, ExternalLink, Pin, Check, Undo2, Archive, ArchiveRestore, CheckCheck, GripVertical, AlertTriangle, Copy, Clock } from 'lucide-react';
 import type { Todo, LogEntry } from './types';
-import { loadTodos, loadArchivedTodos, updateTodo, addManualTodo, trashTodo, trashCompletedTodos, archiveTodo, unarchiveTodo, bulkUpdateTodos, bulkTrashTodos, reorderTodos } from './storage';
+import { loadTodos, loadArchivedTodos, updateTodo, addManualTodo, trashTodo, trashCompletedTodos, archiveTodo, unarchiveTodo, bulkUpdateTodos, bulkTrashTodos, reorderTodos, snoozeTodo } from './storage';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import DropdownMenu from './DropdownMenu';
@@ -62,7 +62,7 @@ function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
   onClose: () => void;
   onAction: (action: string, value?: string) => void;
 }) {
-  const [subMenu, setSubMenu] = useState<'priority' | 'due' | null>(null);
+  const [subMenu, setSubMenu] = useState<'priority' | 'due' | 'snooze' | null>(null);
   const [dueValue, setDueValue] = useState(todo.dueDate || '');
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -146,7 +146,7 @@ function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
                 style={{ flex: 1 }}
               />
               <button className="btn btn-primary" onClick={() => { onAction('due', dueValue); onClose(); }}>
-                {lang === 'ja' ? '設定' : 'Set'}
+                {t('todoDueSet', lang)}
               </button>
             </div>
             {todo.dueDate && (
@@ -155,7 +155,49 @@ function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
                 style={{ marginTop: 8, fontSize: 13, color: 'var(--error-text)' }}
                 onClick={() => { onAction('due', ''); onClose(); }}
               >
-                {lang === 'ja' ? '期限を削除' : 'Remove due date'}
+                {t('todoDueRemove', lang)}
+              </button>
+            )}
+          </div>
+          <button className="action-sheet-cancel" onClick={() => setSubMenu(null)}>
+            {t('back', lang)}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (subMenu === 'snooze') {
+    const snoozeOptions = [
+      { label: t('snooze1Day', lang), ms: 1 * 24 * 60 * 60 * 1000 },
+      { label: t('snooze3Days', lang), ms: 3 * 24 * 60 * 60 * 1000 },
+      { label: t('snooze1Week', lang), ms: 7 * 24 * 60 * 60 * 1000 },
+    ];
+    return (
+      <div className="action-sheet-overlay" onClick={onClose}>
+        <div className="action-sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="action-sheet-handle" />
+          <div className="action-sheet-header">
+            <div className="action-sheet-header-title">{t('snooze', lang)}</div>
+          </div>
+          <div className="action-sheet-group">
+            {snoozeOptions.map((opt) => (
+              <button
+                key={opt.ms}
+                className="action-sheet-item"
+                onClick={() => { onAction('snooze', String(Date.now() + opt.ms)); onClose(); }}
+              >
+                <span className="action-sheet-icon"><Clock size={18} /></span>
+                <span>{opt.label}</span>
+              </button>
+            ))}
+            {todo.snoozedUntil && (
+              <button
+                className="action-sheet-item"
+                onClick={() => { onAction('snooze', '0'); onClose(); }}
+              >
+                <span className="action-sheet-icon"><Undo2 size={18} /></span>
+                <span>{t('cancel', lang)}</span>
               </button>
             )}
           </div>
@@ -217,6 +259,19 @@ function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
             )}
           </button>
 
+          {/* Snooze */}
+          <button className="action-sheet-item" onClick={() => setSubMenu('snooze')}>
+            <span className="action-sheet-icon">
+              <Clock size={18} />
+            </span>
+            <span>{t('snooze', lang)}</span>
+            {todo.snoozedUntil && todo.snoozedUntil > Date.now() && (
+              <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
+                {t('snoozed', lang)}
+              </span>
+            )}
+          </button>
+
           <div className="action-sheet-divider" />
 
           {/* Edit */}
@@ -257,7 +312,7 @@ function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
         </div>
 
         <button className="action-sheet-cancel" onClick={onClose}>
-          {lang === 'ja' ? 'キャンセル' : 'Cancel'}
+          {t('cancel', lang)}
         </button>
       </div>
     </div>
@@ -314,6 +369,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
 
   const [staleFilter, setStaleFilter] = useState(false);
   const [dueFilter, setDueFilter] = useState<'all' | 'today' | 'week' | 'overdue'>('all');
+  const [showSnoozed, setShowSnoozed] = useState(false);
   const TODO_PAGE_SIZE = 50;
   const [todoVisibleCount, setTodoVisibleCount] = useState(TODO_PAGE_SIZE);
 
@@ -345,7 +401,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
   const handleToggle = (id: string, done: boolean) => {
     updateTodo(id, { done: !done });
     refresh();
-    showToast?.(!done ? t('todoMarkDone', lang) : t('todoMarkUndone', lang));
+    showToast?.(!done ? t('todoMarkDone', lang) : t('todoMarkUndone', lang), 'success');
   };
 
   const handleAction = (todo: Todo, action: string, value?: string) => {
@@ -363,9 +419,9 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
         updateTodo(todo.id, { dueDate: value || undefined });
         break;
       case 'edit': {
-        const newText = prompt(t('todoEditPrompt', lang), todo.text);
-        if (newText && newText.trim() && newText.trim() !== todo.text) {
-          updateTodo(todo.id, { text: newText.trim() });
+        const editedText = prompt(t('todoEditPrompt', lang), todo.text);
+        if (editedText && editedText.trim() && editedText.trim() !== todo.text) {
+          updateTodo(todo.id, { text: editedText.trim() });
         }
         break;
       }
@@ -379,9 +435,17 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
           archiveTodo(todo.id);
         }
         break;
+      case 'snooze': {
+        const until = value ? Number(value) : 0;
+        snoozeTodo(todo.id, until || 0);
+        if (until > 0) {
+          showToast?.(t('snoozed', lang), 'success');
+        }
+        break;
+      }
       case 'delete':
         trashTodo(todo.id);
-        showToast?.(t('moveToTrash', lang));
+        showToast?.(t('moveToTrash', lang), 'success');
         break;
     }
     refresh();
@@ -389,7 +453,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
 
   const handleAdd = () => {
     if (!newText.trim()) {
-      setTodoError(lang === 'ja' ? 'TODOの内容を入力してください' : 'Please enter TODO content');
+      setTodoError(t('todoInputRequired', lang));
       return;
     }
     setTodoError('');
@@ -401,7 +465,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
     setNewPriority('');
     setNewDueDate('');
     refresh();
-    showToast?.(t('todoAdd', lang));
+    showToast?.(t('todoAdd', lang), 'success');
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
@@ -422,10 +486,14 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
     }
   };
 
+  const now = Date.now();
+  const isSnoozedNow = (td: Todo) => !!(td.snoozedUntil && td.snoozedUntil > now);
   const pending = todos.filter((td) => !td.done);
   const completed = todos.filter((td) => td.done);
   const staleTodos = pending.filter(isStaleTodo);
-  const baseDisplayed = activeTab === 'archived' ? archivedTodos : activeTab === 'completed' ? completed : pending;
+  const snoozedCount = pending.filter(isSnoozedNow).length;
+  const basePending = showSnoozed ? pending : pending.filter((td) => !isSnoozedNow(td));
+  const baseDisplayed = activeTab === 'archived' ? archivedTodos : activeTab === 'completed' ? completed : basePending;
   const afterStaleFilter = staleFilter && activeTab === 'pending' ? baseDisplayed.filter(isStaleTodo) : baseDisplayed;
   const displayed = activeTab === 'pending' && dueFilter !== 'all'
     ? afterStaleFilter.filter((td) => {
@@ -639,7 +707,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
       >
         {/* Drag handle */}
         {dragEnabled && handleProps && (
-          <div {...handleProps} style={{ flexShrink: 0, marginTop: 2, cursor: 'grab', color: 'var(--text-placeholder)', touchAction: 'none' }}>
+          <div {...handleProps} style={{ flexShrink: 0, marginTop: 2, cursor: todo.done ? 'default' : 'grab', color: 'var(--text-placeholder)', touchAction: 'none', opacity: todo.done ? 0.3 : 1, pointerEvents: todo.done ? 'none' : 'auto' }}>
             <GripVertical size={16} />
           </div>
         )}
@@ -654,8 +722,9 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
         ) : (
           /* Checkbox — only this toggles done */
           <div
+            className="check-pop-target"
             onClick={() => handleToggle(todo.id, todo.done)}
-            style={{ flexShrink: 0, marginTop: 1, cursor: 'pointer', padding: '2px' }}
+            style={{ flexShrink: 0, marginTop: 1, cursor: 'pointer', padding: '2px', transition: 'transform 0.15s ease' }}
           >
             {todo.done
               ? <CheckSquare size={17} style={{ color: 'var(--success-text)' }} />
@@ -689,6 +758,16 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
               }}>
                 {isOverdue(todo.dueDate) && !todo.done ? t('todoOverdue', lang) + ': ' : isDueToday(todo.dueDate) ? t('todoToday', lang) + ': ' : t('todoDueDate', lang) + ': '}
                 {todo.dueDate}
+              </span>
+            )}
+            {todo.snoozedUntil && todo.snoozedUntil > Date.now() && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 3,
+                fontSize: 10, padding: '1px 6px', borderRadius: 4,
+                background: 'var(--tint-priority-medium, #fef3c7)', color: 'var(--warning-text, #b45309)',
+              }}>
+                <Clock size={10} />
+                {t('snoozed', lang)}
               </span>
             )}
             {showSource && todo.logId && logTitle && (
@@ -726,7 +805,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
 
   return (
     <div className="workspace-content-wide">
-      <div className="page-header">
+      <div className="page-header page-header-sticky">
         <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
           ← {t('back', lang)}
         </button>
@@ -764,7 +843,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
                 <MoreVertical size={18} />
               </button>
               {overflowOpen && (
-                <div className="mn-export-dropdown" style={{ minWidth: 180 }}>
+                <div className="dropdown-menu" style={{ minWidth: 180 }}>
                   <button
                     className="mn-export-item"
                     onClick={handleDeleteCompleted}
@@ -812,7 +891,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
             <span>{selectedIds.size === sorted.length ? t('todoBulkDeselectAll', lang) : t('todoBulkSelectAll', lang)}</span>
           </label>
           <span className="meta" style={{ fontSize: 12 }}>
-            {selectedIds.size}/{sorted.length}{lang === 'ja' ? '件選択中' : ' selected'}
+            {tf('todoSelectedCount', lang, selectedIds.size, sorted.length)}
           </span>
           <div style={{ flex: 1 }} />
           {/* Right: action buttons */}
@@ -932,6 +1011,46 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
         </div>
       )}
 
+      {/* Progress ring summary bar */}
+      {activeTab === 'pending' && (() => {
+        const total = todos.length;
+        const doneCount = completed.length;
+        const overdueCount = pending.filter((td) => isOverdue(td.dueDate) && !td.done).length;
+        const dueTodayCount = pending.filter((td) => isDueToday(td.dueDate)).length;
+        const radius = 20, circumference = 2 * Math.PI * radius;
+        const progress = total > 0 ? doneCount / total : 0;
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12, padding: '8px 14px', background: 'var(--bg-card, var(--sidebar-bg))', borderRadius: 8, border: '1px solid var(--border-default)' }}>
+            <svg width="50" height="50" style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
+              <circle cx="25" cy="25" r={radius} fill="none" stroke="var(--border-default)" strokeWidth="4" />
+              <circle cx="25" cy="25" r={radius} fill="none" stroke="#22c55e" strokeWidth="4"
+                strokeDasharray={circumference} strokeDashoffset={circumference * (1 - progress)}
+                strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
+            </svg>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>
+              {doneCount}/{total} {t('todoProgress', lang)}
+            </span>
+            {overdueCount > 0 && (
+              <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 500 }}>
+                {overdueCount} {t('todoOverdue2', lang)}
+              </span>
+            )}
+            {dueTodayCount > 0 && (
+              <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 500 }}>
+                {dueTodayCount} {t('todoDueToday2', lang)}
+              </span>
+            )}
+            <div style={{ flex: 1 }} />
+            {snoozedCount > 0 && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none' }}>
+                <input type="checkbox" checked={showSnoozed} onChange={(e) => setShowSnoozed(e.target.checked)} />
+                {t('showSnoozed', lang)} ({snoozedCount})
+              </label>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Stale filter indicator */}
       {staleFilter && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 13, color: 'var(--warning-text, #b45309)' }}>
@@ -957,13 +1076,14 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
               type="text"
               value={newText}
               onChange={(e) => { setNewText(e.target.value); setTodoError(''); }}
-              onBlur={() => { if (addOpen && newText.trim() === '') setTodoError(lang === 'ja' ? 'TODOの内容を入力してください' : 'Please enter TODO content'); }}
+              onBlur={() => { if (addOpen && newText.trim() === '') setTodoError(t('todoInputRequired', lang)); }}
               onKeyDown={handleKeyDown}
               placeholder={t('todoAddPlaceholder', lang)}
+              maxLength={200}
               style={{ flex: 1 }}
             />
             <button className="btn btn-primary" onClick={handleAdd} disabled={!newText.trim()} style={{ flexShrink: 0 }}>
-              {lang === 'ja' ? '追加' : 'Add'}
+              {t('todoAddBtn', lang)}
             </button>
             <button className="btn" onClick={() => { setAddOpen(false); setNewText(''); setTodoError(''); }} style={{ flexShrink: 0 }}>
               ×
@@ -1042,9 +1162,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
           {sorted.length > todoVisibleCount && (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
               <button className="btn" onClick={() => setTodoVisibleCount((v) => v + TODO_PAGE_SIZE)} style={{ fontSize: 13 }}>
-                {lang === 'ja'
-                  ? `さらに表示（残り${sorted.length - todoVisibleCount}件）`
-                  : `Load more (${sorted.length - todoVisibleCount} remaining)`}
+                {tf('loadMore', lang, sorted.length - todoVisibleCount)}
               </button>
             </div>
           )}
@@ -1113,7 +1231,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
           description={t('todoBulkDeleteConfirmDesc', lang)}
           confirmLabel={t('confirmDeleteBtn', lang)}
           cancelLabel={t('cancel', lang)}
-          onConfirm={() => { trashCompletedTodos(); setConfirmDeleteCompleted(false); refresh(); showToast?.(t('todoDeleteCompleted', lang)); }}
+          onConfirm={() => { trashCompletedTodos(); setConfirmDeleteCompleted(false); refresh(); showToast?.(t('todoDeleteCompleted', lang), 'success'); }}
           onCancel={() => setConfirmDeleteCompleted(false)}
         />
       )}

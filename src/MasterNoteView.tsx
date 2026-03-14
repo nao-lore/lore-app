@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import type { Project, LogEntry, MasterNote, MasterNoteSnapshot, SourcedItem } from './types';
 import type { Lang } from './i18n';
 import { t, tf } from './i18n';
-import { getMasterNote, saveMasterNote, getMasterNoteHistory, restoreMasterNoteSnapshot, getAiContext, saveAiContext } from './storage';
-import { generateMasterNote, generateAiContext, refineMasterNote } from './masterNote';
+import { getMasterNote, saveMasterNote, getMasterNoteHistory, restoreMasterNoteSnapshot, saveAiContext } from './storage';
+import { generateMasterNote, refineMasterNote } from './masterNote';
+import { generateProjectContext } from './generateProjectContext';
+import { formatFullAiContext } from './formatHandoff';
 import type { GenerateProgress } from './masterNote';
 import ProgressPanel from './ProgressPanel';
 import type { ProgressStep } from './ProgressPanel';
@@ -13,6 +15,7 @@ import ConfirmDialog from './ConfirmDialog';
 interface MasterNoteViewProps {
   project: Project;
   logs: LogEntry[];
+  latestHandoff?: LogEntry;
   onBack: () => void;
   onOpenLog: (id: string) => void;
   lang: Lang;
@@ -39,10 +42,6 @@ function SnapshotPreview({ note, lang }: { note: MasterNote; lang: Lang }) {
       <div>
         <div className="content-card-header">{t('mnOverview', lang)}</div>
         <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, color: 'var(--text-body)' }}>{note.overview || '—'}</p>
-      </div>
-      <div>
-        <div className="content-card-header">{t('mnCurrentStatus', lang)}</div>
-        <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, color: 'var(--text-body)' }}>{note.currentStatus || '—'}</p>
       </div>
       {note.decisions.length > 0 && (
         <div>
@@ -149,6 +148,7 @@ function EditableText({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={4}
+        maxLength={10000}
       />
     </div>
   );
@@ -208,6 +208,7 @@ function EditableList({
                     if (e.key === 'Escape') setEditingIdx(null);
                   }}
                   autoFocus
+                  maxLength={200}
                 />
               ) : (
                 <span
@@ -235,7 +236,7 @@ function EditableList({
                 <button
                   className="mn-item-remove"
                   onClick={() => removeItem(i)}
-                  title="Remove"
+                  title={t('mnRemoveItem', lang)}
                 >
                   ×
                 </button>
@@ -287,9 +288,6 @@ function noteToMarkdown(note: MasterNote, projectName: string, lang: Lang): stri
   lines.push(`## ${t('mnOverview', lang)}`);
   lines.push(note.overview);
   lines.push('');
-  lines.push(`## ${t('mnCurrentStatus', lang)}`);
-  lines.push(note.currentStatus);
-  lines.push('');
 
   const sections: [string, SourcedItem[]][] = [
     [t('mnDecisions', lang), normalizeItems(note.decisions)],
@@ -308,7 +306,7 @@ function noteToMarkdown(note: MasterNote, projectName: string, lang: Lang): stri
 
   const date = new Date(note.updatedAt).toLocaleString();
   lines.push(`---`);
-  lines.push(`*${lang === 'ja' ? '最終更新' : 'Last updated'}: ${date}*`);
+  lines.push(`*${t('mnLastUpdated', lang)}: ${date}*`);
   return lines.join('\n');
 }
 
@@ -395,7 +393,7 @@ function OverflowMenu({
         <MoreVertical size={18} />
       </button>
       {open && (
-        <div className="mn-export-dropdown">
+        <div className="dropdown-menu">
           <button className="mn-export-item" onClick={() => { setOpen(false); onEdit(); }} disabled={disabled}>
             <Pencil size={14} />
             <span>{t('mnEdit', lang)}</span>
@@ -440,7 +438,7 @@ function OverflowMenu({
 
 // ---- Main Component ----
 
-export default function MasterNoteView({ project, logs, onBack, onOpenLog, lang, showToast }: MasterNoteViewProps) {
+export default function MasterNoteView({ project, logs, latestHandoff, onBack, onOpenLog, lang, showToast }: MasterNoteViewProps) {
   const [saved, setSaved] = useState<MasterNote | undefined>(() => getMasterNote(project.id));
   const [draft, setDraft] = useState<MasterNote | null>(null);
   const [editing, setEditing] = useState(false);
@@ -452,14 +450,26 @@ export default function MasterNoteView({ project, logs, onBack, onOpenLog, lang,
   const [refineOpen, setRefineOpen] = useState(false);
   const [refineText, setRefineText] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [historySnapshots, setHistorySnapshots] = useState<MasterNoteSnapshot[]>([]);
+  const [historySnapshots, setHistorySnapshots] = useState<MasterNoteSnapshot[]>(() => getMasterNoteHistory(project.id));
   const [previewSnap, setPreviewSnap] = useState<MasterNoteSnapshot | null>(null);
   const [confirmRestoreVersion, setConfirmRestoreVersion] = useState<number | null>(null);
-  const [aiContext, setAiContext] = useState<string>(() => getAiContext(project.id) || '');
-  const [aiContextDraft, setAiContextDraft] = useState<string | null>(null);
-  const [aiContextGenerating, setAiContextGenerating] = useState(false);
+  const [pendingNote, setPendingNote] = useState<MasterNote | null>(null);
 
   const projectLogs = logs.filter((l) => l.projectId === project.id);
+
+  // AI Context: pure function, auto-computed from saved MasterNote + latestHandoff
+  const aiContext = useMemo(() => {
+    if (!saved) return '';
+    const ctx = generateProjectContext(saved, logs, project.name);
+    return formatFullAiContext(ctx, latestHandoff);
+  }, [saved, latestHandoff, logs, project.name]);
+
+  // Persist to storage so other views (detail view copy) can use getAiContext
+  useEffect(() => {
+    if (aiContext) {
+      saveAiContext(project.id, aiContext);
+    }
+  }, [aiContext, project.id]);
 
   const summarySteps: ProgressStep[] = [
     { label: t('stepCollecting', lang), duration: 1500 },
@@ -486,28 +496,44 @@ export default function MasterNoteView({ project, logs, onBack, onOpenLog, lang,
   };
 
   // --- Generate ---
+  const generatingRef = useRef(false);
   const handleGenerate = async () => {
+    if (generatingRef.current) {
+      console.warn('[MasterNote] handleGenerate already running — skipping duplicate call');
+      return;
+    }
+    generatingRef.current = true;
     setLoading(true);
     setError(null);
     setProgress(null);
     setSimStep(0);
     try {
+      console.log('[MasterNote] Starting generation for project:', project.id, 'logs:', projectLogs.length);
       const proposed = await generateMasterNote(project.id, projectLogs, saved, (p) => {
         setProgress(p);
+        console.log('[MasterNote] Progress:', p.phase, p.current, '/', p.total);
         if (p.phase === 'extract') {
           setSimStep(p.current <= 1 ? 0 : 1);
         } else {
           setSimStep(2);
         }
       });
+      console.log('[MasterNote] Generation complete:', {
+        overview: proposed.overview?.slice(0, 50),
+        decisions: proposed.decisions.length,
+        openIssues: proposed.openIssues.length,
+        nextActions: proposed.nextActions.length,
+      });
       setSimStep(4);
-      setDraft(proposed);
+      setPendingNote(proposed);
       setEditing(false);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
+      console.error('[MasterNote] Generation failed:', msg);
       setError(msg);
-      showToast?.('Failed', 'error');
+      showToast?.(t('failed', lang), 'error');
     } finally {
+      generatingRef.current = false;
       setLoading(false);
       setProgress(null);
     }
@@ -521,41 +547,27 @@ export default function MasterNoteView({ project, logs, onBack, onOpenLog, lang,
     setError(null);
     try {
       const refined = await refineMasterNote(current, refineText.trim());
-      setDraft(refined);
+      setPendingNote(refined);
       setEditing(false);
       setRefineText('');
-      showToast?.(lang === 'ja' ? '修正完了' : 'Refinement complete', 'success');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       setError(msg);
-      showToast?.('Failed', 'error');
+      showToast?.(t('failed', lang), 'error');
     } finally {
       setRefining(false);
     }
   };
 
-  // --- Save (from draft or edit) + auto-generate AI Context ---
-  const handleSave = async () => {
+  // --- Save (from draft or edit) ---
+  const handleSave = () => {
     if (!current) return;
     const toSave = { ...current, updatedAt: Date.now() };
     saveMasterNote(toSave);
     setSaved(toSave);
     setDraft(null);
     setEditing(false);
-    showToast?.(lang === 'ja' ? '保存しました' : 'Saved', 'success');
-    // Auto-generate AI Context in background
-    try {
-      setAiContextGenerating(true);
-      const ctx = await generateAiContext(toSave, project.name);
-      saveAiContext(project.id, ctx);
-      setAiContext(ctx);
-      setAiContextDraft(null);
-      showToast?.(t('aiContextGenerated', lang), 'success');
-    } catch {
-      // Non-critical — don't block the save
-    } finally {
-      setAiContextGenerating(false);
-    }
+    showToast?.(t('mnSaved', lang), 'success');
   };
 
   // --- Cancel editing / discard draft ---
@@ -564,30 +576,47 @@ export default function MasterNoteView({ project, logs, onBack, onOpenLog, lang,
     setEditing(false);
   };
 
-  const handleAiContextSave = () => {
-    if (aiContextDraft === null) return;
-    saveAiContext(project.id, aiContextDraft);
-    setAiContext(aiContextDraft);
-    setAiContextDraft(null);
-    showToast?.(t('aiContextSaved', lang), 'success');
+
+  // --- Accept pending MasterNote update ---
+  const handleAccept = () => {
+    if (!pendingNote) return;
+    const toSave = { ...pendingNote, updatedAt: Date.now() };
+    saveMasterNote(toSave);
+    setSaved(toSave);
+    setDraft(null);
+    setPendingNote(null);
+    setEditing(false);
+    showToast?.(t('masterNoteUpdated', lang), 'success');
+    setHistorySnapshots(getMasterNoteHistory(project.id));
   };
 
-  const handleAiContextRegenerate = async () => {
-    if (!saved) return;
-    setAiContextGenerating(true);
-    try {
-      const ctx = await generateAiContext(saved, project.name);
-      saveAiContext(project.id, ctx);
-      setAiContext(ctx);
-      setAiContextDraft(null);
-      showToast?.(t('aiContextGenerated', lang), 'success');
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      showToast?.(msg, 'error');
-    } finally {
-      setAiContextGenerating(false);
-    }
-  };
+
+  // --- Diff sections for pending note preview ---
+  function renderDiffSections(currentNote: MasterNote | null | undefined, pending: MasterNote) {
+    const sections = [
+      { label: t('mnDecisions', lang), current: currentNote?.decisions?.map((d) => d.text) || [], pending: pending.decisions?.map((d) => d.text) || [] },
+      { label: t('mnOpenIssues', lang), current: currentNote?.openIssues?.map((d) => d.text) || [], pending: pending.openIssues?.map((d) => d.text) || [] },
+      { label: t('mnNextActions', lang), current: currentNote?.nextActions?.map((d) => d.text) || [], pending: pending.nextActions?.map((d) => d.text) || [] },
+    ];
+
+    return sections.map((sec) => {
+      const added = sec.pending.filter((txt) => !sec.current.includes(txt));
+      const removed = sec.current.filter((txt) => !sec.pending.includes(txt));
+      if (added.length === 0 && removed.length === 0) return null;
+
+      return (
+        <div key={sec.label} style={{ marginTop: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>{sec.label}</div>
+          {added.map((item, i) => (
+            <div key={`a${i}`} style={{ fontSize: 12, color: 'var(--success-text, #22c55e)', paddingLeft: 8 }}>+ {item}</div>
+          ))}
+          {removed.map((item, i) => (
+            <div key={`r${i}`} style={{ fontSize: 12, color: 'var(--error-text)', textDecoration: 'line-through', paddingLeft: 8 }}>- {item}</div>
+          ))}
+        </div>
+      );
+    });
+  }
 
   const openHistory = () => {
     const snaps = getMasterNoteHistory(project.id);
@@ -617,6 +646,7 @@ export default function MasterNoteView({ project, logs, onBack, onOpenLog, lang,
   const snapshots = historyOpen ? historySnapshots : [];
 
   const hasDraft = draft !== null;
+  const hasPending = pendingNote !== null;
   const isProcessing = loading || refining;
 
   return (
@@ -630,7 +660,7 @@ export default function MasterNoteView({ project, logs, onBack, onOpenLog, lang,
             <h2>{t('masterNote', lang)}</h2>
             <p className="page-subtitle">{project.name}</p>
           </div>
-          {current && !editing && (
+          {current && !editing && !hasPending && (
             <OverflowMenu
               note={current}
               projectName={project.name}
@@ -641,7 +671,7 @@ export default function MasterNoteView({ project, logs, onBack, onOpenLog, lang,
               onRegenerate={handleGenerate}
               onHistory={openHistory}
               disabled={isProcessing}
-              historyCount={getMasterNoteHistory(project.id).length}
+              historyCount={historySnapshots.length}
             />
           )}
         </div>
@@ -674,10 +704,10 @@ export default function MasterNoteView({ project, logs, onBack, onOpenLog, lang,
       )}
 
       {projectLogs.length === 0 ? (
-        <div className="empty-state">{t('mnNoLogs', lang)}</div>
-      ) : !current && !loading ? (
+        <div className="empty-state"><p>{t('mnNoLogs', lang)}</p></div>
+      ) : !current && !loading && !pendingNote ? (
         <div className="mn-empty-cta">
-          <div className="empty-state" style={{ marginBottom: 16 }}>{t('mnEmpty', lang)}</div>
+          <div className="empty-state" style={{ marginBottom: 16 }}><p>{t('mnEmpty', lang)}</p></div>
           <button className="btn btn-primary" onClick={handleGenerate} disabled={isProcessing}>
             {t('mnGenerate', lang)}
           </button>
@@ -730,6 +760,7 @@ export default function MasterNoteView({ project, logs, onBack, onOpenLog, lang,
                 placeholder={t('mnRefineInstruction', lang)}
                 rows={2}
                 autoFocus
+                maxLength={10000}
               />
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button className="btn" onClick={() => { setRefineOpen(false); setRefineText(''); }}>
@@ -774,11 +805,49 @@ export default function MasterNoteView({ project, logs, onBack, onOpenLog, lang,
             </div>
           )}
 
+          {/* Pending MasterNote update preview */}
+          {pendingNote && !loading && !refining && (
+            <div className="content-card" style={{ marginBottom: 20, border: '2px solid var(--accent)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <h3 style={{ margin: 0, fontSize: 15 }}>{t('pendingUpdate', lang)}</h3>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-primary" onClick={handleAccept}>
+                    {t('accept', lang)}
+                  </button>
+                  <button className="btn" onClick={() => setPendingNote(null)}>
+                    {t('reject', lang)}
+                  </button>
+                </div>
+              </div>
+
+              {/* Diff preview showing what changed */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {/* Current */}
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{t('current', lang)}</div>
+                  <div style={{ background: 'var(--bg-surface)', padding: 12, borderRadius: 8, fontSize: 12, maxHeight: 300, overflow: 'auto', whiteSpace: 'pre-wrap' }}>
+                    {saved?.overview || t('empty', lang)}
+                  </div>
+                </div>
+                {/* Proposed */}
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--accent)', marginBottom: 4 }}>{t('proposed', lang)}</div>
+                  <div style={{ background: 'var(--bg-surface)', padding: 12, borderRadius: 8, fontSize: 12, maxHeight: 300, overflow: 'auto', whiteSpace: 'pre-wrap', borderLeft: '3px solid var(--accent)' }}>
+                    {pendingNote.overview || t('empty', lang)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Show changed sections */}
+              {renderDiffSections(saved, pendingNote)}
+            </div>
+          )}
+
+
           {/* Read-only view (default) */}
           {current && !loading && !refining && !editing && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <ReadOnlyText label={t('mnOverview', lang)} value={current.overview} />
-              <ReadOnlyText label={t('mnCurrentStatus', lang)} value={current.currentStatus} />
               <ReadOnlyList label={t('mnDecisions', lang)} items={normalizeItems(current.decisions)} logs={logs} onOpenLog={onOpenLog} />
               <ReadOnlyList label={t('mnOpenIssues', lang)} items={normalizeItems(current.openIssues)} logs={logs} onOpenLog={onOpenLog} />
               <ReadOnlyList label={t('mnNextActions', lang)} items={normalizeItems(current.nextActions)} logs={logs} onOpenLog={onOpenLog} />
@@ -788,35 +857,27 @@ export default function MasterNoteView({ project, logs, onBack, onOpenLog, lang,
               <div className="content-card">
                 <div className="content-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span>{t('aiContextTitle', lang)}</span>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {aiContextDraft !== null && (
-                      <button
-                        className="btn"
-                        style={{ fontSize: 11, padding: '2px 8px', minHeight: 24 }}
-                        onClick={handleAiContextSave}
-                      >
-                        {t('aiContextSave', lang)}
-                      </button>
-                    )}
-                    <button
-                      className="btn"
-                      style={{ fontSize: 11, padding: '2px 8px', minHeight: 24, display: 'flex', alignItems: 'center', gap: 4 }}
-                      onClick={handleAiContextRegenerate}
-                      disabled={aiContextGenerating || !saved}
-                    >
-                      <RefreshCw size={11} />
-                      {aiContextGenerating ? t('aiContextRegenerating', lang) : t('aiContextRegenerate', lang)}
-                    </button>
-                  </div>
+                  <button
+                    className="btn"
+                    style={{ fontSize: 11, padding: '2px 8px', minHeight: 24, display: 'flex', alignItems: 'center', gap: 4 }}
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(aiContext);
+                        showToast?.(t('copiedToClipboard', lang), 'success');
+                      } catch {
+                        showToast?.(t('copyFailed', lang), 'error');
+                      }
+                    }}
+                    disabled={!aiContext}
+                  >
+                    <Copy size={11} />
+                    {t('mnCopy', lang)}
+                  </button>
                 </div>
                 {aiContext ? (
-                  <textarea
-                    className="mn-edit-textarea"
-                    style={{ fontSize: 12, lineHeight: 1.6, minHeight: 120 }}
-                    value={aiContextDraft ?? aiContext}
-                    onChange={(e) => setAiContextDraft(e.target.value)}
-                    rows={8}
-                  />
+                  <div style={{ background: 'var(--bg-surface)', padding: 12, borderRadius: 8, fontSize: 12, lineHeight: 1.6, maxHeight: 400, overflow: 'auto', whiteSpace: 'pre-wrap' }}>
+                    {aiContext}
+                  </div>
                 ) : (
                   <p className="meta" style={{ fontSize: 12, margin: 0 }}>{t('aiContextEmpty', lang)}</p>
                 )}
@@ -837,11 +898,6 @@ export default function MasterNoteView({ project, logs, onBack, onOpenLog, lang,
                 label={t('mnOverview', lang)}
                 value={current.overview}
                 onChange={(v) => updateDraft({ overview: v })}
-              />
-              <EditableText
-                label={t('mnCurrentStatus', lang)}
-                value={current.currentStatus}
-                onChange={(v) => updateDraft({ currentStatus: v })}
               />
               <EditableList
                 label={t('mnDecisions', lang)}
@@ -883,7 +939,7 @@ export default function MasterNoteView({ project, logs, onBack, onOpenLog, lang,
             </div>
 
             {snapshots.length === 0 ? (
-              <div className="empty-state" style={{ padding: 32 }}>
+              <div className="empty-state">
                 <p>{t('mnHistoryEmpty', lang)}</p>
               </div>
             ) : (

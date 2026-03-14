@@ -49,17 +49,19 @@ export default function ContextMenu({ items, anchorRect, onClose }: ContextMenuP
     <div
       ref={menuRef}
       className="context-menu"
+      role="menu"
       style={{
         position: 'fixed',
         top,
         right: Math.max(4, right),
-        zIndex: 9999,
+        zIndex: 1000,
       }}
       onMouseDown={(e) => e.stopPropagation()}
     >
       {items.map((item, i) => (
         <button
           key={i}
+          role="menuitem"
           className={`context-menu-item${item.danger ? ' danger' : ''}`}
           onClick={() => { item.onClick(); onClose(); }}
         >

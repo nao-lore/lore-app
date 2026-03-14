@@ -81,9 +81,9 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
   const withoutSummary = projects.filter((p) => !getMasterNote(p.id));
 
   const sortOptions = [
-    { key: 'updated_desc', label: lang === 'ja' ? '更新日（新しい順）' : 'Updated (newest)' },
-    { key: 'updated_asc', label: lang === 'ja' ? '更新日（古い順）' : 'Updated (oldest)' },
-    { key: 'name', label: lang === 'ja' ? 'プロジェクト名' : 'Project name' },
+    { key: 'updated_desc', label: t('sortUpdatedDesc', lang) },
+    { key: 'updated_asc', label: t('sortUpdatedAsc', lang) },
+    { key: 'name', label: t('sortProjectName', lang) },
   ];
 
   return (
@@ -107,13 +107,13 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
                 {t('projectSummaryNew', lang)}
               </button>
               {pickerOpen && (
-                <div className="mn-export-dropdown" style={{ minWidth: 240 }}>
+                <div className="dropdown-menu" style={{ minWidth: 240 }}>
                   <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
                     {t('projectSummarySelectProject', lang)}
                   </div>
                   {withoutSummary.length === 0 ? (
                     <div style={{ padding: '8px 14px', fontSize: 13, color: 'var(--text-placeholder)' }}>
-                      {lang === 'ja' ? '未作成のプロジェクトはありません' : 'All projects have summaries'}
+                      {t('allProjectsHaveSummaries', lang)}
                     </div>
                   ) : (
                     withoutSummary.map((p) => (
@@ -160,7 +160,7 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
       {withSummaryRaw.length > 0 && (
         <div className="content-card" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
           <DropdownMenu
-            label={lang === 'ja' ? '並べ替え' : 'Sort'}
+            label={t('sortLabel', lang)}
             value={sortKey}
             options={sortOptions}
             onChange={(k) => setSortKey(k as SummarySortKey)}
@@ -172,7 +172,7 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
               onChange={(e) => setFilterUnreflected(e.target.checked)}
               style={{ accentColor: 'var(--accent)' }}
             />
-            {lang === 'ja' ? '未反映ハンドオフあり' : 'Has unreflected handoffs'}
+            {t('hasUnreflectedHandoffs', lang)}
           </label>
         </div>
       )}
@@ -199,8 +199,11 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
               <div
                 key={p.id}
                 className="card"
+                role="button"
+                tabIndex={0}
                 style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', borderLeft: isStale ? '3px solid var(--warning-text)' : undefined }}
                 onClick={() => onOpenSummary(p.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenSummary(p.id); } }}
               >
                 <div style={{
                   width: 36, height: 36, borderRadius: 8,
@@ -219,12 +222,12 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
                     <span>{tf('mnUpdatedAt', lang, new Date(note.updatedAt).toLocaleDateString())}</span>
                     {days > 0 && (
                       <span style={{ color: days >= 7 ? 'var(--warning-text)' : 'var(--text-placeholder)' }}>
-                        ({lang === 'ja' ? `${days}日前` : `${days}d ago`})
+                        ({tf('daysAgo', lang, days)})
                       </span>
                     )}
                   </div>
                   {note.overview && (
-                    <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-secondary)', margin: '6px 0 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-secondary)', margin: '6px 0 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                       {note.overview}
                     </p>
                   )}
@@ -232,9 +235,7 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
                     <div style={{ marginTop: 6, fontSize: 11, color: 'var(--warning-text)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
                       <span>⚠</span>
                       <span>
-                        {lang === 'ja'
-                          ? `未反映のHandoff ${unreflected}件 — 更新推奨`
-                          : `${unreflected} unreflected handoff${unreflected > 1 ? 's' : ''} — update recommended`}
+                        {tf('unreflectedHandoffWarning', lang, unreflected)}
                       </span>
                     </div>
                   )}
@@ -246,8 +247,8 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
                     onClick={(e) => { e.stopPropagation(); onOpenSummary(p.id); }}
                   >
                     {unreflected > 0
-                      ? (lang === 'ja' ? '更新する' : 'Update')
-                      : (lang === 'ja' ? '開く' : 'Open')}
+                      ? t('updateBtn', lang)
+                      : t('openBtn', lang)}
                     <ArrowRight size={12} />
                   </button>
                 </div>

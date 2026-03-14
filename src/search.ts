@@ -65,7 +65,6 @@ function logSnippet(log: LogEntry, q: string): string | undefined {
 function masterNoteSearchText(note: MasterNote): string {
   const parts = [
     note.overview,
-    note.currentStatus,
     ...note.decisions.map((d) => d.text),
     ...note.openIssues.map((d) => d.text),
     ...note.nextActions.map((d) => d.text),
@@ -76,7 +75,6 @@ function masterNoteSearchText(note: MasterNote): string {
 function masterNoteSnippet(note: MasterNote, q: string): string | undefined {
   const fields = [
     note.overview,
-    note.currentStatus,
     ...note.decisions.map((d) => d.text),
     ...note.openIssues.map((d) => d.text),
     ...note.nextActions.map((d) => d.text),
@@ -107,6 +105,7 @@ export function search(query: string, data: SearchInput, limit = 30): SearchResu
 
   // Projects (name match)
   for (const p of data.projects) {
+    if (results.length >= limit) break;
     if (p.name.toLowerCase().includes(q)) {
       results.push({
         type: 'project',
@@ -118,6 +117,7 @@ export function search(query: string, data: SearchInput, limit = 30): SearchResu
 
   // Master Notes / Project Summaries
   for (const mn of data.masterNotes) {
+    if (results.length >= limit) break;
     const text = masterNoteSearchText(mn);
     if (text.toLowerCase().includes(q)) {
       const proj = data.projectMap.get(mn.projectId);

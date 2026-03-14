@@ -119,9 +119,9 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
   const totalCount = trashedLogs.length + trashedProjects.length + trashedTodos.length;
 
   const typeBadge = (type: TrashItem['type']) => {
-    const labels = { log: 'Log', project: 'Project', todo: 'TODO' };
+    const typeLabels = { log: t('trashTypeLog', lang), project: t('trashTypeProject', lang), todo: t('trashTypeTodo', lang) };
     const classes = { log: 'badge-worklog', project: 'badge-project', todo: 'badge-todo' };
-    return <span className={classes[type] || 'badge-worklog'} style={{ fontSize: 10, padding: '1px 6px' }}>{labels[type]}</span>;
+    return <span className={classes[type] || 'badge-worklog'} style={{ fontSize: 10, padding: '1px 6px' }}>{typeLabels[type]}</span>;
   };
 
   return (
@@ -135,7 +135,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
             <h2>{t('trashTitle', lang)}</h2>
             <p className="page-subtitle">
               {totalCount > 0
-                ? (lang === 'ja' ? `${totalCount}件のアイテム` : `${totalCount} item${totalCount !== 1 ? 's' : ''}`)
+                ? tf('trashItemCount', lang, totalCount)
                 : ''}
             </p>
           </div>
@@ -172,6 +172,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('searchLogs', lang)}
+            maxLength={200}
             style={{ flex: 1, minWidth: 120 }}
           />
         </div>
@@ -209,7 +210,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
                   <button className="btn" style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }} onClick={() => handleRestore(item)}>
                     <Undo2 size={12} /> {t('trashRestore', lang)}
                   </button>
-                  <button className="btn btn-danger" style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }} onClick={() => handleDeletePermanent(item)} aria-label={lang === 'ja' ? '完全に削除' : 'Delete permanently'}>
+                  <button className="btn btn-danger" style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }} onClick={() => handleDeletePermanent(item)} aria-label={t('ariaDeletePermanently', lang)}>
                     <Trash2 size={12} />
                   </button>
                 </div>
@@ -219,9 +220,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
           {filteredItems.length > visibleCount && (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
               <button className="btn" onClick={() => setVisibleCount((v) => v + TRASH_PAGE_SIZE)} style={{ fontSize: 13 }}>
-                {lang === 'ja'
-                  ? `さらに表示（残り${filteredItems.length - visibleCount}件）`
-                  : `Load more (${filteredItems.length - visibleCount} remaining)`}
+                {tf('loadMore', lang, filteredItems.length - visibleCount)}
               </button>
             </div>
           )}
@@ -231,7 +230,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
       {confirmDelete && (
         <ConfirmDialog
           title={t('trashDeleteConfirm', lang)}
-          description={lang === 'ja' ? 'この操作は取り消せません。' : 'This cannot be undone.'}
+          description={t('trashCannotUndo', lang)}
           confirmLabel={t('trashDeletePermanent', lang)}
           cancelLabel={t('cancel', lang)}
           onConfirm={executeDeletePermanent}
@@ -242,7 +241,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
       {confirmEmptyAll && (
         <ConfirmDialog
           title={t('trashEmptyAllConfirm', lang)}
-          description={lang === 'ja' ? 'すべてのアイテムを完全に削除します。この操作は取り消せません。' : 'All items will be permanently deleted. This cannot be undone.'}
+          description={t('trashEmptyAllDesc', lang)}
           confirmLabel={t('trashEmptyAll', lang)}
           cancelLabel={t('cancel', lang)}
           onConfirm={executeEmptyAll}

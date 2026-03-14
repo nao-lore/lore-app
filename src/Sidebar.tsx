@@ -46,6 +46,8 @@ function StatsModal({ stats, lang, onClose, onOpenHistory, onOpenProjects, onOpe
     >
       <div
         className="shortcuts-modal"
+        role="dialog"
+        aria-modal="true"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 style={{ margin: '0 0 16px', fontSize: 16 }}>{t('statsTitle', lang)}</h3>
@@ -67,7 +69,7 @@ function StatsModal({ stats, lang, onClose, onOpenHistory, onOpenProjects, onOpe
         </div>
         <div style={{ marginTop: 16, textAlign: 'right' }}>
           <button className="btn" onClick={onClose} style={{ fontSize: 13 }}>
-            {lang === 'ja' ? '閉じる' : 'Close'}
+            {t('close', lang)}
           </button>
         </div>
       </div>
@@ -100,7 +102,7 @@ interface SidebarProps {
   onRefresh: () => void;
   onDeleted?: () => void;
   lang: Lang;
-  showToast?: (msg: string) => void;
+  showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void;
   todos: Todo[];
 }
 
@@ -192,7 +194,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
       label: log.pinned ? t('ctxUnpin', lang) : t('ctxPin', lang),
       onClick: () => {
         if (!log.pinned && pinnedLogs.length >= MAX_PINNED) {
-          showToast?.(t('pinLimitReached', lang));
+          showToast?.(t('pinLimitReached', lang), 'error');
           return;
         }
         updateLog(log.id, { pinned: !log.pinned });
@@ -216,9 +218,8 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
     items.push({
       label: t('ctxChangeProject', lang),
       onClick: () => {
-        const projectNames = projects.map((p) => p.name);
         const choice = prompt(
-          projects.map((p, i) => `${i + 1}. ${p.name}`).join('\n') + '\n\n' + (lang === 'ja' ? '番号を入力:' : 'Enter number:'),
+          projects.map((p, i) => `${i + 1}. ${p.name}`).join('\n') + '\n\n' + t('ctxChangeProjectPrompt', lang),
           ''
         );
         if (choice) {
@@ -235,7 +236,6 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
             }
           }
         }
-        void projectNames;
       },
     });
 
@@ -263,7 +263,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
   const menuLog = menuState ? logs.find((l) => l.id === menuState.logId) : null;
 
   return (
-    <div style={{ width: 260, minWidth: 260, height: '100%', borderRight: '1px solid var(--border-default)', display: 'flex', flexDirection: 'column', background: 'var(--bg-sidebar)' }}>
+    <div className="sidebar" style={{ width: 260, minWidth: 260, height: '100%', borderRight: '1px solid var(--border-default)', display: 'flex', flexDirection: 'column', background: 'var(--bg-sidebar)' }}>
       {/* Header */}
       <div style={{ padding: '16px 14px 12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
@@ -283,23 +283,23 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
         <button
           className={`sidebar-nav-item${activeView === 'input' ? ' active' : ''}`}
           onClick={onNewLog}
-          title={lang === 'ja' ? 'ホーム — ログを作成' : 'Home — Create a Log'}
+          title={t('navHomeTitle', lang)}
         >
           <LayoutDashboard size={15} />
-          <span>{lang === 'ja' ? 'ホーム' : 'Home'}</span>
+          <span>{t('navHome', lang)}</span>
         </button>
         <button
           className={`sidebar-nav-item${activeView === 'dashboard' ? ' active' : ''}`}
           onClick={onOpenDashboard}
-          title={lang === 'ja' ? 'プロジェクト概況・タスク' : 'Project Overview & Tasks'}
+          title={t('navDashboardTitle', lang)}
         >
           <BarChart2 size={15} />
-          <span>{lang === 'ja' ? 'ダッシュボード' : 'Dashboard'}</span>
+          <span>{t('navDashboard', lang)}</span>
         </button>
         <button
           className={`sidebar-nav-item${activeView === 'todos' ? ' active' : ''}`}
           onClick={onOpenTodos}
-          title={lang === 'ja' ? '会話から抽出されたTODOの管理' : 'Manage TODOs extracted from conversations'}
+          title={t('navTodoTitle', lang)}
         >
           <CheckSquare size={15} />
           <span>{t('navTodo', lang)}</span>
@@ -308,7 +308,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
         <button
           className={`sidebar-nav-item${activeView === 'timeline' ? ' active' : ''}`}
           onClick={onOpenTimeline}
-          title={lang === 'ja' ? 'ログ・TODO・サマリーを時系列で俯瞰' : 'Bird\'s-eye view of logs, TODOs, and summaries over time'}
+          title={t('navTimelineTitle', lang)}
         >
           <Clock size={15} />
           <span>{t('navTimeline', lang)}</span>
@@ -317,7 +317,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
           <button
             className={`sidebar-nav-item${activeView === 'weeklyreport' ? ' active' : ''}`}
             onClick={onOpenWeeklyReport}
-            title={lang === 'ja' ? 'その週の活動をAIが自動でまとめる' : 'AI-generated weekly activity summary'}
+            title={t('navWeeklyReportTitle', lang)}
           >
             <FileBarChart size={15} />
             <span>{t('navWeeklyReport', lang)}</span>
@@ -325,16 +325,16 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
         )}
       </div>
 
-      {/* Navigation — Main Flow */}
+      {/* Navigation — Workflow (Logs → Projects → Summaries) */}
       <div style={{ padding: '4px 10px 0' }}>
         <div style={{ borderTop: '1px solid var(--border-default)', margin: '4px 4px 4px' }} />
         <div style={{ padding: '0 4px 4px', fontSize: 10, fontWeight: 600, color: 'var(--text-placeholder)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-          {lang === 'ja' ? 'ワークフロー' : 'Workflow'}
+          {t('navWorkflow', lang)}
         </div>
         <button
           className={`sidebar-nav-item${activeView === 'history' ? ' active' : ''}`}
           onClick={onOpenHistory}
-          title={lang === 'ja' ? '全てのログを時系列で表示' : 'View all logs in chronological order'}
+          title={t('navLogsTitle', lang)}
         >
           <ScrollText size={15} />
           <span>{t('navLogs', lang)}</span>
@@ -346,7 +346,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
         <button
           className={`sidebar-nav-item${activeView === 'projects' || activeView === 'projecthome' ? ' active' : ''}`}
           onClick={onOpenProjects}
-          title={lang === 'ja' ? 'ログをプロジェクトに整理' : 'Organize logs into projects'}
+          title={t('navProjectsTitle', lang)}
         >
           <FolderOpen size={15} />
           <span>{t('navProjects', lang)}</span>
@@ -357,7 +357,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
         <button
           className={`sidebar-nav-item${activeView === 'summarylist' || activeView === 'masternote' ? ' active' : ''}`}
           onClick={onOpenProjectSummaryList}
-          title={lang === 'ja' ? 'AIがログからプロジェクトの全体像を自動生成' : 'AI generates project overviews from your logs'}
+          title={t('navProjectSummaryTitle', lang)}
         >
           <BookOpen size={15} />
           <span>{t('navProjectSummary', lang)}</span>
@@ -367,7 +367,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
 
       {/* Pinned section (projects + logs combined) */}
       {(pinnedProjects.length > 0 || pinnedLogs.length > 0) && (
-        <div style={{ padding: '4px 10px 0' }}>
+        <div style={{ padding: '4px 10px 0', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <div style={{ borderTop: '1px solid var(--border-default)', margin: '4px 4px 8px' }} />
           <div
             style={{ padding: '0 4px', marginBottom: 4, display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
@@ -380,7 +380,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
             <span className="sidebar-section-label">{t('pinned', lang)}</span>
           </div>
           {pinnedOpen && (
-            <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
               {pinnedProjects.map((p) => {
                 const pColor = getProjectColor(p.color);
                 const mn = getMasterNote(p.id);
@@ -447,9 +447,6 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
           )}
         </div>
       )}
-
-      {/* Spacer */}
-      <div style={{ flex: 1 }} />
 
       {/* Account area */}
       <button

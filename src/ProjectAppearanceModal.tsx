@@ -132,7 +132,7 @@ export default function ProjectAppearanceModal({ project, lang, onClose, onUpdat
 
         {/* Preview */}
         <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 8, border: '1px solid var(--border-default)', background: 'var(--bg-sidebar)' }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Preview</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>{t('previewLabel', lang)}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {selectedColor && (
               <div style={{
@@ -153,10 +153,10 @@ export default function ProjectAppearanceModal({ project, lang, onClose, onUpdat
         {/* Actions */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button className="btn" onClick={onClose} style={{ fontSize: 13 }}>
-            {lang === 'ja' ? 'キャンセル' : 'Cancel'}
+            {t('cancel', lang)}
           </button>
           <button className="btn btn-primary" onClick={handleSave} style={{ fontSize: 13 }}>
-            {lang === 'ja' ? '保存' : 'Save'}
+            {t('mnAccept', lang)}
           </button>
         </div>
       </div>

@@ -54,11 +54,8 @@ const GREETINGS: Record<string, { morning: string[]; afternoon: string[]; evenin
 export function getGreeting(lang: Lang): string {
   const hour = new Date().getHours();
   const period = hour < 6 ? 'night' : hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : hour < 23 ? 'evening' : 'night';
-  let greetingLang = lang === 'ja' ? 'ja' : 'en';
-  try {
-    const navLang = navigator.language.split('-')[0].toLowerCase();
-    if (GREETINGS[navLang]) greetingLang = navLang;
-  } catch { /* ignore */ }
+  let greetingLang = lang;
+  if (!GREETINGS[greetingLang]) greetingLang = 'en';
   const set = GREETINGS[greetingLang] || GREETINGS.en;
   const options = set[period];
   const dayIndex = new Date().getDate() + hour;

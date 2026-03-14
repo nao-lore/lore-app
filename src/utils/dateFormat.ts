@@ -37,3 +37,14 @@ export function formatDateGroup(iso: string): string {
   if (isSameDay(d, now)) return 'Today';
   return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
+
+/** "2026/03/05 14:30" — full timestamp */
+export function formatDateTimeFull(iso: string): string {
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${y}/${mo}/${day} ${h}:${mi}`;
+}

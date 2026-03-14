@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { usePersistedState } from './usePersistedState';
 import { MoreHorizontal, Pin, Pencil, Trash2, FolderOpen, Copy, Download, ExternalLink, BookOpen, Calendar, CopyPlus, LayoutGrid, List, TrendingUp } from 'lucide-react';
 import type { LogEntry, OutputMode, Project } from './types';
@@ -71,7 +72,7 @@ function extractKeywords(logs: LogEntry[]): { word: string; count: number }[] {
 }
 
 // ─── Highlight component ───
-function Highlight({ text, query }: { text: string; query: string }) {
+const Highlight = memo(function Highlight({ text, query }: { text: string; query: string }) {
   if (!query.trim()) return <>{text}</>;
   const q = query.trim().toLowerCase();
   const parts: { text: string; match: boolean }[] = [];
@@ -93,7 +94,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
       )}
     </>
   );
-}
+});
 
 // ─── Date filter helpers ───
 type DatePreset = 'today' | 'week' | 'month' | 'custom';
@@ -205,7 +206,7 @@ function LogContextMenu({ log, lang, projects, onClose, onAction }: {
 
   if (subMenu === 'project') {
     return (
-      <div ref={menuRef} className="mn-export-dropdown" style={{ top: '100%', right: 0, minWidth: 200 }} onMouseDown={(e) => e.stopPropagation()}>
+      <div ref={menuRef} className="dropdown-menu" style={{ top: '100%', right: 0, minWidth: 200 }} onMouseDown={(e) => e.stopPropagation()}>
         <div style={{ padding: '6px 12px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{t('ctxChangeProject', lang)}</div>
         {projects.map((p) => (
           <button key={p.id} className="mn-export-item" onClick={() => { onAction('assignProject', p.id); onClose(); }}>
@@ -232,7 +233,7 @@ function LogContextMenu({ log, lang, projects, onClose, onAction }: {
   }
 
   return (
-    <div ref={menuRef} className="mn-export-dropdown" style={{ top: '100%', right: 0, minWidth: 200 }}>
+    <div ref={menuRef} className="dropdown-menu" style={{ top: '100%', right: 0, minWidth: 200 }}>
       <button className="mn-export-item" onClick={() => { onAction('pin'); onClose(); }}>
         <Pin size={14} style={{ transform: 'rotate(45deg)' }} />
         <span>{log.pinned ? t('ctxUnpin', lang) : t('ctxPin', lang)}</span>
@@ -309,8 +310,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [datePreset, setDatePreset] = useState<DatePreset | null>(null);
-  const PAGE_SIZE = 20;
-  const [currentPage, setCurrentPage] = useState(1);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!projectPickerOpen) return;
@@ -333,8 +333,10 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
     };
   }, [dateFilterOpen]);
 
-  // Reset pagination when filters change
-  useEffect(() => { setCurrentPage(1); }, [query, modeFilter, sortKey, groupKey, dateFrom, dateTo, tagFilter]);
+  // Scroll to top when filters change
+  useEffect(() => {
+    scrollContainerRef.current?.scrollTo(0, 0);
+  }, [query, modeFilter, sortKey, groupKey, dateFrom, dateTo, tagFilter]);
 
   const keywords = useMemo(() => extractKeywords(logs), [logs]);
 
@@ -437,7 +439,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
     switch (action) {
       case 'pin':
         if (!log.pinned && logs.filter((l) => l.pinned).length >= 5) {
-          showToast?.(t('pinLimitReached', lang));
+          showToast?.(t('pinLimitReached', lang), 'error');
           break;
         }
         updateLog(log.id, { pinned: !log.pinned });
@@ -506,31 +508,13 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
     if (selected.size === sorted.length) setSelected(new Set());
     else setSelected(new Set(sorted.map((l) => l.id)));
   };
-  const selectedLogs = logs.filter((l) => selected.has(l.id));
-
-  const handleBulkDownloadMd = () => {
-    for (const log of selectedLogs) {
-      const date = new Date(log.createdAt).toISOString().slice(0, 10);
-      const type = log.outputMode === 'handoff' ? 'handoff' : 'worklog';
-      downloadFile(logToMarkdown(log), `threadlog-${date}-${type}.md`, 'text/markdown');
-    }
-  };
-  const handleBulkDownloadJson = () => {
-    for (const log of selectedLogs) {
-      const date = new Date(log.createdAt).toISOString().slice(0, 10);
-      const type = log.outputMode === 'handoff' ? 'handoff' : 'worklog';
-      const { sourceText: _s, ...exportData } = log;
-      void _s;
-      downloadFile(JSON.stringify(exportData, null, 2), `threadlog-${date}-${type}.json`, 'application/json');
-    }
-  };
   const handleBulkDelete = () => {
     const count = selected.size;
-    if (!window.confirm(lang === 'ja' ? `${count}件のログをゴミ箱に移動しますか？` : `Move ${count} logs to trash?`)) return;
+    if (!window.confirm(tf('bulkTrashConfirm', lang, count))) return;
     for (const id of selected) trashLog(id);
     exitSelectMode();
     onRefresh();
-    showToast?.(`${count} deleted`);
+    showToast?.(tf('bulkDeletedToast', lang, count), 'success');
   };
   const handleBulkAssignProject = (projectId: string) => {
     const count = selected.size;
@@ -541,7 +525,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
     if (projectId && showToast) {
       const project = projects.find((p) => p.id === projectId);
       const name = project?.name || '';
-      showToast(lang === 'ja' ? `${count}件のログを「${name}」に追加しました` : `Added ${count} log${count !== 1 ? 's' : ''} to "${name}"`);
+      showToast(tf('bulkAssignedToast', lang, count, name), 'success');
     }
   };
 
@@ -645,7 +629,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
               >
                 <FolderOpen size={11} />
                 <span style={{ borderBottom: '1px dashed var(--border-subtle)' }}>
-                  {lang === 'ja' ? 'プロジェクトに追加' : 'Add to project'}
+                  {t('addToProject', lang)}
                 </span>
               </button>
               {inlinePickerLogId === log.id && (
@@ -659,7 +643,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
                         updateLog(log.id, { projectId: p.id });
                         setInlinePickerLogId(null);
                         onRefresh();
-                        showToast?.(lang === 'ja' ? `「${p.name}」に追加しました` : `Added to "${p.name}"`, 'success');
+                        showToast?.(tf('addedToProject', lang, p.name), 'success');
                       }}
                     >
                       {p.icon && <span style={{ marginRight: 3 }}>{p.icon}</span>}
@@ -734,9 +718,59 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
 
   const renderItem = viewMode === 'list' ? renderLogListItem : renderLogCard;
 
+  // Build flat list for grouped view virtualization
+  type FlatItem = { type: 'header'; key: string; label: string; count: number } | { type: 'item'; log: LogEntry };
+  const flatItems = useMemo((): FlatItem[] => {
+    if (groupKey === 'none') return [];
+    const items: FlatItem[] = [];
+    for (const group of groups) {
+      if (group.label) {
+        items.push({ type: 'header', key: group.key, label: group.label, count: group.items.length });
+      }
+      for (const log of group.items) {
+        items.push({ type: 'item', log });
+      }
+    }
+    return items;
+  }, [groups, groupKey]);
+
+  const virtualData = groupKey === 'none' ? sorted : flatItems;
+
+  const virtualizer = useVirtualizer({
+    count: selectMode ? 0 : virtualData.length,
+    getScrollElement: useCallback(() => scrollContainerRef.current, []),
+    estimateSize: useCallback((index: number) => {
+      if (groupKey !== 'none') {
+        const item = flatItems[index];
+        if (item?.type === 'header') return 44;
+        if (viewMode === 'list') return 44;
+        if (item?.type === 'item') {
+          const log = item.log;
+          let h = 120;
+          if (log.tags.length > 0) h += 32;
+          if (log.outputMode === 'handoff' && log.nextActions && log.nextActions.length > 0) h += 24;
+          if (!activeProjectId && !log.projectId && projects.length > 0) h += 28;
+          return h;
+        }
+      }
+      if (viewMode === 'list') return 44;
+      // Non-grouped: use sorted array
+      const log = sorted[index];
+      if (log) {
+        let h = 120;
+        if (log.tags.length > 0) h += 32;
+        if (log.outputMode === 'handoff' && log.nextActions && log.nextActions.length > 0) h += 24;
+        if (!activeProjectId && !log.projectId && projects.length > 0) h += 28;
+        return h;
+      }
+      return 120;
+    }, [groupKey, flatItems, viewMode, sorted, activeProjectId, projects.length]),
+    overscan: 5,
+  });
+
   return (
-    <div className="workspace-content-wide">
-      <div className="page-header">
+    <div className="workspace-content-wide" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="page-header page-header-sticky">
         <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
           ← {t('back', lang)}
         </button>
@@ -772,53 +806,17 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
             )}
             {!selectMode && sorted.length > 0 && (
               <button className="btn" style={{ fontSize: 12, padding: '4px 12px', minHeight: 26 }} onClick={() => setSelectMode(true)}>
-                {lang === 'ja' ? '選択' : 'Select'}
+                {t('selectMode', lang)}
+              </button>
+            )}
+            {selectMode && (
+              <button className="btn" style={{ fontSize: 12, padding: '4px 12px', minHeight: 26 }} onClick={toggleAll}>
+                {selected.size === sorted.length ? t('deselectAll', lang) : t('selectAll', lang)}
               </button>
             )}
           </div>
         </div>
       </div>
-
-      {/* Bulk action bar */}
-      {selectMode && (
-        <div className="bulk-bar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <input type="checkbox" className="bulk-checkbox" checked={sorted.length > 0 && selected.size === sorted.length} onChange={toggleAll} />
-            <span style={{ fontWeight: 600, fontSize: 13 }}>
-              {selected.size > 0 ? (lang === 'ja' ? `${selected.size}件選択中` : `${selected.size} selected`) : (lang === 'ja' ? '選択してください' : 'Select items')}
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {selected.size > 0 && (
-              <>
-                {projects.length > 0 && (
-                  <div style={{ position: 'relative' }}>
-                    <button className="btn" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26 }} onClick={() => setProjectPickerOpen(!projectPickerOpen)}>
-                      {t('addToProject', lang)}
-                    </button>
-                    {projectPickerOpen && (
-                      <div className="card-menu-dropdown" style={{ right: 'auto', left: 0 }} onClick={(e) => e.stopPropagation()}>
-                        {projects.map((p) => (
-                          <button key={p.id} className="card-menu-item" onClick={() => handleBulkAssignProject(p.id)}>{p.name}</button>
-                        ))}
-                        <button className="card-menu-item" style={{ color: 'var(--text-placeholder)' }} onClick={() => handleBulkAssignProject('')}>
-                          {t('removeFromProject', lang)}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-                <button className="btn" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26 }} onClick={handleBulkDownloadMd}>.md</button>
-                <button className="btn" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26 }} onClick={handleBulkDownloadJson}>.json</button>
-                <button className="btn btn-danger" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26 }} onClick={handleBulkDelete}>{t('delete', lang)}</button>
-              </>
-            )}
-            <button className="btn" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26 }} onClick={exitSelectMode}>
-              {lang === 'ja' ? 'キャンセル' : 'Cancel'}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Toolbar: filter + search + sort + group */}
       <div className="content-card" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
@@ -839,6 +837,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t('searchLogs', lang)}
+          maxLength={200}
           style={{ flex: 1, minWidth: 120 }}
         />
         <DropdownMenu
@@ -1002,16 +1001,14 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '8px 12px', borderRadius: 8, background: 'var(--card-bg)', border: '1px solid var(--border-subtle)', fontSize: 12, color: 'var(--text-muted)' }}>
             <FolderOpen size={13} style={{ flexShrink: 0, color: 'var(--accent)' }} />
             <span>
-              {lang === 'ja'
-                ? `${unassigned}件のログがプロジェクト未割当です。プロジェクトに整理するとサマリーを生成できます。`
-                : `${unassigned} logs are not assigned to a project. Organize them to generate summaries.`}
+              {tf('unassignedLogsHint', lang, unassigned)}
             </span>
             <button
               className="btn"
               style={{ fontSize: 11, padding: '2px 10px', minHeight: 22, whiteSpace: 'nowrap', marginLeft: 'auto' }}
               onClick={() => { setSelectMode(true); setGroupKey('project'); }}
             >
-              {lang === 'ja' ? '整理する' : 'Organize'}
+              {t('organizeBtn', lang)}
             </button>
           </div>
         );
@@ -1032,63 +1029,99 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
             </>
           )}
         </div>
-      ) : groupKey === 'none' ? (() => {
-        const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
-        const pageItems = selectMode ? sorted : sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-        return (
-          <>
-            {pageItems.map(renderItem)}
-            {!selectMode && totalPages > 1 && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '16px 0' }}>
-                <button
-                  className="btn"
-                  style={{ fontSize: 12, padding: '4px 12px', minHeight: 26 }}
-                  disabled={currentPage <= 1}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                >
-                  {lang === 'ja' ? '← 前へ' : '← Prev'}
-                </button>
-                <span className="meta" style={{ fontSize: 12 }}>
-                  {currentPage} / {totalPages}{lang === 'ja' ? 'ページ' : ''}
-                </span>
-                <button
-                  className="btn"
-                  style={{ fontSize: 12, padding: '4px 12px', minHeight: 26 }}
-                  disabled={currentPage >= totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                >
-                  {lang === 'ja' ? '次へ →' : 'Next →'}
-                </button>
-              </div>
-            )}
-          </>
-        );
-      })() : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          {groups.map((group) => (
-            <div key={group.key}>
-              {group.label && (
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10, padding: '0 4px' }}>
-                  <span
-                    style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', cursor: groupKey === 'project' && group.key !== '_none' ? 'pointer' : undefined }}
-                    onClick={groupKey === 'project' && group.key !== '_none' ? () => onOpenProject?.(group.key) : undefined}
-                  >
-                    {group.label}
-                  </span>
-                  <span className="meta" style={{ fontSize: 12 }}>{tf('logCount', lang, group.items.length)}</span>
-                  {groupKey === 'project' && group.key !== '_none' && onOpenMasterNote && (
+      ) : selectMode ? (
+        /* Select mode: render all items without virtualization (needed for bulk selection UX) */
+        groupKey === 'none' ? (
+          <>{sorted.map(renderItem)}</>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {groups.map((group) => (
+              <div key={group.key}>
+                {group.label && (
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10, padding: '0 4px' }}>
                     <span
-                      style={{ fontSize: 11, color: 'var(--accent-text)', cursor: 'pointer', marginLeft: 'auto' }}
-                      onClick={() => onOpenMasterNote(group.key)}
+                      style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', cursor: groupKey === 'project' && group.key !== '_none' ? 'pointer' : undefined }}
+                      onClick={groupKey === 'project' && group.key !== '_none' ? () => onOpenProject?.(group.key) : undefined}
                     >
-                      {lang === 'ja' ? 'サマリーを見る →' : 'View Summary →'}
+                      {group.label}
                     </span>
-                  )}
+                    <span className="meta" style={{ fontSize: 12 }}>{tf('logCount', lang, group.items.length)}</span>
+                  </div>
+                )}
+                {group.items.map(renderLogCard)}
+              </div>
+            ))}
+          </div>
+        )
+      ) : (
+        /* Normal mode: virtualized rendering */
+        <div
+          ref={scrollContainerRef}
+          style={{ flex: 1, minHeight: 0, overflow: 'auto', maxHeight: 'calc(100vh - 200px)' }}
+        >
+          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+            {virtualizer.getVirtualItems().map((virtualItem) => {
+              if (groupKey !== 'none') {
+                const flatItem = flatItems[virtualItem.index];
+                if (flatItem.type === 'header') {
+                  return (
+                    <div
+                      key={virtualItem.key}
+                      style={{
+                        position: 'absolute',
+                        top: virtualItem.start,
+                        width: '100%',
+                        height: virtualItem.size,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10, padding: '10px 4px 0' }}>
+                        <span
+                          style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', cursor: groupKey === 'project' && flatItem.key !== '_none' ? 'pointer' : undefined }}
+                          onClick={groupKey === 'project' && flatItem.key !== '_none' ? () => onOpenProject?.(flatItem.key) : undefined}
+                        >
+                          {flatItem.label}
+                        </span>
+                        <span className="meta" style={{ fontSize: 12 }}>{tf('logCount', lang, flatItem.count)}</span>
+                        {groupKey === 'project' && flatItem.key !== '_none' && onOpenMasterNote && (
+                          <span
+                            style={{ fontSize: 11, color: 'var(--accent-text)', cursor: 'pointer', marginLeft: 'auto' }}
+                            onClick={() => onOpenMasterNote(flatItem.key)}
+                          >
+                            {t('viewSummaryLink', lang)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div
+                    key={virtualItem.key}
+                    style={{
+                      position: 'absolute',
+                      top: virtualItem.start,
+                      width: '100%',
+                    }}
+                  >
+                    {renderLogCard(flatItem.log)}
+                  </div>
+                );
+              }
+              const log = sorted[virtualItem.index];
+              return (
+                <div
+                  key={virtualItem.key}
+                  style={{
+                    position: 'absolute',
+                    top: virtualItem.start,
+                    width: '100%',
+                  }}
+                >
+                  {renderItem(log)}
                 </div>
-              )}
-              {group.items.map(renderLogCard)}
-            </div>
-          ))}
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -1103,7 +1136,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
             for (const id of logIds) updateLog(id, { projectId: activeProjectId });
             setLogPickerOpen(false);
             onRefresh();
-            showToast?.(lang === 'ja' ? `${logIds.length}件追加しました` : `${logIds.length} added`, 'success');
+            showToast?.(tf('bulkAddedToast', lang, logIds.length), 'success');
           }}
           onClose={() => setLogPickerOpen(false)}
         />
@@ -1117,6 +1150,55 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
           onConfirm={() => { trashLog(confirmTrashLog.id); setConfirmTrashLog(null); onRefresh(); }}
           onCancel={() => setConfirmTrashLog(null)}
         />
+      )}
+
+      {/* Floating bulk action bar (bottom) */}
+      {selectMode && (
+        <div style={{
+          position: 'sticky',
+          bottom: 0,
+          background: 'var(--bg-primary)',
+          borderTop: '1px solid var(--border-default)',
+          padding: 12,
+          display: 'flex',
+          gap: 8,
+          alignItems: 'center',
+          zIndex: 100,
+          boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
+        }}>
+          <span style={{ fontWeight: 600, fontSize: 13, marginRight: 'auto' }}>
+            {selected.size > 0 ? tf('selectedCount', lang, selected.size) : t('selectItems', lang)}
+          </span>
+          {selected.size > 0 && (
+            <>
+              <button className="btn btn-danger" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, display: 'flex', alignItems: 'center', gap: 4 }} onClick={handleBulkDelete}>
+                <Trash2 size={13} />
+                {t('bulkTrash', lang)}
+              </button>
+              {projects.length > 0 && (
+                <div style={{ position: 'relative' }}>
+                  <button className="btn" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => setProjectPickerOpen(!projectPickerOpen)}>
+                    <FolderOpen size={13} />
+                    {t('bulkAssignProject', lang)}
+                  </button>
+                  {projectPickerOpen && (
+                    <div className="card-menu-dropdown" style={{ right: 'auto', left: 0, bottom: '100%', top: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                      {projects.map((p) => (
+                        <button key={p.id} className="card-menu-item" onClick={() => handleBulkAssignProject(p.id)}>{p.name}</button>
+                      ))}
+                      <button className="card-menu-item" style={{ color: 'var(--text-placeholder)' }} onClick={() => handleBulkAssignProject('')}>
+                        {t('removeFromProject', lang)}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+          <button className="btn" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26 }} onClick={exitSelectMode}>
+            {t('cancel', lang)}
+          </button>
+        </div>
       )}
     </div>
   );

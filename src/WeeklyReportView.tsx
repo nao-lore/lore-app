@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Copy, Printer, Trash2, FileBarChart } from 'lucide-react';
 import type { LogEntry, Project, Todo, WeeklyReport } from './types';
-import { t } from './i18n';
+import { t, tf } from './i18n';
 import type { Lang } from './i18n';
-import { loadWeeklyReports, saveWeeklyReport, getWeeklyReport, deleteWeeklyReport } from './storage';
+import { loadWeeklyReports, saveWeeklyReport, getWeeklyReport, deleteWeeklyReport, setLastReportDate } from './storage';
 import { generateWeeklyReport, weeklyReportToMarkdown } from './weeklyReport';
 import ConfirmDialog from './ConfirmDialog';
 import { WORKLOAD_CONFIG } from './workload';
@@ -131,6 +131,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
       });
 
       saveWeeklyReport(report);
+      setLastReportDate(Date.now());
       setReportsVersion((v) => v + 1);
       setViewingReport(report);
       showToast?.(t('weeklyReportSaved', lang), 'success');
@@ -197,7 +198,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button className="btn" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => handleCopy(report)}>
-              <Copy size={12} /> {lang === 'ja' ? 'コピー' : 'Copy'}
+              <Copy size={12} /> {t('mnCopy', lang)}
             </button>
             <button className="btn" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, display: 'flex', alignItems: 'center', gap: 4 }} onClick={handlePrint}>
               <Printer size={12} /> {t('weeklyReportPrint', lang)}
@@ -247,14 +248,14 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
         {/* Completed TODOs */}
         {report.completedTodos.length > 0 && (
           <ReportSection title={t('weeklyReportCompletedTodos', lang)}>
-            <ul className="report-list report-list-check">{report.completedTodos.map((t, i) => <li key={i}>{t}</li>)}</ul>
+            <ul className="report-list report-list-check">{report.completedTodos.map((item, i) => <li key={i}>{item}</li>)}</ul>
           </ReportSection>
         )}
 
         {/* Pending TODOs */}
         {report.pendingTodos.length > 0 && (
           <ReportSection title={t('weeklyReportPendingTodos', lang)}>
-            <ul className="report-list report-list-pending">{report.pendingTodos.map((t, i) => <li key={i}>{t}</li>)}</ul>
+            <ul className="report-list report-list-pending">{report.pendingTodos.map((item, i) => <li key={i}>{item}</li>)}</ul>
           </ReportSection>
         )}
 
@@ -270,7 +271,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
           <div className="report-stats-grid">
             <div className="report-stat">
               <span className="report-stat-value">{report.stats.logCount}</span>
-              <span className="report-stat-label">{lang === 'ja' ? 'ログ' : 'Logs'}</span>
+              <span className="report-stat-label">{t('statsTotalLogs', lang)}</span>
             </div>
             <div className="report-stat">
               <span className="report-stat-value">{report.stats.worklogCount}</span>
@@ -282,7 +283,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
             </div>
             <div className="report-stat">
               <span className="report-stat-value">{report.stats.todoCompletionRate}%</span>
-              <span className="report-stat-label">TODO {lang === 'ja' ? '完了率' : 'Done'}</span>
+              <span className="report-stat-label">{t('weeklyReportTodoCompletionRate', lang)}</span>
             </div>
             {report.stats.averageWorkload && (
               <div className="report-stat" style={{ background: WORKLOAD_CONFIG[report.stats.averageWorkload as WorkloadLevel].bg }}>
@@ -296,7 +297,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
         </ReportSection>
 
         <div className="meta" style={{ marginTop: 16, fontSize: 11, textAlign: 'right' }}>
-          {lang === 'ja' ? '生成日時' : 'Generated'}: {formatDateFull(new Date(report.generatedAt).toISOString())}
+          {t('weeklyReportGeneratedAt', lang)}: {formatDateFull(new Date(report.generatedAt).toISOString())}
         </div>
       </div>
     );
@@ -353,7 +354,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className="meta" style={{ fontSize: 12 }}>
-            {weekLogs.length} {lang === 'ja' ? '件のログ' : `log${weekLogs.length !== 1 ? 's' : ''}`}
+            {tf('weeklyReportLogCountInline', lang, weekLogs.length)}
           </span>
           <button
             className="btn btn-primary"
@@ -371,7 +372,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
         <div className="empty-state" style={{ marginTop: 32 }}>
           <div className="empty-state-icon">&#128202;</div>
           <p>{t('weeklyReportNoLogs', lang)}</p>
-          <p className="page-subtitle">{lang === 'ja' ? 'ログを作成するとレポートを生成できます' : 'Create logs to generate a report'}</p>
+          <p className="page-subtitle">{t('weeklyReportNoLogsHint', lang)}</p>
         </div>
       )}
 
@@ -393,7 +394,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
             style={{ fontSize: 13 }}
             onClick={() => setViewingReport(existingReport)}
           >
-            {lang === 'ja' ? 'この週の保存済みレポートを表示' : 'View saved report for this week'}
+            {t('weeklyReportViewSaved', lang)}
           </button>
         </div>
       )}
@@ -411,7 +412,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
         {showSaved && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {savedReports.length === 0 ? (
-              <div className="empty-state" style={{ padding: '24px 0' }}>
+              <div className="empty-state">
                 <p>{t('weeklyReportNoSaved', lang)}</p>
                 <p className="page-subtitle">{t('weeklyReportNoSavedDesc', lang)}</p>
               </div>
@@ -460,6 +461,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
           cancelLabel={t('cancel', lang)}
           onConfirm={handleGenerate}
           onCancel={() => setConfirmOverwrite(false)}
+          danger={false}
         />
       )}
 

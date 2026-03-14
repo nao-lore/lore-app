@@ -70,13 +70,13 @@ export default function LogPickerModal({ allLogs, targetProjectId, projects, lan
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div ref={trapRef} className="modal-content log-picker-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+      <div ref={trapRef} className="modal-content log-picker-modal" role="dialog" aria-modal="true" aria-labelledby="log-picker-title" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="log-picker-header">
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+          <h3 id="log-picker-title" style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
             {t('addLogsTitle', lang)}
           </h3>
-          <button className="sidebar-icon-btn" onClick={onClose} style={{ flexShrink: 0 }} aria-label={lang === 'ja' ? '閉じる' : 'Close'}>
+          <button className="sidebar-icon-btn" onClick={onClose} style={{ flexShrink: 0 }} aria-label={t('ariaClose', lang)}>
             <X size={18} />
           </button>
         </div>
@@ -90,6 +90,7 @@ export default function LogPickerModal({ allLogs, targetProjectId, projects, lan
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('addLogsSearchPlaceholder', lang)}
             autoFocus
+            maxLength={200}
             style={{ width: '100%' }}
           />
         </div>
@@ -143,9 +144,7 @@ export default function LogPickerModal({ allLogs, targetProjectId, projects, lan
           {filtered.length > pickerVisibleCount && (
             <div style={{ textAlign: 'center', padding: '12px 0' }}>
               <button className="btn" onClick={() => setPickerVisibleCount((v) => v + PICKER_PAGE_SIZE)} style={{ fontSize: 13 }}>
-                {lang === 'ja'
-                  ? `さらに表示（残り${filtered.length - pickerVisibleCount}件）`
-                  : `Load more (${filtered.length - pickerVisibleCount} remaining)`}
+                {tf('loadMore', lang, filtered.length - pickerVisibleCount)}
               </button>
             </div>
           )}

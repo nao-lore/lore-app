@@ -1,6 +1,7 @@
 import type { LogEntry, Project } from './types';
 import { callProvider } from './provider';
 import { getApiKey } from './storage';
+import { extractJson } from './transform';
 
 const CORRECTIONS_KEY = 'threadlog_classify_corrections';
 
@@ -94,10 +95,8 @@ Rules:
       maxTokens: 128,
     });
 
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return { projectId: null, confidence: 0 };
-
-    const parsed = JSON.parse(jsonMatch[0]);
+    const jsonStr = extractJson(rawText);
+    const parsed = JSON.parse(jsonStr);
     const projectId = parsed.projectId || null;
     const confidence = typeof parsed.confidence === 'number' ? Math.max(0, Math.min(1, parsed.confidence)) : 0;
 
@@ -108,7 +107,7 @@ Rules:
 
     return { projectId, confidence };
   } catch (err) {
-    console.warn('[Classify] Failed:', err);
+    if (import.meta.env.DEV) console.warn('[Classify] Failed:', err);
     return { projectId: null, confidence: 0 };
   }
 }

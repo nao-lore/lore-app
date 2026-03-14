@@ -1,38 +1,32 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { transformText, transformHandoff, transformBoth, transformTodoOnly, transformHandoffTodo, CHAR_WARN, needsChunking } from './transform';
+import { transformText, transformHandoff, transformBoth, transformTodoOnly, transformHandoffTodo, buildHandoffLogEntry, CHAR_WARN, needsChunking } from './transform';
 import type { TransformBothOptions } from './transform';
 import { ChunkEngine, getChunkTarget, getEngineConcurrency } from './chunkEngine';
 import type { EngineProgress } from './chunkEngine';
 import { findSession } from './chunkDb';
-import { addLog, trashLog, updateLog, getLog, getApiKey, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateTodo as updateTodoStorage, duplicateLog, getAiContext, getMasterNote } from './storage';
+import { addLog, trashLog, updateLog, getLog, getApiKey, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateTodo as updateTodoStorage, duplicateLog, getAiContext, getMasterNote, linkLogs, unlinkLogs } from './storage';
 import { classifyLog, saveCorrection } from './classify';
 import { extractDocxText } from './docx';
 import { parseConversationJson } from './jsonImport';
-import { MoreVertical, Pin, CheckSquare, Square, ExternalLink, Copy, Check, Activity } from 'lucide-react';
+import { MoreVertical, Pin, CheckSquare, Square, ExternalLink, Copy, Check, Activity, FolderOpen, X, Link } from 'lucide-react';
 import { getGreeting } from './greeting';
 import ProgressPanel from './ProgressPanel';
 import type { ProgressStep } from './ProgressPanel';
+import SkeletonLoader from './SkeletonLoader';
 import { logToMarkdown, handoffResultToMarkdown } from './markdown';
-import type { TransformResult, HandoffResult, BothResult, LogEntry, OutputMode, SourceReference, Project, Todo } from './types';
+import type { TransformResult, HandoffResult, BothResult, LogEntry, OutputMode, SourceReference, Project, Todo, NextActionItem } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import ConfirmDialog from './ConfirmDialog';
+import ErrorRetryBanner from './ErrorRetryBanner';
 import { analyzeWorkload, WORKLOAD_CONFIG } from './workload';
 import { sendToNotion, sendToSlack, isNotionConfigured, isSlackConfigured } from './integrations';
 
-import { formatDateFull } from './utils/dateFormat';
+import { formatDateFull, formatDateTimeFull } from './utils/dateFormat';
+import { formatHandoffMarkdown, formatFullAiContext } from './formatHandoff';
+import { generateProjectContext } from './generateProjectContext';
 
 const formatDateUnified = formatDateFull;
-
-function formatDateTimeFull(iso: string): string {
-  const d = new Date(iso);
-  const y = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const h = String(d.getHours()).padStart(2, '0');
-  const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${y}/${mo}/${day} ${h}:${mi}`;
-}
 
 function downloadFile(content: string, fileName: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
@@ -62,11 +56,12 @@ interface WorkspaceProps {
   onDirtyChange?: (dirty: boolean) => void;
   onTagFilter?: (tag: string) => void;
   onOpenMasterNote?: (projectId: string) => void;
+  onSelectProject?: (projectId: string | null) => void;
 }
 
-export default function Workspace({ mode, selectedId, onSaved, onDeleted, onOpenLog, onBack, prevView, lang, activeProjectId, projects, onRefresh, showToast, onDirtyChange, onTagFilter, onOpenMasterNote }: WorkspaceProps) {
+export default function Workspace({ mode, selectedId, onSaved, onDeleted, onOpenLog, onBack, prevView, lang, activeProjectId, projects, onRefresh, showToast, onDirtyChange, onTagFilter, onOpenMasterNote, onSelectProject }: WorkspaceProps) {
   if (mode === 'detail' && selectedId) return <DetailView id={selectedId} onDeleted={onDeleted} onOpenLog={onOpenLog} onBack={onBack} prevView={prevView} lang={lang} projects={projects} onRefresh={onRefresh} showToast={showToast} onTagFilter={onTagFilter} allLogs={loadLogs()} onOpenMasterNote={onOpenMasterNote} />;
-  return <InputView onSaved={onSaved} onOpenLog={onOpenLog} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onDirtyChange={onDirtyChange} />;
+  return <InputView onSaved={onSaved} onOpenLog={onOpenLog} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onDirtyChange={onDirtyChange} onSelectProject={onSelectProject} />;
 }
 
 // --- Input View ---
@@ -155,7 +150,7 @@ function formatFileDate(ts: number): string {
   return `${month}/${day} ${hours}:${mins}`;
 }
 
-function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void; onDirtyChange?: (dirty: boolean) => void }) {
+function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, onSelectProject }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void; onDirtyChange?: (dirty: boolean) => void; onSelectProject?: (projectId: string | null) => void }) {
   const [text, setText] = useState('');
   const [files, setFiles] = useState<ImportedFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -175,13 +170,13 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
   const [transformAction, setTransformAction] = useState<TransformAction>(() => {
     try { const v = localStorage.getItem('threadlog_transform_action'); return (['both', 'handoff', 'worklog', 'todo_only', 'worklog_handoff', 'handoff_todo'].includes(v || '') ? v as TransformAction : 'handoff_todo'); } catch { return 'handoff_todo'; }
   });
-  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(activeProjectId ?? undefined);
   const [captureInfo, setCaptureInfo] = useState<CaptureInfo | null>(null);
   const [classifying, setClassifying] = useState(false);
   const [suggestion, setSuggestion] = useState<{ logId: string; projectId: string; projectName: string; confidence: number } | null>(null);
   const [postSavePickerOpen, setPostSavePickerOpen] = useState(false);
+  const [savedResult, setSavedResult] = useState<{ log: LogEntry; markdown: string; fullContext: string | null } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const engineRef = useRef<ChunkEngine | null>(null);
@@ -216,6 +211,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       setResult(null);
       setSavedId(null);
       setSavedHandoffId(null);
+      setSavedResult(null);
       setError('');
       setText('');
       // Parse the raw JSON to extract capture metadata before conversion
@@ -235,12 +231,12 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         setCaptureInfo(info);
         setTimeout(() => setCaptureInfo((cur) => cur === info ? null : cur), 5000);
       }
-      showToast?.('Extension から会話を受信しました', 'success');
+      showToast?.(t('extensionReceived', lang), 'success');
     } catch (err) {
       console.error('[Hash Import] Failed:', err);
       setError('Failed to import from extension.');
     }
-  }, [showToast]);
+  }, [showToast, lang]);
 
   // Run on mount + listen for hash changes (extension updates URL on existing tab)
   useEffect(() => {
@@ -255,7 +251,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     let cancelled = false;
     findSession(combined).then((info) => {
       if (!cancelled) setResumeInfo(info ?? null);
-    }).catch(() => {
+    }).catch((e) => {
+      console.warn('findSession failed:', e);
       if (!cancelled) setResumeInfo(null);
     });
     return () => { cancelled = true; };
@@ -309,6 +306,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     if (loading) return;
     if (!combined.trim()) { setError('Please enter or import some text.'); return; }
 
+    if (!navigator.onLine) { setError(t('offlineAiUnavailable', lang)); return; }
+
     const apiKey = getApiKey();
     if (!apiKey) { setError('[API Key] Not set. Go to Settings and enter your API key.'); return; }
 
@@ -316,7 +315,9 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     setTransformAction(action);
     try { localStorage.setItem('threadlog_transform_action', action); } catch { /* ignore */ }
 
-    setError(''); setLoading(true); setResult(null); setSavedId(null); setSavedHandoffId(null); setProgress(null); setSimStep(0); setStreamDetail(null);
+    setError(''); setLoading(true); setResult(null); setSavedId(null); setSavedHandoffId(null); setSavedResult(null); setProgress(null); setSimStep(0); setStreamDetail(null);
+
+    const _t0 = import.meta.env.DEV ? performance.now() : 0;
 
     // Normalize worklog_handoff → both internally
     const effectiveAction = action === 'worklog_handoff' ? 'both' as const : action;
@@ -331,70 +332,51 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
     try {
       let lastEntryId: string | null = null;
+      let savedHandoffLog: LogEntry | null = null;
 
       // --- Combined "both" mode — single API call ---
       if (isBoth) {
-        console.time('[both] total');
         let bothResult: BothResult;
         if (willChunk) {
-          console.time('[both] chunked API');
           const engine = new ChunkEngine();
           engineRef.current = engine;
           bothResult = await engine.processBoth(combined, apiKey, (p) => setProgress(p));
+          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response (chunked): ${(performance.now() - _t0).toFixed(0)}ms`);
           engineRef.current = null;
-          console.timeEnd('[both] chunked API');
         } else {
           setSimStep(0);
           setTimeout(() => setSimStep(1), 800);
-          console.time('[both] transformBoth call');
           let streamCharCount = 0;
           const bothOpts: TransformBothOptions = {
             onStream: (_chunk, accumulated) => {
               if (streamCharCount === 0) setSimStep(2);
               streamCharCount = accumulated.length;
-              setStreamDetail(`${lang === 'ja' ? 'AIが応答中' : 'Receiving'}... ${streamCharCount.toLocaleString()} chars`);
+              setStreamDetail(`${t('streamReceiving', lang)}... ${streamCharCount.toLocaleString()} chars`);
             },
             projects: !selectedProjectId && projects.length > 0
               ? projects.map(p => ({ id: p.id, name: p.name }))
               : undefined,
           };
           bothResult = await transformBoth(combined, bothOpts);
+          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response: ${(performance.now() - _t0).toFixed(0)}ms`);
           setStreamDetail(null);
-          console.timeEnd('[both] transformBoth call');
           setSimStep(4);
         }
 
         // Save handoff entry
-        console.time('[both] save handoff');
-        const handoffEntry: LogEntry = {
-          id: crypto.randomUUID(), createdAt: new Date().toISOString(),
-          importedAt: new Date().toISOString(),
-          title: bothResult.handoff.title,
+        const handoffEntry = buildHandoffLogEntry(bothResult.handoff, {
           projectId: selectedProjectId,
           sourceReference: buildSourceReference(text, files, combined.length),
-          outputMode: 'handoff',
-          today: [], decisions: bothResult.handoff.decisions || [], todo: [],
-          relatedProjects: [], tags: bothResult.handoff.tags || [],
-          currentStatus: bothResult.handoff.currentStatus || [], nextActions: bothResult.handoff.nextActions || [],
-          completed: bothResult.handoff.completed || [], blockers: bothResult.handoff.blockers || [],
-          constraints: bothResult.handoff.constraints || [], resumeContext: bothResult.handoff.resumeContext || [],
-        };
-        console.time('[both] addLog(handoff)');
+        });
         addLog(handoffEntry);
-        console.timeEnd('[both] addLog(handoff)');
-        console.time('[both] onSaved(handoff)');
+        savedHandoffLog = handoffEntry;
         onSaved(handoffEntry.id);
-        console.timeEnd('[both] onSaved(handoff)');
         setSavedHandoffId(handoffEntry.id);
-        console.timeEnd('[both] save handoff');
 
         // Save worklog entry
-        console.time('[both] save worklog');
         const r = bothResult.worklog;
-        console.time('[both] setResult + setOutputMode');
         setResult(r);
         setOutputMode('worklog'); // display worklog result (not handoff)
-        console.timeEnd('[both] setResult + setOutputMode');
         const worklogEntry: LogEntry = {
           id: crypto.randomUUID(), createdAt: new Date().toISOString(),
           importedAt: new Date().toISOString(),
@@ -405,17 +387,10 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           today: r.today, decisions: r.decisions, todo: r.todo,
           relatedProjects: r.relatedProjects, tags: r.tags,
         };
-        console.time('[both] addLog(worklog)');
         addLog(worklogEntry);
-        console.timeEnd('[both] addLog(worklog)');
-        console.time('[both] addTodosFromLog');
         addTodosFromLog(worklogEntry.id, r.todo);
-        console.timeEnd('[both] addTodosFromLog');
         todoCount = r.todo.length;
-        console.time('[both] onSaved(worklog)');
         lastEntryId = worklogEntry.id; onSaved(worklogEntry.id);
-        console.timeEnd('[both] onSaved(worklog)');
-        console.timeEnd('[both] save worklog');
 
         // Use inline classification from the combined response (no extra API call)
         if (!selectedProjectId && projects.length > 0 && bothResult.classification?.projectId) {
@@ -430,7 +405,6 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             updateLog(worklogEntry.id, { suggestedProjectId: cl.projectId ?? undefined, classificationConfidence: cl.confidence });
           }
         }
-        console.timeEnd('[both] total');
       }
 
       // --- Handoff only ---
@@ -440,29 +414,22 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           const engine = new ChunkEngine();
           engineRef.current = engine;
           r = await engine.processHandoff(combined, apiKey, (p) => setProgress(p));
+          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response (chunked): ${(performance.now() - _t0).toFixed(0)}ms`);
           engineRef.current = null;
         } else {
           setSimStep(0);
           setTimeout(() => setSimStep(1), 800);
           setTimeout(() => setSimStep(2), 2500);
           r = await transformHandoff(combined);
+          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response: ${(performance.now() - _t0).toFixed(0)}ms`);
           setSimStep(4);
         }
         setResult(r);
-        const entry: LogEntry = {
-          id: crypto.randomUUID(), createdAt: new Date().toISOString(),
-          importedAt: new Date().toISOString(),
-          title: r.title,
+        const entry = buildHandoffLogEntry(r, {
           projectId: selectedProjectId,
           sourceReference: buildSourceReference(text, files, combined.length),
-          outputMode: 'handoff',
-          today: [], decisions: r.decisions, todo: [],
-          relatedProjects: [], tags: r.tags,
-          currentStatus: r.currentStatus, nextActions: r.nextActions,
-          completed: r.completed, blockers: r.blockers,
-          constraints: r.constraints, resumeContext: r.resumeContext,
-        };
-        addLog(entry); lastEntryId = entry.id; onSaved(entry.id);
+        });
+        addLog(entry); savedHandoffLog = entry; lastEntryId = entry.id; onSaved(entry.id);
         if (!selectedProjectId && projects.length > 0) {
           triggerClassification(entry);
         }
@@ -513,20 +480,13 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
         const r = htResult.handoff;
         setResult(r);
-        const entry: LogEntry = {
-          id: crypto.randomUUID(), createdAt: new Date().toISOString(),
-          importedAt: new Date().toISOString(),
-          title: r.title,
+        const entry = buildHandoffLogEntry(r, {
           projectId: selectedProjectId,
           sourceReference: buildSourceReference(text, files, combined.length),
-          outputMode: 'handoff',
-          today: [], decisions: r.decisions, todo: htResult.todos.map(td => td.title),
-          relatedProjects: [], tags: r.tags,
-          currentStatus: r.currentStatus, nextActions: r.nextActions,
-          completed: r.completed, blockers: r.blockers,
-          constraints: r.constraints, resumeContext: r.resumeContext,
-        };
+        });
+        entry.todo = htResult.todos.map(td => td.title);
         addLog(entry);
+        savedHandoffLog = entry;
         addTodosFromLogWithMeta(entry.id, htResult.todos);
         todoCount = htResult.todos.length;
         lastEntryId = entry.id; onSaved(entry.id);
@@ -547,7 +507,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         const entry: LogEntry = {
           id: crypto.randomUUID(), createdAt: new Date().toISOString(),
           importedAt: new Date().toISOString(),
-          title: lang === 'ja' ? 'TODO抽出' : 'TODO Extraction',
+          title: t('todoExtractionTitle', lang),
           projectId: selectedProjectId,
           sourceReference: buildSourceReference(text, files, combined.length),
           outputMode: 'worklog',
@@ -566,71 +526,80 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       }
 
       if (lastEntryId) setSavedId(lastEntryId);
-      // Toast notification with effects
-      const lines: string[] = [];
-      if (isTodoOnly || isHandoffTodo) {
-        if (isHandoffTodo) lines.push(lang === 'ja' ? '🔁 ハンドオフを保存しました' : '🔁 Handoff saved');
-        if (todoCount > 0) {
-          lines.push(lang === 'ja' ? `✔ ${todoCount}件のTODOを抽出しました` : `✔ ${todoCount} TODOs extracted`);
-        } else if (isTodoOnly) {
-          lines.push(lang === 'ja' ? 'TODOが見つかりませんでした' : 'No TODOs found');
+
+      // Show preview panel for handoff/both modes; toast for worklog-only/todo-only
+      if (savedHandoffLog) {
+        const handoffMd = formatHandoffMarkdown(savedHandoffLog);
+        let fullContextMd: string | null = null;
+        if (savedHandoffLog.projectId) {
+          const project = projects.find(p => p.id === savedHandoffLog!.projectId);
+          const masterNote = getMasterNote(savedHandoffLog.projectId);
+          if (masterNote && project) {
+            const allLogs = loadLogs();
+            const ctx = generateProjectContext(masterNote, allLogs, project.name);
+            fullContextMd = formatFullAiContext(ctx, savedHandoffLog);
+          }
         }
-      } else if (doHandoff) lines.push(lang === 'ja' ? '🔁 ハンドオフを保存しました' : '🔁 Handoff saved');
-      if (!isTodoOnly && !isHandoffTodo && doWorklog) {
-        lines.push(lang === 'ja' ? '📝 ログを保存しました' : '📝 Log saved');
-        if (todoCount > 0) {
-          lines.push(lang === 'ja' ? `✔ ${todoCount}件のTODOを追加しました` : `✔ ${todoCount} TODOs added`);
+        setSavedResult({ log: savedHandoffLog, markdown: handoffMd, fullContext: fullContextMd });
+        // Still show todo count toast for handoff_todo mode
+        if (isHandoffTodo && todoCount > 0) {
+          showToast?.(tf('toastTodosExtracted', lang, todoCount), 'success');
         }
+      } else {
+        // Worklog-only or todo-only — just toast
+        const lines: string[] = [];
+        if (isTodoOnly) {
+          if (todoCount > 0) {
+            lines.push(tf('toastTodosExtracted', lang, todoCount));
+          } else {
+            lines.push(t('toastNoTodosFound', lang));
+          }
+        }
+        if (doWorklog) {
+          lines.push(t('toastLogSaved', lang));
+          if (todoCount > 0) {
+            lines.push(tf('toastTodosAdded', lang, todoCount));
+          }
+        }
+        showToast?.(lines.join('\n'), 'success');
       }
-      showToast?.(lines.join('\n'), 'success');
     } catch (err) {
       const raw = err instanceof Error ? err.message : 'Transform failed.';
       // Translate internal error tags to user-facing messages
       if (raw.includes('[API Key]')) {
-        setError(lang === 'ja'
-          ? 'APIキーが正しくありません。設定画面で確認してください。'
-          : 'Invalid or missing API key. Please check your key in Settings.');
+        setError(t('errorApiKey', lang));
       } else if (raw.includes('[Rate Limit]') || raw.includes('[Overloaded]')) {
-        setError(lang === 'ja'
-          ? 'APIのレート制限に達しました。しばらく時間をおいてから再度お試しください。'
-          : 'API rate limit was hit. Please wait a few minutes and try again.');
+        setError(t('errorRateLimit', lang));
       } else if (raw.includes('[Truncated]')) {
-        setError(lang === 'ja'
-          ? 'レスポンスが長すぎて途中で切れました。入力を短くして再試行してください。'
-          : 'Response was truncated. Try shorter input.');
+        setError(t('errorTruncated', lang));
       } else if (raw.includes('[Parse Error]') || raw.includes('[Non-JSON Response]')) {
-        setError(lang === 'ja'
-          ? 'AIの応答を正しく読み取れませんでした。もう一度お試しください。'
-          : 'Could not read the AI response. Please try again.');
+        setError(t('errorParseResponse', lang));
       } else if (raw.includes('[Cancelled]')) {
         setError('');
       } else if (raw.includes('[Too Long]')) {
-        setError(lang === 'ja'
-          ? '入力がAPIの上限を超えています。入力を分割して処理してください。'
-          : 'Input exceeds the API size limit. Please split your input.');
+        setError(t('errorTooLong', lang));
       } else if (raw.includes('[Network]') || raw.includes('Failed to fetch') || raw.includes('NetworkError') || (err instanceof TypeError && raw.includes('fetch'))) {
-        setError(lang === 'ja'
-          ? '通信に失敗しました。ネットワーク接続を確認して再試行してください。'
-          : 'Network error. Please check your connection and try again.');
+        setError(t('errorNetwork', lang));
       } else if (raw.includes('[AI Response]')) {
-        setError(lang === 'ja'
-          ? 'AIから空の応答が返されました。もう一度お試しください。'
-          : 'Received an empty response from the AI. Please try again.');
+        setError(t('errorEmptyResponse', lang));
       } else if (raw.includes('[API Error]')) {
-        setError(lang === 'ja'
-          ? 'APIエラーが発生しました。しばらくしてからもう一度お試しください。'
-          : 'An API error occurred. Please try again in a moment.');
+        setError(t('errorApiGeneric', lang));
       } else if (err instanceof TypeError) {
         // fetch TypeError (network failure, CORS, etc.)
-        setError(lang === 'ja'
-          ? '通信に失敗しました。ネットワーク接続を確認して再試行してください。'
-          : 'Network error. Please check your connection and try again.');
+        setError(t('errorNetwork', lang));
       } else {
-        setError(lang === 'ja'
-          ? 'エラーが発生しました。再試行してください。'
-          : 'An error occurred. Please try again.');
+        setError(t('errorGeneric', lang));
       }
     } finally {
+      if (import.meta.env.DEV && _t0) {
+        const _t1 = performance.now();
+        console.log(`[Perf] total: ${(_t1 - _t0).toFixed(0)}ms`);
+        // Render timing — fires after React commit
+        requestAnimationFrame(() => {
+          const _t2 = performance.now();
+          console.log(`[Perf] render: ${(_t2 - _t1).toFixed(0)}ms`);
+        });
+      }
       setLoading(false); setProgress(null); engineRef.current = null;
     }
   };
@@ -716,7 +685,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     const mn = getMasterNote(projectId);
     const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
     const isStale = mn && (Date.now() - mn.updatedAt > SEVEN_DAYS);
-    const msg = (lang === 'ja' ? `「${projectName}」に追加しました` : `Added to "${projectName}"`)
+    const msg = tf('addedToProject', lang, projectName)
       + '\n' + (isStale ? t('updateSummaryStale', lang) : t('updateSummaryPrompt', lang));
     showToast?.(msg, 'success');
   };
@@ -744,7 +713,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       const mn = getMasterNote(projectId);
       const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
       const isStale = mn && (Date.now() - mn.updatedAt > SEVEN_DAYS);
-      const msg = (lang === 'ja' ? `「${project.name}」に追加しました` : `Added to "${project.name}"`)
+      const msg = tf('addedToProject', lang, project.name)
         + '\n' + (isStale ? t('updateSummaryStale', lang) : t('updateSummaryPrompt', lang));
       showToast?.(msg, 'success');
     }
@@ -776,8 +745,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
   const progressLabel = !progress ? t('transforming', lang)
     : progress.phase === 'extract' ? tf('processing', lang, progress.current, progress.total)
     : progress.phase === 'merge' ? t('combiningResults', lang)
-    : progress.phase === 'completed' ? (lang === 'ja' ? '完了項目を収集中…' : 'Collecting completed items…')
-    : progress.phase === 'consistency' ? (lang === 'ja' ? '整合性チェック中…' : 'Checking consistency…')
+    : progress.phase === 'completed' ? t('phaseCollectingCompleted', lang)
+    : progress.phase === 'consistency' ? t('phaseConsistencyCheck', lang)
     : progress.phase === 'waiting' ? tf('waitingForApi', lang, progress.retryIn ?? 0)
     : progress.phase === 'paused' ? (progress.autoPaused ? t('autoPaused', lang) : t('paused', lang))
     : t('transforming', lang);
@@ -790,13 +759,85 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
-      {/* Greeting */}
-      <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', margin: '0 0 24px', color: 'var(--text-primary)', textAlign: 'center' }}>
+      {/* Greeting + Project Switcher */}
+      <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', margin: '0 0 8px', color: 'var(--text-primary)', textAlign: 'center' }}>
         {getGreeting(lang)}
       </h1>
+      {/* Post-generation preview panel */}
+      {savedResult && (
+        <div style={{ maxWidth: 760, margin: '0 auto', padding: 20 }}>
+          <h3 style={{ marginBottom: 12, fontSize: 18, fontWeight: 700 }}>{t('logSaved', lang)}</h3>
 
-      {/* Input Card */}
-      <div
+          {/* Markdown preview in a scrollable code-block style container */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 8,
+            padding: 16,
+            maxHeight: 400,
+            overflow: 'auto',
+            fontSize: 13,
+            fontFamily: 'monospace',
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.6,
+            marginBottom: 16,
+          }}>
+            {savedResult.fullContext || savedResult.markdown}
+          </div>
+
+          {/* Action buttons */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {savedResult.fullContext ? (
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  const text = savedResult.fullContext + '\n\n---\n\n' + savedResult.markdown;
+                  navigator.clipboard.writeText(text);
+                  showToast?.(t('copiedToClipboard', lang), 'success');
+                }}
+              >
+                <Copy size={14} /> {t('copyAiContext', lang)}
+              </button>
+            ) : (
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  navigator.clipboard.writeText(savedResult.markdown);
+                  showToast?.(t('copiedToClipboard', lang), 'success');
+                }}
+              >
+                <Copy size={14} /> {t('copyHandoff', lang)}
+              </button>
+            )}
+            <button
+              className="btn"
+              onClick={() => {
+                setSavedResult(null);
+                setResult(null);
+                setSavedId(null);
+                setSavedHandoffId(null);
+                setText('');
+                setFiles([]);
+                setError('');
+                setSuggestion(null);
+                setPostSavePickerOpen(false);
+              }}
+            >
+              {t('startNewLog', lang)}
+            </button>
+          </div>
+
+          {/* Subtitle explaining the buttons */}
+          {savedResult.fullContext && (
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
+              {t('copyAiContextTitle', lang)}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Input Card — hidden when preview panel is shown */}
+      {!savedResult && (<div
         className="input-card-hero"
         style={dragging ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 3px var(--accent-focus)' } : undefined}
       >
@@ -817,7 +858,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
               const ta = textareaRef.current;
               if (ta && ta.value.trim()) {
                 const len = ta.value.length;
-                setPasteFeedback(lang === 'ja' ? `テキストを検出しました（${len.toLocaleString()}文字）` : `Text detected (${len.toLocaleString()} characters)`);
+                setPasteFeedback(tf('pasteFeedback', lang, len.toLocaleString()));
                 setTimeout(() => setPasteFeedback(null), 3000);
                 ta.scrollTop = 0;
               }
@@ -825,7 +866,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           }}
           disabled={loading}
           autoFocus
-          placeholder={lang === 'ja' ? 'AIとの会話を貼り付け、\nまたはファイルをドロップ' : 'Paste an AI conversation,\nor drop a file here'}
+          placeholder={t('inputPlaceholder', lang)}
           style={{ opacity: loading ? 0.6 : 1 }}
         />
 
@@ -835,9 +876,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             {combined.length > 0 && (
               <span className="meta" style={{ fontSize: 11, color: overLimit ? 'var(--error-text)' : overWarn || willChunk ? 'var(--error-text)' : undefined }}>
                 {(text.length + files.reduce((sum, f) => sum + f.content.length, 0)).toLocaleString()}{t('chars', lang)}
-                {(overWarn || willChunk) && !overLimit && (lang === 'ja'
-                  ? '（長い入力のため処理に少し時間がかかる場合があります）'
-                  : ' (long input — processing may take a moment)')}
+                {(overWarn || willChunk) && !overLimit && t('longInputHint', lang)}
               </span>
             )}
             {pasteFeedback && (
@@ -880,10 +919,10 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             </button>
           )}
         </div>
-      </div>
+      </div>)}
 
       {/* Toolbar: mode tabs + project + import — single row */}
-      <div style={{ maxWidth: 640, margin: '10px auto 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {!savedResult && (<div style={{ maxWidth: 760, margin: '10px auto 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <div className="mode-selector">
             {(['handoff', 'handoff_todo', 'todo_only'] as TransformAction[]).map((a) => {
@@ -898,7 +937,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                 <button
                   key={a}
                   className={`mode-selector-btn${isActive ? ' active' : ''}`}
-                  onClick={() => { setTransformAction(a); localStorage.setItem('threadlog_transform_action', a); setAdvancedOpen(false); }}
+                  onClick={() => { setTransformAction(a); try { localStorage.setItem('threadlog_transform_action', a); } catch { /* ignore */ } }}
                 >
                   {label}
                 </button>
@@ -913,11 +952,11 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             disabled={loading}
             style={{ minWidth: 140, padding: '4px 8px', fontSize: 12, minHeight: 0, width: 'auto', flexShrink: 0 }}
           >
-            <option value="">{lang === 'ja' ? 'プロジェクトを選択' : 'Select project'}</option>
+            <option value="">{t('selectProject', lang)}</option>
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
 
-          <input ref={fileRef} type="file" accept=".txt,.md,.docx,.json" multiple onChange={handleFiles} style={{ display: 'none' }} />
+          <input ref={fileRef} type="file" accept=".txt,.md,.docx,.json" multiple onChange={handleFiles} aria-label="ファイルを選択" style={{ display: 'none' }} />
           <button className="input input-sm" onClick={() => fileRef.current?.click()} disabled={loading} style={{ minWidth: 'auto', padding: '4px 8px', fontSize: 12, minHeight: 0, width: 'auto', flexShrink: 0, cursor: 'pointer', textAlign: 'left' }}>
             + {files.length === 0 ? t('importFiles', lang) : t('addMoreFiles', lang)}
           </button>
@@ -928,51 +967,21 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             </button>
           )}
         </div>
-        {/* Advanced modes accordion */}
-        <div style={{ marginTop: 4 }}>
-          <button
-            onClick={() => setAdvancedOpen(!advancedOpen)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'inherit' }}
-          >
-            {t(advancedOpen ? 'advancedModesClose' : 'advancedModes', lang)}
-          </button>
-          {advancedOpen && (
-            <div style={{ marginTop: 6 }}>
-              <div className="mode-selector">
-                {(['worklog', 'worklog_handoff'] as TransformAction[]).map((a) => {
-                  const isActive = transformAction === a;
-                  const label = t(a === 'worklog_handoff' ? 'modeLabelWorklogHandoff' : 'modeLabelWorklog', lang);
-                  return (
-                    <button
-                      key={a}
-                      className={`mode-selector-btn${isActive ? ' active' : ''}`}
-                      onClick={() => { setTransformAction(a); localStorage.setItem('threadlog_transform_action', a); }}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      </div>)}
 
       {/* Capture banner — shown when data arrives from Chrome extension */}
       {captureInfo && (
-        <div className="capture-banner" style={{ maxWidth: 640, margin: '12px auto 0' }}>
+        <div className="capture-banner" style={{ maxWidth: 760, margin: '12px auto 0' }}>
           <div className="capture-banner-icon">✓</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="capture-banner-title">
-              {lang === 'ja'
-                ? `${captureSourceLabel(captureInfo.source)}から取り込みました`
-                : `Captured from ${captureSourceLabel(captureInfo.source)}`}
+              {tf('capturedFrom', lang, captureSourceLabel(captureInfo.source))}
             </div>
             <div className="capture-banner-meta">
               {captureInfo.messageCount} messages · {captureInfo.charCount.toLocaleString()} {t('chars', lang)}
             </div>
             <div className="capture-banner-hint">
-              {lang === 'ja' ? 'ボタンを押して変換してください' : 'Press the button to transform'}
+              {t('captureTransformHint', lang)}
             </div>
           </div>
           <button
@@ -984,8 +993,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       )}
 
       {/* File list — between card and options when files exist */}
-      {files.length > 0 && !captureInfo && (
-        <div className="file-list" style={{ marginTop: 12, maxWidth: 640, margin: '12px auto 0' }}>
+      {files.length > 0 && !captureInfo && !result && (
+        <div className="file-list" style={{ marginTop: 12, maxWidth: 760, margin: '12px auto 0' }}>
           {files.map((f, i) => (
             <div key={i} className="file-list-item">
               <span style={{ color: 'var(--text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -1032,22 +1041,26 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
       {/* Progress card — single transform (simulated steps) */}
       {loading && !progress && (
-        <ProgressPanel
-          steps={singleSteps}
-          state={{ stepIndex: simStep, detail: streamDetail || undefined }}
-          lang={lang}
-          heading={undefined}
-        />
+        <>
+          <ProgressPanel
+            steps={singleSteps}
+            state={{ stepIndex: simStep, detail: streamDetail || undefined }}
+            lang={lang}
+            heading={undefined}
+          />
+          <SkeletonLoader lang={lang} />
+        </>
       )}
 
       {/* Progress card — chunked transform (real progress) */}
       {loading && progress && (
+        <>
         <ProgressPanel
           heading={undefined}
           steps={[{ label: progress.phase === 'extract' ? tf('processing', lang, progress.current, progress.total)
             : progress.phase === 'merge' ? t('combiningResults', lang)
-            : progress.phase === 'completed' ? (lang === 'ja' ? '完了項目を収集中…' : 'Collecting completed items…')
-            : progress.phase === 'consistency' ? (lang === 'ja' ? '整合性チェック中…' : 'Checking consistency…')
+            : progress.phase === 'completed' ? t('phaseCollectingCompleted', lang)
+            : progress.phase === 'consistency' ? t('phaseConsistencyCheck', lang)
             : progress.phase === 'waiting' ? tf('waitingRetry', lang, progress.retryIn ?? 0, progress.retryAttempt ?? 0, progress.retryMax ?? 0)
             : progress.autoPaused ? t('autoPaused', lang)
             : t('paused', lang) }]}
@@ -1061,8 +1074,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                 estMinutes > 0 ? tf('estimatedTime', lang, estMinutes) : '',
               ].filter(Boolean).join(' · ')
             ) : progress.phase === 'merge' ? tf('combiningGroups', lang, progress.current, progress.total)
-            : progress.phase === 'completed' ? (lang === 'ja' ? 'チャットログ全体から完了項目を収集しています' : 'Collecting completed items from full chat log')
-            : progress.phase === 'consistency' ? (lang === 'ja' ? 'マージ結果の整合性を確認しています' : 'Verifying merged results for consistency')
+            : progress.phase === 'completed' ? t('phaseCollectingCompletedDetail', lang)
+            : progress.phase === 'consistency' ? t('phaseConsistencyCheckDetail', lang)
             : progress.phase === 'waiting' ? `${tf('waitingForApi', lang, progress.retryIn ?? 0)} · ${tf('itemsSaved', lang, progress.savedCount)}`
             : progress.autoPaused ? t('autoPausedDesc', lang)
             : `${tf('itemsSaved', lang, progress.savedCount)} · ${t('clickResumeHint', lang)}`,
@@ -1088,17 +1101,17 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             </button>
           </>}
         />
+        <SkeletonLoader lang={lang} />
+        </>
       )}
 
       {error && (
-        <div className="alert-error" style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-          <span>{error}</span>
-          {combined.trim() && (
-            <button className="btn" style={{ fontSize: 12, padding: '4px 12px', minHeight: 26, flexShrink: 0 }} onClick={() => { setError(''); runTransform(transformAction); }}>
-              {lang === 'ja' ? '再試行' : 'Retry'}
-            </button>
-          )}
-        </div>
+        <ErrorRetryBanner
+          message={error}
+          retryLabel={t('tryAgain', lang)}
+          onRetry={combined.trim() ? () => { setError(''); runTransform(transformAction); } : undefined}
+          onDismiss={() => setError('')}
+        />
       )}
 
       {result && (
@@ -1113,7 +1126,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                     onClick={() => onOpenLog(savedHandoffId)}
                     style={{ fontSize: 13, padding: '5px 14px', minHeight: 30 }}
                   >
-                    {lang === 'ja' ? 'ハンドオフを見る' : 'View Handoff'}
+                    {t('viewHandoff', lang)}
                   </button>
                 )}
                 <button
@@ -1121,7 +1134,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                   onClick={() => onOpenLog(savedId)}
                   style={{ fontSize: 13, padding: '5px 14px', minHeight: 30 }}
                 >
-                  {savedHandoffId ? (lang === 'ja' ? 'ログを見る' : 'View Log') : t('openSavedLog', lang)}
+                  {savedHandoffId ? t('viewLog', lang) : t('openSavedLog', lang)}
                 </button>
               </div>
             </div>
@@ -1213,7 +1226,33 @@ function WorklogResultDisplay({ result, lang }: { result: TransformResult; lang:
 function HandoffResultDisplay({ result, lang }: { result: HandoffResult; lang: Lang }) {
   return (
     <>
-      {result.resumeContext.length > 0 && (
+      {/* Session Context (handoffMeta) */}
+      {result.handoffMeta && (result.handoffMeta.sessionFocus || result.handoffMeta.whyThisSession || result.handoffMeta.timePressure) && (
+        <div className="resume-context-hero" style={{ marginBottom: 12 }}>
+          <div className="resume-context-hero-label">{lang === 'ja' ? 'セッション概要' : 'Session Context'}</div>
+          <div className="resume-context-hero-body">
+            {[
+              result.handoffMeta.sessionFocus && `Focus: ${result.handoffMeta.sessionFocus}`,
+              result.handoffMeta.whyThisSession && `Why: ${result.handoffMeta.whyThisSession}`,
+              result.handoffMeta.timePressure && `Time: ${result.handoffMeta.timePressure}`,
+            ].filter(Boolean).join('\n')}
+          </div>
+        </div>
+      )}
+      {/* Resume Checklist */}
+      {result.resumeChecklist && result.resumeChecklist.length > 0 ? (
+        <div className="resume-context-hero">
+          <div className="resume-context-hero-label">{t('sectionResumeContext', lang)}</div>
+          <div className="resume-context-hero-body">
+            {result.resumeChecklist.map((item, i) => {
+              const parts = [item.action];
+              if (item.whyNow) parts.push(`  → ${item.whyNow}`);
+              if (item.ifSkipped) parts.push(`  ⚠ ${item.ifSkipped}`);
+              return `${i + 1}. ${parts.join('\n')}`;
+            }).join('\n')}
+          </div>
+        </div>
+      ) : result.resumeContext.length > 0 && (
         <div className="resume-context-hero">
           <div className="resume-context-hero-label">{t('sectionResumeContext', lang)}</div>
           <div className="resume-context-hero-body">{result.resumeContext.join('\n')}</div>
@@ -1221,6 +1260,9 @@ function HandoffResultDisplay({ result, lang }: { result: HandoffResult; lang: L
       )}
       <Section title={t('sectionCurrentStatus', lang)} items={result.currentStatus} />
       <Section title={t('sectionNextActions', lang)} items={result.nextActions} />
+      {result.actionBacklog && result.actionBacklog.length > 0 && (
+        <Section title={lang === 'ja' ? 'バックログ' : 'Action Backlog'} items={result.actionBacklog.map(a => a.action)} />
+      )}
       <Section title={t('sectionCompleted', lang)} items={result.completed} />
       <Section title={t('sectionDecisions', lang)} items={result.decisions} />
       <Section title={t('sectionBlockers', lang)} items={result.blockers} />
@@ -1316,7 +1358,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
   const handleCopyWithContext = async () => {
     setMenuOpen(false);
     if (!log.projectId) {
-      showToast?.(lang === 'ja' ? '先にプロジェクトに追加してください' : 'Add to a project first', 'default');
+      showToast?.(t('addToProjectFirst', lang), 'default');
       return;
     }
     const ctx = getAiContext(log.projectId);
@@ -1372,10 +1414,10 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
 
   const handleTitleSave = () => {
     const trimmed = titleDraft.trim();
-    if (trimmed && trimmed !== log!.title) {
+    if (trimmed && trimmed !== log?.title) {
       updateLog(id, { title: trimmed, updatedAt: new Date().toISOString() });
       onRefresh();
-      showToast?.(t('titleUpdated', lang));
+      showToast?.(t('titleUpdated', lang), 'success');
     }
     setEditingTitle(false);
   };
@@ -1388,7 +1430,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
     updateLog(id, { memo: memoDraft.trim() || undefined, updatedAt: new Date().toISOString() });
     setEditingMemo(false);
     onRefresh();
-    showToast?.(t('memoSaved', lang));
+    showToast?.(t('memoSaved', lang), 'success');
   };
 
   const handleAnalyzeWorkload = async () => {
@@ -1458,7 +1500,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
                   className="tag"
                   style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
                   onClick={() => onOpenMasterNote?.(project.id)}
-                  title={lang === 'ja' ? 'プロジェクトサマリーを表示' : 'View Project Summary'}
+                  title={t('viewProjectSummary', lang)}
                 >
                   {project.icon && <span style={{ fontSize: 13 }}>{project.icon}</span>}
                   {project.name}
@@ -1480,7 +1522,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
                     cursor: 'pointer',
                   }}
                   onClick={handleAnalyzeWorkload}
-                  title={lang === 'ja' ? 'クリックで再分析' : 'Click to re-analyze'}
+                  title={t('clickToReanalyze', lang)}
                 >
                   <Activity size={10} />
                   {t('workloadLevel', lang)}: {WORKLOAD_CONFIG[log.workloadLevel].label(lang)}
@@ -1509,6 +1551,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
                     if (e.key === 'Escape') handleTitleCancel();
                   }}
                   autoFocus
+                  maxLength={200}
                   style={{ flex: 1, fontSize: 18, fontWeight: 700, padding: '2px 8px' }}
                 />
               ) : (
@@ -1525,7 +1568,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
                 onClick={() => {
                   if (!log.pinned) {
                     const pinnedCount = loadLogs().filter((l) => l.pinned).length;
-                    if (pinnedCount >= 5) { showToast?.(t('pinLimitReached', lang)); return; }
+                    if (pinnedCount >= 5) { showToast?.(t('pinLimitReached', lang), 'error'); return; }
                   }
                   updateLog(id, { pinned: !log.pinned }); onRefresh();
                 }}
@@ -1542,10 +1585,10 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
               className="btn btn-primary"
               onClick={handleCopyWithContext}
               style={{ flexShrink: 0, fontSize: 12, padding: '6px 14px', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}
-              title={lang === 'ja' ? '次のAIセッションに貼り付けるコンテキストをコピー' : 'Copy context to paste into your next AI session'}
+              title={t('copyAiContextTitle', lang)}
             >
               <Copy size={13} />
-              {lang === 'ja' ? 'AI Context コピー' : 'Copy AI Context'}
+              {t('copyAiContext', lang)}
             </button>
           )}
           <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -1568,7 +1611,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
                   {copied ? t('copied', lang) : t('copyMarkdown', lang)}
                 </button>
                 <button className="card-menu-item" onClick={handleCopyWithContext}>
-                  {lang === 'ja' ? 'AI Context付きコピー' : 'Copy with Context'}
+                  {t('copyWithContext', lang)}
                 </button>
                 <button className="card-menu-item" onClick={() => handleDetailExport('md')}>
                   Export .md
@@ -1629,26 +1672,17 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
         </div>
       )}
 
-      {/* Handoff copy button + Resume Context hero */}
+      {/* Handoff copy buttons + Resume Context hero */}
       {isHandoff && (
         <>
-          <div style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
             <button
-              className="btn btn-primary"
+              className="btn"
               style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}
               onClick={async () => {
                 try {
-                  const handoffMd = logToMarkdown(log);
-                  let copyText = handoffMd;
-                  if (log.projectId) {
-                    const ctx = getAiContext(log.projectId);
-                    if (ctx) {
-                      copyText = ctx + '\n\n---\n\n## Latest Handoff\n' + handoffMd;
-                    } else {
-                      showToast?.(t('aiContextNeeded', lang), 'default');
-                    }
-                  }
-                  await navigator.clipboard.writeText(copyText);
+                  const handoffMd = formatHandoffMarkdown(log);
+                  await navigator.clipboard.writeText(handoffMd);
                   showToast?.(t('logCopied', lang), 'success');
                 } catch {
                   showToast?.(t('copyFailed', lang), 'error');
@@ -1658,8 +1692,64 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
               <Copy size={14} />
               {t('copyHandoff', lang)}
             </button>
+            {log.projectId && (() => {
+              const project = projects.find(p => p.id === log.projectId);
+              const mn = getMasterNote(log.projectId!);
+              if (!project || !mn) return null;
+              return (
+                <button
+                  className="btn btn-primary"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}
+                  title={t('copyAiContextTitle', lang)}
+                  onClick={async () => {
+                    try {
+                      const allLogs = loadLogs();
+                      const ctx = generateProjectContext(mn, allLogs, project.name);
+                      const aiContextMd = formatFullAiContext(ctx, log);
+                      const handoffMd = formatHandoffMarkdown(log);
+                      await navigator.clipboard.writeText(aiContextMd + '\n\n---\n\n' + handoffMd);
+                      showToast?.(t('logCopied', lang), 'success');
+                    } catch {
+                      showToast?.(t('copyFailed', lang), 'error');
+                    }
+                  }}
+                >
+                  <Copy size={14} />
+                  {t('copyAiContext', lang)}
+                </button>
+              );
+            })()}
           </div>
+          {/* Session Context (handoffMeta) */}
+          {log.handoffMeta && (log.handoffMeta.sessionFocus || log.handoffMeta.whyThisSession || log.handoffMeta.timePressure) && (
+            <div className="resume-context-hero" style={{ marginBottom: 8 }}>
+              <div className="resume-context-hero-label">{lang === 'ja' ? 'セッション概要' : 'Session Context'}</div>
+              <div className="resume-context-hero-body">
+                {[
+                  log.handoffMeta.sessionFocus && `Focus: ${log.handoffMeta.sessionFocus}`,
+                  log.handoffMeta.whyThisSession && `Why: ${log.handoffMeta.whyThisSession}`,
+                  log.handoffMeta.timePressure && `Time: ${log.handoffMeta.timePressure}`,
+                ].filter(Boolean).join('\n')}
+              </div>
+            </div>
+          )}
+          {/* Resume Checklist (structured or legacy) */}
           {(() => {
+            if (log.resumeChecklist && log.resumeChecklist.length > 0) {
+              return (
+                <div className="resume-context-hero" style={{ marginBottom: 16 }}>
+                  <div className="resume-context-hero-label">{t('sectionResumeContext', lang)}</div>
+                  <div className="resume-context-hero-body">
+                    {log.resumeChecklist.map((item, i) => {
+                      const parts = [item.action];
+                      if (item.whyNow) parts.push(`  → ${item.whyNow}`);
+                      if (item.ifSkipped) parts.push(`  ⚠ ${item.ifSkipped}`);
+                      return `${i + 1}. ${parts.join('\n')}`;
+                    }).join('\n')}
+                  </div>
+                </div>
+              );
+            }
             const resumeItems = log.resumeContext || (log.resumePoint ? [log.resumePoint] : []);
             return resumeItems.length > 0 ? (
               <div className="resume-context-hero" style={{ marginBottom: 16 }}>
@@ -1706,6 +1796,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
             <CheckableCardSection
               title={t('sectionNextActions', lang)}
               items={log.nextActions || []}
+              richItems={log.nextActionItems}
               checkedIndices={log.checkedActions || []}
               onToggle={(index) => {
                 const current = log.checkedActions || [];
@@ -1714,6 +1805,9 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
                 onRefresh();
               }}
             />
+            {log.actionBacklog && log.actionBacklog.length > 0 && (
+              <CardSection title={lang === 'ja' ? 'バックログ' : 'Action Backlog'} items={log.actionBacklog.map(a => a.action)} />
+            )}
             <CardSection title={t('sectionCompleted', lang)} items={log.completed || []} isNew={(item) => isNewItem(item, prevHandoff?.completed)} />
             <CardSection title={t('sectionDecisions', lang)} items={log.decisions} isNew={(item) => isNewItem(item, prevHandoff?.decisions)} />
             <CardSection title={t('sectionBlockers', lang)} items={log.blockers || []} isNew={(item) => isNewItem(item, prevHandoff?.blockers)} />
@@ -1767,6 +1861,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
                 placeholder={t('memoPlaceholder', lang)}
                 autoFocus
                 rows={4}
+                maxLength={10000}
                 style={{ width: '100%', resize: 'vertical', fontSize: 14, lineHeight: 1.6 }}
               />
               <div style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
@@ -1866,23 +1961,175 @@ function TodoSection({ logId, lang, todosVersion, onToggle }: { logId: string; l
 // --- Shared ---
 
 function RelatedLogsSection({ log, onOpenLog, lang }: { log: LogEntry; onOpenLog: (id: string) => void; lang: Lang }) {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  void refreshKey;
+
   const allLogs = loadLogs();
-  // Find other logs in the same project (excluding current)
-  const related = log.projectId
+
+  // Explicitly linked logs (bidirectional backlinks)
+  const currentLog = getLog(log.id);
+  const linkedIds = currentLog?.relatedLogIds || [];
+  const linkedLogs = linkedIds
+    .map((lid) => allLogs.find((l) => l.id === lid))
+    .filter((l): l is LogEntry => !!l);
+
+  // Same-project logs (excluding current and already-linked)
+  const linkedIdSet = new Set(linkedIds);
+  const projectLogs = log.projectId
     ? allLogs
-        .filter((l) => l.projectId === log.projectId && l.id !== log.id)
+        .filter((l) => l.projectId === log.projectId && l.id !== log.id && !linkedIdSet.has(l.id))
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 8)
     : [];
 
-  if (related.length === 0) return null;
+  // Search candidates (all logs except current and already linked)
+  const searchCandidates = searchQuery.trim()
+    ? allLogs
+        .filter((l) => l.id !== log.id && !linkedIdSet.has(l.id))
+        .filter((l) => l.title.toLowerCase().includes(searchQuery.toLowerCase()))
+        .slice(0, 10)
+    : [];
+
+  const handleLink = (targetId: string) => {
+    linkLogs(log.id, targetId);
+    setSearchQuery('');
+    setSearchOpen(false);
+    setRefreshKey((k) => k + 1);
+  };
+
+  const handleUnlink = (targetId: string) => {
+    unlinkLogs(log.id, targetId);
+    setRefreshKey((k) => k + 1);
+  };
+
+  useEffect(() => {
+    if (searchOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [searchOpen]);
+
+  // Close search dropdown on outside click
+  useEffect(() => {
+    if (!searchOpen) return;
+    const close = (e: MouseEvent) => {
+      const container = document.querySelector('[data-related-search]');
+      if (container && !container.contains(e.target as Node)) setSearchOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [searchOpen]);
+
+  const hasLinked = linkedLogs.length > 0;
+  const hasProject = projectLogs.length > 0;
+  const showSection = hasLinked || hasProject;
 
   return (
     <div className="content-card">
-      <div className="content-card-header">{t('relatedLogs', lang)}</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {related.map((r) => {
-          return (
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showSection ? 8 : 0 }}>
+        <div className="content-card-header" style={{ margin: 0 }}>{t('relatedLogs', lang)}</div>
+        <div style={{ position: 'relative' }} data-related-search>
+          <button
+            className="btn"
+            style={{ fontSize: 12, padding: '2px 10px', minHeight: 24, display: 'flex', alignItems: 'center', gap: 4 }}
+            onClick={() => { setSearchOpen(!searchOpen); setSearchQuery(''); }}
+          >
+            <Link size={12} />
+            {t('linkLog', lang)}
+          </button>
+          {searchOpen && (
+            <div style={{
+              position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 100,
+              background: 'var(--card-bg)', border: '1px solid var(--border-default)',
+              borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', width: 320, maxHeight: 300, overflow: 'hidden',
+            }}>
+              <div style={{ padding: 8 }}>
+                <input
+                  ref={searchInputRef}
+                  className="input"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('searchLogs', lang)}
+                  style={{ width: '100%', fontSize: 13, padding: '6px 10px' }}
+                />
+              </div>
+              <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+                {searchQuery.trim() && searchCandidates.length === 0 && (
+                  <div style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-placeholder)' }}>
+                    {t('noMatches', lang)}
+                  </div>
+                )}
+                {searchCandidates.map((c) => (
+                  <button
+                    key={c.id}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px',
+                      background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+                      fontSize: 13, color: 'var(--text-body)',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--sidebar-hover)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                    onClick={() => handleLink(c.id)}
+                  >
+                    <span className={c.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} style={{ flexShrink: 0 }}>
+                      {c.outputMode === 'handoff' ? 'H' : 'L'}
+                    </span>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Explicitly linked logs */}
+      {hasLinked && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: hasProject ? 12 : 0 }}>
+          {linkedLogs.map((r) => (
+            <span
+              key={r.id}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '4px 10px', borderRadius: 16,
+                background: 'var(--accent-bg, #f3f0ff)', fontSize: 13,
+                border: '1px solid var(--border-default)',
+              }}
+            >
+              <span className={r.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'}>
+                {r.outputMode === 'handoff' ? 'H' : 'L'}
+              </span>
+              <span
+                style={{ cursor: 'pointer', color: 'var(--accent-text)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                onClick={() => onOpenLog(r.id)}
+                title={r.title}
+              >
+                {r.title}
+              </span>
+              <button
+                onClick={() => handleUnlink(r.id)}
+                title={t('unlink', lang)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  color: 'var(--text-placeholder)', borderRadius: '50%', width: 18, height: 18,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--danger-text, #e53e3e)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-placeholder)')}
+              >
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Same-project logs */}
+      {hasProject && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {projectLogs.map((r) => (
             <button
               key={r.id}
               className="log-link-item"
@@ -1897,9 +2144,15 @@ function RelatedLogsSection({ log, onOpenLog, lang }: { log: LogEntry; onOpenLog
               </span>
               <ExternalLink size={11} style={{ color: 'var(--text-placeholder)', flexShrink: 0 }} />
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {!showSection && (
+        <p className="meta" style={{ fontSize: 13, margin: 0 }}>
+          {t('noMatches', lang)}
+        </p>
+      )}
     </div>
   );
 }
@@ -1924,7 +2177,7 @@ function CardSection({ title, items, isNew }: { title: string; items: string[]; 
   );
 }
 
-function CheckableCardSection({ title, items, checkedIndices, onToggle }: { title: string; items: string[]; checkedIndices: number[]; onToggle: (index: number) => void }) {
+function CheckableCardSection({ title, items, checkedIndices, onToggle, richItems }: { title: string; items: string[]; checkedIndices: number[]; onToggle: (index: number) => void; richItems?: NextActionItem[] }) {
   if (items.length === 0) return null;
   const doneCount = checkedIndices.length;
   return (
@@ -1936,14 +2189,43 @@ function CheckableCardSection({ title, items, checkedIndices, onToggle }: { titl
       <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
         {items.map((item, i) => {
           const checked = checkedIndices.includes(i);
+          const rich = richItems?.[i];
           return (
             <li
               key={i}
               onClick={() => onToggle(i)}
               style={{ marginBottom: 4, fontSize: 14, lineHeight: 1.7, color: checked ? 'var(--text-placeholder)' : 'var(--text-body)', display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', textDecoration: checked ? 'line-through' : 'none', padding: '4px 0', userSelect: 'none' }}
             >
-              {checked ? <CheckSquare size={16} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 3 }} /> : <Square size={16} style={{ color: 'var(--text-placeholder)', flexShrink: 0, marginTop: 3 }} />}
-              {item}
+              <span style={{ flexShrink: 0, marginTop: 3 }}>
+                {checked ? <CheckSquare size={16} style={{ color: 'var(--accent)' }} /> : <Square size={16} style={{ color: 'var(--text-placeholder)' }} />}
+              </span>
+              <span>
+                {item}
+                {rich && (rich.whyImportant || rich.priorityReason || rich.dueBy || (rich.dependsOn && rich.dependsOn.length > 0)) && (
+                  <span style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 8px', marginTop: 2 }}>
+                    {rich.whyImportant && (
+                      <span style={{ fontSize: 12, color: 'var(--text-subtle)', fontStyle: 'italic' }}>
+                        Why: {rich.whyImportant}
+                      </span>
+                    )}
+                    {rich.priorityReason && (
+                      <span style={{ fontSize: 12, color: 'var(--text-subtle)', fontStyle: 'italic' }}>
+                        Priority: {rich.priorityReason}
+                      </span>
+                    )}
+                    {rich.dependsOn && rich.dependsOn.length > 0 && (
+                      <span style={{ fontSize: 11, color: 'var(--text-placeholder)', fontStyle: 'italic' }}>
+                        Depends on: {rich.dependsOn.join(', ')}
+                      </span>
+                    )}
+                    {rich.dueBy && (
+                      <span style={{ fontSize: 11, color: 'var(--accent)', background: 'var(--bg-card)', borderRadius: 4, padding: '1px 6px', fontWeight: 500 }}>
+                        {rich.dueBy}
+                      </span>
+                    )}
+                  </span>
+                )}
+              </span>
             </li>
           );
         })}

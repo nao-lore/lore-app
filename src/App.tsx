@@ -1,29 +1,33 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
+import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Workspace from './Workspace';
-import HistoryView from './HistoryView';
-import SettingsPanel from './SettingsPanel';
-import MasterNoteView from './MasterNoteView';
-import ProjectsView from './ProjectsView';
-import TodoView from './TodoView';
-import TrashView from './TrashView';
-import ProjectSummaryListView from './ProjectSummaryListView';
-import ProjectHomeView from './ProjectHomeView';
-import TimelineView from './TimelineView';
-import DashboardView from './DashboardView';
-import HelpView from './HelpView';
-import WeeklyReportView from './WeeklyReportView';
-import KnowledgeBaseView from './KnowledgeBaseView';
 import CommandPalette from './CommandPalette';
+import BottomNav from './BottomNav';
 import { Toast } from './Toast';
 import { useToast } from './useToast';
 import ConfirmDialog from './ConfirmDialog';
 import Onboarding from './Onboarding';
+import ErrorBoundary from './ErrorBoundary';
 import { isOnboardingDone } from './onboardingState';
-import { loadLogs, loadProjects, loadTodos, loadMasterNotes, getUiLang, setUiLang, getTheme, setTheme as saveTheme, purgeExpiredTrash, updateLog, getLog } from './storage';
+
+const HistoryView = lazy(() => import('./HistoryView'));
+const SettingsPanel = lazy(() => import('./SettingsPanel'));
+const MasterNoteView = lazy(() => import('./MasterNoteView'));
+const ProjectsView = lazy(() => import('./ProjectsView'));
+const TodoView = lazy(() => import('./TodoView'));
+const TrashView = lazy(() => import('./TrashView'));
+const ProjectSummaryListView = lazy(() => import('./ProjectSummaryListView'));
+const ProjectHomeView = lazy(() => import('./ProjectHomeView'));
+const TimelineView = lazy(() => import('./TimelineView'));
+const DashboardView = lazy(() => import('./DashboardView'));
+const HelpView = lazy(() => import('./HelpView'));
+const WeeklyReportView = lazy(() => import('./WeeklyReportView'));
+const KnowledgeBaseView = lazy(() => import('./KnowledgeBaseView'));
+import { loadLogs, loadProjects, loadTodos, loadMasterNotes, getUiLang, setUiLang, getTheme, setTheme as saveTheme, purgeExpiredTrash, updateLog, getLog, getAutoReportSetting, getLastReportDate, setLastReportDate } from './storage';
 import type { ThemePref } from './storage';
 import type { FontSize } from './types';
-import { t } from './i18n';
+import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 
 const FONT_SIZE_KEY = 'threadlog_font_size';
@@ -31,7 +35,7 @@ const LAST_VIEW_KEY = 'threadlog_last_view';
 const LAST_PROJECT_KEY = 'threadlog_last_project';
 const SIDEBAR_KEY = 'threadlog_sidebar';
 
-const FONT_SIZE_ZOOM: Record<FontSize, number> = { small: 0.87, medium: 1, large: 1.13 };
+const FONT_SIZE_SCALE: Record<FontSize, number> = { small: 0.87, medium: 1, large: 1.13 };
 
 function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { console.error(`Failed to read localStorage key: ${key}`); return null; }
@@ -84,9 +88,30 @@ export default function App() {
   const inputDirtyRef = useRef(false);
   const [pendingNav, setPendingNav] = useState<(() => void) | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef<Record<string, number>>({});
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [showReportReminder, setShowReportReminder] = useState(false);
+  const [offlineStatus, setOfflineStatus] = useState<'online' | 'offline' | 'back'>(() =>
+    navigator.onLine ? 'online' : 'offline'
+  );
+
+  // Offline / online detection
+  useEffect(() => {
+    const handleOffline = () => setOfflineStatus('offline');
+    const handleOnline = () => {
+      setOfflineStatus('back');
+      const timer = setTimeout(() => setOfflineStatus('online'), 3000);
+      return () => clearTimeout(timer);
+    };
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, []);
 
   const logs = loadLogs();
   const projects = loadProjects();
@@ -101,23 +126,33 @@ export default function App() {
   }, [pendingCount]);
 
   // Overdue TODO banner
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const overdueTodos = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return todos.filter((td) => !td.done && td.dueDate && td.dueDate < today);
-  }, [todos]);
+    return todos.filter((td) => !td.done && td.dueDate && td.dueDate < todayKey);
+  }, [todos, todayKey]);
   const [bannerDismissed, setBannerDismissed] = useState(() =>
     sessionStorage.getItem('threadlog_overdue_dismissed') === todayKey
   );
   const showOverdueBanner = overdueTodos.length > 0 && !bannerDismissed;
 
-  // Apply font size via zoom on #root (compensate height for viewport)
+  // Apply font size via CSS transform scale on #root (cross-browser compatible)
   useEffect(() => {
     const root = document.getElementById('root');
     if (!root) return;
-    const z = FONT_SIZE_ZOOM[fontSize];
-    root.style.zoom = String(z);
-    root.style.height = z === 1 ? '100vh' : `calc(100vh / ${z})`;
+    const s = FONT_SIZE_SCALE[fontSize];
+    if (s === 1) {
+      root.style.transform = '';
+      root.style.transformOrigin = '';
+      root.style.width = '';
+      root.style.height = '100vh';
+    } else {
+      root.style.transform = `scale(${s})`;
+      root.style.webkitTransform = `scale(${s})`;
+      root.style.transformOrigin = 'top left';
+      root.style.webkitTransformOrigin = 'top left';
+      root.style.width = `${100 / s}%`;
+      root.style.height = `${100 / s}vh`;
+    }
   }, [fontSize]);
 
   const handleFontSizeChange = (size: FontSize) => {
@@ -137,6 +172,17 @@ export default function App() {
 
   // Purge expired trash on app load
   useEffect(() => { purgeExpiredTrash(); }, []);
+
+  // Auto weekly report reminder on app load
+  useEffect(() => {
+    if (!getAutoReportSetting()) return;
+    const last = getLastReportDate();
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    if (last === null || Date.now() - last >= sevenDays) {
+      setShowReportReminder(true);
+    }
+  }, []);
+
 
   // Chrome extension import: navigate to Create Log when #import= hash is detected
   useEffect(() => {
@@ -243,16 +289,50 @@ export default function App() {
 
   const refreshLogs = useCallback(() => setLogsVersion((v) => v + 1), []);
 
+  // Multi-tab localStorage sync: reload data when another tab changes storage
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (
+        e.key === 'threadlog_logs' ||
+        e.key === 'threadlog_projects' ||
+        e.key === 'threadlog_todos' ||
+        e.key === 'threadlog_master_notes'
+      ) {
+        refreshLogs();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [refreshLogs]);
+
+  // Warn user before closing tab with unsaved input
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (inputDirtyRef.current) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
+
   const goToRaw = (next: View) => {
+    // Save current scroll position before navigating away
+    if (scrollRef.current) {
+      scrollPositionRef.current[view] = scrollRef.current.scrollTop;
+    }
     setPrevView(view);
     setView(next);
   };
 
-  // Reset scroll position when view changes
+  // Restore scroll position when view changes (or reset to 0 for fresh views)
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = 0;
-    }
+    requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        const saved = scrollPositionRef.current[view];
+        scrollRef.current.scrollTo(0, saved || 0);
+      }
+    });
   }, [view]);
 
   // Navigation with dirty-input guard: only guard when leaving the input view
@@ -274,7 +354,7 @@ export default function App() {
   };
   const handleNewLog = () => { setSelectedId(null); setInputKey((k) => k + 1); goToRaw('input'); inputDirtyRef.current = false; };
   const handleSaved = (id: string) => { setSelectedId(id); refreshLogs(); inputDirtyRef.current = false; };
-  const handleDeleted = () => { setSelectedId(null); setInputKey((k) => k + 1); goToRaw('input'); refreshLogs(); showToast('Deleted'); inputDirtyRef.current = false; };
+  const handleDeleted = () => { setSelectedId(null); setInputKey((k) => k + 1); goToRaw('input'); refreshLogs(); showToast(t('deleted', lang), 'success'); inputDirtyRef.current = false; };
   const handleBack = () => { goTo(prevView === 'detail' ? (activeProjectId ? 'projecthome' : 'history') : prevView); };
 
   const handleUiLangChange = (v: Lang) => {
@@ -332,17 +412,33 @@ export default function App() {
     }
     if (view === 'masternote' && activeProjectId) {
       const project = projects.find((p) => p.id === activeProjectId);
-      if (project) return <MasterNoteView project={project} logs={logs} onBack={() => goTo(prevView === 'masternote' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} />;
+      if (project) {
+        const latestHandoff = logs
+          .filter((l) => l.projectId === activeProjectId && l.outputMode === 'handoff')
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] || undefined;
+        return <MasterNoteView project={project} logs={logs} latestHandoff={latestHandoff} onBack={() => goTo(prevView === 'masternote' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} />;
+      }
     }
     if (view === 'knowledgebase' && activeProjectId) {
       const project = projects.find((p) => p.id === activeProjectId);
       if (project) return <KnowledgeBaseView project={project} logs={logs} onBack={() => goTo(prevView === 'knowledgebase' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} />;
     }
-    return <Workspace key={inputKey} mode={view === 'detail' ? 'detail' : 'input'} selectedId={selectedId} onSaved={handleSaved} onDeleted={handleDeleted} onOpenLog={handleSelect} onBack={handleBack} prevView={prevView} lang={lang} activeProjectId={activeProjectId} projects={projects} onRefresh={refreshLogs} showToast={showToast} onDirtyChange={(dirty: boolean) => { inputDirtyRef.current = dirty; }} onTagFilter={handleTagFilter} onOpenMasterNote={handleOpenMasterNote} />;
+    // Fallback: 'input', 'detail', and any view that couldn't render (e.g. projecthome without activeProjectId)
+    return <Workspace key={inputKey} mode={view === 'detail' ? 'detail' : 'input'} selectedId={selectedId} onSaved={handleSaved} onDeleted={handleDeleted} onOpenLog={handleSelect} onBack={handleBack} prevView={prevView} lang={lang} activeProjectId={activeProjectId} projects={projects} onRefresh={refreshLogs} showToast={showToast} onDirtyChange={(dirty: boolean) => { inputDirtyRef.current = dirty; }} onTagFilter={handleTagFilter} onOpenMasterNote={handleOpenMasterNote} onSelectProject={setActiveProjectId} />;
   };
 
   return (
     <div style={{ display: 'flex', height: '100%' }}>
+      {!sidebarOpen && (
+        <button
+          className="mobile-menu-btn"
+          onClick={() => { setSidebarHidden(false); setSidebarOpen(true); safeSetItem(SIDEBAR_KEY, 'open'); }}
+          title={t('showSidebar', lang)}
+          aria-label={t('ariaShowSidebar', lang)}
+        >
+          <Menu size={20} />
+        </button>
+      )}
       {sidebarHidden && (
         <div
           className="sidebar-reveal-bar"
@@ -381,23 +477,27 @@ export default function App() {
           showToast={showToast}
         />
       )}
-      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', background: 'var(--bg-app)' }}>
-        <div style={{ minHeight: '100%', display: 'flex', justifyContent: 'center' }}>
-          {renderWorkspace()}
+      <div ref={scrollRef} data-main-scroll style={{ flex: 1, overflowY: 'auto', minHeight: 0, background: 'var(--bg-app)' }}>
+        <div style={{ height: '100%' }}>
+          <ErrorBoundary>
+            <Suspense fallback={null}>
+              <div className="view-fade-in" key={view}>
+                {renderWorkspace()}
+              </div>
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
       {showOverdueBanner && (
         <div className="overdue-banner">
           <span>
-            {lang === 'ja'
-              ? `期限切れのTODOが${overdueTodos.length}件あります`
-              : `${overdueTodos.length} overdue TODO${overdueTodos.length !== 1 ? 's' : ''}`}
+            {tf('overdueBanner', lang, overdueTodos.length)}
           </span>
           <button
             className="overdue-banner-link"
             onClick={() => goTo('todos')}
           >
-            {lang === 'ja' ? '→ TODOを確認する' : '→ View TODOs'}
+            {t('overdueBannerLink', lang)}
           </button>
           <button
             className="overdue-banner-close"
@@ -408,6 +508,47 @@ export default function App() {
           >
             ×
           </button>
+        </div>
+      )}
+      {showReportReminder && (
+        <div className="overdue-banner">
+          <span>{t('weeklyReportReminder', lang)}</span>
+          <button
+            className="overdue-banner-link"
+            onClick={() => {
+              setShowReportReminder(false);
+              setLastReportDate(Date.now());
+              goToRaw('weeklyreport');
+            }}
+          >
+            {t('generateNow', lang)}
+          </button>
+          <button
+            className="overdue-banner-close"
+            onClick={() => setShowReportReminder(false)}
+          >
+            ×
+          </button>
+        </div>
+      )}
+      <BottomNav
+        activeView={view}
+        onNavigate={(v) => {
+          if (v === 'input') { handleNewLog(); }
+          else if (v === 'settings') { goTo('settings' as View); }
+          else { goTo(v as View); }
+        }}
+        lang={lang}
+      />
+      {offlineStatus !== 'online' && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+          background: offlineStatus === 'offline' ? 'var(--warning-bg, #f59e0b)' : 'var(--success-bg, #22c55e)',
+          color: offlineStatus === 'offline' ? 'var(--warning-text, #78350f)' : 'var(--success-text, #052e16)',
+          textAlign: 'center', fontSize: 12, padding: '4px 0',
+          transition: 'opacity 0.3s',
+        }}>
+          {offlineStatus === 'offline' ? t('offline', lang) : t('backOnline', lang)}
         </div>
       )}
       <Toast {...toast} />
@@ -433,10 +574,10 @@ export default function App() {
       )}
       {pendingNav && (
         <ConfirmDialog
-          title={lang === 'ja' ? '入力中の内容が消えます' : 'Unsaved input will be lost'}
-          description={lang === 'ja' ? 'このまま移動しますか？' : 'Are you sure you want to navigate away?'}
-          confirmLabel={lang === 'ja' ? 'このまま移動' : 'Leave'}
-          cancelLabel={lang === 'ja' ? 'キャンセル' : 'Cancel'}
+          title={t('unsavedInputTitle', lang)}
+          description={t('unsavedInputDesc', lang)}
+          confirmLabel={t('unsavedInputConfirm', lang)}
+          cancelLabel={t('cancel', lang)}
           danger={false}
           onConfirm={() => { const nav = pendingNav; setPendingNav(null); inputDirtyRef.current = false; nav(); }}
           onCancel={() => setPendingNav(null)}
@@ -466,7 +607,7 @@ export default function App() {
             </div>
             <div style={{ marginTop: 16, textAlign: 'right' }}>
               <button className="btn" onClick={() => setShortcutsOpen(false)} style={{ fontSize: 13 }}>
-                {lang === 'ja' ? '閉じる' : 'Close'}
+                {t('close', lang)}
               </button>
             </div>
           </div>

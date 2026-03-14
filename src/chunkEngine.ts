@@ -1,10 +1,12 @@
-import type { TransformResult, HandoffResult, BothResult, OutputMode } from './types';
+import type { TransformResult, HandoffResult, BothResult, OutputMode, DecisionWithRationale, NextActionItem, ResumeChecklistItem, HandoffMeta } from './types';
 import type { ChunkSession, PartialResult } from './chunkDb';
 import { computeSourceHash, loadSession, saveSession, deleteSession } from './chunkDb';
 import { getLang } from './storage';
+import { getApiKey } from './storage';
 import { callProvider, callProviderStream, getActiveProvider } from './provider';
 import type { StreamCallback } from './provider';
-import { filterResolvedBlockers } from './transform';
+import { filterResolvedBlockers, normalizeNextActions, normalizeResumeChecklist, normalizeHandoffMeta, normalizeActionBacklog } from './transform';
+import { dedupStrings, dedupDecisions } from './utils/decisions';
 
 // =============================================================================
 // Worklog prompts
@@ -70,15 +72,20 @@ WHAT TO SKIP:
 - Background explanations
 
 Schema — output EXACTLY this structure:
-{"title":"string","currentStatus":["string"],"nextActions":["string"],"decisions":["string"],"blockers":["string"],"constraints":["string"]}
+{"title":"string","currentStatus":["string"],"nextActions":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"actionBacklog":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"decisions":[{"decision":"string","rationale":"string or null"}],"blockers":["string"],"constraints":["string"]}
 
 Field rules:
 - title: 1 short phrase, max 8 words
-- currentStatus: 3-5 bullets. PROJECT STATE right now — ONLY present-tense. What IS working, partial, broken. NO completed actions ("〜済み", "〜した", "fixed", "added" → skip). If a name/setting changed, use LATEST only.
-- nextActions: ONLY future tasks. "VERB + FILE/FUNCTION + SPECIFIC CHANGE". FORBIDDEN: "Continue work", "続きを進める". Risks → blockers. Constraints → constraints.
-- decisions: ONLY technical judgments, architecture choices, policy changes. ONE decision per bullet. FORBIDDEN: task-level content ("AをBに修正した" → skip), URLs, specific post content, concrete text passages. Keep only decisions that CONSTRAIN FUTURE WORK.
-- blockers: Risks, concerns, gotchas, known bugs. NOT constraints (→ constraints), NOT tasks (→ nextActions). Only issues STILL unresolved at end.
-- constraints: STABLE, ONGOING constraints (tech stack, budget, scope). NOT risks (→ blockers), NOT tasks (→ nextActions).
+- currentStatus: 3-5 bullets. PROJECT STATE right now — ONLY present-tense. NO completed actions → skip.
+- nextActions (immediate only, max 4): Tasks that MUST be done now or next work is blocked. Each MUST be {"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}. Non-blocking tasks → actionBacklog.
+  - whyImportant: Infer from context — what depends on this task? What breaks without it? Almost always fillable. null only if truly no context.
+  - priorityReason: Infer ordering signal from conversation flow. null only if all tasks equally urgent.
+- actionBacklog (max 7): Important but not immediately blocking. Same format. whyImportant should explain why this task is in the backlog.
+- decisions (active only, max 6): Only decisions still constraining future work. Each {"decision":"string","rationale":"string or null"}. EXCLUDE completed/overturned decisions.
+- blockers: Risks still unresolved at end. 0-3 bullets.
+- constraints: Stable rules. 0-3 bullets.
+
+NOTE: Do NOT output handoffMeta or resumeChecklist — those are generated at final merge.
 
 Language: Match input. Japanese → Japanese (keep file names/code terms in English). English → English.`;
 
@@ -87,16 +94,18 @@ export const HANDOFF_EXTRACT_LIGHT_PROMPT = HANDOFF_EXTRACT_PROMPT;
 
 const HANDOFF_EXTRACT_ULTRA_PROMPT = `JSON extraction machine. Output ONLY valid JSON. No text before/after. No markdown.
 
-{"title":"string","currentStatus":["string"],"nextActions":["string"],"decisions":["string"],"blockers":["string"],"constraints":["string"]}
+{"title":"string","currentStatus":["string"],"nextActions":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"actionBacklog":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"decisions":[{"decision":"string","rationale":"string or null"}],"blockers":["string"],"constraints":["string"]}
 
 Do NOT extract completed items — they are collected separately.
+Do NOT output handoffMeta or resumeChecklist — those are generated at final merge.
 
 Field rules:
-- currentStatus: present-tense state ONLY. What IS working, partial, broken. NO past actions ("fixed", "added", "〜した" → skip).
-- nextActions: future tasks only. "VERB + target + change".
-- decisions: ONLY technical judgments, architecture choices, policy changes. No task-level content, no URLs, no specific text passages.
-- blockers: risks, concerns, known bugs still unresolved.
-- constraints: stable rules (tech stack, scope, budget).
+- currentStatus: present-tense state ONLY. NO past actions → skip.
+- nextActions (immediate only, max 4): blocking tasks only. Non-blocking → actionBacklog. whyImportant: infer from context (what depends on this?). priorityReason: infer ordering signal. Both should be filled when possible.
+- actionBacklog (max 7): important but not blocking now. Same format. whyImportant: why is this in the backlog?
+- decisions (active only, max 6): still-active decisions only. Each {"decision":"string","rationale":"string or null"}.
+- blockers: risks, concerns still unresolved.
+- constraints: stable rules.
 
 Skip chat, greetings, opinions. Extract only work-related information.
 Japanese input → Japanese (keep code terms in English). English → English.`;
@@ -115,19 +124,22 @@ CRITICAL RULES — VIOLATION = FAILURE:
 4. If the input contains casual chat, opinions, or greetings — SKIP them. Extract only work items.
 
 Schema — output EXACTLY this structure:
-{"worklog":{"title":"string","today":["string"],"decisions":["string"],"todo":["string"]},"handoff":{"title":"string","currentStatus":["string"],"nextActions":["string"],"constraints":["string"]}}
+{"worklog":{"title":"string","today":["string"],"decisions":["string"],"todo":["string"]},"handoff":{"title":"string","currentStatus":["string"],"nextActions":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"actionBacklog":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"decisions":[{"decision":"string","rationale":"string or null"}],"constraints":["string"]}}
 
 worklog field rules:
 - title: 1 short phrase summarizing the main work topic
 - today: 3-8 specific action items with file names, values, parameters
-- decisions: ONE decision per bullet. NEVER combine multiple decisions into one item. Only items with explicit commitment markers. Empty [] if none.
+- decisions: ONE decision per bullet. Only items with explicit commitment markers. Empty [] if none.
 - todo: Only next actions the user explicitly committed to. Empty [] if none.
 
 handoff field rules:
 - title: reuse worklog title
-- currentStatus: PROJECT STATE right now. 3-5 bullets. ONLY present-tense — NO completed actions ("〜済み", "〜した", "fixed", "added" → completed). If a name/setting changed, use LATEST only.
-- nextActions: ONLY future tasks. "VERB + FILE/FUNCTION + SPECIFIC CHANGE". FORBIDDEN: "Continue work", "続きを進める". Risks → blockers. Constraints → constraints. 1-4 bullets.
-- constraints: STABLE, ONGOING constraints (tech stack, budget, scope). NOT risks, NOT tasks. 0-3 bullets.
+- currentStatus: PROJECT STATE right now. 3-5 bullets. ONLY present-tense.
+- nextActions (immediate only, max 4): Blocking tasks only. Non-blocking → actionBacklog. whyImportant: infer from context (what depends on this?). priorityReason: infer ordering signal. Both should be filled when possible.
+- actionBacklog (max 7): Important but not blocking now. Same format. whyImportant: why is this in the backlog?
+- decisions (active only, max 6): Still-active decisions only. Each {"decision":"string","rationale":"string or null"}.
+- constraints: Stable rules. 0-3 bullets.
+- Do NOT output handoffMeta or resumeChecklist — those are generated at final merge.
 
 Language: Match input language. Japanese input → Japanese output. English → English.`;
 
@@ -255,7 +267,7 @@ async function reformatToJson(
   proseText: string,
   schemaHint: string,
 ): Promise<PartialResult> {
-  console.warn(`[Reformat Fallback] Sending ${proseText.length} chars of prose back for JSON conversion`);
+  if (import.meta.env.DEV) console.warn(`[Reformat Fallback] Sending ${proseText.length} chars of prose back for JSON conversion`);
 
   const rawText = await callProvider({
     apiKey,
@@ -298,7 +310,6 @@ function tryRepairJson(raw: string): PartialResult | null {
   try {
     const parsed = JSON.parse(text);
     if (typeof parsed === 'object' && parsed !== null) {
-      console.log('[JSON Repair] Successfully repaired malformed JSON');
       return parsed as PartialResult;
     }
   } catch { /* repair failed */ }
@@ -328,8 +339,6 @@ async function callApiRaw(
     ? await callProviderStream(req, onStream)
     : await callProvider(req);
 
-  console.log('RAW AI RESPONSE:', rawText.slice(0, 300), rawText.length > 300 ? `... (${rawText.length} chars)` : '');
-
   // Step 1: Try local JSON repair first (no API call)
   const repaired = tryRepairJson(rawText);
   if (repaired) return repaired;
@@ -337,14 +346,13 @@ async function callApiRaw(
   // Step 2: Detect non-JSON — no '{' at all, model returned prose
   const firstBrace = rawText.indexOf('{');
   if (firstBrace === -1) {
-    console.error(`[Non-JSON Response] Model returned prose. Length: ${rawText.length}. Start: ${rawText.slice(0, 300)}`);
     // Fallback: ask the model to convert prose into JSON (skip for long handoff to save API calls)
     if (!skipReformat) {
       try {
         const schemaHint = extractSchemaHint(system);
         return await reformatToJson(apiKey, rawText, schemaHint);
-      } catch (fallbackErr) {
-        console.error('[Reformat Fallback] Failed:', fallbackErr);
+      } catch {
+        // reformat fallback failed
       }
     }
     throw new Error('[Non-JSON Response]');
@@ -358,17 +366,15 @@ async function callApiRaw(
     const stripped = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
     const hasCloseBrace = stripped.lastIndexOf('}') > stripped.indexOf('{');
     if (!hasCloseBrace) {
-      console.error(`[Truncated JSON] Response has { but no matching }. Length: ${rawText.length}. Ends: ...${rawText.slice(-200)}`);
       throw new Error('[Truncated]');
     }
     // Malformed JSON — try reformat fallback (skip for long handoff)
-    console.error(`[Malformed JSON] Has braces but JSON.parse failed. Length: ${rawText.length}. Start: ${rawText.slice(0, 300)}`);
     if (!skipReformat) {
       try {
         const schemaHint = extractSchemaHint(system);
         return await reformatToJson(apiKey, rawText, schemaHint);
-      } catch (fallbackErr) {
-        console.error('[Reformat Fallback] Failed:', fallbackErr);
+      } catch {
+        // reformat fallback failed
       }
     }
     throw new Error('[Parse Error]');
@@ -391,24 +397,58 @@ function toWorklog(raw: PartialResult): TransformResult {
 }
 
 function toHandoff(raw: PartialResult): HandoffResult {
-  // resumeContext may be a string (paragraph) or array — normalize to array
-  let resumeContext: string[] = [];
-  if (typeof raw.resumeContext === 'string') {
+  const completed = (raw.completed as string[]) || [];
+  const decisions = (raw.decisions as string[]) || [];
+  const decisionRationales = Array.isArray(raw.decisionRationales)
+    ? (raw.decisionRationales as DecisionWithRationale[])
+    : undefined;
+  const rawNextActions = (raw.nextActions as unknown[]) || [];
+  let { nextActions, nextActionItems } = normalizeNextActions(rawNextActions);
+  const resumeChecklist = normalizeResumeChecklist(raw.resumeChecklist);
+  let actionBacklog = normalizeActionBacklog(raw.actionBacklog);
+  const handoffMeta = normalizeHandoffMeta(raw.handoffMeta);
+  if (import.meta.env.DEV) {
+    console.log('[Chunk toHandoff] raw resumeChecklist:', JSON.stringify(raw.resumeChecklist));
+    console.log('[Chunk toHandoff] normalized resumeChecklist:', JSON.stringify(resumeChecklist));
+    console.log('[Chunk toHandoff] raw handoffMeta:', JSON.stringify(raw.handoffMeta));
+    console.log('[Chunk toHandoff] normalized handoffMeta:', JSON.stringify(handoffMeta));
+    console.log('[Chunk toHandoff] nextActionItems count:', nextActionItems.length, 'actionBacklog count:', actionBacklog.length);
+  }
+  // Enforce max 4 nextActions — overflow goes to actionBacklog
+  if (nextActionItems.length > 4) {
+    const overflow = nextActionItems.slice(4);
+    nextActionItems = nextActionItems.slice(0, 4);
+    nextActions = nextActionItems.map(i => i.action);
+    actionBacklog = [...overflow, ...actionBacklog].slice(0, 7);
+  }
+  if (import.meta.env.DEV) {
+    console.log('[Chunk toHandoff] AFTER cap: nextActionItems:', nextActionItems.length, 'actionBacklog:', actionBacklog.length);
+  }
+  // resumeContext: derived from resumeChecklist, fallback to raw
+  let resumeContext: string[];
+  if (resumeChecklist.length > 0) {
+    resumeContext = resumeChecklist.map(r => r.action);
+  } else if (typeof raw.resumeContext === 'string') {
     resumeContext = raw.resumeContext.trim() ? [raw.resumeContext.trim()] : [];
   } else if (Array.isArray(raw.resumeContext)) {
     resumeContext = raw.resumeContext as string[];
+  } else {
+    resumeContext = [];
   }
-  const completed = (raw.completed as string[]) || [];
-  const decisions = (raw.decisions as string[]) || [];
   return {
     title: (raw.title as string) || 'Untitled',
+    handoffMeta,
     currentStatus: (raw.currentStatus as string[]) || [],
-    nextActions: (raw.nextActions as string[]) || [],
+    resumeChecklist,
+    resumeContext,
+    nextActions,
+    nextActionItems,
+    actionBacklog: actionBacklog.length > 0 ? actionBacklog : undefined,
     completed,
     blockers: filterResolvedBlockers((raw.blockers as string[]) || [], completed, decisions),
     decisions,
+    decisionRationales,
     constraints: (raw.constraints as string[]) || [],
-    resumeContext,
     tags: (raw.tags as string[]) || [],
   };
 }
@@ -444,16 +484,10 @@ export function getSizeMode(sourceLength: number): SizeMode {
 // Local merge — combine partial results in JS, no API call
 // =============================================================================
 
+/** @deprecated Use dedupStrings from utils/decisions instead — kept as alias */
 function dedup(arr: string[]): string[] {
-  const seen = new Set<string>();
-  return arr.filter((s) => {
-    if (typeof s !== 'string') return false; // skip non-string entries from AI
-    const key = s.toLowerCase().trim();
-    if (!key) return false;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  // Filter non-strings first (AI may return objects), then deduplicate
+  return dedupStrings(arr.filter((s): s is string => typeof s === 'string'));
 }
 
 function collectStrings(partials: PartialResult[], key: string): string[] {
@@ -480,8 +514,11 @@ function flattenBothPartials(partials: PartialResult[]): PartialResult[] {
       today: w?.today, decisions: w?.decisions, todo: w?.todo,
       relatedProjects: w?.relatedProjects, tags: w?.tags || h?.tags,
       currentStatus: h?.currentStatus, nextActions: h?.nextActions,
+      nextActionItems: h?.nextActionItems, actionBacklog: h?.actionBacklog,
       completed: h?.completed, blockers: h?.blockers,
       constraints: h?.constraints, resumeContext: h?.resumeContext,
+      // Pass handoff decisions as decisionRationales (they may be objects from chunk prompts)
+      decisionRationales: h?.decisionRationales || h?.decisions,
     } as PartialResult;
   });
 }
@@ -494,6 +531,13 @@ function collectLastChunk(partials: PartialResult[], key: string): string[] {
     if (typeof v === 'string' && v.trim()) return [v];
   }
   return [];
+}
+
+/** Union two nullable string arrays, deduplicating. Returns null if both are null/empty. */
+function mergeStringArrays(a: string[] | null | undefined, b: string[] | null | undefined): string[] | null {
+  const combined = [...(a || []), ...(b || [])];
+  if (combined.length === 0) return null;
+  return [...new Set(combined)];
 }
 
 function localMerge(partials: PartialResult[], isBothMode = false): PartialResult {
@@ -509,9 +553,9 @@ function localMerge(partials: PartialResult[], isBothMode = false): PartialResul
     todo:            dedup(collectStrings(flat, 'todo')),
     relatedProjects: dedup(collectStrings(flat, 'relatedProjects')),
     tags:            dedup(collectStrings(flat, 'tags')),
-    // Handoff: last-chunk-wins for state/actions/resume (末尾が最新状態)
+    // Handoff: last-chunk-wins for state/resume (末尾が最新状態)
     currentStatus:   collectLastChunk(flat, 'currentStatus'),
-    nextActions:     collectLastChunk(flat, 'nextActions'),
+    nextActions:     [],  // populated below by mergeNextActionItems
     resumeContext:   collectLastChunk(flat, 'resumeContext'),
     // Handoff: collect from all chunks for accumulated items (均等マージ)
     completed:       dedup(collectStrings(flat, 'completed')),
@@ -519,11 +563,128 @@ function localMerge(partials: PartialResult[], isBothMode = false): PartialResul
     constraints:     dedup(collectStrings(flat, 'constraints')),
   };
 
-  // resumeContext = nextActions をそのまま使う（常に最新のアクションを再開チェックリストにする）
-  const na = merged.nextActions as string[] | undefined;
-  if (na && na.length > 0) {
-    merged.resumeContext = [...na];
+  // Merge decisionRationales from all chunks, deduplicate by decision text
+  // Chunks may return decisions as objects (new format) — normalize to decisionRationales
+  const allRationales: DecisionWithRationale[] = [];
+  for (const chunk of flat) {
+    // Check explicit decisionRationales first
+    const dr = chunk.decisionRationales;
+    if (Array.isArray(dr)) {
+      allRationales.push(...(dr as DecisionWithRationale[]));
+    }
+    // Also check decisions array — may contain {decision, rationale} objects from chunk prompts
+    const decs = chunk.decisions;
+    if (Array.isArray(decs)) {
+      for (const item of decs) {
+        if (typeof item === 'object' && item !== null && 'decision' in (item as Record<string, unknown>)) {
+          const obj = item as Record<string, unknown>;
+          allRationales.push({
+            decision: String(obj.decision || ''),
+            rationale: typeof obj.rationale === 'string' ? obj.rationale : null,
+          });
+        }
+      }
+    }
   }
+  merged.decisionRationales = dedupDecisions(allRationales);
+  // Backward compat: populate legacy decisions from merged decisionRationales
+  if (allRationales.length > 0) {
+    merged.decisions = (merged.decisionRationales as DecisionWithRationale[]).map(dr => dr.decision);
+  }
+
+  // Merge nextActionItems across chunks: action-level merge, latest chunk order wins
+  // Earlier chunks fill in missing metadata; dependsOn is union + dedup
+  {
+    const allChunkItems: { items: NextActionItem[]; chunkIndex: number }[] = [];
+    for (let ci = 0; ci < flat.length; ci++) {
+      const raw = flat[ci].nextActions;
+      if (Array.isArray(raw) && raw.length > 0) {
+        const { nextActionItems: items } = normalizeNextActions(raw as unknown[]);
+        allChunkItems.push({ items, chunkIndex: ci });
+      }
+    }
+    // Build a map keyed by action text; later chunks override earlier ones
+    const actionMap = new Map<string, { item: NextActionItem; chunkIndex: number }>();
+    for (const { items, chunkIndex } of allChunkItems) {
+      for (const item of items) {
+        const key = item.action;
+        const existing = actionMap.get(key);
+        if (existing) {
+          // Merge: latest wins for scalar fields, earlier fills gaps
+          const merged_item: NextActionItem = {
+            action: key,
+            whyImportant: item.whyImportant ?? existing.item.whyImportant,
+            priorityReason: item.priorityReason ?? existing.item.priorityReason,
+            dueBy: item.dueBy ?? existing.item.dueBy,
+            dependsOn: mergeStringArrays(existing.item.dependsOn, item.dependsOn),
+          };
+          actionMap.set(key, { item: merged_item, chunkIndex });
+        } else {
+          actionMap.set(key, { item: { ...item }, chunkIndex });
+        }
+      }
+    }
+    // Order: use the latest chunk that has nextActions, preserve its order, then append earlier-only items
+    const latestChunkIndex = allChunkItems.length > 0 ? allChunkItems[allChunkItems.length - 1].chunkIndex : -1;
+    const latestActions = allChunkItems.length > 0 ? allChunkItems[allChunkItems.length - 1].items.map(i => i.action) : [];
+    const orderedItems: NextActionItem[] = [];
+    const seen = new Set<string>();
+    // First: items in latest chunk order
+    for (const action of latestActions) {
+      const entry = actionMap.get(action);
+      if (entry) { orderedItems.push(entry.item); seen.add(action); }
+    }
+    // Then: items from earlier chunks not in latest
+    for (const [action, entry] of actionMap) {
+      if (!seen.has(action)) { orderedItems.push(entry.item); }
+    }
+    merged.nextActionItems = orderedItems;
+    merged.nextActions = orderedItems.map(i => i.action);
+  }
+
+  // Merge actionBacklog across chunks (same action-level merge as nextActionItems)
+  {
+    const allBacklogItems: { items: NextActionItem[]; chunkIndex: number }[] = [];
+    for (let ci = 0; ci < flat.length; ci++) {
+      const raw = flat[ci].actionBacklog;
+      if (Array.isArray(raw) && raw.length > 0) {
+        const items = normalizeActionBacklog(raw);
+        allBacklogItems.push({ items, chunkIndex: ci });
+      }
+    }
+    const backlogMap = new Map<string, NextActionItem>();
+    for (const { items } of allBacklogItems) {
+      for (const item of items) {
+        const existing = backlogMap.get(item.action);
+        if (existing) {
+          backlogMap.set(item.action, {
+            action: item.action,
+            whyImportant: item.whyImportant ?? existing.whyImportant,
+            priorityReason: item.priorityReason ?? existing.priorityReason,
+            dueBy: item.dueBy ?? existing.dueBy,
+            dependsOn: mergeStringArrays(existing.dependsOn, item.dependsOn),
+          });
+        } else {
+          backlogMap.set(item.action, { ...item });
+        }
+      }
+    }
+    // Latest chunk order for backlog too
+    const latestBacklog = allBacklogItems.length > 0 ? allBacklogItems[allBacklogItems.length - 1].items.map(i => i.action) : [];
+    const orderedBacklog: NextActionItem[] = [];
+    const seenBacklog = new Set<string>();
+    for (const action of latestBacklog) {
+      const entry = backlogMap.get(action);
+      if (entry) { orderedBacklog.push(entry); seenBacklog.add(action); }
+    }
+    for (const [action, entry] of backlogMap) {
+      if (!seenBacklog.has(action)) orderedBacklog.push(entry);
+    }
+    if (orderedBacklog.length > 0) merged.actionBacklog = orderedBacklog.slice(0, 7);
+  }
+
+  // resumeContext/resumeChecklist/handoffMeta are NOT merged from chunks —
+  // they are generated by final summarization after localMerge
 
   // For "both" mode, reconstruct nested structure so processBoth can split it
   if (isBothMode) {
@@ -535,8 +696,10 @@ function localMerge(partials: PartialResult[], isBothMode = false): PartialResul
     merged.handoff = {
       title: merged.title,
       currentStatus: merged.currentStatus, nextActions: merged.nextActions,
+      nextActionItems: merged.nextActionItems, actionBacklog: merged.actionBacklog,
       completed: merged.completed, blockers: merged.blockers,
-      constraints: merged.constraints, resumeContext: merged.resumeContext,
+      decisions: merged.decisions, decisionRationales: merged.decisionRationales,
+      constraints: merged.constraints,
       tags: merged.tags,
     } as PartialResult;
   }
@@ -544,8 +707,9 @@ function localMerge(partials: PartialResult[], isBothMode = false): PartialResul
   return merged;
 }
 
-// Retry config — fixed 10s wait, max 5 retries (rate limit avoidance via low concurrency)
-const RETRY_DELAY_SEC = 10;
+// Retry config
+const RETRY_DELAY_429 = 5;   // 429 fallback when no Retry-After header
+const RETRY_DELAY_503 = 2;   // 503 server overload — short retry
 const RETRY_MAX = 5;
 
 type ExtractMode = OutputMode | 'both';
@@ -705,6 +869,59 @@ CLEANUP RULES:
 Output format: ONLY the cleaned JSON object. Same schema as input. No markdown. No explanation. Start with { end with }.`;
 
 // =============================================================================
+// Final summarization — generates session-wide handoffMeta, resumeChecklist,
+// and compresses decisions to active-only (max 6).
+// Runs post-merge as a parallel promise alongside completed + consistency.
+// =============================================================================
+
+const FINAL_SUMMARIZATION_PROMPT = `You are a session summarizer. You receive a merged handoff memo (JSON) assembled from multiple chunks. Your job is to generate three session-wide fields that require holistic context — they CANNOT be extracted per-chunk.
+
+Output ONLY valid JSON with this exact schema:
+{
+  "handoffMeta": {
+    "sessionFocus": "string or null",
+    "whyThisSession": "string or null",
+    "timePressure": "string or null"
+  },
+  "resumeChecklist": [
+    {"action": "string", "whyNow": "string (REQUIRED)", "ifSkipped": "string (REQUIRED)"}
+  ],
+  "activeDecisions": [
+    {"decision": "string", "rationale": "string (infer if not stated)"}
+  ]
+}
+
+FIELD RULES:
+
+handoffMeta — each field is 1 sentence max:
+- sessionFocus: What was this session trying to advance? (1 sentence) null only if the session had no coherent focus.
+- whyThisSession: Why is this work important right now? (1 sentence) Infer from context — what larger goal does this session serve? null only if truly unknowable.
+- timePressure: What SPECIFIC phase, deadline, or dependency creates time pressure?
+  GOOD: "Phase 3実装がリリースブランチ切り(3/15)までに必要"
+  GOOD: "API migration must complete before v2 deprecation on April 1"
+  BAD: "急ぎ", "重要", "urgent" (vague words alone — must state WHAT creates the pressure)
+  INFERENCE ALLOWED: Convert weak expressions ("今週中に", "早めに", "〜の前に") into concrete phase statements using session context.
+  Example: chat says "早めにやりたい" + session is about launch prep → "ローンチ前にこの機能完成が必要"
+  null ONLY if no time pressure is mentioned or inferable at all.
+
+resumeChecklist — max 3 items. These are the FIRST things the next person (or future you) should do when resuming:
+- action: Use specific verbs — confirm, verify, decide, fix, implement, test, run. NOT just "確認する".
+  GOOD: "chunkEngine.tsのfinalSummarizationPromiseがhandoffMeta/resumeChecklistを正しくマージ結果に反映しているかテスト実行で確認"
+  BAD: "テストする", "確認する" (too vague)
+- whyNow: MANDATORY — NEVER null. Why is this the first thing to do? What downstream task or decision depends on this being done first? Infer from context.
+- ifSkipped: MANDATORY — NEVER null. What specific failure, delay, or wrong decision results from skipping this? Name the concrete consequence.
+  GOOD: {"action": "テスト実行でPhase 3変更のリグレッションを確認", "whyNow": "formatHandoff.tsの構造変更がCopy Handoff出力に影響するため、デプロイ前に検証必須", "ifSkipped": "resumeChecklistが表示されない・actionBacklogがCopy Handoffに混入するバグが本番流出"}
+  BAD: {"action": "テスト実行", "whyNow": null, "ifSkipped": null}
+
+activeDecisions — max 6. ONLY decisions that are STILL ACTIVE and affect future work:
+- Drop resolved, superseded, or one-time decisions
+- rationale: Why was this decided? What was the alternative? Infer from context when not explicitly stated.
+- If the input has decisionRationales, prefer those. If it only has decisions (string[]), infer rationale from context or set null.
+
+Language: Match input. Japanese → Japanese (keep code terms in English). English → English.
+No markdown. No explanation. Start with { end with }.`;
+
+// =============================================================================
 // Engine
 // =============================================================================
 
@@ -781,15 +998,10 @@ export class ChunkEngine {
     const label = `[Chunk ${current}/${total}]`;
     for (let attempt = 0; attempt <= RETRY_MAX; attempt++) {
       try {
-        console.log(`${label} sending request (maxTokens=${effectiveMaxTokens}, chars=${userMessage.length})`);
-        const t0 = Date.now();
         const result = await callApiRaw(apiKey, system, userMessage, effectiveMaxTokens, skipReformat, this._onStream);
-        const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
-        console.log(`${label} success (time=${elapsed}s)`);
         // Successful call — reduce delay toward minimum (adaptive cooldown)
         if (this._chunkDelay > 3) {
           this._chunkDelay = Math.max(3, this._chunkDelay * 0.7);
-          console.log(`[Adaptive] delay reduced to ${this._chunkDelay.toFixed(1)}s after success`);
         }
         return result;
       } catch (err) {
@@ -801,7 +1013,6 @@ export class ChunkEngine {
         // Adaptive: grow delay on rate limit
         if (isRateLimit) {
           this._chunkDelay = Math.min(30, this._chunkDelay * 2);
-          console.log(`[Adaptive] delay increased to ${this._chunkDelay.toFixed(1)}s after rate limit`);
         }
         const isTruncated = msg.includes('[Truncated]');
         const isParseError = msg.includes('[Parse Error]');
@@ -812,23 +1023,24 @@ export class ChunkEngine {
         if (isTruncated && attempt < 2) {
           const prev = effectiveMaxTokens;
           effectiveMaxTokens = Math.min(Math.ceil(effectiveMaxTokens * 1.5), 8192);
-          console.warn(`${label} retry #${attempt + 1} after Truncated (maxTokens: ${prev}→${effectiveMaxTokens})`);
+          if (import.meta.env.DEV) console.warn(`${label} retry #${attempt + 1} after Truncated (maxTokens: ${prev}→${effectiveMaxTokens})`);
           await this.waitInterruptible(2000);
           continue;
         }
 
         // Non-JSON / Parse errors: quick retry (up to 2 times)
         if ((isNonJson || isParseError) && attempt < 2) {
-          console.warn(`${label} retry #${attempt + 1} after ${isNonJson ? 'Non-JSON' : 'Parse Error'} (delay=3s)`);
+          if (import.meta.env.DEV) console.warn(`${label} retry #${attempt + 1} after ${isNonJson ? 'Non-JSON' : 'Parse Error'} (delay=3s)`);
           await this.waitInterruptible(3000);
           continue;
         }
 
-        // Rate limit / retryable errors: use API-requested delay or fallback to RETRY_DELAY_SEC
+        // Rate limit / retryable errors: 429 uses Retry-After or 5s, 503 uses 2s
         if (isRetryable && attempt < RETRY_MAX) {
           const saved = Object.keys(session.partials).length;
-          const delaySec = apiRetrySec > 0 ? apiRetrySec : RETRY_DELAY_SEC;
-          console.warn(`${label} retry #${attempt + 1} after ${isRateLimit ? '429' : msg.slice(0, 30)} (delay=${delaySec}s${apiRetrySec > 0 ? ' from API' : ' default'})`);
+          const is503 = msg.includes('[Overloaded]');
+          const delaySec = apiRetrySec > 0 ? apiRetrySec : is503 ? RETRY_DELAY_503 : RETRY_DELAY_429;
+          if (import.meta.env.DEV) console.warn(`${label} retry #${attempt + 1} after ${isRateLimit ? (is503 ? '503' : '429') : msg.slice(0, 30)} (delay=${delaySec}s${apiRetrySec > 0 ? ' from API' : ''})`);
 
           const waitEnd = Date.now() + delaySec * 1000;
           while (Date.now() < waitEnd) {
@@ -903,15 +1115,11 @@ export class ChunkEngine {
     onProgress: ProgressCallback,
     onStream?: StreamCallback,
   ): Promise<BothResult> {
-    console.time('[processBoth] total');
     this._onStream = onStream;
-    console.time('[processBoth] processGeneric');
     const raw = await this.processGeneric(sourceText, apiKey, onProgress, 'both');
-    console.timeEnd('[processBoth] processGeneric');
     this._onStream = undefined;
 
     // raw contains { worklog: {...}, handoff: {...} } from combined prompt
-    console.time('[processBoth] split result');
     const w = (raw as Record<string, unknown>).worklog as Record<string, unknown> | undefined;
     const h = (raw as Record<string, unknown>).handoff as Record<string, unknown> | undefined;
 
@@ -919,8 +1127,6 @@ export class ChunkEngine {
       worklog: toWorklog(w || raw),
       handoff: toHandoff(h || raw),
     };
-    console.timeEnd('[processBoth] split result');
-    console.timeEnd('[processBoth] total');
     return result;
   }
 
@@ -937,13 +1143,8 @@ export class ChunkEngine {
     onProgress: ProgressCallback,
     mode: ExtractMode,
   ): Promise<PartialResult> {
-    // Unique run ID to avoid console.time collisions on double-invocation
-    const runId = `${mode}-${Date.now().toString(36)}`;
-    const timer = (label: string) => `[${runId}] ${label}`;
-    console.time(timer('total'));
     this._paused = false;
     this._cancelled = false;
-    console.time(timer('setup'));
     const config = getModeConfig(mode, sourceText.length);
     const hash = computeSourceHash(sourceText);
     let session = await loadSession(hash);
@@ -989,8 +1190,6 @@ export class ChunkEngine {
     }
 
     const completedCount = chunks.length - workItems.length;
-    console.timeEnd(timer('setup'));
-    console.log(`[${runId}] [Extract] ${chunks.length} chunks, ${completedCount} cached, ${workItems.length} to process (concurrency=${ChunkEngine.getConcurrency()})`);
 
     // Report initial progress
     onProgress({
@@ -1007,7 +1206,6 @@ export class ChunkEngine {
         await this.checkPause(onProgress, session, finished, chunks.length);
       }
 
-      console.log(`[Extract] chunk ${i + 1}/${chunks.length} (${chunks[i].length} chars)`);
       const userMsg = `${langInstruction}\n\nPart ${i + 1}/${chunks.length}. ${config.extractInstruction}\n\n---BEGIN CHAT LOG---\n${chunks[i]}\n---END CHAT LOG---\n\nRemember: Output ONLY the JSON object. Start with { and end with }. No other text.`;
       const result = await this.callWithRetry(
         apiKey, config.extractPrompt,
@@ -1029,7 +1227,6 @@ export class ChunkEngine {
       if (getActiveProvider() === 'anthropic' && finished < chunks.length) {
         const jitter = (Math.random() - 0.5) * 2; // ±1s jitter
         const delaySec = Math.max(1, this._chunkDelay + jitter);
-        console.log(`[Extract] Claude cooldown: ${delaySec.toFixed(1)}s (adaptive base=${this._chunkDelay.toFixed(1)}s)`);
         onProgress({
           phase: 'waiting', current: finished, total: chunks.length,
           savedCount: finished,
@@ -1040,17 +1237,15 @@ export class ChunkEngine {
     };
 
     // Concurrency-limited parallel execution
-    console.time(timer('extract all chunks'));
     if (workItems.length > 0) {
       await this.runParallel(workItems, processChunk, ChunkEngine.getConcurrency());
     }
-    console.timeEnd(timer('extract all chunks'));
 
     // Collect all partials in order — filter out any undefined entries from corrupted cache
     const allPartials = chunks.map((_, i) => session!.partials[String(i)]).filter(Boolean);
 
     if (allPartials.length === 1) {
-      // Single chunk — still need completed extraction for handoff/both
+      // Single chunk — still need completed extraction + final summarization for handoff/both
       if (mode === 'handoff' || mode === 'both') {
         try {
           // Build compact input from the single partial (NOT full sourceText)
@@ -1062,62 +1257,137 @@ export class ChunkEngine {
               if (typeof val === 'string' && val.trim()) return `${key}: ${val}`;
               return null;
             }).filter(Boolean).join('\n');
-          console.log(`[Completed] extracting from single-chunk partial (${singlePartialText.length} chars vs ${sourceText.length} chars full source)`);
-          onProgress({
-            phase: 'completed', current: 1, total: 1, savedCount: finished,
-            message: 'completed:extract',
-          });
-          const sLang = detectLanguage(singlePartialText.slice(0, 3000));
-          const sLangHint = sLang === 'ja'
-            ? 'Input is Japanese. Output in Japanese (keep code terms in English).'
-            : 'Output in English.';
-          const cResult = await callApiRaw(
-            apiKey,
-            COMPLETED_EXTRACT_PROMPT,
-            `${sLangHint}\n\nExtract ALL completed work from this chunk extraction result:\n\n${singlePartialText}`,
-            4096,
-            true,
-          );
-          const cItems = (cResult as Record<string, unknown>).completed;
-          if (Array.isArray(cItems) && cItems.length > 0) {
-            const MAX_COMPLETED = 50;
-            const trimmedC = cItems.length > MAX_COMPLETED ? cItems.slice(-MAX_COMPLETED) : cItems;
-            allPartials[0].completed = trimmedC as string[];
-            console.log(`[Completed] extracted ${cItems.length} items (single-chunk)${cItems.length > MAX_COMPLETED ? ` → trimmed to ${trimmedC.length}` : ''}`);
+
+          // 1. Completed extraction
+          const completedPromise = (async (): Promise<string[]> => {
+            onProgress({
+              phase: 'completed', current: 1, total: 2, savedCount: finished,
+              message: 'completed:extract',
+            });
+            try {
+              const sLang = detectLanguage(singlePartialText.slice(0, 3000));
+              const sLangHint = sLang === 'ja'
+                ? 'Input is Japanese. Output in Japanese (keep code terms in English).'
+                : 'Output in English.';
+              const cResult = await callApiRaw(
+                apiKey,
+                COMPLETED_EXTRACT_PROMPT,
+                `${sLangHint}\n\nExtract ALL completed work from this chunk extraction result:\n\n${singlePartialText}`,
+                4096,
+                true,
+              );
+              const cItems = (cResult as Record<string, unknown>).completed;
+              if (Array.isArray(cItems) && cItems.length > 0) {
+                const MAX_COMPLETED = 50;
+                return cItems.length > MAX_COMPLETED ? (cItems.slice(-MAX_COMPLETED) as string[]) : (cItems as string[]);
+              }
+              return [];
+            } catch {
+              return [];
+            }
+          })();
+
+          // 2. Final summarization — handoffMeta + resumeChecklist + active decisions
+          const finalSumPromise = (async (): Promise<PartialResult | null> => {
+            onProgress({
+              phase: 'summarization', current: 2, total: 2, savedCount: finished,
+              message: 'summarization:final',
+            });
+            try {
+              const handoffData = mode === 'both'
+                ? (partial as Record<string, unknown>).handoff as PartialResult | undefined ?? partial
+                : partial;
+              const summaryInput: Record<string, unknown> = {};
+              for (const key of ['currentStatus', 'nextActions', 'nextActionItems', 'actionBacklog', 'blockers', 'completed', 'decisions', 'decisionRationales', 'constraints', 'title'] as const) {
+                if ((handoffData as Record<string, unknown>)[key] != null) {
+                  summaryInput[key] = (handoffData as Record<string, unknown>)[key];
+                }
+              }
+              const inputJson = JSON.stringify(summaryInput);
+              const fsLang = detectLanguage(inputJson.slice(0, 3000));
+              const fsLangHint = fsLang === 'ja'
+                ? 'Input is Japanese. Output in Japanese (keep code terms in English).'
+                : 'Output in English.';
+              return await callApiRaw(
+                apiKey,
+                FINAL_SUMMARIZATION_PROMPT,
+                `${fsLangHint}\n\nGenerate session-wide summary fields from this merged handoff:\n\n${inputJson}`,
+                4096,
+                true,
+              );
+            } catch {
+              return null;
+            }
+          })();
+
+          const [completedItems, finalSummary] = await Promise.all([completedPromise, finalSumPromise]);
+
+          // Apply completed
+          if (completedItems.length > 0) {
+            allPartials[0].completed = completedItems;
+            if (mode === 'both') {
+              const h = (allPartials[0] as Record<string, unknown>).handoff as PartialResult | undefined;
+              if (h) h.completed = completedItems;
+            }
+          }
+
+          // Apply final summarization
+          if (finalSummary) {
+            const fs = finalSummary as Record<string, unknown>;
+            const meta = normalizeHandoffMeta(fs.handoffMeta);
+            const checklist = normalizeResumeChecklist(fs.resumeChecklist);
+            const derivedResumeContext = checklist.map(item => item.action);
+
+            let activeDecisions: DecisionWithRationale[] | undefined;
+            if (Array.isArray(fs.activeDecisions) && fs.activeDecisions.length > 0) {
+              activeDecisions = dedupDecisions(
+                (fs.activeDecisions as Record<string, unknown>[])
+                  .filter(d => typeof d === 'object' && d !== null && 'decision' in d)
+                  .map(d => ({
+                    decision: String(d.decision || ''),
+                    rationale: typeof d.rationale === 'string' ? d.rationale : null,
+                  }))
+              ).slice(0, 6);
+            }
+
+            const applyToTarget = (target: PartialResult) => {
+              target.handoffMeta = meta;
+              target.resumeChecklist = checklist;
+              target.resumeContext = derivedResumeContext;
+              if (activeDecisions && activeDecisions.length > 0) {
+                target.decisionRationales = activeDecisions;
+                target.decisions = activeDecisions.map(d => d.decision);
+              }
+            };
+
+            applyToTarget(allPartials[0]);
+            if (mode === 'both') {
+              const h = (allPartials[0] as Record<string, unknown>).handoff as PartialResult | undefined;
+              if (h) applyToTarget(h);
+            }
+
+            if (import.meta.env.DEV) {
+              console.log('[SingleChunk FinalSummarization] handoffMeta:', JSON.stringify(meta));
+              console.log('[SingleChunk FinalSummarization] resumeChecklist:', JSON.stringify(checklist));
+            }
           }
         } catch (err) {
-          console.warn('[Completed] single-chunk extraction failed:', err);
+          if (import.meta.env.DEV) console.warn('[SingleChunk] post-extraction failed:', err);
         }
       }
-      console.time(timer('cleanup'));
       await deleteSession(hash);
-      console.timeEnd(timer('cleanup'));
-      console.timeEnd(timer('total'));
       return allPartials[0];
     }
 
     // --- Local merge (no API call) ---
-    console.time(timer('merge'));
-    console.log(`[${runId}] [Merge] local merge: ${allPartials.length} partials`);
     onProgress({
       phase: 'merge', current: 1, total: 1, savedCount: finished,
       message: 'merge:local',
     });
-    let mergedResult: PartialResult;
-    try {
-      mergedResult = localMerge(allPartials, mode === 'both');
-      console.log(`[${runId}] [Merge] done — fields: ${Object.keys(mergedResult).filter(k => { const v = mergedResult[k]; return Array.isArray(v) ? v.length > 0 : !!v; }).join(', ')}`);
-    } catch (mergeErr) {
-      const msg = mergeErr instanceof Error ? mergeErr.message : String(mergeErr);
-      console.error(`[${runId}] [Merge] FAILED: ${msg}`, mergeErr);
-      throw mergeErr;
-    }
-    console.timeEnd(timer('merge'));
+    let mergedResult: PartialResult = localMerge(allPartials, mode === 'both');
 
     // --- Post-merge: completed extraction + consistency check (handoff/both only) ---
     if (mode === 'handoff' || mode === 'both') {
-      console.log(`[${runId}] [Post-merge] entering post-merge phase (sourceText: ${sourceText.length} chars)`);
-      console.time(timer('post-merge'));
 
       try {
         // Build compact input for completed extraction from chunk partials (NOT full sourceText)
@@ -1133,11 +1403,8 @@ export class ChunkEngine {
           }
           return `[Chunk ${i + 1}]\n${lines.join('\n')}`;
         }).join('\n\n');
-        console.log(`[${runId}] [Completed] input size: ${partialsText.length} chars (from ${allPartials.length} chunk partials, vs ${sourceText.length} chars full source)`);
-
         // 1. Completed extraction — from chunk extraction results (compact)
         const completedPromise = (async (): Promise<string[]> => {
-          console.log(`[${runId}] [Completed] extracting from chunk partials (${partialsText.length} chars)`);
           onProgress({
             phase: 'completed', current: 1, total: 2, savedCount: finished,
             message: 'completed:extract',
@@ -1156,21 +1423,16 @@ export class ChunkEngine {
             );
             const items = (result as Record<string, unknown>).completed;
             if (Array.isArray(items) && items.length > 0) {
-              console.log(`[Completed] extracted ${items.length} items`);
               return items as string[];
             }
-            console.log('[Completed] no items extracted from response');
             return [];
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            console.error(`[Completed] extraction FAILED: ${msg}`, err);
+          } catch {
             return [];
           }
         })();
 
         // 2. Consistency check — on merged handoff (without completed, which comes from step 1)
         const consistencyPromise = (async (): Promise<PartialResult | null> => {
-          console.log('[Consistency] running post-merge consistency check');
           onProgress({
             phase: 'consistency', current: 2, total: 2, savedCount: finished,
             message: 'consistency:check',
@@ -1187,13 +1449,11 @@ export class ChunkEngine {
               let trimmedDecisions: string[] | undefined;
               if (Array.isArray(fullDecisions) && fullDecisions.length > MAX_DECISIONS_FOR_CHECK) {
                 trimmedDecisions = fullDecisions.slice(-MAX_DECISIONS_FOR_CHECK);
-                console.log(`[Consistency] decisions trimmed for check: ${fullDecisions.length} → ${trimmedDecisions.length}`);
               }
               const checkPayload = trimmedDecisions
                 ? { ...handoffData, decisions: trimmedDecisions }
                 : handoffData;
               const handoffJson = JSON.stringify(checkPayload);
-              console.log(`[Consistency] sending ${handoffJson.length} chars for check`);
               return await callApiRaw(
                 apiKey,
                 CONSISTENCY_CHECK_PROMPT,
@@ -1203,18 +1463,48 @@ export class ChunkEngine {
               );
             }
             return null;
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            console.error(`[Consistency] check FAILED: ${msg}`, err);
+          } catch {
             return null;
           }
         })();
 
-        // Await both in parallel
-        console.log(`[${runId}] [Post-merge] awaiting completed extraction + consistency check in parallel`);
-        const [completedItems, checkedRaw] = await Promise.all([completedPromise, consistencyPromise]);
-        console.log(`[${runId}] [Post-merge] done — completed: ${completedItems.length} items, consistency: ${checkedRaw ? 'OK' : 'skipped/failed'}`);
+        // 3. Final summarization — handoffMeta + resumeChecklist + active decisions (session-wide)
+        const finalSummarizationPromise = (async (): Promise<PartialResult | null> => {
+          onProgress({
+            phase: 'summarization', current: 3, total: 3, savedCount: finished,
+            message: 'summarization:final',
+          });
+          try {
+            const handoffData = mode === 'both'
+              ? (mergedResult as Record<string, unknown>).handoff as PartialResult | undefined
+              : mergedResult;
+            if (!handoffData) return null;
+            // Build compact payload: only fields needed for summarization
+            const summaryInput: Record<string, unknown> = {};
+            for (const key of ['currentStatus', 'nextActions', 'nextActionItems', 'actionBacklog', 'blockers', 'completed', 'decisions', 'decisionRationales', 'constraints', 'title'] as const) {
+              if ((handoffData as Record<string, unknown>)[key] != null) {
+                summaryInput[key] = (handoffData as Record<string, unknown>)[key];
+              }
+            }
+            const inputJson = JSON.stringify(summaryInput);
+            const sLang = detectLanguage(inputJson.slice(0, 3000));
+            const langHint = sLang === 'ja'
+              ? 'Input is Japanese. Output in Japanese (keep code terms in English).'
+              : 'Output in English.';
+            return await callApiRaw(
+              apiKey,
+              FINAL_SUMMARIZATION_PROMPT,
+              `${langHint}\n\nGenerate session-wide summary fields from this merged handoff:\n\n${inputJson}`,
+              4096,
+              true,
+            );
+          } catch {
+            return null;
+          }
+        })();
 
+        // Await all three in parallel
+        const [completedItems, checkedRaw, finalSummary] = await Promise.all([completedPromise, consistencyPromise, finalSummarizationPromise]);
         // Apply consistency check result — but keep original decisions (consistency check only received trimmed subset)
         if (checkedRaw) {
           const originalDecisions = mergedResult.decisions;
@@ -1234,7 +1524,6 @@ export class ChunkEngine {
             // Restore original full decisions
             mergedResult.decisions = originalDecisions;
           }
-          console.log('[Consistency] check applied successfully (decisions preserved from merge)');
         }
 
         // Apply completed items (from dedicated extraction — overrides any partial completed data)
@@ -1244,30 +1533,67 @@ export class ChunkEngine {
           const trimmed = completedItems.length > MAX_COMPLETED
             ? completedItems.slice(-MAX_COMPLETED)
             : completedItems;
-          if (completedItems.length > MAX_COMPLETED) {
-            console.log(`[Post-merge] completed trimmed: ${completedItems.length} → ${trimmed.length} (keeping most recent)`);
-          }
           mergedResult.completed = trimmed;
           if (mode === 'both') {
             const handoff = (mergedResult as Record<string, unknown>).handoff as PartialResult | undefined;
             if (handoff) handoff.completed = trimmed;
           }
-          console.log(`[Post-merge] completed items applied: ${trimmed.length}`);
         }
-      } catch (postMergeErr) {
+
+        // Apply final summarization — handoffMeta, resumeChecklist, active decisions
+        if (import.meta.env.DEV) {
+          console.log('[FinalSummarization] raw result:', finalSummary ? JSON.stringify(finalSummary).slice(0, 500) : 'null');
+        }
+        if (finalSummary) {
+          const fs = finalSummary as Record<string, unknown>;
+          const meta = normalizeHandoffMeta(fs.handoffMeta);
+          const checklist = normalizeResumeChecklist(fs.resumeChecklist);
+          // Derive resumeContext from resumeChecklist
+          const derivedResumeContext = checklist.map(item => item.action);
+
+          // Compress decisions: use activeDecisions from final summarization (max 6)
+          let activeDecisions: DecisionWithRationale[] | undefined;
+          if (Array.isArray(fs.activeDecisions) && fs.activeDecisions.length > 0) {
+            activeDecisions = dedupDecisions(
+              (fs.activeDecisions as Record<string, unknown>[])
+                .filter(d => typeof d === 'object' && d !== null && 'decision' in d)
+                .map(d => ({
+                  decision: String(d.decision || ''),
+                  rationale: typeof d.rationale === 'string' ? d.rationale : null,
+                }))
+            ).slice(0, 6);
+          }
+
+          // Apply to mergedResult
+          const applyToTarget = (target: PartialResult) => {
+            target.handoffMeta = meta;
+            target.resumeChecklist = checklist;
+            target.resumeContext = derivedResumeContext;
+            if (activeDecisions && activeDecisions.length > 0) {
+              target.decisionRationales = activeDecisions;
+              target.decisions = activeDecisions.map(d => d.decision);
+            }
+          };
+
+          applyToTarget(mergedResult);
+          if (mode === 'both') {
+            const handoff = (mergedResult as Record<string, unknown>).handoff as PartialResult | undefined;
+            if (handoff) applyToTarget(handoff);
+          }
+          if (import.meta.env.DEV) {
+            console.log('[FinalSummarization] applied handoffMeta:', JSON.stringify(meta));
+            console.log('[FinalSummarization] applied resumeChecklist:', JSON.stringify(checklist));
+            if (activeDecisions) console.log('[FinalSummarization] applied activeDecisions:', activeDecisions.length);
+          }
+        }
+      } catch {
         // Non-fatal: if entire post-merge fails, use the original merged result
-        const msg = postMergeErr instanceof Error ? postMergeErr.message : String(postMergeErr);
-        console.error(`[Post-merge] FAILED (using original merge): ${msg}`, postMergeErr);
       }
 
-      console.timeEnd(timer('post-merge'));
     }
 
-    console.time(timer('cleanup'));
     session.status = 'completed';
     await deleteSession(hash);
-    console.timeEnd(timer('cleanup'));
-    console.timeEnd(timer('total'));
     return mergedResult;
   }
 

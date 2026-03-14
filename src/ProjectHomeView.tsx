@@ -40,6 +40,12 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setPhVisibleCount(PH_PAGE_SIZE); }, [searchQuery]);
 
+  // Scroll to top when search query changes
+  useEffect(() => {
+    const scrollContainer = document.querySelector('[data-main-scroll]');
+    if (scrollContainer) scrollContainer.scrollTo(0, 0);
+  }, [searchQuery]);
+
   // Close context menu on outside click or Escape
   useEffect(() => {
     if (!menuLogId) return;
@@ -111,7 +117,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
 
   const handleTogglePin = (log: LogEntry) => {
     if (!log.pinned && loadLogs().filter((l) => l.pinned).length >= 5) {
-      showToast(t('pinLimitReached', lang));
+      showToast(t('pinLimitReached', lang), 'error');
       setMenuLogId(null);
       return;
     }
@@ -127,7 +133,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
         <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
           ← {t('back', lang)}
         </button>
-        <div className="ph-header">
+        <div className="page-header-row">
           <div className="ph-header-info">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {project.icon && <span style={{ fontSize: 24 }}>{project.icon}</span>}
@@ -157,7 +163,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
         onClick={() => onOpenSummary(project.id)}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter') onOpenSummary(project.id); }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenSummary(project.id); } }}
       >
         <div className="ph-summary-icon">
           <FileText size={20} />
@@ -168,14 +174,12 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
             <p className="ph-summary-text">{masterNote.overview}</p>
           ) : (
             <p className="ph-summary-text ph-summary-empty">
-              {lang === 'ja'
-                ? `${projectLogs.length}件のログからAIがプロジェクトの全体像を自動生成します`
-                : `AI will generate a project overview from your ${projectLogs.length} logs`}
+              {tf('projectSummaryAutoGenHint', lang, projectLogs.length)}
             </p>
           )}
           {!masterNote && projectLogs.length > 0 && (
             <span style={{ fontSize: 11, color: 'var(--accent-text)', fontWeight: 600 }}>
-              {lang === 'ja' ? '→ サマリーを生成する' : '→ Generate Summary'}
+              {t('projectSummaryGenerateLink', lang)}
             </span>
           )}
         </div>
@@ -188,7 +192,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
         onClick={() => onOpenKnowledgeBase(project.id)}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter') onOpenKnowledgeBase(project.id); }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenKnowledgeBase(project.id); } }}
       >
         <div className="ph-summary-icon" style={{ color: 'var(--warning-text)' }}>
           <BookOpen size={20} />
@@ -239,11 +243,12 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('searchLogs', lang)}
+              maxLength={200}
               style={{ flex: 1, minWidth: 100 }}
             />
           </div>
           {displayLogs.length === 0 ? (
-            <div className="empty-state" style={{ padding: '24px 0' }}>
+            <div className="empty-state">
               <p>{t('noMatches', lang)}</p>
             </div>
           ) : displayLogs.slice(0, phVisibleCount).map((log) => {
@@ -253,7 +258,10 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
               <div
                 key={log.id}
                 className="ph-log-card"
+                role="button"
+                tabIndex={0}
                 onClick={() => onOpenLog(log.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenLog(log.id); } }}
               >
                 <div className="ph-log-card-row1">
                   <span className={log.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'}>
@@ -269,12 +277,12 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
                       className="sidebar-icon-btn"
                       data-menu-trigger="ph-log"
                       onClick={() => setMenuLogId(menuLogId === log.id ? null : log.id)}
-                      aria-label={lang === 'ja' ? 'メニューを開く' : 'Open menu'}
+                      aria-label={t('ariaMenu', lang)}
                     >
                       <MoreHorizontal size={14} />
                     </button>
                     {menuLogId === log.id && (
-                      <div ref={menuRef} className="mn-export-dropdown" style={{ top: '100%', right: 0 }} onMouseDown={(e) => e.stopPropagation()}>
+                      <div ref={menuRef} className="dropdown-menu" style={{ top: '100%', right: 0 }} onMouseDown={(e) => e.stopPropagation()}>
                         <button className="mn-export-item" onClick={() => handleTogglePin(log)}>
                           <Pin size={14} style={{ transform: 'rotate(45deg)' }} />
                           <span>{log.pinned ? t('ctxUnpin', lang) : t('ctxPin', lang)}</span>
@@ -327,9 +335,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
           {displayLogs.length > phVisibleCount && (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
               <button className="btn" onClick={() => setPhVisibleCount((v) => v + PH_PAGE_SIZE)} style={{ fontSize: 13 }}>
-                {lang === 'ja'
-                  ? `さらに表示（残り${displayLogs.length - phVisibleCount}件）`
-                  : `Load more (${displayLogs.length - phVisibleCount} remaining)`}
+                {tf('loadMore', lang, displayLogs.length - phVisibleCount)}
               </button>
             </div>
           )}
@@ -356,7 +362,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
           description={t('deleteConfirmDesc', lang)}
           confirmLabel={t('confirmDeleteBtn', lang)}
           cancelLabel={t('cancel', lang)}
-          onConfirm={() => { trashLog(confirmTrashId); setConfirmTrashId(null); onRefresh(); showToast(t('moveToTrash', lang)); }}
+          onConfirm={() => { trashLog(confirmTrashId); setConfirmTrashId(null); onRefresh(); showToast(t('moveToTrash', lang), 'success'); }}
           onCancel={() => setConfirmTrashId(null)}
         />
       )}
@@ -409,7 +415,7 @@ function AddLogsModal({ projectId, logs, lang, onClose, onAdded }: {
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal-card" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">{t('addLogsTitle', lang)}</div>
-          <p className="empty-state" style={{ padding: '24px 0' }}>{t('addLogsNoUnassigned', lang)}</p>
+          <div className="empty-state"><p>{t('addLogsNoUnassigned', lang)}</p></div>
           <div className="modal-footer">
             <button className="btn" onClick={onClose}>{t('addLogsCancel', lang)}</button>
           </div>
@@ -429,10 +435,11 @@ function AddLogsModal({ projectId, logs, lang, onClose, onAdded }: {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           autoFocus
+          maxLength={200}
         />
         <div className="modal-list">
           {filtered.length === 0 ? (
-            <p className="empty-state" style={{ padding: '16px 0' }}>{t('addLogsNoResults', lang)}</p>
+            <div className="empty-state"><p>{t('addLogsNoResults', lang)}</p></div>
           ) : (
             filtered.map((log) => {
               const modeLabel = log.outputMode === 'handoff' ? 'H' : 'W';

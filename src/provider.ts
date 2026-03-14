@@ -63,26 +63,33 @@ async function callAnthropic(req: ProviderRequest): Promise<string> {
     messages: [{ role: 'user', content: req.userMessage }],
   };
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': req.apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': req.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    handleHttpError(res.status, text);
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      handleHttpError(res.status, text);
+    }
+
+    const data = await res.json();
+    const output = data.content?.[0]?.text ?? '';
+    if (!output) throw new Error('[AI Response] Empty response from API. Try again.');
+    return output;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const data = await res.json();
-  const output = data.content?.[0]?.text ?? '';
-  if (!output) throw new Error('[AI Response] Empty response from API. Try again.');
-  return output;
 }
 
 // ---------------------------------------------------------------------------
@@ -108,26 +115,32 @@ async function callGeminiWithModel(req: ProviderRequest, model: string): Promise
     },
   };
 
-  return fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': req.apiKey,
-    },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': req.apiKey,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    return res;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 async function callGemini(req: ProviderRequest): Promise<string> {
   let res: Response | null = null;
-  let usedModel = GEMINI_MODEL;
 
   // Try each model in order; only fall back on 404 (model not found)
   for (const model of GEMINI_MODELS) {
-    usedModel = model;
     res = await callGeminiWithModel(req, model);
     if (res.status === 404) {
-      console.warn(`[Gemini] model=${model} returned 404, trying next fallback...`);
+      // model returned 404, try next fallback
       continue;
     }
     break;
@@ -137,15 +150,12 @@ async function callGemini(req: ProviderRequest): Promise<string> {
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    console.error(`[Gemini Error] model=${usedModel} status=${res.status} body:`, text);
     handleHttpError(res.status, text);
   }
 
-  console.log(`[Gemini] using model=${usedModel}`);
   const data = await res.json();
   const output = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
   if (!output) {
-    console.error('[Gemini] Unexpected response shape:', JSON.stringify(data).slice(0, 500));
     throw new Error('[AI Response] Empty response from Gemini. Try again.');
   }
   return output;
@@ -165,24 +175,31 @@ async function callOpenAI(req: ProviderRequest): Promise<string> {
     ],
   };
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${req.apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${req.apiKey}`,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    handleHttpError(res.status, text);
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      handleHttpError(res.status, text);
+    }
+
+    const data = await res.json();
+    const output = data.choices?.[0]?.message?.content ?? '';
+    if (!output) throw new Error('[AI Response] Empty response from OpenAI. Try again.');
+    return output;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const data = await res.json();
-  const output = data.choices?.[0]?.message?.content ?? '';
-  if (!output) throw new Error('[AI Response] Empty response from OpenAI. Try again.');
-  return output;
 }
 
 // ---------------------------------------------------------------------------
@@ -208,69 +225,75 @@ async function callGeminiStreamWithModel(req: ProviderRequest, model: string, on
     },
   };
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': req.apiKey,
-    },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': req.apiKey,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    // Return empty to signal fallback needed for 404
-    if (res.status === 404) return '';
-    console.error(`[Gemini Stream Error] model=${model} status=${res.status} body:`, text);
-    handleHttpError(res.status, text);
-  }
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      // Return empty to signal fallback needed for 404
+      if (res.status === 404) return '';
+      // Gemini stream error
+      handleHttpError(res.status, text);
+    }
 
-  const reader = res.body?.getReader();
-  if (!reader) throw new Error('[Stream] ReadableStream not supported');
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error('[Stream] ReadableStream not supported');
 
-  const decoder = new TextDecoder();
-  let accumulated = '';
-  let buffer = '';
+    const decoder = new TextDecoder();
+    let accumulated = '';
+    let buffer = '';
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue;
-      const data = line.slice(6).trim();
-      if (!data || data === '[DONE]') continue;
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (!data || data === '[DONE]') continue;
 
-      try {
-        const event = JSON.parse(data);
-        const text = event.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) {
-          accumulated += text;
-          onChunk(text, accumulated);
+        try {
+          const event = JSON.parse(data);
+          const text = event.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            accumulated += text;
+            onChunk(text, accumulated);
+          }
+        } catch (e) {
+          if (e instanceof SyntaxError) continue;
+          throw e;
         }
-      } catch (e) {
-        if (e instanceof SyntaxError) continue;
-        throw e;
       }
     }
-  }
 
-  return accumulated;
+    return accumulated;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 async function callGeminiStream(req: ProviderRequest, onChunk: StreamCallback): Promise<string> {
   for (const model of GEMINI_MODELS) {
     const result = await callGeminiStreamWithModel(req, model, onChunk);
     if (result === '' && model !== GEMINI_MODELS[GEMINI_MODELS.length - 1]) {
-      console.warn(`[Gemini Stream] model=${model} returned 404, trying next fallback...`);
+      // model returned 404, try next fallback
       continue;
     }
     if (!result) throw new Error('[AI Response] Empty streaming response from Gemini. Try again.');
-    console.log(`[Gemini Stream] using model=${model}`);
     return result;
   }
   throw new Error('[Gemini] No models available.');
@@ -289,60 +312,67 @@ async function callAnthropicStream(req: ProviderRequest, onChunk: StreamCallback
     messages: [{ role: 'user', content: req.userMessage }],
   };
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': req.apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': req.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    handleHttpError(res.status, text);
-  }
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      handleHttpError(res.status, text);
+    }
 
-  const reader = res.body?.getReader();
-  if (!reader) throw new Error('[Stream] ReadableStream not supported');
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error('[Stream] ReadableStream not supported');
 
-  const decoder = new TextDecoder();
-  let accumulated = '';
-  let buffer = '';
+    const decoder = new TextDecoder();
+    let accumulated = '';
+    let buffer = '';
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue;
-      const data = line.slice(6).trim();
-      if (data === '[DONE]') continue;
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
 
-      try {
-        const event = JSON.parse(data);
-        if (event.type === 'content_block_delta' && event.delta?.text) {
-          accumulated += event.delta.text;
-          onChunk(event.delta.text, accumulated);
+        try {
+          const event = JSON.parse(data);
+          if (event.type === 'content_block_delta' && event.delta?.text) {
+            accumulated += event.delta.text;
+            onChunk(event.delta.text, accumulated);
+          }
+          if (event.type === 'error') {
+            throw new Error(`[Stream Error] ${event.error?.message || 'Unknown'}`);
+          }
+        } catch (e) {
+          if (e instanceof SyntaxError) continue; // skip non-JSON lines
+          throw e;
         }
-        if (event.type === 'error') {
-          throw new Error(`[Stream Error] ${event.error?.message || 'Unknown'}`);
-        }
-      } catch (e) {
-        if (e instanceof SyntaxError) continue; // skip non-JSON lines
-        throw e;
       }
     }
-  }
 
-  if (!accumulated) throw new Error('[AI Response] Empty streaming response from API. Try again.');
-  return accumulated;
+    if (!accumulated) throw new Error('[AI Response] Empty streaming response from API. Try again.');
+    return accumulated;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -356,7 +386,6 @@ function handleHttpError(status: number, body: string): never {
   try {
     const errJson = JSON.parse(body);
     errorMessage = errJson?.error?.message || '';
-    console.error(`[API Error] type=${errJson?.error?.type || errJson?.error?.status} message=${errorMessage}`);
     // Extract retryDelay from Gemini 429 responses
     // Format: { error: { details: [{ retryDelay: "30s" }] } }
     const details = errJson?.error?.details;
@@ -379,7 +408,6 @@ function handleHttpError(status: number, body: string): never {
   if (status === 401 || status === 403) throw new Error('[API Key] Invalid or expired. Check your key in Settings.');
   if (status === 429) {
     if (retryDelaySec > 0) {
-      console.log(`[Rate Limit] API requested retry after ${retryDelaySec}s`);
       throw new Error(`[Rate Limit:${retryDelaySec}]`);
     }
     throw new Error('[Rate Limit]');
@@ -442,15 +470,8 @@ function migrateOldApiKey(): void {
 // Run migration once on load
 migrateOldApiKey();
 
-const MODEL_MAP: Record<ProviderName, string> = {
-  anthropic: ANTHROPIC_MODEL,
-  gemini: GEMINI_MODEL,
-  openai: OPENAI_MODEL,
-};
-
 export async function callProvider(req: ProviderRequest): Promise<string> {
   const provider = getActiveProvider();
-  console.log(`[Provider:${provider}] model=${MODEL_MAP[provider]} maxTokens=${req.maxTokens} systemLen=${req.system.length} msgLen=${req.userMessage.length}`);
 
   switch (provider) {
     case 'anthropic':
@@ -466,7 +487,6 @@ export async function callProvider(req: ProviderRequest): Promise<string> {
 /** Streaming variant — calls onChunk with each text delta. Falls back to non-streaming for OpenAI. */
 export async function callProviderStream(req: ProviderRequest, onChunk: StreamCallback): Promise<string> {
   const provider = getActiveProvider();
-  console.log(`[Provider:${provider}:stream] model=${MODEL_MAP[provider]} maxTokens=${req.maxTokens} systemLen=${req.system.length} msgLen=${req.userMessage.length}`);
 
   if (provider === 'anthropic') {
     return callAnthropicStream(req, onChunk);

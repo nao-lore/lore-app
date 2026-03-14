@@ -5,6 +5,8 @@ import type { LogEntry } from './types';
 import { getApiKey } from './storage';
 import { callProvider } from './provider';
 import type { ProviderRequest } from './provider';
+import { extractJson } from './transform';
+import { t } from './i18n';
 
 const SYSTEM_PROMPT = `You are a workload analyzer. Given a work log, estimate the workload/stress level.
 
@@ -46,11 +48,10 @@ export async function analyzeWorkload(log: LogEntry): Promise<'high' | 'medium' 
   };
 
   const response = await callProvider(req);
-  const jsonMatch = response.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) return 'medium';
 
   try {
-    const parsed = JSON.parse(jsonMatch[0]);
+    const jsonText = extractJson(response);
+    const parsed = JSON.parse(jsonText);
     const level = parsed.level;
     if (level === 'high' || level === 'medium' || level === 'low') return level;
   } catch { /* ignore */ }
@@ -61,19 +62,19 @@ export type WorkloadLevel = 'high' | 'medium' | 'low';
 
 export const WORKLOAD_CONFIG: Record<WorkloadLevel, { label: (lang: 'ja' | 'en') => string; emoji: string; color: string; bg: string }> = {
   high: {
-    label: (lang) => lang === 'ja' ? '高負荷' : 'High',
+    label: (lang) => t('workloadHigh', lang),
     emoji: '🔴',
     color: 'var(--error-text)',
     bg: 'var(--tint-priority-high, rgba(239,68,68,0.08))',
   },
   medium: {
-    label: (lang) => lang === 'ja' ? '中負荷' : 'Medium',
+    label: (lang) => t('workloadMedium', lang),
     emoji: '🟡',
     color: 'var(--warning-text, #b45309)',
     bg: 'var(--tint-priority-medium, rgba(245,158,11,0.08))',
   },
   low: {
-    label: (lang) => lang === 'ja' ? '低負荷' : 'Low',
+    label: (lang) => t('workloadLow', lang),
     emoji: '🟢',
     color: 'var(--success-text)',
     bg: 'var(--success-bg)',

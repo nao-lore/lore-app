@@ -74,9 +74,17 @@
       });
 
       var result = results && results[0] && results[0].result;
-      if (!result || !result.messages || result.messages.length === 0) {
+      if (!result || !result.messages || !Array.isArray(result.messages) || result.messages.length === 0) {
         setStats('No messages found.', true);
         return;
+      }
+      // Validate message structure
+      for (var i = 0; i < result.messages.length; i++) {
+        var m = result.messages[i];
+        if (typeof m.role !== 'string' || typeof m.content !== 'string') {
+          setStats('Invalid message format.', true);
+          return;
+        }
       }
 
       extractedJson = buildJson(result, extractor.source, tab.url);
@@ -98,20 +106,27 @@
     var baseUrl = 'https://lore-app-r5dl.vercel.app';
 
     chrome.tabs.query({}, function (tabs) {
+      if (chrome.runtime.lastError) {
+        setStats('Failed to send: ' + chrome.runtime.lastError.message, true);
+        return;
+      }
       var existing = tabs.find(function (t) {
         return t.url && t.url.startsWith(baseUrl);
       });
 
       if (existing) {
         // Reuse existing Lore tab: update hash to trigger import
-        chrome.tabs.update(existing.id, { url: baseUrl + '/' + importHash, active: true });
+        chrome.tabs.update(existing.id, { url: baseUrl + '/' + importHash, active: true }, function() {
+          btnSend.textContent = 'Sent!';
+          setTimeout(function () { btnSend.textContent = 'Send to Lore'; }, 2000);
+        });
         chrome.windows.update(existing.windowId, { focused: true });
       } else {
-        chrome.tabs.create({ url: baseUrl + '/' + importHash });
+        chrome.tabs.create({ url: baseUrl + '/' + importHash }, function() {
+          btnSend.textContent = 'Sent!';
+          setTimeout(function () { btnSend.textContent = 'Send to Lore'; }, 2000);
+        });
       }
-
-      btnSend.textContent = 'Sent!';
-      setTimeout(function () { btnSend.textContent = 'Send to Lore'; }, 2000);
     });
   });
 

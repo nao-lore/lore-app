@@ -43,8 +43,12 @@ function logToInputText(log: LogEntry): string {
 
 async function extractLogSummary(log: LogEntry, apiKey: string): Promise<LogSummary> {
   const cached = getLogSummary(log.id);
-  if (cached) return cached;
+  if (cached) {
+    console.log('[MasterNote] extractLogSummary cache hit:', log.id);
+    return cached;
+  }
 
+  console.log('[MasterNote] extractLogSummary API call:', log.id);
   const rawText = await callProvider({
     apiKey,
     system: EXTRACT_PROMPT,
@@ -53,7 +57,10 @@ async function extractLogSummary(log: LogEntry, apiKey: string): Promise<LogSumm
   });
 
   const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('[Parse Error] Could not extract JSON from response.');
+  if (!jsonMatch) {
+    console.error('[MasterNote] extractLogSummary parse failed, raw:', rawText.slice(0, 200));
+    throw new Error('[Parse Error] Could not extract JSON from response.');
+  }
 
   const parsed = JSON.parse(jsonMatch[0]);
   const summary: LogSummary = {
@@ -65,6 +72,7 @@ async function extractLogSummary(log: LogEntry, apiKey: string): Promise<LogSumm
     cachedAt: Date.now(),
   };
 
+  console.log('[MasterNote] extractLogSummary done:', log.id, { summary: summary.summary.slice(0, 50) });
   saveLogSummary(summary);
   return summary;
 }
@@ -73,15 +81,14 @@ async function extractLogSummary(log: LogEntry, apiKey: string): Promise<LogSumm
 // Step 2: Merge summaries into a MasterNote (with source log references)
 // ---------------------------------------------------------------------------
 
-const MERGE_PROMPT = `You are summarizing a project's current state.
+const MERGE_PROMPT = `You are creating a concise human-readable project summary.
 
-Combine the following log summaries into a single project overview.
-For each item in decisions, openIssues, and nextActions, attach the logIds that support the statement.
+Synthesize the following log summaries into a high-level overview for a human reader.
+The goal is quick understanding, not completeness.
 
 Return JSON only:
 {
-  "overview": "1-3 sentence project summary",
-  "currentStatus": "Current state of the project in 1-3 sentences",
+  "overview": "2-3 sentence summary: what this project is and where it stands now",
   "decisions": [
     { "text": "...", "sourceLogIds": ["logId_1"] }
   ],
@@ -94,14 +101,14 @@ Return JSON only:
 }
 
 Rules:
-- sourceLogIds MUST use the exact logId values provided in the input
-- An item may reference multiple logIds if it was mentioned in several logs
-- Merge and deduplicate across all summaries
-- Drop items that are clearly completed or obsolete
-- currentStatus should reflect the LATEST state
-- nextActions should only include items NOT yet done
-- Write concisely — each item should be one clear sentence
-- Match the language of the input (Japanese or English)`;
+- decisions: max 5 items. Most impactful decisions only. Drop superseded or minor ones.
+- openIssues: max 4 items. Blockers and high-risk items only.
+- nextActions: max 3 items. Immediate next steps only. Drop backlog items.
+- Each item: one clear sentence. No sub-bullets.
+- Drop anything completed, obsolete, or low priority.
+- Prioritize recency — later logs override earlier ones.
+- Match the language of the input (Japanese or English)
+- sourceLogIds MUST use the exact logId values provided in the input`;
 
 function summariesToMergeInput(
   summaries: LogSummary[],
@@ -125,7 +132,6 @@ function summariesToMergeInput(
   if (existing) {
     text += `\n\n---\n\nEXISTING master note (update and improve, remove obsolete items):\n`;
     text += `Overview: ${existing.overview}\n`;
-    text += `Status: ${existing.currentStatus}\n`;
     if (existing.decisions.length) {
       text += `Decisions: ${existing.decisions.map((d) => d.text).join('; ')}\n`;
     }
@@ -166,8 +172,7 @@ Apply the user's requested changes to the summary and return the updated JSON.
 
 Return JSON only:
 {
-  "overview": "...",
-  "currentStatus": "...",
+  "overview": "2-3 sentence summary: what this project is and where it stands now",
   "decisions": [
     { "text": "...", "sourceLogIds": ["logId_1"] }
   ],
@@ -183,6 +188,7 @@ Rules:
 - Preserve sourceLogIds from the original summary
 - Only change what the user requested
 - Keep unchanged sections as-is
+- decisions: max 5, openIssues: max 4, nextActions: max 3
 - Write concisely — each item should be one clear sentence
 - Match the language of the existing summary`;
 
@@ -195,7 +201,6 @@ export async function refineMasterNote(
 
   const currentJson = JSON.stringify({
     overview: note.overview,
-    currentStatus: note.currentStatus,
     decisions: note.decisions,
     openIssues: note.openIssues,
     nextActions: note.nextActions,
@@ -216,7 +221,7 @@ export async function refineMasterNote(
   return {
     ...note,
     overview: parsed.overview || note.overview,
-    currentStatus: parsed.currentStatus || note.currentStatus,
+    currentStatus: '',
     decisions: parseSourcedItems(parsed.decisions),
     openIssues: parseSourcedItems(parsed.openIssues),
     nextActions: parseSourcedItems(parsed.nextActions),
@@ -234,52 +239,6 @@ export interface GenerateProgress {
   total: number;
 }
 
-// ---------------------------------------------------------------------------
-// AI Context generation — compressed context block from a MasterNote
-// ---------------------------------------------------------------------------
-
-const AI_CONTEXT_PROMPT = `以下のProject Summaryから、AIアシスタントに渡すための最小限のコンテキストを生成してください。
-以下のフォーマットで出力してください。余計な説明は不要です。
-
-## AI Context
-- Project: {プロジェクト名}
-- Goal: {目的を1行で}
-- Stack: {技術スタック（あれば）}
-- Current Status: {現在の状態を2〜3行で}
-- Key Decisions: {重要な決定事項を箇条書き、最大5件}
-- Open Issues: {未解決の問題を箇条書き、最大5件}
-
-Rules:
-- Match the language of the input (Japanese or English)
-- Keep technical terms (file names, function names, library names) in English
-- Be extremely concise — this is a compressed context block, not a report`;
-
-export async function generateAiContext(
-  note: MasterNote,
-  projectName: string,
-): Promise<string> {
-  const apiKey = getApiKey();
-  if (!apiKey) throw new Error('[API Key] Not set.');
-
-  const input = [
-    `Project: ${projectName}`,
-    `Overview: ${note.overview}`,
-    `Current Status: ${note.currentStatus}`,
-    note.decisions.length > 0 ? `Decisions:\n${note.decisions.map((d) => `- ${d.text}`).join('\n')}` : '',
-    note.openIssues.length > 0 ? `Open Issues:\n${note.openIssues.map((d) => `- ${d.text}`).join('\n')}` : '',
-    note.nextActions.length > 0 ? `Next Actions:\n${note.nextActions.map((d) => `- ${d.text}`).join('\n')}` : '',
-  ].filter(Boolean).join('\n\n');
-
-  const rawText = await callProvider({
-    apiKey,
-    system: AI_CONTEXT_PROMPT,
-    userMessage: input,
-    maxTokens: 8192,
-  });
-
-  return rawText.trim();
-}
-
 export async function generateMasterNote(
   projectId: string,
   logs: LogEntry[],
@@ -294,16 +253,21 @@ export async function generateMasterNote(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
 
-  // Step 1: Extract summaries (cached per log)
+  // Step 1: Extract summaries (sequential with rate-limit delay)
   const summaries: LogSummary[] = [];
   for (let i = 0; i < sorted.length; i++) {
     onProgress?.({ phase: 'extract', current: i + 1, total: sorted.length });
     const summary = await extractLogSummary(sorted[i], apiKey);
     summaries.push(summary);
+    // Delay between non-cached API calls to avoid rate limiting
+    if (i < sorted.length - 1 && !summary.cachedAt) {
+      await new Promise((r) => setTimeout(r, 500));
+    }
   }
 
   // Step 2: Merge into MasterNote
   onProgress?.({ phase: 'merge', current: 0, total: 1 });
+  console.log('[MasterNote] Starting merge with', summaries.length, 'summaries');
 
   const mergeInput = summariesToMergeInput(summaries, existing);
 
@@ -315,23 +279,47 @@ export async function generateMasterNote(
   });
 
   const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('[Parse Error] Could not extract JSON from response.');
+  if (!jsonMatch) {
+    console.error('[MasterNote] Merge parse failed, raw:', rawText.slice(0, 300));
+    throw new Error('[Parse Error] Could not extract JSON from merge response.');
+  }
 
-  const parsed = JSON.parse(jsonMatch[0]);
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonMatch[0]);
+  } catch (parseErr) {
+    console.error('[MasterNote] Merge JSON.parse error:', parseErr, 'raw:', jsonMatch[0].slice(0, 300));
+    throw new Error('[Parse Error] Invalid JSON in merge response.');
+  }
+
+  console.log('[MasterNote] Merge parsed:', {
+    overview: typeof parsed.overview === 'string' ? parsed.overview.slice(0, 50) : parsed.overview,
+    decisions: Array.isArray(parsed.decisions) ? parsed.decisions.length : parsed.decisions,
+    openIssues: Array.isArray(parsed.openIssues) ? parsed.openIssues.length : parsed.openIssues,
+    nextActions: Array.isArray(parsed.nextActions) ? parsed.nextActions.length : parsed.nextActions,
+  });
 
   onProgress?.({ phase: 'merge', current: 1, total: 1 });
 
   const note: MasterNote = {
     id: existing?.id || crypto.randomUUID(),
     projectId,
-    overview: parsed.overview || '',
-    currentStatus: parsed.currentStatus || '',
+    overview: parsed.overview as string || '',
+    currentStatus: '',
     decisions: parseSourcedItems(parsed.decisions),
     openIssues: parseSourcedItems(parsed.openIssues),
     nextActions: parseSourcedItems(parsed.nextActions),
     relatedLogIds: sorted.map((l) => l.id),
     updatedAt: Date.now(),
   };
+
+  console.log('[MasterNote] Final note:', {
+    id: note.id,
+    overview: note.overview.slice(0, 50),
+    decisions: note.decisions.length,
+    openIssues: note.openIssues.length,
+    nextActions: note.nextActions.length,
+  });
 
   return note;
 }

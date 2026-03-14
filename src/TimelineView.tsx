@@ -1,8 +1,8 @@
-import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { useMemo, useState, useRef, useEffect, useCallback, memo } from 'react';
 import { FileText, FolderOpen, CheckSquare, Trash2, BookOpen, PenTool, ArrowRightLeft, ChevronDown, ChevronRight, ChevronLeft, Calendar } from 'lucide-react';
 import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { WORKLOAD_CONFIG } from './workload';
-import { t } from './i18n';
+import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import ActivityHeatmap from './ActivityHeatmap';
 
@@ -88,7 +88,7 @@ function buildEvents(
     });
   }
 
-  // TODO added
+  // Build TODO-added events
   for (const todo of todos) {
     events.push({
       id: `todo-add-${todo.id}`,
@@ -97,7 +97,7 @@ function buildEvents(
       timestamp: todo.createdAt,
     });
 
-    // TODO trashed
+    // Build TODO-trashed events
     if (todo.trashedAt) {
       events.push({
         id: `todo-trash-${todo.id}`,
@@ -120,15 +120,11 @@ function formatDateLabel(key: string, lang: Lang): string {
   const today = formatDateKey(Date.now());
   const yesterday = formatDateKey(Date.now() - 86400000);
 
-  if (key === today) return lang === 'ja' ? '今日' : 'Today';
-  if (key === yesterday) return lang === 'ja' ? '昨日' : 'Yesterday';
+  if (key === today) return t('timelineToday', lang);
+  if (key === yesterday) return t('timelineYesterday', lang);
 
   const [y, m, d] = key.split('-').map(Number);
-  if (lang === 'ja') {
-    return `${y}年${m}月${d}日`;
-  }
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return `${months[m - 1]} ${d}, ${y}`;
+  return tf('timelineDateLabel', lang, y, m, d);
 }
 
 function formatTime(ts: number): string {
@@ -156,31 +152,31 @@ const EVENT_CONFIG: Record<EventType, { label: (lang: Lang) => string; color: st
     border: 'var(--warning-dot, #f59e0b)',
   },
   project: {
-    label: (lang) => lang === 'ja' ? 'プロジェクト作成' : 'Project created',
+    label: (lang) => t('timelineProjectCreated', lang),
     color: 'var(--success-text)',
     bg: 'var(--success-bg)',
     border: 'var(--success-border)',
   },
   summary: {
-    label: (lang) => lang === 'ja' ? 'Summary更新' : 'Summary updated',
+    label: (lang) => t('timelineSummaryUpdated', lang),
     color: 'var(--success-text)',
     bg: 'var(--success-bg)',
     border: 'var(--success-border)',
   },
   'todo-add': {
-    label: (lang) => lang === 'ja' ? 'TODO追加' : 'TODO added',
+    label: (lang) => t('timelineTodoAdded', lang),
     color: 'var(--text-secondary)',
     bg: 'var(--sidebar-hover)',
     border: 'var(--border-default)',
   },
   'todo-done': {
-    label: (lang) => lang === 'ja' ? 'TODO完了' : 'TODO done',
+    label: (lang) => t('timelineTodoDone', lang),
     color: 'var(--success-text)',
     bg: 'var(--success-bg)',
     border: 'var(--success-border)',
   },
   'todo-trash': {
-    label: (lang) => lang === 'ja' ? 'TODO削除' : 'TODO deleted',
+    label: (lang) => t('timelineTodoDeleted', lang),
     color: 'var(--error-text)',
     bg: 'var(--tint-priority-high, rgba(239,68,68,0.06))',
     border: 'var(--error-border, #fca5a5)',
@@ -234,12 +230,12 @@ function buildDisplayItems(events: TimelineEvent[]): DisplayItem[] {
 }
 
 // ─── Collapsed TODO group component ───
-function TodoGroupItem({ group, lang }: { group: TimelineEvent[]; lang: Lang }) {
+const TodoGroupItem = memo(function TodoGroupItem({ group, lang }: { group: TimelineEvent[]; lang: Lang }) {
   const [expanded, setExpanded] = useState(false);
   const cfg = EVENT_CONFIG['todo-add'];
   const firstTs = group[group.length - 1].timestamp; // earliest in group (sorted desc)
   const count = group.length;
-  const label = lang === 'ja' ? `TODO ${count}件追加` : `${count} TODOs added`;
+  const label = tf('timelineTodoBatch', lang, count);
 
   return (
     <div>
@@ -274,7 +270,7 @@ function TodoGroupItem({ group, lang }: { group: TimelineEvent[]; lang: Lang }) 
       )}
     </div>
   );
-}
+});
 
 function todayKey(): string {
   return formatDateKey(Date.now());
@@ -385,7 +381,7 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
   };
 
   const filterOptions: { key: FilterKey; label: string }[] = [
-    { key: 'all', label: lang === 'ja' ? 'すべて' : 'All' },
+    { key: 'all', label: t('timelineFilterAll', lang) },
     { key: 'handoff', label: 'Handoff' },
     { key: 'todo', label: 'TODO' },
     { key: 'worklog', label: 'Worklog' },
@@ -459,7 +455,7 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
 
       {/* Date navigation */}
       <div className="content-card" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-        <button className="btn btn-ghost" onClick={handlePrevDay} style={{ padding: '4px 6px', minHeight: 28 }} title={lang === 'ja' ? '前の日' : 'Previous day'}>
+        <button className="btn btn-ghost" onClick={handlePrevDay} style={{ padding: '4px 6px', minHeight: 28 }} title={t('timelinePrevDay', lang)}>
           <ChevronLeft size={16} />
         </button>
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -472,7 +468,7 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
             style={{ fontSize: 13, padding: '4px 8px 4px 28px', minHeight: 28, width: 160 }}
           />
         </div>
-        <button className="btn btn-ghost" onClick={handleNextDay} style={{ padding: '4px 6px', minHeight: 28 }} title={lang === 'ja' ? '次の日' : 'Next day'}>
+        <button className="btn btn-ghost" onClick={handleNextDay} style={{ padding: '4px 6px', minHeight: 28 }} title={t('timelineNextDay', lang)}>
           <ChevronRight size={16} />
         </button>
         <button
@@ -495,13 +491,13 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
       </div>
 
       {/* Activity heatmap */}
-      <ActivityHeatmap logs={logs} lang={lang} />
+      <ActivityHeatmap logs={logs} lang={lang} onDateClick={scrollToDate} />
 
       {filteredEvents.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">&#128197;</div>
           <p>{t('timelineEmpty', lang)}</p>
-          <p className="page-subtitle">{lang === 'ja' ? 'ログを作成するとここに表示されます' : 'Activity will appear here as you create logs'}</p>
+          <p className="page-subtitle">{t('timelineEmptyHint', lang)}</p>
           {onNewLog && (
             <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={onNewLog}>
               {t('newLog', lang)}

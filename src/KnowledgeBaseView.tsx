@@ -6,6 +6,7 @@ import type { Lang } from './i18n';
 import { getKnowledgeBase, saveKnowledgeBase } from './storage';
 import { generateKnowledgeBase, type KBProgress } from './knowledgeBase';
 import ProgressPanel, { type ProgressState } from './ProgressPanel';
+import { formatDateTimeFull, formatDateFull } from './utils/dateFormat';
 
 interface KnowledgeBaseViewProps {
   project: Project;
@@ -17,12 +18,16 @@ interface KnowledgeBaseViewProps {
 }
 
 function formatDate(ts: number, lang: Lang): string {
+  const iso = new Date(ts).toISOString();
+  if (lang === 'ja') return formatDateTimeFull(iso);
+  // English: "Mar 5, 2026 14:30"
+  const base = formatDateFull(iso);
+  // formatDateFull already includes time for "Today" — for other dates, append time
+  if (base.startsWith('Today')) return base;
   const d = new Date(ts);
-  if (lang === 'ja') {
-    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-  }
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${base} ${h}:${m}`;
 }
 
 export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, lang, showToast }: KnowledgeBaseViewProps) {
@@ -83,7 +88,7 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
       <div className="workspace-content">
         <div className="page-header">
           <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
-            {t('kbBack', lang)}
+            ← {t('kbBack', lang)}
           </button>
           <div className="page-header-row">
             <div>
@@ -96,7 +101,7 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
           </div>
         </div>
         <div className="empty-state" style={{ marginTop: 32 }}>
-          <div className="empty-state-icon" style={{ fontSize: 48 }}>&#128218;</div>
+          <div className="empty-state-icon">&#128218;</div>
           <p>{t('kbEmpty', lang)}</p>
           <p className="page-subtitle">{t('kbEmptyDesc', lang)}</p>
           {error && <p style={{ color: 'var(--error-text)', fontSize: 13, marginTop: 8 }}>{error}</p>}
@@ -119,7 +124,7 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
       {/* Header */}
       <div className="page-header">
         <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
-          {t('kbBack', lang)}
+          ← {t('kbBack', lang)}
         </button>
         <div className="page-header-row">
           <div>

@@ -2,6 +2,7 @@ import type { LogEntry, Todo, WeeklyReport } from './types';
 import { getApiKey } from './storage';
 import { callProvider } from './provider';
 import type { ProviderRequest } from './provider';
+import { extractJson } from './transform';
 
 const SYSTEM_PROMPT = `You are a weekly report generator. Given a set of work logs and TODO items from a week, generate a structured weekly report in JSON format.
 
@@ -115,11 +116,9 @@ export async function generateWeeklyReport(opts: GenerateWeeklyReportOptions): P
 
   const response = await callProvider(req);
 
-  // Extract JSON
-  const jsonMatch = response.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Failed to parse AI response');
-
-  const parsed = JSON.parse(jsonMatch[0]);
+  // Extract JSON using robust bracket-matching parser
+  const jsonText = extractJson(response);
+  const parsed = JSON.parse(jsonText);
 
   opts.onProgress?.('done');
 

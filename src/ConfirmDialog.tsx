@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFocusTrap } from './useFocusTrap';
 
 interface ConfirmDialogProps {
@@ -13,6 +13,17 @@ interface ConfirmDialogProps {
 
 export default function ConfirmDialog({ title, description, confirmLabel, cancelLabel, onConfirm, onCancel, danger = true }: ConfirmDialogProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(true);
+  const previouslyFocusedRef = useRef<Element | null>(null);
+
+  useEffect(() => {
+    previouslyFocusedRef.current = document.activeElement;
+    return () => {
+      const el = previouslyFocusedRef.current;
+      if (el && el instanceof HTMLElement) {
+        setTimeout(() => el.focus(), 0);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -24,8 +35,8 @@ export default function ConfirmDialog({ title, description, confirmLabel, cancel
 
   return (
     <div className="modal-overlay" onClick={onCancel}>
-      <div ref={trapRef} className="confirm-dialog" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-        <div className="confirm-dialog-title">{title}</div>
+      <div ref={trapRef} className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" onClick={(e) => e.stopPropagation()}>
+        <div className="confirm-dialog-title" id="confirm-dialog-title">{title}</div>
         {description && <div className="confirm-dialog-desc">{description}</div>}
         <div className="confirm-dialog-actions">
           <button className="btn" onClick={onCancel}>{cancelLabel}</button>

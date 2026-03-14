@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Check, Download, Upload, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
-import { getLang, setLang, getUiLang, exportAllData, validateBackup, importData, getDataUsage, formatBytes } from './storage';
+import { getLang, setLang, getUiLang, exportAllData, validateBackup, importData, getDataUsage, formatBytes, getAutoReportSetting, setAutoReportSetting } from './storage';
 import { resetOnboarding } from './onboardingState';
 import type { ThemePref, LoreBackup } from './storage';
 import {
@@ -34,7 +34,7 @@ interface SettingsPanelProps {
   onThemeChange: (theme: ThemePref) => void;
   fontSize: FontSize;
   onFontSizeChange: (size: FontSize) => void;
-  showToast?: (msg: string) => void;
+  showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void;
   onShowOnboarding?: () => void;
 }
 
@@ -65,6 +65,9 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
   const [slackWebhook, setSlackWebhookState] = useState(getSlackWebhookUrl);
   const [slackSaved, setSlackSaved] = useState(false);
 
+  // Auto weekly report
+  const [autoReport, setAutoReport] = useState(getAutoReportSetting);
+
   const [keyErrors, setKeyErrors] = useState<Record<ProviderName, string>>({ anthropic: '', gemini: '', openai: '' });
   const [notionError, setNotionError] = useState('');
   const [slackError, setSlackError] = useState('');
@@ -76,9 +79,9 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
 
   const validateApiKey = (p: ProviderName, key: string): string => {
     if (!key.trim()) return '';
-    if (p === 'gemini' && !key.startsWith('AIza')) return lang === 'ja' ? 'Gemini APIキーの形式が正しくありません（AIzaで始まる必要があります）' : 'Invalid Gemini API key format (must start with AIza)';
-    if (p === 'anthropic' && !key.startsWith('sk-ant')) return lang === 'ja' ? 'Claude APIキーの形式が正しくありません' : 'Invalid Claude API key format';
-    if (p === 'openai' && !key.startsWith('sk-')) return lang === 'ja' ? 'OpenAI APIキーの形式が正しくありません' : 'Invalid OpenAI API key format';
+    if (p === 'gemini' && !key.startsWith('AIza')) return t('apiKeyErrorGemini', lang);
+    if (p === 'anthropic' && !key.startsWith('sk-ant')) return t('apiKeyErrorAnthropic', lang);
+    if (p === 'openai' && !key.startsWith('sk-')) return t('apiKeyErrorOpenai', lang);
     return '';
   };
 
@@ -118,8 +121,8 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
     a.href = url;
     a.download = `lore-backup-${date}.json`;
     a.click();
-    URL.revokeObjectURL(url);
-    showToast?.(t('dataExportSuccess', lang));
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast?.(t('dataExportSuccess', lang), 'success');
   };
 
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,7 +152,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
     if (!pendingImport) return;
     const result = importData(pendingImport.backup, pendingImport.mode);
     setPendingImport(null);
-    showToast?.(tf('dataImportSuccess', lang, result.logs, result.projects, result.todos));
+    showToast?.(tf('dataImportSuccess', lang, result.logs, result.projects, result.todos), 'success');
   };
 
   return (
@@ -237,9 +240,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
           {otherProvidersOpen && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
               <div style={{ fontSize: 12, color: 'var(--warning-text, orange)', padding: '4px 8px', lineHeight: 1.5 }}>
-                {lang === 'ja'
-                  ? '⚠️ 現在、Claude・OpenAIは動作が不安定です。Geminiの使用を強く推奨します。'
-                  : '⚠️ Claude and OpenAI are currently unstable. We strongly recommend using Gemini.'}
+                {t('providerUnstableWarning', lang)}
               </div>
               {(['anthropic', 'openai'] as ProviderName[]).map((p) => {
                 const isActive = activeProvider === p;
@@ -329,7 +330,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                       padding: '1px 6px', borderRadius: 4,
                       background: 'var(--accent)', color: '#fff',
                     }}>
-                      {lang === 'ja' ? '使用中' : 'Active'}
+                      {t('providerActive', lang)}
                     </span>
                   )}
                 </div>
@@ -473,7 +474,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 type="password"
                 value={notionKey}
                 onChange={(e) => { setNotionKeyState(e.target.value); setNotionError(''); }}
-                onBlur={() => { if (notionKey.trim() && !notionKey.startsWith('ntn_') && !notionKey.startsWith('secret_')) setNotionError(lang === 'ja' ? 'Notion APIキーの形式が正しくありません' : 'Invalid Notion API key format'); }}
+                onBlur={() => { if (notionKey.trim() && !notionKey.startsWith('ntn_') && !notionKey.startsWith('secret_')) setNotionError(t('notionApiKeyError', lang)); }}
                 placeholder={t('notionApiKeyPlaceholder', lang)}
                 style={{ maxWidth: 420, fontSize: 13 }}
               />
@@ -491,6 +492,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 value={notionDbId}
                 onChange={(e) => setNotionDbIdState(e.target.value)}
                 placeholder={t('notionDatabaseIdPlaceholder', lang)}
+                maxLength={200}
                 style={{ maxWidth: 420, fontSize: 13 }}
               />
             </div>
@@ -500,7 +502,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 style={{ fontSize: 12, padding: '5px 12px', minHeight: 28 }}
                 onClick={() => {
                   if (notionKey.trim() && !notionKey.startsWith('ntn_') && !notionKey.startsWith('secret_')) {
-                    setNotionError(lang === 'ja' ? 'Notion APIキーの形式が正しくありません' : 'Invalid Notion API key format');
+                    setNotionError(t('notionApiKeyError', lang));
                     return;
                   }
                   setNotionError('');
@@ -537,7 +539,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 type="password"
                 value={slackWebhook}
                 onChange={(e) => { setSlackWebhookState(e.target.value); setSlackError(''); }}
-                onBlur={() => { if (slackWebhook.trim() && !slackWebhook.startsWith('https://hooks.slack.com')) setSlackError(lang === 'ja' ? 'Slack Webhook URLの形式が正しくありません' : 'Invalid Slack Webhook URL format'); }}
+                onBlur={() => { if (slackWebhook.trim() && !slackWebhook.startsWith('https://hooks.slack.com')) setSlackError(t('slackWebhookError', lang)); }}
                 placeholder={t('slackWebhookPlaceholder', lang)}
                 style={{ maxWidth: 480, fontSize: 13 }}
               />
@@ -551,7 +553,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 style={{ fontSize: 12, padding: '5px 12px', minHeight: 28 }}
                 onClick={() => {
                   if (slackWebhook.trim() && !slackWebhook.startsWith('https://hooks.slack.com')) {
-                    setSlackError(lang === 'ja' ? 'Slack Webhook URLの形式が正しくありません' : 'Invalid Slack Webhook URL format');
+                    setSlackError(t('slackWebhookError', lang));
                     return;
                   }
                   setSlackError('');
@@ -569,6 +571,29 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
               )}
             </div>
           </div>
+        </div>
+
+        {/* Auto Weekly Report */}
+        <div className="content-card">
+          <div className="content-card-header">{t('autoWeeklyReport', lang)}</div>
+          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+            {t('autoWeeklyReportDesc', lang)}
+          </p>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={autoReport}
+              onChange={(e) => {
+                const v = e.target.checked;
+                setAutoReport(v);
+                setAutoReportSetting(v);
+              }}
+              style={{ width: 18, height: 18, accentColor: 'var(--accent)', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>
+              {t('autoWeeklyReport', lang)}
+            </span>
+          </label>
         </div>
 
         {/* Data Management */}
@@ -632,12 +657,13 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
               accept=".json"
               onChange={handleImportFile}
               style={{ display: 'none' }}
+              aria-label={t('dataImport', lang)}
             />
             <button className="btn" onClick={() => fileInputRef.current?.click()} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Upload size={14} /> {t('dataImport', lang)}
             </button>
             {importError && (
-              <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <p style={{ color: 'var(--error-text)', fontSize: 13, marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <AlertTriangle size={14} /> {importError}
               </p>
             )}
@@ -652,7 +678,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
               onClick={() => { resetOnboarding(); onShowOnboarding(); }}
               style={{ fontSize: 13 }}
             >
-              {lang === 'ja' ? 'オンボーディングをもう一度見る' : 'Show onboarding again'}
+              {t('showOnboardingAgain', lang)}
             </button>
           </div>
         )}

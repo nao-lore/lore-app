@@ -135,24 +135,31 @@ export async function sendToNotion(log: LogEntry): Promise<void> {
     children: blocks,
   };
 
-  const res = await fetch('https://api.notion.com/v1/pages', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'Notion-Version': '2022-06-28',
-    },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  try {
+    const res = await fetch('https://api.notion.com/v1/pages', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28',
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    let msg = `Notion API error: ${res.status}`;
-    try {
-      const err = JSON.parse(text);
-      if (err.message) msg = `Notion: ${err.message}`;
-    } catch { /* ignore */ }
-    throw new Error(msg);
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      let msg = `Notion API error: ${res.status}`;
+      try {
+        const err = JSON.parse(text);
+        if (err.message) msg = `Notion: ${err.message}`;
+      } catch { /* ignore */ }
+      throw new Error(msg);
+    }
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -183,14 +190,21 @@ export async function sendToSlack(markdown: string): Promise<void> {
 
   const text = markdownToSlackMrkdwn(markdown);
 
-  const res = await fetch(webhookUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+      signal: controller.signal,
+    });
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`Slack error: ${res.status} ${body}`);
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`Slack error: ${res.status} ${body}`);
+    }
+  } finally {
+    clearTimeout(timeoutId);
   }
 }

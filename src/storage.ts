@@ -15,6 +15,17 @@ const KNOWLEDGE_BASE_KEY = 'threadlog_knowledge_bases';
 
 const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
+const MAX_MN_SNAPSHOTS = 50;
+
+/** Safely write to localStorage, silently catching QuotaExceededError */
+function safeSetItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // QuotaExceededError — silently ignore to prevent app crash
+  }
+}
+
 // ─── Trash helpers ───
 
 /** Purge items trashed more than 30 days ago from all stores (with cascade) */
@@ -47,7 +58,7 @@ export function purgeExpiredTrash(): void {
     try {
       const todos: Todo[] = JSON.parse(rawTodos);
       const kept = todos.filter((t) => !t.trashedAt || now - t.trashedAt < TRASH_RETENTION_MS);
-      if (kept.length !== todos.length) localStorage.setItem(TODOS_KEY, JSON.stringify(kept));
+      if (kept.length !== todos.length) safeSetItem(TODOS_KEY, JSON.stringify(kept));
     } catch { /* ignore */ }
   }
 }
@@ -55,7 +66,7 @@ export function purgeExpiredTrash(): void {
 // ─── Logs ───
 
 export function saveLogs(logs: LogEntry[]): void {
-  localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+  safeSetItem(LOGS_KEY, JSON.stringify(logs));
 }
 
 /** Load all logs (including trashed) — raw access */
@@ -78,8 +89,8 @@ function loadAllLogs(): LogEntry[] {
         }
         return rest;
       });
-      localStorage.setItem(LOGS_KEY, JSON.stringify(migrated));
-      localStorage.setItem(MIGRATION_KEY, '1');
+      safeSetItem(LOGS_KEY, JSON.stringify(migrated));
+      safeSetItem(MIGRATION_KEY, '1');
       return migrated.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     return logs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -158,6 +169,38 @@ export function duplicateLog(id: string, titleSuffix: string): string | null {
   return newId;
 }
 
+// ─── Log Linking (bidirectional backlinks) ───
+
+export function linkLogs(logId1: string, logId2: string): void {
+  const logs = loadAllLogs().map((l) => {
+    if (l.id === logId1) {
+      const ids = new Set(l.relatedLogIds || []);
+      ids.add(logId2);
+      return { ...l, relatedLogIds: [...ids] };
+    }
+    if (l.id === logId2) {
+      const ids = new Set(l.relatedLogIds || []);
+      ids.add(logId1);
+      return { ...l, relatedLogIds: [...ids] };
+    }
+    return l;
+  });
+  saveLogs(logs);
+}
+
+export function unlinkLogs(logId1: string, logId2: string): void {
+  const logs = loadAllLogs().map((l) => {
+    if (l.id === logId1) {
+      return { ...l, relatedLogIds: (l.relatedLogIds || []).filter((id) => id !== logId2) };
+    }
+    if (l.id === logId2) {
+      return { ...l, relatedLogIds: (l.relatedLogIds || []).filter((id) => id !== logId1) };
+    }
+    return l;
+  });
+  saveLogs(logs);
+}
+
 // ─── Projects ───
 
 function loadAllProjects(): Project[] {
@@ -178,7 +221,7 @@ export function loadTrashedProjects(): Project[] {
 }
 
 export function saveProjects(projects: Project[]): void {
-  localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+  safeSetItem(PROJECTS_KEY, JSON.stringify(projects));
 }
 
 export function addProject(name: string): Project {
@@ -260,12 +303,12 @@ export function saveMasterNote(note: MasterNote): void {
 
   const notes = loadMasterNotes().filter((n) => n.projectId !== note.projectId);
   notes.push(note);
-  localStorage.setItem(MASTER_NOTES_KEY, JSON.stringify(notes));
+  safeSetItem(MASTER_NOTES_KEY, JSON.stringify(notes));
 }
 
 export function deleteMasterNote(projectId: string): void {
   const notes = loadMasterNotes().filter((n) => n.projectId !== projectId);
-  localStorage.setItem(MASTER_NOTES_KEY, JSON.stringify(notes));
+  safeSetItem(MASTER_NOTES_KEY, JSON.stringify(notes));
 }
 
 /** Remove a deleted log ID from all MasterNote sourceLogIds and relatedLogIds */
@@ -286,7 +329,7 @@ function cleanMasterNoteSourceLogIds(logId: string): void {
     if (relatedLogIds.length !== n.relatedLogIds.length) changed = true;
     return { ...n, decisions, openIssues, nextActions, relatedLogIds };
   });
-  if (changed) localStorage.setItem(MASTER_NOTES_KEY, JSON.stringify(updated));
+  if (changed) safeSetItem(MASTER_NOTES_KEY, JSON.stringify(updated));
 }
 
 // ─── Master Note History ───
@@ -301,7 +344,7 @@ function loadAllMnHistory(): MasterNoteHistory[] {
 }
 
 function saveMnHistory(histories: MasterNoteHistory[]): void {
-  localStorage.setItem(MN_HISTORY_KEY, JSON.stringify(histories));
+  safeSetItem(MN_HISTORY_KEY, JSON.stringify(histories));
 }
 
 function pushMasterNoteSnapshot(note: MasterNote): void {
@@ -319,6 +362,11 @@ function pushMasterNoteSnapshot(note: MasterNote): void {
     note: { ...note },
     savedAt: note.updatedAt,
   });
+  // Cap snapshots: keep only the most recent MAX_MN_SNAPSHOTS
+  if (history.snapshots.length > MAX_MN_SNAPSHOTS) {
+    history.snapshots.sort((a, b) => a.savedAt - b.savedAt);
+    history.snapshots = history.snapshots.slice(-MAX_MN_SNAPSHOTS);
+  }
   saveMnHistory(all);
 }
 
@@ -357,7 +405,7 @@ export function loadLogSummaries(): LogSummary[] {
 export function saveLogSummary(summary: LogSummary): void {
   const summaries = loadLogSummaries().filter((s) => s.logId !== summary.logId);
   summaries.push(summary);
-  localStorage.setItem(LOG_SUMMARIES_KEY, JSON.stringify(summaries));
+  safeSetItem(LOG_SUMMARIES_KEY, JSON.stringify(summaries));
 }
 
 export function getLogSummary(logId: string): LogSummary | undefined {
@@ -388,7 +436,7 @@ export function loadTrashedTodos(): Todo[] {
 }
 
 export function saveTodos(todos: Todo[]): void {
-  localStorage.setItem(TODOS_KEY, JSON.stringify(todos));
+  safeSetItem(TODOS_KEY, JSON.stringify(todos));
 }
 
 export function addTodosFromLog(logId: string, items: string[]): void {
@@ -503,6 +551,10 @@ export function reorderTodos(orderedIds: string[]): void {
   saveTodos(all.map((t) => orderMap.has(t.id) ? { ...t, sortOrder: orderMap.get(t.id) } : t));
 }
 
+export function snoozeTodo(id: string, until: number): void {
+  saveTodos(loadAllTodos().map((t) => t.id === id ? { ...t, snoozedUntil: until } : t));
+}
+
 export function deleteTodosForLog(logId: string): void {
   saveTodos(loadAllTodos().filter((t) => t.logId !== logId));
 }
@@ -523,7 +575,7 @@ export function saveWeeklyReport(report: WeeklyReport): void {
   );
   all.push(report);
   all.sort((a, b) => b.weekStart.localeCompare(a.weekStart));
-  localStorage.setItem(WEEKLY_REPORTS_KEY, JSON.stringify(all));
+  safeSetItem(WEEKLY_REPORTS_KEY, JSON.stringify(all));
 }
 
 export function getWeeklyReport(weekStart: string, projectId?: string): WeeklyReport | undefined {
@@ -534,13 +586,13 @@ export function getWeeklyReport(weekStart: string, projectId?: string): WeeklyRe
 
 export function deleteWeeklyReport(id: string): void {
   const all = loadWeeklyReports().filter((r) => r.id !== id);
-  localStorage.setItem(WEEKLY_REPORTS_KEY, JSON.stringify(all));
+  safeSetItem(WEEKLY_REPORTS_KEY, JSON.stringify(all));
 }
 
 /** Delete all weekly reports for a project */
 function deleteWeeklyReportsForProject(projectId: string): void {
   const all = loadWeeklyReports().filter((r) => (r.projectId || '') !== projectId);
-  localStorage.setItem(WEEKLY_REPORTS_KEY, JSON.stringify(all));
+  safeSetItem(WEEKLY_REPORTS_KEY, JSON.stringify(all));
 }
 
 // ─── Knowledge Base ───
@@ -558,12 +610,12 @@ export function getKnowledgeBase(projectId: string): KnowledgeBase | undefined {
 export function saveKnowledgeBase(kb: KnowledgeBase): void {
   const all = loadKnowledgeBases().filter((k) => k.projectId !== kb.projectId);
   all.push(kb);
-  localStorage.setItem(KNOWLEDGE_BASE_KEY, JSON.stringify(all));
+  safeSetItem(KNOWLEDGE_BASE_KEY, JSON.stringify(all));
 }
 
 export function deleteKnowledgeBase(projectId: string): void {
   const all = loadKnowledgeBases().filter((k) => k.projectId !== projectId);
-  localStorage.setItem(KNOWLEDGE_BASE_KEY, JSON.stringify(all));
+  safeSetItem(KNOWLEDGE_BASE_KEY, JSON.stringify(all));
 }
 
 // ─── AI Context (per-project) ───
@@ -575,7 +627,7 @@ export function getAiContext(projectId: string): string | null {
 }
 
 export function saveAiContext(projectId: string, content: string): void {
-  localStorage.setItem(AI_CONTEXT_PREFIX + projectId, content);
+  safeSetItem(AI_CONTEXT_PREFIX + projectId, content);
 }
 
 export function deleteAiContext(projectId: string): void {
@@ -638,7 +690,7 @@ export function importData(backup: LoreBackup, mode: 'merge' | 'overwrite'): Imp
     const cat = KEY_TO_CATEGORY[key];
 
     if (mode === 'overwrite') {
-      localStorage.setItem(key, JSON.stringify(incoming));
+      safeSetItem(key, JSON.stringify(incoming));
       if (cat) result[cat] = incoming.length;
     } else {
       // Merge: combine by id, incoming wins on conflict
@@ -659,7 +711,7 @@ export function importData(backup: LoreBackup, mode: 'merge' | 'overwrite'): Imp
         else map.set(crypto.randomUUID(), item);
       }
       const merged = Array.from(map.values());
-      localStorage.setItem(key, JSON.stringify(merged));
+      safeSetItem(key, JSON.stringify(merged));
       if (cat) result[cat] = merged.length;
     }
   }
@@ -717,7 +769,7 @@ export function getApiKey(): string {
 /** @deprecated Use setProviderApiKey from provider.ts instead */
 export function setApiKey(key: string): void {
   const provider = localStorage.getItem('threadlog_provider') || 'anthropic';
-  localStorage.setItem(`threadlog_api_key_${provider}`, key);
+  safeSetItem(`threadlog_api_key_${provider}`, key);
 }
 
 /** Output language preference (for AI-generated content) */
@@ -730,7 +782,7 @@ export function getLang(): string {
 }
 
 export function setLang(lang: string): void {
-  localStorage.setItem(LANG_KEY, lang);
+  safeSetItem(LANG_KEY, lang);
 }
 
 const UI_LANG_KEY = 'threadlog_ui_lang';
@@ -743,7 +795,7 @@ export function getUiLang(): Lang {
 }
 
 export function setUiLang(lang: Lang): void {
-  localStorage.setItem(UI_LANG_KEY, lang);
+  safeSetItem(UI_LANG_KEY, lang);
 }
 
 export type ThemePref = 'light' | 'dark' | 'system';
@@ -755,5 +807,29 @@ export function getTheme(): ThemePref {
 }
 
 export function setTheme(theme: ThemePref): void {
-  localStorage.setItem(THEME_KEY, theme);
+  safeSetItem(THEME_KEY, theme);
+}
+
+// ─── Auto Weekly Report ───
+
+const AUTO_REPORT_KEY = 'threadlog_auto_weekly_report';
+const LAST_REPORT_DATE_KEY = 'threadlog_last_report_date';
+
+export function getAutoReportSetting(): boolean {
+  return localStorage.getItem(AUTO_REPORT_KEY) === 'true';
+}
+
+export function setAutoReportSetting(enabled: boolean): void {
+  safeSetItem(AUTO_REPORT_KEY, String(enabled));
+}
+
+export function getLastReportDate(): number | null {
+  const raw = localStorage.getItem(LAST_REPORT_DATE_KEY);
+  if (!raw) return null;
+  const n = Number(raw);
+  return isNaN(n) ? null : n;
+}
+
+export function setLastReportDate(timestamp: number): void {
+  safeSetItem(LAST_REPORT_DATE_KEY, String(timestamp));
 }

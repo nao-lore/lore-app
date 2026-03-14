@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback } from 'react';
-import { Square, CheckSquare, AlertTriangle, ChevronDown, ChevronRight, Plus, PlayCircle, Sparkles } from 'lucide-react';
+import { Square, CheckSquare, AlertTriangle, ChevronDown, ChevronRight, Plus, PlayCircle, Clock, FileText, FolderOpen, TrendingUp } from 'lucide-react';
 import type { LogEntry, Project, Todo, MasterNote } from './types';
+import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { getGreeting } from './greeting';
 
@@ -58,7 +59,16 @@ function isNotDismissed(key: string, latestActivityTs: number): boolean {
 
 export default function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject, onOpenTodos, onOpenSummaryList, onOpenHistory, onNewLog, onToggleAction }: DashboardViewProps) {
   const [moreTasksOpen, setMoreTasksOpen] = useState(false);
-  const [dismissed, setDismissed] = useState<Set<string>>(() => new Set());
+  const [dismissed, setDismissed] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(DISMISS_KEY);
+      if (saved) {
+        const entries = JSON.parse(saved) as Record<string, number>;
+        return new Set(Object.keys(entries));
+      }
+    } catch { /* ignore */ }
+    return new Set();
+  });
 
   const dismissAll = useCallback((keys: string[]) => {
     saveDismissals(keys);
@@ -114,11 +124,9 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
     return snaps.sort((a, b) => new Date(b.latestHandoff.createdAt).getTime() - new Date(a.latestHandoff.createdAt).getTime());
   }, [projects, handoffLogs]);
 
-  const isJa = lang === 'ja';
-
   // ── Nudge cards ──
   const nudges = useMemo(() => {
-    const items: { key: string; emoji: string; label: string; sub: string; color: string; onClick: () => void; dismissKeys: string[] }[] = [];
+    const items: { key: string; emoji: string; label: string; sub: string; color: string; borderColor: string; icon: typeof Clock; onClick: () => void; dismissKeys: string[] }[] = [];
     const today = new Date().toISOString().slice(0, 10);
 
     // Overdue TODOs
@@ -127,9 +135,11 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
       items.push({
         key: 'overdue_todos',
         emoji: '⏰',
-        label: isJa ? `期限切れ ${overdueTodos.length}件` : `${overdueTodos.length} overdue`,
+        label: tf('nudgeOverdue', lang, overdueTodos.length),
         sub: 'TODO',
-        color: 'var(--danger-text, #ef4444)',
+        color: 'var(--error-text, #ef4444)',
+        borderColor: 'var(--error-text, #ef4444)',
+        icon: Clock,
         onClick: onOpenTodos,
         dismissKeys: ['overdue_todos'],
       });
@@ -149,9 +159,11 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
       items.push({
         key: 'stale_summaries',
         emoji: '📋',
-        label: isJa ? `更新推奨 ${staleProjectIds.length}件` : `${staleProjectIds.length} to update`,
-        sub: isJa ? 'サマリー' : 'Summary',
+        label: tf('nudgeStaleCount', lang, staleProjectIds.length),
+        sub: t('nudgeStaleSub', lang),
         color: 'var(--warning-text)',
+        borderColor: 'var(--warning-accent, orange)',
+        icon: FileText,
         onClick: onOpenSummaryList,
         dismissKeys: staleProjectIds.map((id) => `summary_${id}`),
       });
@@ -163,41 +175,39 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
       items.push({
         key: 'unassigned',
         emoji: '📂',
-        label: isJa ? `未割当 ${unassignedCount}件` : `${unassignedCount} unassigned`,
-        sub: isJa ? 'ログ' : 'Logs',
+        label: tf('nudgeUnassigned', lang, unassignedCount),
+        sub: t('statsTotalLogs', lang),
         color: 'var(--accent)',
+        borderColor: 'var(--accent)',
+        icon: FolderOpen,
         onClick: onOpenHistory,
         dismissKeys: ['unassigned'],
       });
     }
 
     return items;
-  }, [todos, masterNotes, logs, handoffLogs, dismissed, isJa, onOpenTodos, onOpenSummaryList, onOpenHistory]);
+  }, [todos, masterNotes, logs, handoffLogs, dismissed, lang, onOpenTodos, onOpenSummaryList, onOpenHistory]);
 
   const focusTasks = uncheckedActions.slice(0, 5);
 
   // ── Empty state ──
   if (handoffLogs.length === 0) {
     return (
-      <div className="workspace-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ marginTop: 80, textAlign: 'center', maxWidth: 400 }}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 32 }}>
-            {getGreeting(lang)}
-          </div>
-          <div style={{ width: 64, height: 64, borderRadius: 20, background: 'linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #a855f7))', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 8px 24px rgba(99,102,241,0.2)' }}>
-            <Sparkles size={28} style={{ color: '#fff' }} />
-          </div>
-          <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)', margin: '0 0 8px' }}>
-            {isJa ? 'Loreへようこそ' : 'Welcome to Lore'}
+      <div className="workspace-content-wide" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-secondary)', marginTop: 80, marginBottom: 32, textAlign: 'center' }}>
+          {getGreeting(lang)}
+        </div>
+        <div className="empty-state">
+          <div className="empty-state-icon">&#10024;</div>
+          <p style={{ fontWeight: 600 }}>
+            {t('dashboardWelcome', lang)}
           </p>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 32px', lineHeight: 1.7 }}>
-            {isJa
-              ? 'AIとの会話を貼り付けてHandoffを作成しましょう'
-              : 'Paste an AI conversation and create a Handoff'}
+          <p className="page-subtitle">
+            {t('dashboardWelcomeDesc', lang)}
           </p>
-          <button className="btn btn-primary" onClick={onNewLog} style={{ padding: '10px 28px', fontSize: 14, borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <button className="btn btn-primary" onClick={onNewLog} style={{ marginTop: 16 }}>
             <Plus size={16} />
-            {isJa ? '最初のHandoffを作成' : 'Create your first Handoff'}
+            {t('dashboardCreateFirstLog', lang)}
           </button>
         </div>
       </div>
@@ -206,8 +216,7 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
 
   // ── Main dashboard ──
   return (
-    <div className="workspace-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <div style={{ width: '100%', maxWidth: 640 }}>
+    <div className="workspace-content-wide">
 
         {/* ── Greeting (centered, Notion-style) ── */}
         <div style={{ textAlign: 'center', marginTop: 24, marginBottom: 36 }}>
@@ -216,22 +225,77 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
           </div>
         </div>
 
+        {/* ── Nudge cards (top of dashboard, prominent with left border + icons) ── */}
+        {nudges.length > 0 && (
+          <div style={{ marginBottom: 32 }}>
+            <div className="flex flex-wrap" style={{ gap: 10 }}>
+              {nudges.map((n) => {
+                const IconComponent = n.icon;
+                return (
+                <div
+                  key={n.key}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => { n.onClick(); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); n.onClick(); } }}
+                  style={{
+                    flex: '1 1 160px', minWidth: 140, padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
+                    background: `color-mix(in srgb, ${n.color} 6%, var(--card-bg))`,
+                    border: `1px solid color-mix(in srgb, ${n.color} 15%, transparent)`,
+                    borderLeft: `4px solid ${n.borderColor}`,
+                    transition: 'all 0.15s ease', position: 'relative',
+                  }}
+                  onMouseEnter={(e) => { const el = e.currentTarget; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; }}
+                  onMouseLeave={(e) => { const el = e.currentTarget; el.style.transform = 'none'; el.style.boxShadow = 'none'; }}
+                >
+                  <div style={{ fontSize: 20, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <IconComponent size={20} style={{ color: n.borderColor }} />
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>{n.label}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{n.sub}</div>
+                  {/* dismiss tap target */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); dismissAll(n.dismissKeys); }}
+                    aria-label={t('ariaDismissNotification', lang)}
+                    style={{
+                      position: 'absolute', top: 8, right: 8,
+                      width: 18, height: 18, borderRadius: '50%', border: 'none',
+                      background: 'color-mix(in srgb, var(--text-placeholder) 15%, transparent)',
+                      color: 'var(--text-placeholder)', fontSize: 11, lineHeight: 1,
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      opacity: 0, transition: 'opacity 0.15s',
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = '0'; }}
+                  >×</button>
+                </div>
+                );
+              })}
+            </div>
+            {/* Show × on card hover */}
+            <style>{`.workspace-content div:hover > button { opacity: 0.5 !important; }`}</style>
+          </div>
+        )}
+
         {/* ── Quick access cards (horizontal scroll) ── */}
         {(lastActiveProject || projectSnapshots.length > 0) && (
           <div style={{ marginBottom: 32 }}>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className="section-header" style={{ fontSize: 13, marginBottom: 10 }}>
               <PlayCircle size={14} style={{ opacity: 0.5 }} />
-              {isJa ? '最近のプロジェクト' : 'Recent projects'}
+              {t('dashboardRecentProjects', lang)}
             </div>
-            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
+            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', overflowY: 'hidden', paddingBottom: 8, marginBottom: -8 }}>
               {projectSnapshots.slice(0, 5).map((snap) => {
                 const pct = snap.totalCount > 0 ? ((snap.totalCount - snap.pendingCount) / snap.totalCount) * 100 : 0;
                 return (
                   <div
                     key={snap.project.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => onOpenProject(snap.project.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenProject(snap.project.id); } }}
                     style={{
-                      minWidth: 140, maxWidth: 170, padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
+                      flex: '1 1 160px', minWidth: 160, maxWidth: 280, padding: '16px 20px', borderRadius: 12, cursor: 'pointer',
                       background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
                       transition: 'all 0.15s ease', flexShrink: 0,
                     }}
@@ -239,7 +303,7 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
                     onMouseLeave={(e) => { const el = e.currentTarget; el.style.borderColor = 'var(--border-subtle)'; el.style.transform = 'none'; el.style.boxShadow = 'none'; }}
                   >
                     <div style={{ fontSize: 24, marginBottom: 10, lineHeight: 1 }}>{snap.project.icon || '📂'}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>
+                    <div className="truncate font-semibold" style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
                       {snap.project.name}
                     </div>
                     {snap.totalCount > 0 && (
@@ -255,9 +319,13 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
               })}
               {/* New log card */}
               <div
+                role="button"
+                tabIndex={0}
                 onClick={onNewLog}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNewLog(); } }}
+                aria-label={t('ariaCreateNewLog', lang)}
                 style={{
-                  minWidth: 100, padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
+                  minWidth: 100, padding: '16px 20px', borderRadius: 12, cursor: 'pointer',
                   border: '1px dashed var(--border-subtle)', display: 'flex', flexDirection: 'column',
                   alignItems: 'center', justifyContent: 'center', gap: 6,
                   color: 'var(--text-placeholder)', transition: 'all 0.15s ease', flexShrink: 0,
@@ -266,69 +334,33 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
                 onMouseLeave={(e) => { const el = e.currentTarget; el.style.borderColor = 'var(--border-subtle)'; el.style.color = 'var(--text-placeholder)'; }}
               >
                 <Plus size={20} />
-                <span style={{ fontSize: 11, fontWeight: 600 }}>{isJa ? '新規' : 'New'}</span>
+                <span style={{ fontSize: 11, fontWeight: 600 }}>{t('dashboardNew', lang)}</span>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* ── Nudge cards (Notion-style, light tinted bg) ── */}
-        {nudges.length > 0 && (
-          <div style={{ marginBottom: 32 }}>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              {nudges.map((n) => (
-                <div
-                  key={n.key}
-                  onClick={() => { n.onClick(); }}
-                  style={{
-                    flex: '1 1 160px', minWidth: 140, padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
-                    background: `color-mix(in srgb, ${n.color} 6%, var(--card-bg))`,
-                    border: `1px solid color-mix(in srgb, ${n.color} 15%, transparent)`,
-                    transition: 'all 0.15s ease', position: 'relative',
-                  }}
-                  onMouseEnter={(e) => { const el = e.currentTarget; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; }}
-                  onMouseLeave={(e) => { const el = e.currentTarget; el.style.transform = 'none'; el.style.boxShadow = 'none'; }}
-                >
-                  <div style={{ fontSize: 20, marginBottom: 8 }}>{n.emoji}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>{n.label}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{n.sub}</div>
-                  {/* dismiss tap target */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); dismissAll(n.dismissKeys); }}
-                    style={{
-                      position: 'absolute', top: 8, right: 8,
-                      width: 18, height: 18, borderRadius: '50%', border: 'none',
-                      background: 'color-mix(in srgb, var(--text-placeholder) 15%, transparent)',
-                      color: 'var(--text-placeholder)', fontSize: 11, lineHeight: 1,
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      opacity: 0, transition: 'opacity 0.15s',
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
-                  >×</button>
-                </div>
-              ))}
-            </div>
-            {/* Show × on card hover */}
-            <style>{`.workspace-content div:hover > button { opacity: 0.5 !important; }`}</style>
           </div>
         )}
 
         {/* ── Today's Focus ── */}
         {focusTasks.length > 0 && (
           <div style={{ marginBottom: 32 }}>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className="section-header" style={{ fontSize: 13, marginBottom: 10 }}>
               <Square size={14} style={{ opacity: 0.5 }} />
-              {isJa ? "今日のフォーカス" : "Today's Focus"}
+              {t('dashboardTodayFocus', lang)}
+              {uncheckedActions.length > 0 && (
+                <span className="badge badge-accent" style={{ fontWeight: 700, fontSize: 11, marginLeft: 4 }}>
+                  {uncheckedActions.length}
+                </span>
+              )}
               {totalActions > 0 && (
                 <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-placeholder)' }}>
                   {checkedCount}/{totalActions}
                 </span>
               )}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {focusTasks.map((action, i) => (
+            <div className="flex-col gap-xs">
+              {focusTasks.map((action) => (
                 <div
-                  key={i}
+                  key={`${action.logId}-${action.index}`}
                   onClick={() => onToggleAction(action.logId, action.index)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 10,
@@ -341,9 +373,9 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-subtle)'; }}
                 >
                   <Square size={14} style={{ color: 'var(--text-placeholder)', flexShrink: 0 }} />
-                  <span style={{ flex: 1, color: 'var(--text-body)' }}>{action.text}</span>
+                  <span style={{ flex: 1, color: 'var(--text-body)', overflowWrap: 'break-word', wordBreak: 'break-word', minWidth: 0 }}>{action.text}</span>
                   {action.projectName && (
-                    <span style={{ fontSize: 10, color: 'var(--accent-text)', flexShrink: 0, padding: '2px 8px', borderRadius: 4, background: 'color-mix(in srgb, var(--accent) 10%, transparent)' }}>
+                    <span className="badge badge-accent" style={{ borderRadius: 4, flexShrink: 0 }}>
                       {action.projectName}
                     </span>
                   )}
@@ -356,14 +388,14 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
                 style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-placeholder)', background: 'none', border: 'none', padding: '8px 0 0', cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 {moreTasksOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-                <span>{isJa ? `他 ${uncheckedActions.length - 5} 件` : `${uncheckedActions.length - 5} more`}</span>
+                <span>{tf('dashboardMoreTasks', lang, uncheckedActions.length - 5)}</span>
               </button>
             )}
             {moreTasksOpen && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 6 }}>
-                {uncheckedActions.slice(5, 25).map((action, i) => (
+                {uncheckedActions.slice(5, 25).map((action) => (
                   <div
-                    key={i}
+                    key={`${action.logId}-${action.index}`}
                     onClick={() => onToggleAction(action.logId, action.index)}
                     style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', userSelect: 'none' }}
                   >
@@ -378,15 +410,15 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
 
         {/* ── Recently completed ── */}
         {recentlyDone.length > 0 && (
-          <div style={{ marginBottom: 32 }}>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <CheckSquare size={14} style={{ opacity: 0.5, color: 'var(--success-text)' }} />
-              {isJa ? '完了' : 'Done'}
+          <div style={{ marginBottom: 32, padding: '14px 16px', borderRadius: 12, background: 'color-mix(in srgb, var(--success-text, #22c55e) 4%, var(--card-bg))' }}>
+            <div className="section-header" style={{ fontSize: 13, marginBottom: 10 }}>
+              <CheckSquare size={14} style={{ color: 'var(--success-text)' }} />
+              {t('dashboardDone', lang)}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {recentlyDone.map((action, i) => (
+            <div className="flex-col" style={{ gap: 2 }}>
+              {recentlyDone.map((action) => (
                 <div
-                  key={i}
+                  key={`${action.logId}-${action.index}`}
                   style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', fontSize: 12, color: 'var(--text-placeholder)' }}
                 >
                   <CheckSquare size={13} style={{ color: 'var(--success-text)', flexShrink: 0 }} />
@@ -397,19 +429,22 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
           </div>
         )}
 
-        {/* ── Blockers (if any, subtle) ── */}
+        {/* ── Blockers (if any, red-tinted) ── */}
         {projectSnapshots.some((s) => s.blockers.length > 0) && (
           <div style={{ marginBottom: 32 }}>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <AlertTriangle size={14} style={{ opacity: 0.5, color: 'var(--warning-text)' }} />
-              {isJa ? 'ブロッカー' : 'Blockers'}
+            <div className="section-header" style={{ fontSize: 13, marginBottom: 10 }}>
+              <AlertTriangle size={14} style={{ opacity: 0.5, color: 'var(--error-text, #ef4444)' }} />
+              {t('dashboardBlockers', lang)}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div className="flex-col gap-xs">
               {projectSnapshots.filter((s) => s.blockers.length > 0).slice(0, 3).map((snap) => (
                 <div
                   key={snap.project.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => onOpenProject(snap.project.id)}
-                  style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', background: 'color-mix(in srgb, var(--warning-text) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--warning-text) 10%, transparent)' }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenProject(snap.project.id); } }}
+                  style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', background: 'color-mix(in srgb, var(--error-text, #ef4444) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--error-text, #ef4444) 10%, transparent)' }}
                 >
                   <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{snap.project.icon || '📂'} {snap.project.name}</span>
                   <span style={{ margin: '0 6px', opacity: 0.3 }}>—</span>
@@ -420,6 +455,160 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
           </div>
         )}
 
+        {/* ── Trends ── */}
+        <TrendsSection logs={logs} todos={todos} lang={lang} />
+
+    </div>
+  );
+}
+
+// ── Trends Section Component ──
+
+interface WeekBucket {
+  label: string;
+  logCount: number;
+  todosCompleted: number;
+  todosTotal: number;
+}
+
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function formatWeekLabel(start: Date): string {
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  return `${start.getMonth() + 1}/${start.getDate()}-${end.getMonth() + 1}/${end.getDate()}`;
+}
+
+function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[]; lang: Lang }) {
+  const weeklyData = useMemo(() => {
+    const now = new Date();
+    const currentWeekStart = getWeekStart(now);
+
+    // Build 4 week buckets (current week + 3 previous)
+    const buckets: WeekBucket[] = [];
+    for (let i = 3; i >= 0; i--) {
+      const weekStart = new Date(currentWeekStart);
+      weekStart.setDate(weekStart.getDate() - i * 7);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7);
+
+      // Count logs in this week
+      const logCount = logs.filter((l) => {
+        const d = new Date(l.createdAt);
+        return d >= weekStart && d < weekEnd;
+      }).length;
+
+      // Count todos created in this week window
+      const wsTime = weekStart.getTime();
+      const weTime = weekEnd.getTime();
+      const weekTodos = todos.filter((td) => {
+        const ts = typeof td.createdAt === 'number' ? td.createdAt : new Date(td.createdAt).getTime();
+        return ts >= wsTime && ts < weTime;
+      });
+      const todosCompleted = weekTodos.filter((td) => td.done).length;
+      const todosTotal = weekTodos.length;
+
+      buckets.push({
+        label: formatWeekLabel(weekStart),
+        logCount,
+        todosCompleted,
+        todosTotal,
+      });
+    }
+    return buckets;
+  }, [logs, todos]);
+
+  const maxCount = Math.max(1, ...weeklyData.map((w) => w.logCount));
+
+  // Metrics
+  const thisWeekCount = weeklyData[3]?.logCount ?? 0;
+  const lastWeekCount = weeklyData[2]?.logCount ?? 0;
+  const avgPerWeek = weeklyData.length > 0
+    ? Math.round((weeklyData.reduce((s, w) => s + w.logCount, 0) / weeklyData.length) * 10) / 10
+    : 0;
+
+  const changePct = lastWeekCount > 0
+    ? Math.round(((thisWeekCount - lastWeekCount) / lastWeekCount) * 100)
+    : thisWeekCount > 0 ? 100 : 0;
+  const changeUp = changePct >= 0;
+
+  const totalTodosCompleted = weeklyData.reduce((s, w) => s + w.todosCompleted, 0);
+  const totalTodosAll = weeklyData.reduce((s, w) => s + w.todosTotal, 0);
+  const completionRate = totalTodosAll > 0 ? Math.round((totalTodosCompleted / totalTodosAll) * 100) : 0;
+
+  if (logs.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <div className="section-header" style={{ fontSize: 13, marginBottom: 14 }}>
+        <TrendingUp size={14} style={{ opacity: 0.5 }} />
+        {t('trends', lang)}
+      </div>
+
+      {/* Weekly activity bars */}
+      <div className="flex-col gap-sm" style={{ marginBottom: 16 }}>
+        {weeklyData.map((week, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-placeholder)', width: 70, flexShrink: 0, textAlign: 'right' }}>
+              {week.label}
+            </span>
+            <div style={{ flex: 1, height: 18, background: 'var(--border-subtle)', borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
+              <div
+                style={{
+                  height: '100%',
+                  width: `${(week.logCount / maxCount) * 100}%`,
+                  background: 'var(--accent)',
+                  borderRadius: 4,
+                  transition: 'width 0.3s ease',
+                  minWidth: week.logCount > 0 ? 4 : 0,
+                }}
+              />
+            </div>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', width: 50, flexShrink: 0 }}>
+              {tf('logsCount', lang, week.logCount)}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Key metrics row */}
+      <div className="flex flex-wrap" style={{ gap: 12 }}>
+        {/* This week vs last week */}
+        <div className="stat-card" style={{ flex: '1 1 200px', padding: '14px 20px', borderRadius: 12, borderColor: 'var(--border-subtle)' }}>
+          <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
+            {t('vsLastWeek', lang)}
+          </div>
+          <div className="stat-value" style={{ fontSize: 18, color: changeUp ? 'var(--success-text, #22c55e)' : 'var(--error-text, #ef4444)' }}>
+            {changeUp ? '↑' : '↓'} {Math.abs(changePct)}%
+          </div>
+        </div>
+
+        {/* Average logs per week */}
+        <div className="stat-card" style={{ flex: '1 1 200px', padding: '14px 20px', borderRadius: 12, borderColor: 'var(--border-subtle)' }}>
+          <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
+            {t('avgPerWeek', lang)}
+          </div>
+          <div className="stat-value" style={{ fontSize: 18 }}>
+            {avgPerWeek}
+          </div>
+        </div>
+
+        {/* TODO completion rate */}
+        <div className="stat-card" style={{ flex: '1 1 200px', padding: '14px 20px', borderRadius: 12, borderColor: 'var(--border-subtle)' }}>
+          <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
+            {t('completionRate', lang)}
+          </div>
+          <div className="stat-value" style={{ fontSize: 18 }}>
+            {completionRate}%
+          </div>
+        </div>
       </div>
     </div>
   );

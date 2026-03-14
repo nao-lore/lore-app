@@ -30,6 +30,18 @@ const labels = {
   noLogsYetDesc: { ja: 'AIとの会話を貼り付けて、最初のワークログを作成しましょう。', en: 'Paste an AI conversation to create your first worklog.' },
   hideSidebar: { ja: 'サイドバーを隠す', en: 'Hide sidebar' },
   showSidebar: { ja: 'サイドバーを表示', en: 'Show sidebar' },
+  navHome: { ja: 'ホーム', en: 'Home' },
+  navHomeTitle: { ja: 'ホーム — ログを作成', en: 'Home — Create a Log' },
+  navDashboard: { ja: 'ダッシュボード', en: 'Dashboard' },
+  navDashboardTitle: { ja: 'プロジェクト概況・タスク', en: 'Project Overview & Tasks' },
+  navTodoTitle: { ja: '会話から抽出されたTODOの管理', en: 'Manage TODOs extracted from conversations' },
+  navTimelineTitle: { ja: 'ログ・TODO・サマリーを時系列で俯瞰', en: "Bird's-eye view of logs, TODOs, and summaries over time" },
+  navWeeklyReportTitle: { ja: 'その週の活動をAIが自動でまとめる', en: 'AI-generated weekly activity summary' },
+  navWorkflow: { ja: 'ワークフロー', en: 'Workflow' },
+  navLogsTitle: { ja: '全てのログを時系列で表示', en: 'View all logs in chronological order' },
+  navProjectsTitle: { ja: 'ログをプロジェクトに整理', en: 'Organize logs into projects' },
+  navProjectSummaryTitle: { ja: 'AIがログからプロジェクトの全体像を自動生成', en: 'AI generates project overviews from your logs' },
+  ctxChangeProjectPrompt: { ja: '番号を入力:', en: 'Enter number:' },
 
   // Command palette
   searchPlaceholder: { ja: 'ログ・プロジェクト・TODOを検索...', en: 'Search logs, projects, todos...' },
@@ -257,7 +269,7 @@ const labels = {
   projectNamePlaceholder: { ja: 'プロジェクト名', en: 'Project name' },
   allLogs: { ja: 'すべてのログ', en: 'All Logs' },
   projectLabel: { ja: 'プロジェクト', en: 'Project' },
-  noProject: { ja: 'Project', en: 'Project' },
+  noProject: { ja: 'プロジェクトなし', en: 'No project' },
   renameProject: { ja: '名前を変更', en: 'Rename' },
   pinnedProjects: { ja: 'ピン留めプロジェクト', en: 'Pinned Projects' },
   pinnedLogs: { ja: 'ピン留めログ', en: 'Pinned Logs' },
@@ -323,6 +335,7 @@ const labels = {
   mnEditMode: { ja: '編集中', en: 'Editing' },
   mnEditCancel: { ja: 'キャンセル', en: 'Cancel' },
   mnAddItem: { ja: '+ 項目を追加', en: '+ Add item' },
+  mnRemoveItem: { ja: '削除', en: 'Remove' },
   mnExport: { ja: 'エクスポート', en: 'Export' },
   mnCopy: { ja: 'コピー', en: 'Copy' },
   mnCopied: { ja: 'コピーしました', en: 'Copied!' },
@@ -348,6 +361,7 @@ const labels = {
   aiContextRegenerating: { ja: 'AI Context を生成中...', en: 'Generating AI Context...' },
   aiContextGenerated: { ja: 'AI Context を生成しました', en: 'AI Context generated' },
   aiContextNeeded: { ja: 'Project Summary から AI Context を生成してください', en: 'Please generate AI Context from Project Summary' },
+  addToProjectFirst: { ja: '先にプロジェクトに追加してください', en: 'Add to a project first' },
   updateSummaryPrompt: { ja: 'Project Summary を更新しますか？', en: 'Update Project Summary?' },
   updateSummaryStale: { ja: '⚠️ Project Summaryが7日以上未更新です。更新しますか？', en: 'Project Summary hasn\'t been updated in 7+ days. Update?' },
   updateSummaryAction: { ja: '更新する', en: 'Update' },
@@ -394,6 +408,10 @@ const labels = {
   todoPriorityNone: { ja: '未設定', en: 'None' },
   todoDeleteConfirm: { ja: 'このTODOを削除しますか？', en: 'Delete this TODO?' },
   todoDueDate: { ja: '期限', en: 'Due' },
+  todoDueSet: { ja: '設定', en: 'Set' },
+  todoDueRemove: { ja: '期限を削除', en: 'Remove due date' },
+  todoAddBtn: { ja: '追加', en: 'Add' },
+  todoInputRequired: { ja: 'TODOの内容を入力してください', en: 'Please enter TODO content' },
   todoToday: { ja: '今日', en: 'Today' },
   todoOverdue: { ja: '期限切れ', en: 'Overdue' },
   todoEdit: { ja: '編集', en: 'Edit' },
@@ -485,6 +503,9 @@ const labels = {
   trashFilterProjects: { ja: 'プロジェクト', en: 'Projects' },
   trashFilterTodos: { ja: 'TODO', en: 'TODOs' },
   moveToTrash: { ja: 'ゴミ箱へ移動', en: 'Move to Trash' },
+  trashTypeLog: { ja: 'ログ', en: 'Log' },
+  trashTypeProject: { ja: 'プロジェクト', en: 'Project' },
+  trashTypeTodo: { ja: 'TODO', en: 'TODO' },
 
   // Account menu
   accountMenuSettings: { ja: '設定', en: 'Settings' },
@@ -508,11 +529,32 @@ const labels = {
   mnHistoryRestoreConfirm: { ja: 'このバージョンを復元しますか？現在の内容は履歴に保存されます。', en: 'Restore this version? Current content will be saved to history.' },
   mnHistoryCurrent: { ja: '現在のバージョン', en: 'Current version' },
   mnHistoryRestored: { ja: '復元しました', en: 'Restored' },
+  mnRefineComplete: { ja: '修正完了', en: 'Refinement complete' },
+  mnSaved: { ja: '保存しました', en: 'Saved' },
+  mnLastUpdated: { ja: '最終更新', en: 'Last updated' },
 
   // Timeline
   timelineTitle: { ja: 'Timeline', en: 'Timeline' },
   timelineDesc: { ja: '活動の時系列記録', en: 'Activity history' },
   timelineEmpty: { ja: 'まだ活動がありません', en: 'No activity yet' },
+  timelineEmptyHint: { ja: 'ログを作成するとここに表示されます', en: 'Activity will appear here as you create logs' },
+  timelineYesterday: { ja: '昨日', en: 'Yesterday' },
+  timelineDateLabel: (y: number, m: number, d: number) => ({
+    ja: `${y}年${m}月${d}日`,
+    en: `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1]} ${d}, ${y}`,
+  }),
+  timelineProjectCreated: { ja: 'プロジェクト作成', en: 'Project created' },
+  timelineSummaryUpdated: { ja: 'Summary更新', en: 'Summary updated' },
+  timelineTodoAdded: { ja: 'TODO追加', en: 'TODO added' },
+  timelineTodoDone: { ja: 'TODO完了', en: 'TODO done' },
+  timelineTodoDeleted: { ja: 'TODO削除', en: 'TODO deleted' },
+  timelineTodoBatch: (n: number) => ({
+    ja: `TODO ${n}件追加`,
+    en: `${n} TODOs added`,
+  }),
+  timelineFilterAll: { ja: 'すべて', en: 'All' },
+  timelinePrevDay: { ja: '前の日', en: 'Previous day' },
+  timelineNextDay: { ja: '次の日', en: 'Next day' },
 
   // Log detail
   titleUpdated: { ja: 'タイトルを更新しました', en: 'Title updated' },
@@ -736,7 +778,7 @@ const labels = {
   projectChartPeriodAll: { ja: '全期間', en: 'All Time' },
   projectChartLogs: { ja: 'ログ数', en: 'Logs' },
 
-  // TODO completion trend
+  // Todo completion trend
   todoTrendTitle: { ja: 'TODO完了率トレンド', en: 'TODO Completion Trend' },
   todoTrendWeek: (n: number) => ({
     ja: `${n}週前`,
@@ -775,6 +817,7 @@ const labels = {
 
   // Clipboard
   copyFailed: { ja: 'コピーに失敗しました', en: 'Failed to copy' },
+  copiedToClipboard: { ja: 'コピーしました', en: 'Copied' },
 
   // Pagination
   loadMore: (remaining: number) => ({
@@ -793,7 +836,379 @@ const labels = {
   ariaHideSidebar: { ja: 'サイドバーを隠す', en: 'Hide sidebar' },
   ariaCardView: { ja: 'カード表示', en: 'Card view' },
   ariaListView: { ja: 'リスト表示', en: 'List view' },
+
+  // Overdue TODO banner
+  overdueBanner: (n: number) => ({
+    ja: `期限切れのTODOが${n}件あります`,
+    en: `${n} overdue TODO${n !== 1 ? 's' : ''}`,
+  }),
+  overdueBannerLink: { ja: '→ TODOを確認する', en: '→ View TODOs' },
+
+  // Unsaved input confirm dialog
+  unsavedInputTitle: { ja: '入力中の内容が消えます', en: 'Unsaved input will be lost' },
+  unsavedInputDesc: { ja: 'このまま移動しますか？', en: 'Are you sure you want to navigate away?' },
+  unsavedInputConfirm: { ja: 'このまま移動', en: 'Leave' },
+
+  // Streaming / transform progress
+  streamReceiving: { ja: 'AIが応答中', en: 'Receiving' },
+  todoExtractionTitle: { ja: 'TODO抽出', en: 'TODO Extraction' },
+  toastHandoffSaved: { ja: '🔁 ハンドオフを保存しました', en: '🔁 Handoff saved' },
+  toastTodosExtracted: (n: number) => ({
+    ja: `✔ ${n}件のTODOを抽出しました`,
+    en: `✔ ${n} TODOs extracted`,
+  }),
+  toastNoTodosFound: { ja: 'TODOが見つかりませんでした', en: 'No TODOs found' },
+  toastLogSaved: { ja: '📝 ログを保存しました', en: '📝 Log saved' },
+  toastTodosAdded: (n: number) => ({
+    ja: `✔ ${n}件のTODOを追加しました`,
+    en: `✔ ${n} TODOs added`,
+  }),
+
+  // Error messages
+  errorApiKey: { ja: 'APIキーが正しくありません。設定画面で確認してください。', en: 'Invalid or missing API key. Please check your key in Settings.' },
+  errorRateLimit: { ja: 'APIのレート制限に達しました。しばらく時間をおいてから再度お試しください。', en: 'API rate limit was hit. Please wait a few minutes and try again.' },
+  errorTruncated: { ja: 'レスポンスが長すぎて途中で切れました。入力を短くして再試行してください。', en: 'Response was truncated. Try shorter input.' },
+  errorParseResponse: { ja: 'AIの応答を正しく読み取れませんでした。もう一度お試しください。', en: 'Could not read the AI response. Please try again.' },
+  errorTooLong: { ja: '入力がAPIの上限を超えています。入力を分割して処理してください。', en: 'Input exceeds the API size limit. Please split your input.' },
+  errorNetwork: { ja: '通信に失敗しました。ネットワーク接続を確認して再試行してください。', en: 'Network error. Please check your connection and try again.' },
+  errorEmptyResponse: { ja: 'AIから空の応答が返されました。もう一度お試しください。', en: 'Received an empty response from the AI. Please try again.' },
+  errorApiGeneric: { ja: 'APIエラーが発生しました。しばらくしてからもう一度お試しください。', en: 'An API error occurred. Please try again in a moment.' },
+  errorGeneric: { ja: 'エラーが発生しました。再試行してください。', en: 'An error occurred. Please try again.' },
+
+  // Progress phases
+  phaseCollectingCompleted: { ja: '完了項目を収集中…', en: 'Collecting completed items…' },
+  phaseConsistencyCheck: { ja: '整合性チェック中…', en: 'Checking consistency…' },
+  phaseCollectingCompletedDetail: { ja: 'チャットログ全体から完了項目を収集しています', en: 'Collecting completed items from full chat log' },
+  phaseConsistencyCheckDetail: { ja: 'マージ結果の整合性を確認しています', en: 'Verifying merged results for consistency' },
+
+  // Input view inline
+  pasteFeedback: (n: string) => ({
+    ja: `テキストを検出しました（${n}文字）`,
+    en: `Text detected (${n} characters)`,
+  }),
+  longInputHint: { ja: '（長い入力のため処理に少し時間がかかる場合があります）', en: ' (long input — processing may take a moment)' },
+  selectProject: { ja: 'プロジェクトを選択', en: 'Select project' },
+  capturedFrom: (source: string) => ({
+    ja: `${source}から取り込みました`,
+    en: `Captured from ${source}`,
+  }),
+  captureTransformHint: { ja: 'ボタンを押して変換してください', en: 'Press the button to transform' },
+  retryBtn: { ja: '再試行', en: 'Retry' },
+
+  // Result view buttons
+  viewHandoff: { ja: 'ハンドオフを見る', en: 'View Handoff' },
+  viewLog: { ja: 'ログを見る', en: 'View Log' },
+
+  // Detail view
+  viewProjectSummary: { ja: 'プロジェクトサマリーを表示', en: 'View Project Summary' },
+  clickToReanalyze: { ja: 'クリックで再分析', en: 'Click to re-analyze' },
+  copyAiContextTitle: { ja: '次のAIセッションに貼り付けるコンテキストをコピー', en: 'Copy context to paste into your next AI session' },
+  copyAiContext: { ja: 'AI Context + Handoff をコピー', en: 'Copy AI Context + Handoff' },
+  copyWithContext: { ja: 'AI Context付きコピー', en: 'Copy with Context' },
+
+  // Misc UI
+  close: { ja: '閉じる', en: 'Close' },
+  deleted: { ja: '削除しました', en: 'Deleted' },
+  failed: { ja: '失敗しました', en: 'Failed' },
+  extensionReceived: { ja: 'Extension から会話を受信しました', en: 'Received conversation from extension' },
+  bulkDeletedToast: (n: number) => ({
+    ja: `${n}件を削除しました`,
+    en: `${n} deleted`,
+  }),
+  addedToProject: (name: string) => ({
+    ja: `「${name}」に追加しました`,
+    en: `Added to "${name}"`,
+  }),
+  bulkAddedToast: (n: number) => ({
+    ja: `${n}件追加しました`,
+    en: `${n} added`,
+  }),
+  projectCreated: { ja: 'プロジェクトを作成しました', en: 'Project created' },
+  renamed: { ja: '名前を変更しました', en: 'Renamed' },
+
+  // HistoryView
+  bulkTrashConfirm: (n: number) => ({
+    ja: `${n}件のログをゴミ箱に移動しますか？`,
+    en: `Move ${n} log${n !== 1 ? 's' : ''} to trash?`,
+  }),
+  selectBtn: { ja: '選択', en: 'Select' },
+  selectedCount: (n: number) => ({
+    ja: `${n}件選択中`,
+    en: `${n} selected`,
+  }),
+  selectItems: { ja: '選択してください', en: 'Select items' },
+  unassignedLogsHint: (n: number) => ({
+    ja: `${n}件のログがプロジェクト未割当です。プロジェクトに整理するとサマリーを生成できます。`,
+    en: `${n} log${n !== 1 ? 's are' : ' is'} not assigned to a project. Organize them to generate summaries.`,
+  }),
+  organizeBtn: { ja: '整理する', en: 'Organize' },
+  paginationPrev: { ja: '← 前へ', en: '← Prev' },
+  paginationNext: { ja: '次へ →', en: 'Next →' },
+  paginationPage: (cur: number, total: number) => ({
+    ja: `${cur} / ${total}ページ`,
+    en: `${cur} / ${total}`,
+  }),
+  viewSummaryLink: { ja: 'サマリーを見る →', en: 'View Summary →' },
+
+  // ProjectsView
+  projectNameRequired: { ja: 'プロジェクト名を入力してください', en: 'Please enter a project name' },
+  searchProjects: { ja: 'プロジェクトを検索...', en: 'Search projects...' },
+  hideEmptyProjects: { ja: '空のプロジェクトを非表示', en: 'Hide empty projects' },
+  addBtn: { ja: '追加', en: 'Add' },
+
+  // ProjectSummaryListView
+  sortUpdatedDesc: { ja: '更新日（新しい順）', en: 'Updated (newest)' },
+  sortUpdatedAsc: { ja: '更新日（古い順）', en: 'Updated (oldest)' },
+  sortProjectName: { ja: 'プロジェクト名', en: 'Project name' },
+  allProjectsHaveSummaries: { ja: '未作成のプロジェクトはありません', en: 'All projects have summaries' },
+  hasUnreflectedHandoffs: { ja: '未反映ハンドオフあり', en: 'Has unreflected handoffs' },
+  daysAgo: (n: number) => ({
+    ja: `${n}日前`,
+    en: `${n}d ago`,
+  }),
+  unreflectedHandoffWarning: (n: number) => ({
+    ja: `未反映のHandoff ${n}件 — 更新推奨`,
+    en: `${n} unreflected handoff${n > 1 ? 's' : ''} — update recommended`,
+  }),
+  openBtn: { ja: '開く', en: 'Open' },
+  updateBtn: { ja: '更新する', en: 'Update' },
+
+  // SettingsPanel
+  providerUnstableWarning: { ja: '⚠️ 現在、Claude・OpenAIは動作が不安定です。Geminiの使用を強く推奨します。', en: '⚠️ Claude and OpenAI are currently unstable. We strongly recommend using Gemini.' },
+  providerActive: { ja: '使用中', en: 'Active' },
+  apiKeyErrorGemini: { ja: 'Gemini APIキーの形式が正しくありません（AIzaで始まる必要があります）', en: 'Invalid Gemini API key format (must start with AIza)' },
+  apiKeyErrorAnthropic: { ja: 'Claude APIキーの形式が正しくありません', en: 'Invalid Claude API key format' },
+  apiKeyErrorOpenai: { ja: 'OpenAI APIキーの形式が正しくありません', en: 'Invalid OpenAI API key format' },
+  notionApiKeyError: { ja: 'Notion APIキーの形式が正しくありません', en: 'Invalid Notion API key format' },
+  slackWebhookError: { ja: 'Slack Webhook URLの形式が正しくありません', en: 'Invalid Slack Webhook URL format' },
+  showOnboardingAgain: { ja: 'オンボーディングをもう一度見る', en: 'Show onboarding again' },
+
+  // Weekly Report extras
+  weeklyReportTodoCompletionRate: { ja: 'TODO 完了率', en: 'TODO Done' },
+  weeklyReportGeneratedAt: { ja: '生成日時', en: 'Generated' },
+  weeklyReportLogCountInline: (n: number) => ({
+    ja: `${n}件のログ`,
+    en: `${n} log${n !== 1 ? 's' : ''}`,
+  }),
+  weeklyReportNoLogsHint: { ja: 'ログを作成するとレポートを生成できます', en: 'Create logs to generate a report' },
+  weeklyReportViewSaved: { ja: 'この週の保存済みレポートを表示', en: 'View saved report for this week' },
+
+  // Trash extras
+  trashItemCount: (n: number) => ({
+    ja: `${n}件のアイテム`,
+    en: `${n} item${n !== 1 ? 's' : ''}`,
+  }),
+  ariaDeletePermanently: { ja: '完全に削除', en: 'Delete permanently' },
+  trashCannotUndo: { ja: 'この操作は取り消せません。', en: 'This cannot be undone.' },
+  trashEmptyAllDesc: { ja: 'すべてのアイテムを完全に削除します。この操作は取り消せません。', en: 'All items will be permanently deleted. This cannot be undone.' },
+
+  // ProjectAppearanceModal extras
+  previewLabel: { ja: 'プレビュー', en: 'Preview' },
+
+  // ProjectHomeView extras
+  projectSummaryAutoGenHint: (n: number) => ({
+    ja: `${n}件のログからAIがプロジェクトの全体像を自動生成します`,
+    en: `AI will generate a project overview from your ${n} logs`,
+  }),
+  projectSummaryGenerateLink: { ja: '→ サマリーを生成する', en: '→ Generate Summary' },
+
+  // Dashboard extras
+  dashboardWelcome: { ja: 'Loreへようこそ', en: 'Welcome to Lore' },
+  dashboardWelcomeDesc: { ja: 'AIとの会話を貼り付けてHandoffを作成しましょう', en: 'Paste an AI conversation and create a Handoff' },
+  dashboardCreateFirstHandoff: { ja: '最初のHandoffを作成', en: 'Create your first Handoff' },
+  dashboardCreateFirstLog: { ja: '最初のログを作成', en: 'Create Your First Log' },
+  dashboardRecentProjects: { ja: '最近のプロジェクト', en: 'Recent projects' },
+  ariaCreateNewLog: { ja: '新しいログを作成', en: 'Create new log' },
+  dashboardNew: { ja: '新規', en: 'New' },
+  ariaDismissNotification: { ja: '通知を閉じる', en: 'Dismiss notification' },
+  dashboardTodayFocus: { ja: '今日のフォーカス', en: "Today's Focus" },
+  dashboardMoreTasks: (n: number) => ({
+    ja: `他 ${n} 件`,
+    en: `${n} more`,
+  }),
+  dashboardDone: { ja: '完了', en: 'Done' },
+  dashboardBlockers: { ja: 'ブロッカー', en: 'Blockers' },
+  nudgeOverdue: (n: number) => ({
+    ja: `期限切れ ${n}件`,
+    en: `${n} overdue`,
+  }),
+  nudgeStaleCount: (n: number) => ({
+    ja: `更新推奨 ${n}件`,
+    en: `${n} to update`,
+  }),
+  nudgeStaleSub: { ja: 'サマリー', en: 'Summary' },
+  nudgeUnassigned: (n: number) => ({
+    ja: `未割当 ${n}件`,
+    en: `${n} unassigned`,
+  }),
+
+  // ProgressPanel
+  processingFallback: { ja: '処理中...', en: 'Processing...' },
+
+  // TodoView
+  todoSelectedCount: (selected: number, total: number) => ({
+    ja: `${selected}/${total}件選択中`,
+    en: `${selected}/${total} selected`,
+  }),
+
+  // ErrorBoundary
+  errorTitle: { ja: 'エラーが発生しました', en: 'Something went wrong' },
+  errorDesc: { ja: 'このビューでエラーが発生しました。リロードするか、サイドバーから別のビューに移動してください。', en: 'An error occurred in this view. Try reloading the page or navigating to a different view from the sidebar.' },
+  errorReload: { ja: 'リロード', en: 'Reload' },
+  errorShowDetails: { ja: '詳細を表示', en: 'Show details' },
+  errorHideDetails: { ja: '詳細を隠す', en: 'Hide details' },
+
+  // HelpView
+  helpTitle: { ja: 'ヘルプ', en: 'Help' },
+  helpWhatIsLoreTitle: { ja: 'Loreとは', en: 'What is Lore?' },
+  helpWhatIsLoreDesc: { ja: 'AIとの会話を貼り付けるだけで、Worklog（作業ログ）やHandoff（引き継ぎメモ）に自動変換するツールです。', en: 'Lore automatically transforms your AI conversations into structured Worklogs and Handoff notes — just paste and go.' },
+  helpWhatIsLoreAudience: { ja: '対象ユーザー：ChatGPT・Claude・GeminiなどのAIを仕事で使っている方', en: 'For anyone who uses AI tools like ChatGPT, Claude, or Gemini in their work.' },
+  helpGettingStartedTitle: { ja: '基本的な使い方', en: 'Getting Started' },
+  helpStep1: { ja: '「+ Create Log」を押す', en: 'Click "+ Create Log"' },
+  helpStep2: { ja: 'AIとの会話をテキストエリアに貼り付ける（またはファイルをドロップ）', en: 'Paste your AI conversation into the text area (or drop a file)' },
+  helpStep3: { ja: '生成モードを選ぶ（Handoff / Handoff+TODO抽出 / TODO抽出）', en: 'Choose a generation mode (Handoff / Handoff+TODO / TODO only)' },
+  helpStep4: { ja: '変換ボタンを押す', en: 'Click the transform button' },
+  helpStep5: { ja: '生成されたログを確認・保存する', en: 'Review and save the generated log' },
+  helpFeaturesTitle: { ja: '各機能の説明', en: 'Features' },
+  helpFeatureWorklog: { ja: 'その日やったことをAIが整理して作業ログにします。決定事項やTODOも自動抽出されます。', en: 'AI organizes what you did into a structured work log, automatically extracting decisions and TODOs.' },
+  helpFeatureHandoff: { ja: '次のAIや未来の自分がすぐ作業を再開できる引き継ぎメモを生成します。', en: 'Generates a handoff memo so the next AI (or future you) can resume work immediately.' },
+  helpFeatureProject: { ja: 'ログをプロジェクト単位で整理できます。ログの分類やフィルタリングに便利です。', en: 'Organize logs by project for easy categorization and filtering.' },
+  helpFeatureProjectSummary: { ja: 'プロジェクトに紐づくログをまとめてAIが要約します。進捗の全体像を把握できます。', en: 'AI summarizes all logs in a project, giving you a high-level view of progress.' },
+  helpFeatureTodo: { ja: 'ログから自動抽出されたタスクを管理できます。手動追加や優先度・期限の設定も可能です。', en: 'Manage tasks auto-extracted from logs. You can also add tasks manually with priority and due dates.' },
+  helpFeatureTimeline: { ja: 'すべての活動（ログ作成・TODO追加・プロジェクト作成など）を時系列で確認できます。', en: 'View all activity (log creation, TODOs, projects, etc.) in chronological order.' },
+  helpKeyboardTitle: { ja: 'キーボードショートカット', en: 'Keyboard Shortcuts' },
+  helpShortcutCreate: { ja: 'Create Logを開く', en: 'Open Create Log' },
+  helpShortcutSearch: { ja: '検索バーを開く', en: 'Open search bar' },
+  helpShortcutSettings: { ja: '設定を開く', en: 'Open Settings' },
+  helpShortcutList: { ja: 'ショートカット一覧を表示', en: 'Show keyboard shortcuts' },
+  helpShortcutEsc: { ja: '戻る / モーダルを閉じる', en: 'Go back / Close modal' },
+  helpApiKeysTitle: { ja: 'APIキーについて', en: 'About API Keys' },
+  helpApiKeysDesc: { ja: '設定画面からClaude・Gemini・OpenAIのAPIキーを登録できます。キーはこのブラウザのLocalStorageにのみ保存され、外部には送信されません。', en: "You can register API keys for Claude, Gemini, and OpenAI in Settings. Keys are stored only in this browser's localStorage and are never sent externally." },
+  helpDataNoticeTitle: { ja: 'データについての注意', en: 'Data Notice' },
+  helpDataNotice1: { ja: 'データはこのブラウザのLocalStorageに保存されています。', en: "Data is stored in this browser's localStorage." },
+  helpDataNotice2: { ja: 'ブラウザを変えるとデータは引き継がれません。', en: 'Data will not carry over if you switch browsers.' },
+  helpDataNotice3: { ja: '定期的に設定画面の「データをエクスポート」でバックアップすることを推奨します。', en: 'We recommend regularly backing up your data using "Export Data" in Settings.' },
+  helpFaqTitle: { ja: 'よくある質問', en: 'FAQ' },
+  helpFaqTransformQ: { ja: '変換がうまくいかない', en: 'Transform is not working' },
+  helpFaqTransformA: { ja: 'APIキーが正しく設定されているか確認してください。設定画面で各プロバイダのキーのステータスを確認できます。', en: "Make sure your API key is correctly configured. You can check each provider's key status in Settings." },
+  helpFaqDataLostQ: { ja: 'データが消えた', en: 'My data disappeared' },
+  helpFaqDataLostA: { ja: '別のブラウザやシークレットウィンドウで開いていないか確認してください。データはブラウザごとに独立しています。', en: 'Check if you are using a different browser or incognito window. Data is stored per browser.' },
+  helpFaqLongInputQ: { ja: 'ログが長すぎてエラーになる', en: 'Error due to long input' },
+  helpFaqLongInputA: { ja: '入力が長い場合は自動的に長文モードに切り替わります。それでもエラーになる場合は、入力を分割してください。', en: 'Long inputs are automatically handled in long-text mode. If errors persist, try splitting your input.' },
+  helpFaqContextVsSummaryQ: { ja: 'AI ContextとProject Summaryの違いは何ですか？', en: 'What is the difference between AI Context and Project Summary?' },
+  helpFaqContextVsSummaryA: { ja: 'Project Summaryは人間が読むためのプロジェクト全体の記録です。AI Contextはそれを圧縮してAIに渡すための背景情報です。ハンドオフをコピーすると自動でAI Contextが付与されます。', en: 'Project Summary is a human-readable record of the entire project. AI Context is a compressed version designed to be passed to AI assistants. When you copy a handoff, AI Context is automatically included.' },
+  helpFaqHandoffToAiQ: { ja: 'ハンドオフをAIに渡すにはどうすればいいですか？', en: 'How do I pass a handoff to AI?' },
+  helpFaqHandoffToAiA: { ja: 'ハンドオフ詳細画面の「Handoffをコピー」ボタンを押してください。プロジェクトに紐づいている場合、AI Contextが自動で先頭に付与された状態でコピーされます。そのままChatGPT・Claude・Geminiに貼り付けてください。', en: 'Click the "Copy Handoff" button on the handoff detail screen. If the log is linked to a project, AI Context is automatically prepended. Just paste it into ChatGPT, Claude, or Gemini.' },
+  helpFaqUpdateSummaryQ: { ja: 'Project Summaryはいつ更新すればいいですか？', en: 'When should I update the Project Summary?' },
+  helpFaqUpdateSummaryA: { ja: '新しいHandoffをプロジェクトに追加したタイミングで更新することをおすすめします。サイドバーのプロジェクト名横にオレンジのバッジが表示されたら更新のサインです。', en: "We recommend updating it whenever you add a new Handoff to the project. An orange badge next to the project name in the sidebar indicates it's time to update." },
+  helpFaqWorklogVsHandoffQ: { ja: 'WorklogとHandoffの違いは何ですか？', en: 'What is the difference between Worklog and Handoff?' },
+  helpFaqWorklogVsHandoffA: { ja: 'Worklogはその日の作業内容を整理した「日報」です。Handoffは次のAIセッションに渡すための「引き継ぎメモ」で、現状・次のアクション・注意点がまとめられます。通常はHandoffを使うことをおすすめします。', en: 'Worklog is a "daily report" summarizing your work. Handoff is a "handover memo" for the next AI session, covering current status, next actions, and caveats. We recommend using Handoff in most cases.' },
+  helpFaqKnowledgeBaseQ: { ja: 'ナレッジベースは何に使いますか？', en: 'What is the Knowledge Base for?' },
+  helpFaqKnowledgeBaseA: { ja: 'プロジェクト内のログからAIが繰り返し登場するパターン・用語・ルールを抽出します。プロジェクトの「型」が見えてきます。ログが5件以上たまったら生成してみてください。', en: "AI extracts recurring patterns, terms, and rules from your project logs. It reveals the \"shape\" of your project. Try generating one once you have 5+ logs." },
+  helpFaqTooManyLogsQ: { ja: 'ログが増えすぎたらどうすればいいですか？', en: 'What should I do when I have too many logs?' },
+  helpFaqTooManyLogsA: { ja: 'ログ一覧画面から個別に削除できます。削除したログはゴミ箱に移動し、30日後に自動削除されます。プロジェクトに紐づけて整理することもおすすめです。', en: 'You can delete logs individually from the log list. Deleted logs go to Trash and are auto-deleted after 30 days. Organizing them into projects is also recommended.' },
+  helpFaqExtensionQ: { ja: 'Chrome拡張が動かない場合は？', en: 'Chrome extension not working?' },
+  helpFaqExtensionA: { ja: '拡張機能のアイコンをクリックし、「Loreのタブで開く」を押してください。それでも動かない場合は、拡張機能を一度オフにしてから再度オンにしてみてください。', en: "Click the extension icon and press \"Open in Lore tab\". If it still doesn't work, try disabling and re-enabling the extension." },
+  helpFaqDataStorageQ: { ja: 'データはどこに保存されていますか？', en: 'Where is my data stored?' },
+  helpFaqDataStorageA: { ja: 'このブラウザのLocalStorageに保存されています。別のブラウザやシークレットウィンドウでは表示されません。設定画面の「データをエクスポート」で定期的にバックアップすることをおすすめします。', en: "Data is stored in this browser's localStorage. It won't appear in other browsers or incognito windows. We recommend regular backups using \"Export Data\" in Settings." },
+  helpShowOnboarding: { ja: 'オンボーディングをもう一度見る', en: 'Show onboarding again' },
+
+  // Onboarding
+  onboardingWelcomeTitle: { ja: 'Loreへようこそ', en: 'Welcome to Lore' },
+  onboardingWelcomeDesc: { ja: 'AIとの会話を貼り付けるだけで、作業ログ・引き継ぎメモを自動生成します。', en: 'Automatically generate work logs and handoff notes — just paste your AI conversations.' },
+  onboardingApiKeyTitle: { ja: 'まずAPIキーを設定しましょう', en: 'Set up your API key' },
+  onboardingApiKeyDesc: { ja: 'Gemini（推奨）のAPIキーを設定しましょう。\n無料で取得できます。\n\n→ aistudio.google.com でAPIキーを取得\n\u3000Claude・OpenAIにも対応しています。', en: "Set up a Gemini (recommended) API key.\nIt's free to get started.\n\n→ aistudio.google.com to get an API key\n  Claude and OpenAI are also supported." },
+  onboardingApiKeyAction: { ja: '設定画面を開く', en: 'Open Settings' },
+  onboardingPasteTitle: { ja: 'AIとの会話を貼り付けてみましょう', en: 'Paste an AI conversation' },
+  onboardingPasteDesc: { ja: 'ChatGPTやClaudeとの会話をコピーして貼り付けるだけでOKです。ファイルのドロップにも対応しています。', en: 'Just copy and paste a conversation from ChatGPT or Claude. You can also drop files.' },
+  onboardingPasteAction: { ja: 'やってみる', en: 'Try it now' },
+  onboardingExtensionTitle: { ja: 'Chrome拡張でもっと便利に', en: 'Even easier with the Chrome extension' },
+  onboardingExtensionDesc: { ja: 'ChatGPTやClaudeのページに\n「Loreに送る」ボタンが追加されます。\n\n会話が終わったらワンクリックで\nLoreに送れます。', en: 'Adds a "Send to Lore" button\non ChatGPT and Claude pages.\n\nSend conversations to Lore\nwith one click.' },
+  onboardingExtensionAction: { ja: 'スキップ', en: 'Skip for now' },
+  onboardingAssetTitle: { ja: 'AIとの会話が資産になる', en: 'Your AI chats become assets' },
+  onboardingAssetDesc: { ja: '1. AIで仕事する\n2. チャット履歴をLoreに貼る\n3. Handoffに自動変換される\n4. プロジェクトに追加してProject Summaryを生成\n5. 次回のAIにHandoffをコピペ → 即座に文脈共有', en: '1. Work with AI\n2. Paste the chat into Lore\n3. Auto-converted to Handoff\n4. Add to a project and generate a Project Summary\n5. Copy-paste Handoff to next AI → instant context sharing' },
+  onboardingReadyTitle: { ja: '準備完了です', en: "You're all set!" },
+  onboardingReadyDesc: { ja: '困ったときはサイドバーのヘルプをご確認ください。', en: 'If you need help, check the Help section in the sidebar.' },
+  onboardingBack: { ja: '戻る', en: 'Back' },
+  onboardingSkip: { ja: 'スキップ', en: 'Skip' },
+  onboardingGetStarted: { ja: 'はじめる', en: 'Get Started' },
+  onboardingNext: { ja: '次へ', en: 'Next' },
+
+  aiThinking: { ja: 'AIが考え中...', en: 'AI is thinking...' },
+
+  todoProgress: { ja: '完了', en: 'done' },
+  todoDueToday2: { ja: '今日期限', en: 'Due today' },
+  todoOverdue2: { ja: '期限超過', en: 'Overdue' },
+  snooze: { ja: 'スヌーズ', en: 'Snooze' },
+  snooze1Day: { ja: '明日まで', en: 'For 1 day' },
+  snooze3Days: { ja: '3日後まで', en: 'For 3 days' },
+  snooze1Week: { ja: '1週間後まで', en: 'For 1 week' },
+  snoozed: { ja: 'スヌーズ中', en: 'Snoozed' },
+  showSnoozed: { ja: 'スヌーズ中を表示', en: 'Show snoozed' },
+
+  selectMode: { ja: '選択', en: 'Select' },
+  selectAll: { ja: '全選択', en: 'Select all' },
+  deselectAll: { ja: '選択解除', en: 'Deselect all' },
+  bulkTrash: { ja: 'まとめてゴミ箱へ', en: 'Trash selected' },
+  bulkAssignProject: { ja: 'プロジェクトに割当', en: 'Assign to project' },
+
+  switchProject: { ja: 'プロジェクト切替', en: 'Switch project' },
+
+  autoWeeklyReport: { ja: '週次レポート自動生成', en: 'Auto weekly report' },
+  autoWeeklyReportDesc: { ja: 'アプリ起動時、前回から1週間経過していたらリマインド', en: 'Remind on app launch if a week has passed since last report' },
+  weeklyReportReminder: { ja: '前回の週次レポートから1週間経ちました', en: 'A week has passed since your last report' },
+  generateNow: { ja: '今すぐ生成', en: 'Generate now' },
+
+  // Trends
+  trends: { ja: 'トレンド', en: 'Trends' },
+  thisWeek: { ja: '今週', en: 'This week' },
+  lastWeek: { ja: '先週', en: 'Last week' },
+  avgPerWeek: { ja: '週平均', en: 'Avg/week' },
+  vsLastWeek: { ja: '先週比', en: 'vs last week' },
+  completionRate: { ja: '完了率', en: 'Completion rate' },
+  logsCount: (n: number) => ({
+    ja: `${n}件`,
+    en: `${n} logs`,
+  }),
+
+  // Related logs / backlinks
+  linkLog: { ja: 'ログをリンク', en: 'Link log' },
+  unlink: { ja: 'リンク解除', en: 'Unlink' },
+
+  // Bottom navigation (mobile)
+  more: { ja: 'その他', en: 'More' },
+
+  // Offline indicator
+  offline: { ja: 'オフライン — 変更はローカルに保存されます', en: 'Offline — changes saved locally' },
+  backOnline: { ja: 'オンラインに復帰しました', en: 'Back online' },
+
+  // Post-generation preview panel
+  copyFullContext: { ja: 'プロジェクトコンテキストをコピー', en: 'Copy Full Context' },
+  copyFullContextDesc: { ja: 'プロジェクト全体像と最新セッションを合成したAI向けコンテキスト', en: 'Combined project overview and latest session context for AI' },
+  logSaved: { ja: 'ログを保存しました', en: 'Log saved' },
+  startNewLog: { ja: '新しいログ', en: 'New Log' },
+
+  // Accept/Reject flow
+  pendingUpdate: { ja: '更新プレビュー', en: 'Update Preview' },
+  accept: { ja: '反映する', en: 'Accept' },
+  reject: { ja: '破棄する', en: 'Reject' },
+  current: { ja: '現在', en: 'Current' },
+  proposed: { ja: '更新案', en: 'Proposed' },
+  masterNoteUpdated: { ja: 'マスターノートを更新しました', en: 'Master note updated' },
+  empty: { ja: '（なし）', en: '(empty)' },
+
+  // Error handling UX
+  somethingWentWrong: { ja: '問題が発生しました', en: 'Something went wrong' },
+  tryAgain: { ja: '再試行', en: 'Try again' },
+  reloadPage: { ja: 'ページを再読み込み', en: 'Reload page' },
+  offlineAiUnavailable: { ja: 'オフラインです。AI機能にはインターネット接続が必要です。', en: "You're offline. AI features require an internet connection." },
+  networkError: { ja: 'ネットワークエラーが発生しました', en: 'A network error occurred' },
+  errorDetails: { ja: 'エラー詳細', en: 'Error details' },
+
 } as const;
+
+/** Exported for testing — do not use in application code. */
+export const _labels = labels;
 
 type LabelKey = keyof typeof labels;
 type LabelValue = (typeof labels)[LabelKey];
