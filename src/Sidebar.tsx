@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { FileText, ScrollText, FolderOpen, CheckSquare, MoreHorizontal, Settings, Trash2, HelpCircle, LogOut, ChevronUp, ChevronDown, ChevronRight, BookOpen, Clock, BarChart2, FileBarChart, LayoutDashboard } from 'lucide-react';
+import { FileText, ScrollText, FolderOpen, CheckSquare, MoreHorizontal, Settings, Trash2, HelpCircle, LogOut, ChevronUp, ChevronDown, ChevronRight, BookOpen, Clock, BarChart2, FileBarChart, LayoutDashboard, MessageSquare } from 'lucide-react';
 import type { LogEntry, Project, Todo } from './types';
 import { t } from './i18n';
 import type { Lang } from './i18n';
@@ -8,6 +8,7 @@ import { updateLog, trashLog, getMasterNote, loadMasterNotes } from './storage';
 import ContextMenu from './ContextMenu';
 import type { MenuItem } from './ContextMenu';
 import ConfirmDialog from './ConfirmDialog';
+import FeedbackModal from './FeedbackModal';
 import { getProjectColor } from './projectColors';
 
 
@@ -112,6 +113,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
   const [menuState, setMenuState] = useState<{ logId: string; rect: DOMRect } | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [confirmTrashId, setConfirmTrashId] = useState<string | null>(null);
   const [pinnedOpen, setPinnedOpen] = useState(() => {
     try { return localStorage.getItem('threadlog_sidebar_pinned') !== 'closed'; } catch { return true; }
@@ -493,6 +495,10 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
               <HelpCircle size={16} />
               <span>{t('accountMenuHelp', lang)}</span>
             </button>
+            <button className="account-popover-item" onClick={() => { setAccountMenuOpen(false); setFeedbackOpen(true); }}>
+              <MessageSquare size={16} />
+              <span>{t('accountMenuFeedback', lang)}</span>
+            </button>
             <div className="account-popover-divider" />
             <button className="account-popover-item danger" onClick={() => { setAccountMenuOpen(false); }}>
               <LogOut size={16} />
@@ -522,6 +528,10 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
       )}
       {statsOpen && createPortal(
         <StatsModal stats={stats} lang={lang} onClose={() => setStatsOpen(false)} onOpenHistory={onOpenHistory} onOpenProjects={onOpenProjects} onOpenTodos={onOpenTodos} />,
+        document.body,
+      )}
+      {feedbackOpen && createPortal(
+        <FeedbackModal lang={lang} onClose={() => setFeedbackOpen(false)} />,
         document.body,
       )}
     </div>
