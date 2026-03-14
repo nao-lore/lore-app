@@ -1,73 +1,118 @@
-# React + TypeScript + Vite
+<h1 align="center">Lore</h1>
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+<p align="center">
+  <strong>Turn AI conversations into structured handoffs</strong><br/>
+  Stop losing context between AI sessions. Paste a chat, get a handoff.
+</p>
 
-Currently, two official plugins are available:
+<p align="center">
+  <a href="https://lore-app.vercel.app">Live App</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#getting-started">Getting Started</a> ·
+  <a href="#chrome-extension">Chrome Extension</a>
+</p>
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## What is Lore?
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Every time you start a new AI session, you lose context. Lore fixes that.
 
-## Expanding the ESLint configuration
+Paste your ChatGPT / Claude / Gemini conversation into Lore, and it automatically generates:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Handoff** — A structured summary so your next AI session can pick up exactly where you left off
+- **TODO list** — Action items auto-extracted with priority levels
+- **Project Summary** — A living overview built from all your handoffs
+- **AI Context** — Copy-paste-ready context for your next AI session
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Features
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+**Core**
+- One-click handoff generation from any AI conversation
+- Auto-extracted TODOs with priority, due dates, and source tracking
+- Project Summary that evolves as you add more handoffs
+- AI Context: copy & paste into your next session for instant context sharing
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+**Organization**
+- Projects with custom icons and colors
+- Pin frequently-used projects and logs
+- Tag-based filtering and full-text search (⌘K)
+- Timeline view across logs, TODOs, and summaries
+- Dashboard with today's focus, blockers, and overdue tasks
+
+**Input**
+- Paste text directly
+- Import files (.txt, .md, .docx, .json) via drag & drop
+- Chrome extension for one-click capture from ChatGPT, Claude, and Gemini
+
+**Extras**
+- Weekly Report auto-generation
+- Knowledge Base extraction (recurring patterns & decisions)
+- Notion & Slack integrations
+- PWA — installable on desktop and mobile
+- 8 languages: English, 日本語, Español, Français, Deutsch, 中文, 한국어, Português
+
+## Getting Started
+
+### Use the hosted version
+
+Go to **[lore-app.vercel.app](https://lore-app.vercel.app)** — no signup required.
+
+1. Set up a free Gemini API key at [aistudio.google.com](https://aistudio.google.com)
+2. Paste it in Settings
+3. Paste an AI conversation and hit "Transform to Handoff"
+
+### Run locally
+
+```bash
+git clone https://github.com/nao-lore/lore-app.git
+cd lore-app
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open `http://localhost:5173`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Build for production
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build    # outputs to dist/
+npm run preview  # preview production build
 ```
+
+### Tests
+
+```bash
+npm test         # unit tests (Vitest)
+```
+
+## Chrome Extension
+
+The `extension/` directory contains a Chrome extension that adds a "Send to Lore" button on ChatGPT, Claude, and Gemini pages.
+
+To install locally:
+1. Go to `chrome://extensions`
+2. Enable "Developer mode"
+3. Click "Load unpacked" and select the `extension/` folder
+
+## Tech Stack
+
+| Layer | Tech |
+|-------|------|
+| Framework | React 19 + TypeScript (strict) |
+| Build | Vite 7 |
+| Testing | Vitest + Playwright |
+| Storage | localStorage (database migration planned) |
+| Deploy | Vercel |
+| PWA | vite-plugin-pwa |
+
+## Data & Privacy
+
+- All data is stored in your browser's localStorage
+- API keys never leave your browser — they're sent directly to the AI provider
+- No analytics, no tracking, no accounts required
+- Export/import your data anytime from Settings
+
+## License
+
+MIT
