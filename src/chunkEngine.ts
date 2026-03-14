@@ -123,13 +123,15 @@ CRITICAL RULES — VIOLATION = FAILURE:
 4. If the input contains casual chat, opinions, or greetings — SKIP them. Extract only work items.
 
 Schema — output EXACTLY this structure:
-{"worklog":{"title":"string","today":["string"],"decisions":["string"],"todo":["string"]},"handoff":{"title":"string","currentStatus":["string"],"nextActions":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"actionBacklog":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"decisions":[{"decision":"string","rationale":"string or null"}],"constraints":["string"]}}
+{"worklog":{"title":"string","today":["string"],"decisions":["string"],"todo":["string"],"relatedProjects":["string"],"tags":["string"]},"handoff":{"title":"string","currentStatus":["string"],"nextActions":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"actionBacklog":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"decisions":[{"decision":"string","rationale":"string or null"}],"blockers":["string"],"constraints":["string"]}}
 
 worklog field rules:
 - title: 1 short phrase summarizing the main work topic
 - today: 3-8 specific action items with file names, values, parameters
 - decisions: ONE decision per bullet. Only items with explicit commitment markers. Empty [] if none.
 - todo: Only next actions the user explicitly committed to. Empty [] if none.
+- relatedProjects: Actual project/product names being built. Exclude tool names (ChatGPT, VS Code). Empty [] if none.
+- tags: 4-7 tags matching input language. Category (development, UI, bugfix / 開発, UI, バグ修正) + Topic (React, Supabase). Keep proper nouns as-is.
 
 handoff field rules:
 - title: reuse worklog title
@@ -137,6 +139,7 @@ handoff field rules:
 - nextActions (immediate only, max 4): Blocking tasks only. Non-blocking → actionBacklog. whyImportant: infer from context (what depends on this?). priorityReason: infer ordering signal. Both should be filled when possible.
 - actionBacklog (max 7): Important but not blocking now. Same format. whyImportant: why is this in the backlog?
 - decisions (active only, max 6): Still-active decisions only. Each {"decision":"string","rationale":"string or null"}.
+- blockers: Risks or issues still unresolved at end. 0-3 bullets. Empty [] if none.
 - constraints: Stable rules. 0-3 bullets.
 - Do NOT output handoffMeta or resumeChecklist — those are generated at final merge.
 
