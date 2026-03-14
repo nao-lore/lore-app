@@ -65,22 +65,23 @@ describe('i18n', () => {
     });
   });
 
-  describe('all keys have both ja and en', () => {
-    it('every label key has non-empty ja and en values (string or function)', () => {
+  describe('all keys have all 8 languages', () => {
+    const allLangs = ['ja', 'en', 'es', 'fr', 'de', 'zh', 'ko', 'pt'] as const;
+
+    it('every simple label key has non-empty values for all 8 languages', () => {
       const keys = Object.keys(_labels) as (keyof typeof _labels)[];
       expect(keys.length).toBeGreaterThan(0);
 
       for (const key of keys) {
         const val = _labels[key];
         if (typeof val === 'function') {
-          // Function labels are tested separately; just confirm it is a function
           expect(typeof val, `${key} should be a function`).toBe('function');
         } else {
-          const record = val as { ja: string; en: string };
-          expect(typeof record.ja, `${key}.ja should be a string`).toBe('string');
-          expect(typeof record.en, `${key}.en should be a string`).toBe('string');
-          expect(record.ja.length, `${key}.ja should not be empty`).toBeGreaterThan(0);
-          expect(record.en.length, `${key}.en should not be empty`).toBeGreaterThan(0);
+          const record = val as Record<string, string>;
+          for (const lang of allLangs) {
+            expect(typeof record[lang], `${key}.${lang} should be a string`).toBe('string');
+            expect(record[lang].length, `${key}.${lang} should not be empty`).toBeGreaterThan(0);
+          }
         }
       }
     });
@@ -168,6 +169,17 @@ describe('i18n', () => {
         const result = tf(key as never, 'en', ...args);
         expect(typeof result, `${key}('en') should return a string`).toBe('string');
         expect(result.length, `${key}('en') should not be empty`).toBeGreaterThan(0);
+      }
+    });
+
+    it('all function labels return non-empty strings for all new languages', () => {
+      const newLangs = ['es', 'fr', 'de', 'zh', 'ko', 'pt'] as const;
+      for (const lang of newLangs) {
+        for (const [key, args] of Object.entries(funcLabels)) {
+          const result = tf(key as never, lang, ...args);
+          expect(typeof result, `${key}('${lang}') should return a string`).toBe('string');
+          expect(result.length, `${key}('${lang}') should not be empty`).toBeGreaterThan(0);
+        }
       }
     });
 

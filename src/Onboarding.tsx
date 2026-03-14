@@ -6,8 +6,8 @@ import { markOnboardingDone } from './onboardingState';
 
 interface OnboardingProps {
   lang: Lang;
+  onLangChange: (lang: Lang) => void;
   onClose: () => void;
-  onOpenSettings: () => void;
   onStartCreate: () => void;
 }
 
@@ -17,9 +17,21 @@ interface StepDef {
   action?: { labelKey: string; handler: () => void };
   final?: boolean;
   descAlign?: 'left';
+  custom?: 'lang';
 }
 
-export default function Onboarding({ lang, onClose, onOpenSettings, onStartCreate }: OnboardingProps) {
+const LANG_OPTIONS: { code: Lang; label: string; flag: string }[] = [
+  { code: 'en', label: 'English', flag: '🇺🇸' },
+  { code: 'ja', label: '日本語', flag: '🇯🇵' },
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
+  { code: 'fr', label: 'Français', flag: '🇫🇷' },
+  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+  { code: 'zh', label: '中文', flag: '🇨🇳' },
+  { code: 'ko', label: '한국어', flag: '🇰🇷' },
+  { code: 'pt', label: 'Português', flag: '🇧🇷' },
+];
+
+export default function Onboarding({ lang, onLangChange, onClose, onStartCreate }: OnboardingProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(true);
   const [step, setStep] = useState(0);
 
@@ -39,38 +51,22 @@ export default function Onboarding({ lang, onClose, onOpenSettings, onStartCreat
 
   const steps: StepDef[] = [
     {
+      titleKey: 'onboardingLangTitle',
+      descKey: 'onboardingLangDesc',
+      custom: 'lang',
+    },
+    {
       titleKey: 'onboardingWelcomeTitle',
       descKey: 'onboardingWelcomeDesc',
-    },
-    {
-      titleKey: 'onboardingApiKeyTitle',
-      descKey: 'onboardingApiKeyDesc',
-      descAlign: 'left',
-      action: {
-        labelKey: 'onboardingApiKeyAction',
-        handler: () => { markOnboardingDone(); onOpenSettings(); },
-      },
-    },
-    {
-      titleKey: 'onboardingPasteTitle',
-      descKey: 'onboardingPasteDesc',
-      action: {
-        labelKey: 'onboardingPasteAction',
-        handler: () => { markOnboardingDone(); onStartCreate(); },
-      },
-    },
-    {
-      titleKey: 'onboardingExtensionTitle',
-      descKey: 'onboardingExtensionDesc',
-      action: {
-        labelKey: 'onboardingExtensionAction',
-        handler: () => {},
-      },
     },
     {
       titleKey: 'onboardingAssetTitle',
       descKey: 'onboardingAssetDesc',
       descAlign: 'left',
+    },
+    {
+      titleKey: 'onboardingSampleTitle',
+      descKey: 'onboardingSampleDesc',
     },
     {
       titleKey: 'onboardingReadyTitle',
@@ -112,7 +108,38 @@ export default function Onboarding({ lang, onClose, onOpenSettings, onStartCreat
         <h2 style={{ textAlign: 'center', fontSize: 20, fontWeight: 700, color: 'var(--text-secondary)', margin: '0 0 12px' }}>
           {t(current.titleKey as Parameters<typeof t>[0], lang)}
         </h2>
-        {current.descAlign === 'left' ? (
+
+        {/* Language selector (custom step) */}
+        {current.custom === 'lang' ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, margin: '0 auto 28px', maxWidth: 340 }}>
+            {LANG_OPTIONS.map((opt) => (
+              <button
+                key={opt.code}
+                onClick={() => onLangChange(opt.code)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '8px 16px',
+                  fontSize: 14,
+                  fontWeight: lang === opt.code ? 700 : 400,
+                  borderRadius: 10,
+                  border: lang === opt.code ? '2px solid var(--accent)' : '2px solid var(--border-default)',
+                  background: lang === opt.code ? 'var(--accent-bg, rgba(99,102,241,0.08))' : 'transparent',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <span style={{ fontSize: 20 }}>{opt.flag}</span>
+                {opt.label}
+              </button>
+            ))}
+            <p style={{ gridColumn: '1 / -1', textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>
+              {t(current.descKey as Parameters<typeof t>[0], lang)}
+            </p>
+          </div>
+        ) : current.descAlign === 'left' ? (
           <div style={{ display: 'flex', justifyContent: 'center', margin: '0 0 28px' }}>
             <p style={{ textAlign: 'left', fontSize: 14, lineHeight: 1.7, color: 'var(--text-muted)', margin: 0, maxWidth: 360, whiteSpace: 'pre-line' }}>
               {t(current.descKey as Parameters<typeof t>[0], lang)}

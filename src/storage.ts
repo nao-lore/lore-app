@@ -788,9 +788,11 @@ export function setLang(lang: string): void {
 const UI_LANG_KEY = 'threadlog_ui_lang';
 
 /** UI display language */
+const VALID_LANGS: Lang[] = ['ja', 'en', 'es', 'fr', 'de', 'zh', 'ko', 'pt'];
+
 export function getUiLang(): Lang {
   const v = localStorage.getItem(UI_LANG_KEY);
-  if (v === 'ja' || v === 'en') return v;
+  if (v && VALID_LANGS.includes(v as Lang)) return v as Lang;
   return 'en';
 }
 

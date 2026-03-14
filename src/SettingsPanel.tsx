@@ -10,7 +10,7 @@ import {
   PROVIDER_MODEL_LABELS,
 } from './provider';
 import type { ProviderName } from './provider';
-import { t, tf } from './i18n';
+import { t, tf, OUTPUT_LANGS } from './i18n';
 import type { Lang } from './i18n';
 import type { FontSize } from './types';
 
@@ -409,14 +409,15 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
           <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
             {t('uiLanguageDesc', lang)}
           </p>
-          <div className="seg-control">
-            {(['ja', 'en'] as const).map((v) => (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {OUTPUT_LANGS.map((opt) => (
               <button
-                key={v}
-                className={`seg-control-btn${currentUiLang === v ? ' active-worklog' : ''}`}
-                onClick={() => handleUiLangChange(v)}
+                key={opt.code}
+                className={`seg-control-btn${currentUiLang === opt.code ? ' active-worklog' : ''}`}
+                onClick={() => handleUiLangChange(opt.code as Lang)}
+                style={{ padding: '6px 12px', fontSize: 13 }}
               >
-                {v === 'ja' ? t('langJa', lang) : t('langEn', lang)}
+                {opt.flag} {opt.label}
               </button>
             ))}
           </div>

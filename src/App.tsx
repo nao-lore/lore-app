@@ -10,6 +10,7 @@ import ConfirmDialog from './ConfirmDialog';
 import Onboarding from './Onboarding';
 import ErrorBoundary from './ErrorBoundary';
 import { isOnboardingDone } from './onboardingState';
+import { seedSampleData, isSampleSeeded } from './sampleData';
 
 const HistoryView = lazy(() => import('./HistoryView'));
 const SettingsPanel = lazy(() => import('./SettingsPanel'));
@@ -208,6 +209,14 @@ export default function App() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // only on mount
+
+  const handleOnboardingClose = useCallback(() => {
+    if (!isSampleSeeded()) {
+      seedSampleData(lang);
+      setLogsVersion((v) => v + 1);
+    }
+    setShowOnboarding(false);
+  }, [lang]);
 
   // Apply data-theme attribute; re-check hourly for time-based "system" mode
   useEffect(() => {
@@ -567,9 +576,9 @@ export default function App() {
       {showOnboarding && (
         <Onboarding
           lang={lang}
-          onClose={() => setShowOnboarding(false)}
-          onOpenSettings={() => { setShowOnboarding(false); goToRaw('settings'); }}
-          onStartCreate={() => { setShowOnboarding(false); handleNewLog(); }}
+          onLangChange={handleUiLangChange}
+          onClose={handleOnboardingClose}
+          onStartCreate={() => { handleOnboardingClose(); handleNewLog(); }}
         />
       )}
       {pendingNav && (
