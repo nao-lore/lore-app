@@ -762,13 +762,13 @@ export function formatBytes(bytes: number): string {
 /** Returns the API key for the currently active provider */
 export function getApiKey(): string {
   // Delegate to provider module (avoids circular import by reading directly)
-  const provider = localStorage.getItem('threadlog_provider') || 'anthropic';
+  const provider = localStorage.getItem('threadlog_provider') || 'gemini';
   return localStorage.getItem(`threadlog_api_key_${provider}`) || '';
 }
 
 /** @deprecated Use setProviderApiKey from provider.ts instead */
 export function setApiKey(key: string): void {
-  const provider = localStorage.getItem('threadlog_provider') || 'anthropic';
+  const provider = localStorage.getItem('threadlog_provider') || 'gemini';
   safeSetItem(`threadlog_api_key_${provider}`, key);
 }
 

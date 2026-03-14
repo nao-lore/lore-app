@@ -448,6 +448,9 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
         </div>
       )}
 
+      {/* Spacer to push account to bottom */}
+      <div style={{ flex: 1 }} />
+
       {/* Account area */}
       <button
         ref={accountTriggerRef}
