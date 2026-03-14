@@ -78,7 +78,7 @@ TAGS rules:
   A. CATEGORY tags (2-3): broad work categories. Examples: 開発, UI, 設計, バグ修正, テスト, リファクタ, 調査, 戦略, 営業, 自動化, インフラ, ドキュメント
   B. TOPIC tags (2-4): specific tools, features, or concepts discussed. Examples: React, IndexedDB, rate-limit, i18n, CSS変数
 - Total 4-7 tags.
-- IMPORTANT: ALL tags MUST be in Japanese. Category tags are always Japanese. Topic tags: translate non-proper-noun terms to Japanese (e.g., "rate-limit" → "レート制限", "authentication" → "認証"). Only keep widely-recognized technical proper nouns as-is (React, TypeScript, IndexedDB, JSON, API, Claude, etc.).
+- IMPORTANT: Tags MUST match the input language. Japanese input → Japanese tags. English input → English tags. Category tag examples: EN: development, UI, design, bugfix, testing, refactor, research, strategy. JA: 開発, UI, 設計, バグ修正, テスト, リファクタ, 調査, 戦略. Keep widely-recognized technical proper nouns as-is (React, TypeScript, Supabase, etc.).
 - AVOID vague tags like "productivity", "improvement", "work", "AI", "development", "code", "programming".
 - Each tag should help filter and distinguish this log from others.
 
@@ -351,7 +351,7 @@ TAGS rules:
   A. CATEGORY tags (2-3): broad work categories. Examples: 開発, UI, 設計, バグ修正, テスト, リファクタ, 調査, 戦略
   B. TOPIC tags (2-4): specific tools, features, or concepts. Examples: React, IndexedDB, レート制限, i18n
 - Total 4-7 tags.
-- IMPORTANT: ALL tags MUST be in Japanese. Category tags are always Japanese. Topic tags: translate non-proper-noun terms to Japanese. Only keep widely-recognized technical proper nouns as-is (React, TypeScript, IndexedDB, JSON, API, Claude, etc.).
+- IMPORTANT: Tags MUST match the input language. Japanese input → Japanese tags. English input → English tags. Keep widely-recognized technical proper nouns as-is (React, TypeScript, Supabase, etc.).
 - AVOID vague tags like "productivity", "improvement", "work", "AI", "development".
 
 OUTPUT LANGUAGE RULE:
@@ -620,7 +620,7 @@ TODAY: What was actually done. 3-8 items. Include file names, values, parameters
 DECISIONS: Only explicit commitments with finality markers ("decided", "でいく", "にする", "settled on"). Empty [] if none.
 TODO: Only actions the user explicitly committed to doing NEXT. EXCLUDE items completed/resolved later in the conversation. EXCLUDE concluded investigations ("調べる"/"考える" with conclusion reached). EXCLUDE vague aspirations ("〜かも", "〜したい"). Each TODO = ONE concrete executable action. Empty [] if none.
 RELATED PROJECTS: Only actual project/product names. Exclude tool names (Claude, VS Code). Empty [] if none.
-TAGS: 4-7 tags. ALL tags MUST be in Japanese. Category (開発, UI, バグ修正) + Topic (React, IndexedDB, レート制限). Only keep widely-recognized proper nouns as-is.
+TAGS: 4-7 tags. Tags MUST match the input language. Japanese input → Japanese tags (開発, UI, バグ修正). English input → English tags (development, UI, bugfix). Keep proper nouns as-is (React, TypeScript, Supabase).
 
 === HANDOFF RULES ===
 This is a RESTART MEMO — a cockpit checklist for resuming work, NOT a report.
