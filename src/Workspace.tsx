@@ -4,7 +4,7 @@ import type { TransformBothOptions } from './transform';
 import { ChunkEngine, getChunkTarget, getEngineConcurrency } from './chunkEngine';
 import type { EngineProgress } from './chunkEngine';
 import { findSession } from './chunkDb';
-import { addLog, trashLog, updateLog, getLog, getApiKey, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateTodo as updateTodoStorage, duplicateLog, getAiContext, getMasterNote, linkLogs, unlinkLogs, isDemoMode } from './storage';
+import { addLog, trashLog, updateLog, getLog, getApiKey, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateTodo as updateTodoStorage, duplicateLog, getAiContext, getMasterNote, linkLogs, unlinkLogs, isDemoMode, getFeatureEnabled } from './storage';
 import { shouldUseBuiltinApi } from './provider';
 import { demoTransformBoth, demoTransformHandoff, demoTransformText, demoTransformTodoOnly, demoTransformHandoffTodo, getDemoConversation } from './demoData';
 import { classifyLog, saveCorrection } from './classify';
@@ -419,12 +419,13 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           setSimStep(0);
           setTimeout(() => setSimStep(1), 800);
           let streamCharCount = 0;
+          const streamingEnabled = getFeatureEnabled('streaming', true);
           const bothOpts: TransformBothOptions = {
-            onStream: (_chunk, accumulated) => {
+            onStream: streamingEnabled ? (_chunk, accumulated) => {
               if (streamCharCount === 0) setSimStep(2);
               streamCharCount = accumulated.length;
               setStreamDetail(`${t('streamReceiving', lang)}... ${streamCharCount.toLocaleString()} chars`);
-            },
+            } : undefined,
             projects: !selectedProjectId && projects.length > 0
               ? projects.map(p => ({ id: p.id, name: p.name }))
               : undefined,
@@ -725,6 +726,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
   };
 
   const triggerClassification = async (entry: LogEntry) => {
+    if (!getFeatureEnabled('auto_classify', true)) return;
     setClassifying(true);
     setSuggestion(null);
     try {
@@ -1651,7 +1653,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
               <span>{t('logCreatedAt', lang)}：{formatDateTimeFull(log.createdAt)}</span>
               {log.updatedAt && <span>{t('logUpdatedAt', lang)}：{formatDateTimeFull(log.updatedAt)}</span>}
               {/* Workload level */}
-              {log.workloadLevel ? (
+              {!getFeatureEnabled('workload', true) ? null : log.workloadLevel ? (
                 <span
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 4,

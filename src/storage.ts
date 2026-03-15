@@ -828,6 +828,20 @@ export function setDemoMode(on: boolean): void {
   }
 }
 
+// ─── Feature Toggles ───
+
+const FEATURE_PREFIX = 'threadlog_feature_';
+
+export function getFeatureEnabled(key: string, defaultValue = true): boolean {
+  const v = localStorage.getItem(FEATURE_PREFIX + key);
+  if (v === null) return defaultValue;
+  return v === 'true';
+}
+
+export function setFeatureEnabled(key: string, enabled: boolean): void {
+  safeSetItem(FEATURE_PREFIX + key, String(enabled));
+}
+
 // ─── Auto Weekly Report ───
 
 const AUTO_REPORT_KEY = 'threadlog_auto_weekly_report';

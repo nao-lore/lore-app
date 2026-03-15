@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Check, Download, Upload, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
-import { getLang, setLang, getUiLang, exportAllData, validateBackup, importData, getDataUsage, formatBytes, getAutoReportSetting, setAutoReportSetting, isDemoMode, setDemoMode } from './storage';
+import { getLang, setLang, getUiLang, exportAllData, validateBackup, importData, getDataUsage, formatBytes, getAutoReportSetting, setAutoReportSetting, isDemoMode, setDemoMode, getFeatureEnabled, setFeatureEnabled } from './storage';
 import { resetOnboarding } from './onboardingState';
 import type { ThemePref, LoreBackup } from './storage';
 import {
@@ -189,128 +189,38 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* Provider selector */}
+        {/* API Key (Gemini only) */}
         <div className="content-card">
-          <div className="content-card-header">{t('providerLabel', lang)}</div>
-          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
-            {t('providerDesc', lang)}
-          </p>
-
-          {/* Gemini — primary/recommended */}
-          {(() => {
-            const p: ProviderName = 'gemini';
-            const isActive = activeProvider === p;
-            const hasKey = !!keys[p];
-            return (
-              <div style={{ marginBottom: 12 }}>
-                <button
-                  className="provider-option"
-                  data-active={isActive}
-                  onClick={() => handleProviderChange(p)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12, width: '100%',
-                    padding: '12px 14px', borderRadius: 10,
-                    border: isActive ? '2px solid var(--accent)' : '1px solid var(--border-default)',
-                    background: isActive ? 'var(--sidebar-active)' : 'none',
-                    cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
-                    transition: 'all 0.12s',
-                  }}
-                >
-                  <div style={{
-                    width: 18, height: 18, borderRadius: '50%',
-                    border: isActive ? '2px solid var(--accent)' : '2px solid var(--border-default)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                    {isActive && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {PROVIDER_LABELS[p]}
-                      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)' }}>{t('providerRecommended', lang)}</span>
-                    </div>
-                    <div className="meta" style={{ fontSize: 11 }}>
-                      {PROVIDER_MODEL_LABELS[p]}
-                    </div>
-                    <div className="meta" style={{ fontSize: 12, marginTop: 2, color: 'var(--text-muted)' }}>
-                      {t('providerDescGemini', lang)}
-                    </div>
-                  </div>
-                  <span className="meta" style={{
-                    fontSize: 11, flexShrink: 0,
-                    color: hasKey ? 'var(--success-text)' : 'var(--text-placeholder)',
-                  }}>
-                    {hasKey ? t('providerKeyConfigured', lang) : t('providerKeyNotSet', lang)}
-                  </span>
-                </button>
-              </div>
-            );
-          })()}
-
-        </div>
-
-        {/* API Keys */}
-        <div className="content-card">
-          <div className="content-card-header">{t('apiKeyLabel', lang)}</div>
+          <div className="content-card-header">Gemini API {t('apiKeyLabel', lang)}</div>
           <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
             {t('apiKeyDesc', lang)}
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Gemini only */}
-            {(['gemini'] as ProviderName[]).map((p) => (
-              <div key={p}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)' }}>
-                    {PROVIDER_LABELS[p]}
-                  </span>
-                  {p === 'gemini' && (
-                    <span style={{
-                      fontSize: 10, fontWeight: 600,
-                      padding: '1px 6px', borderRadius: 4,
-                      background: 'var(--accent)', color: '#fff',
-                    }}>
-                      {t('providerRecommended', lang)}
-                    </span>
-                  )}
-                  {activeProvider === p && (
-                    <span style={{
-                      fontSize: 10, fontWeight: 600,
-                      padding: '1px 6px', borderRadius: 4,
-                      background: 'var(--accent)', color: '#fff',
-                    }}>
-                      {t('providerActive', lang)}
-                    </span>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input
-                    className="input"
-                    type="password"
-                    value={keys[p]}
-                    onChange={(e) => { handleKeyChange(p, e.target.value); setKeyErrors((prev) => ({ ...prev, [p]: '' })); }}
-                    onBlur={() => { const err = validateApiKey(p, keys[p]); setKeyErrors((prev) => ({ ...prev, [p]: err })); }}
-                    placeholder={PROVIDER_KEY_PLACEHOLDER[p]}
-                    style={{ flex: 1, maxWidth: 420, fontSize: 13 }}
-                  />
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => handleSaveKey(p)}
-                    style={{ fontSize: 12, padding: '5px 12px', minHeight: 28, flexShrink: 0 }}
-                  >
-                    {t('saveKey', lang)}
-                  </button>
-                  {savedProvider === p && (
-                    <span style={{ color: 'var(--success-text)', fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Check size={14} /> {t('saved', lang)}
-                    </span>
-                  )}
-                </div>
-                {keyErrors[p] && (
-                  <p style={{ color: 'var(--error-text)', fontSize: 12, margin: '4px 0 0' }}>{keyErrors[p]}</p>
-                )}
-              </div>
-            ))}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              className="input"
+              type="password"
+              value={keys.gemini}
+              onChange={(e) => { handleKeyChange('gemini', e.target.value); setKeyErrors((prev) => ({ ...prev, gemini: '' })); }}
+              onBlur={() => { const err = validateApiKey('gemini', keys.gemini); setKeyErrors((prev) => ({ ...prev, gemini: err })); }}
+              placeholder={PROVIDER_KEY_PLACEHOLDER.gemini}
+              style={{ flex: 1, maxWidth: 420, fontSize: 13 }}
+            />
+            <button
+              className="btn btn-primary"
+              onClick={() => handleSaveKey('gemini')}
+              style={{ fontSize: 12, padding: '5px 12px', minHeight: 28, flexShrink: 0 }}
+            >
+              {t('saveKey', lang)}
+            </button>
+            {savedProvider === 'gemini' && (
+              <span style={{ color: 'var(--success-text)', fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Check size={14} /> {t('saved', lang)}
+              </span>
+            )}
           </div>
+          {keyErrors.gemini && (
+            <p style={{ color: 'var(--error-text)', fontSize: 12, margin: '4px 0 0' }}>{keyErrors.gemini}</p>
+          )}
         </div>
 
         {/* Theme */}
@@ -522,27 +432,56 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
           </div>
         </div>
 
-        {/* Auto Weekly Report */}
+        {/* Feature Toggles */}
         <div className="content-card">
-          <div className="content-card-header">{t('autoWeeklyReport', lang)}</div>
+          <div className="content-card-header">{t('featuresLabel', lang)}</div>
           <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
-            {t('autoWeeklyReportDesc', lang)}
+            {t('featuresDesc', lang)}
           </p>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={autoReport}
-              onChange={(e) => {
-                const v = e.target.checked;
-                setAutoReport(v);
-                setAutoReportSetting(v);
-              }}
-              style={{ width: 18, height: 18, accentColor: 'var(--accent)', cursor: 'pointer' }}
-            />
-            <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>
-              {t('autoWeeklyReport', lang)}
-            </span>
-          </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {([
+              { key: 'streaming', labelKey: 'featureStreaming', descKey: 'featureStreamingDesc', default: true },
+              { key: 'auto_classify', labelKey: 'featureAutoClassify', descKey: 'featureAutoClassifyDesc', default: true },
+              { key: 'workload', labelKey: 'featureWorkload', descKey: 'featureWorkloadDesc', default: true },
+            ] as const).map(({ key, labelKey, descKey, default: def }) => (
+              <label key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={getFeatureEnabled(key, def)}
+                  onChange={(e) => { setFeatureEnabled(key, e.target.checked); setAutoReport((v) => v); /* force re-render */ }}
+                  style={{ width: 18, height: 18, accentColor: 'var(--accent)', cursor: 'pointer', marginTop: 2, flexShrink: 0 }}
+                />
+                <div>
+                  <div style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>
+                    {t(labelKey as Parameters<typeof t>[0], lang)}
+                  </div>
+                  <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>
+                    {t(descKey as Parameters<typeof t>[0], lang)}
+                  </div>
+                </div>
+              </label>
+            ))}
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={autoReport}
+                onChange={(e) => {
+                  const v = e.target.checked;
+                  setAutoReport(v);
+                  setAutoReportSetting(v);
+                }}
+                style={{ width: 18, height: 18, accentColor: 'var(--accent)', cursor: 'pointer', marginTop: 2, flexShrink: 0 }}
+              />
+              <div>
+                <div style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>
+                  {t('autoWeeklyReport', lang)}
+                </div>
+                <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>
+                  {t('autoWeeklyReportDesc', lang)}
+                </div>
+              </div>
+            </label>
+          </div>
         </div>
 
         {/* Data Management */}
