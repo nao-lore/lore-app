@@ -4,6 +4,7 @@ import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { getGreeting } from './greeting';
+import { getStreak } from './storage';
 import FirstUseTooltip from './FirstUseTooltip';
 
 interface DashboardViewProps {
@@ -170,6 +171,41 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
       });
     }
 
+    // Stale projects (no logs in last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoTs = thirtyDaysAgo.getTime();
+    const staleProjects = projects.filter((p) => {
+      const projectLogs = logs.filter((l) => l.projectId === p.id);
+      if (projectLogs.length === 0) return false; // skip projects with no logs at all
+      const latestLogTs = Math.max(...projectLogs.map((l) => new Date(l.createdAt).getTime()));
+      return latestLogTs < thirtyDaysAgoTs;
+    });
+    if (staleProjects.length > 0 && !dismissed.has('stale_projects')) {
+      const staleKeys = staleProjects.map((p) => `stale_project_${p.id}`);
+      const anyNotDismissed = staleProjects.some((p) => {
+        const projectLogs = logs.filter((l) => l.projectId === p.id);
+        const latestTs = Math.max(...projectLogs.map((l) => new Date(l.createdAt).getTime()));
+        return isNotDismissed(`stale_project_${p.id}`, latestTs);
+      });
+      if (anyNotDismissed) {
+        const staleNames = staleProjects.slice(0, 3).map((p) => p.icon ? `${p.icon} ${p.name}` : p.name).join(', ');
+        items.push({
+          key: 'stale_projects',
+          emoji: '💤',
+          label: lang === 'ja'
+            ? `${staleProjects.length}件のプロジェクトが30日以上未更新`
+            : `${staleProjects.length} project${staleProjects.length > 1 ? 's' : ''} idle for 30+ days`,
+          sub: staleNames,
+          color: 'var(--text-placeholder)',
+          borderColor: 'var(--text-placeholder)',
+          icon: FolderOpen,
+          onClick: () => { if (staleProjects.length === 1) onOpenProject(staleProjects[0].id); else onOpenHistory(); },
+          dismissKeys: ['stale_projects', ...staleKeys],
+        });
+      }
+    }
+
     // Unassigned logs
     const unassignedCount = handoffLogs.filter((l) => !l.projectId).length;
     if (unassignedCount > 0 && !dismissed.has('unassigned') && isNotDismissed('unassigned', handoffLogs.length > 0 ? new Date(handoffLogs[0].createdAt).getTime() : 0)) {
@@ -187,7 +223,7 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
     }
 
     return items;
-  }, [todos, masterNotes, logs, handoffLogs, dismissed, lang, onOpenTodos, onOpenSummaryList, onOpenHistory]);
+  }, [todos, masterNotes, logs, handoffLogs, projects, dismissed, lang, onOpenTodos, onOpenSummaryList, onOpenHistory, onOpenProject]);
 
   const focusTasks = uncheckedActions.slice(0, 5);
 
@@ -482,6 +518,8 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
 // ── Activity Summary Card ──
 
 function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]; todos: Todo[]; projects: Project[]; lang: Lang }) {
+  const streak = useMemo(() => getStreak(), []);
+
   const stats = useMemo(() => {
     const totalLogs = logs.length;
     const todosDone = todos.filter((td) => td.done).length;
@@ -533,8 +571,17 @@ function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]
           background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
         }}
       >
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 14 }}>
-          {isJa ? 'あなたのアクティビティ' : 'Your Activity'}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>
+            {isJa ? 'あなたのアクティビティ' : 'Your Activity'}
+          </div>
+          {streak > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'var(--warning-text, #f59e0b)' }}>
+              <span style={{ fontSize: 16 }}>🔥</span>
+              <span style={{ fontSize: 20, fontWeight: 800 }}>{streak}</span>
+              <span style={{ fontWeight: 600 }}>{isJa ? '日連続' : `day${streak > 1 ? 's' : ''} streak`}</span>
+            </div>
+          )}
         </div>
 
         {/* Row 1: headline stats */}

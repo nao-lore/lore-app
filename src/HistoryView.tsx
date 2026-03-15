@@ -1,13 +1,14 @@
 import { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { usePersistedState } from './usePersistedState';
-import { MoreHorizontal, Pin, Pencil, Trash2, FolderOpen, Copy, Download, ExternalLink, BookOpen, Calendar, CopyPlus, LayoutGrid, List, TrendingUp } from 'lucide-react';
+import { MoreHorizontal, Pin, Pencil, Trash2, FolderOpen, Copy, Download, ExternalLink, BookOpen, Calendar, CopyPlus, LayoutGrid, List, TrendingUp, AlignJustify } from 'lucide-react';
 import type { LogEntry, OutputMode, Project } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { trashLog, updateLog, loadLogs, getMasterNote, duplicateLog } from './storage';
 import { logToMarkdown } from './markdown';
 import { EmptyLogs } from './EmptyIllustrations';
+import { getProjectColor } from './projectColors';
 import LogPickerModal from './LogPickerModal';
 import DropdownMenu from './DropdownMenu';
 import ConfirmDialog from './ConfirmDialog';
@@ -301,6 +302,8 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
   const [sortKey, setSortKey] = usePersistedState<SortKey>('threadlog_logs_sort', 'created');
   const [groupKey, setGroupKey] = usePersistedState<GroupKey>('threadlog_logs_group', 'none');
   const [viewMode, setViewMode] = usePersistedState<'card' | 'list'>('threadlog_logs_viewmode', 'card');
+  const [viewDensity, setViewDensity] = usePersistedState<'comfortable' | 'compact'>('threadlog_view_density', 'comfortable');
+  const compact = viewDensity === 'compact';
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
@@ -560,8 +563,9 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
     const modeLabel = log.outputMode === 'handoff' ? 'Handoff' : 'Log';
     const today = isToday(log.createdAt);
     const isSelected = selected.has(log.id);
+    const projectColor = log.projectId ? getProjectColor(projects.find((p) => p.id === log.projectId)?.color) : undefined;
     return (
-      <div key={log.id} className={`card${isSelected ? ' card-selected' : ''}`} role="button" tabIndex={0} onClick={() => handleCardClick(log.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick(log.id); } }} style={{ position: 'relative', display: 'flex', gap: selectMode ? 12 : 0 }}>
+      <div key={log.id} className={`card${isSelected ? ' card-selected' : ''}`} role="button" tabIndex={0} onClick={() => handleCardClick(log.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick(log.id); } }} style={{ position: 'relative', display: 'flex', gap: selectMode ? 12 : 0, ...(projectColor ? { borderLeft: `3px solid ${projectColor}` } : {}), ...(compact ? { padding: '4px 8px', fontSize: 12, lineHeight: 1.3 } : {}) }}>
         {selectMode && (
           <div style={{ paddingTop: 2, flexShrink: 0 }}>
             <input type="checkbox" className="bulk-checkbox" checked={isSelected} onChange={() => toggleSelect(log.id)} onClick={(e) => e.stopPropagation()} />
@@ -586,9 +590,9 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
             </div>
           )}
           {/* Row 1: state (left) + badge + date */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 4 : 8, marginBottom: compact ? 2 : 6 }}>
             {log.pinned && (
-              <Pin size={12} style={{ color: 'var(--accent)', flexShrink: 0, transform: 'rotate(45deg)' }} />
+              <Pin size={compact ? 10 : 12} style={{ color: 'var(--accent)', flexShrink: 0, transform: 'rotate(45deg)' }} />
             )}
             <span className={log.outputMode === 'handoff' ? 'badge-handoff' : 'badge-worklog'}>{modeLabel}</span>
             <span className="meta" style={{ fontSize: 11, color: today ? 'var(--accent-text)' : undefined, fontWeight: today ? 500 : undefined }}>
@@ -609,11 +613,11 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
             })()}
           </div>
           {/* Row 2: title */}
-          <div className="card-title-clamp" style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.4, paddingRight: 48 }}>
+          <div className="card-title-clamp" style={{ fontWeight: 600, fontSize: compact ? 13 : 15, color: 'var(--text-secondary)', lineHeight: compact ? 1.2 : 1.4, paddingRight: 48 }}>
             <Highlight text={log.title} query={debouncedQuery} />
           </div>
           {/* Row 3: preview */}
-          {preview && <div className="meta" style={{ marginTop: 5, lineHeight: 1.55, fontSize: 12.5 }}><Highlight text={preview} query={debouncedQuery} /></div>}
+          {preview && <div className="meta" style={{ marginTop: compact ? 2 : 5, lineHeight: compact ? 1.3 : 1.55, fontSize: compact ? 11 : 12.5 }}><Highlight text={preview} query={debouncedQuery} /></div>}
           {/* Row 3.5: nextActions progress */}
           {log.outputMode === 'handoff' && log.nextActions && log.nextActions.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5, fontSize: 12, color: 'var(--text-placeholder)' }}>
@@ -664,12 +668,12 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
           )}
           {/* Row 5: tags */}
           {log.tags.length > 0 && (
-            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            <div style={{ marginTop: compact ? 3 : 8, display: 'flex', flexWrap: 'wrap', gap: compact ? 2 : 4 }}>
               {log.tags.slice(0, 5).map((tg, i) => (
                 <span
                   key={i}
                   className="tag"
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', ...(compact ? { fontSize: 10, padding: '0px 6px' } : {}) }}
                   onClick={(e) => { e.stopPropagation(); onTagFilter?.(tg); }}
                 >
                   <Highlight text={tg} query={debouncedQuery} />
@@ -686,24 +690,26 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
   const renderLogListItem = (log: LogEntry) => {
     const modeLabel = log.outputMode === 'handoff' ? 'H' : 'W';
     const isSelected = selected.has(log.id);
+    const projectColor = log.projectId ? getProjectColor(projects.find((p) => p.id === log.projectId)?.color) : undefined;
     return (
       <div
         key={log.id}
         className={`list-row${isSelected ? ' list-row-selected' : ''}`}
         role="button"
         tabIndex={0}
+        style={{ ...(projectColor ? { borderLeft: `3px solid ${projectColor}` } : {}), ...(compact ? { padding: '2px 8px', fontSize: 12, lineHeight: 1.3, minHeight: 28 } : {}) }}
         onClick={() => handleCardClick(log.id)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick(log.id); } }}
       >
         {selectMode && (
           <input type="checkbox" className="bulk-checkbox" checked={isSelected} onChange={() => toggleSelect(log.id)} onClick={(e) => e.stopPropagation()} style={{ flexShrink: 0 }} />
         )}
-        {log.pinned && <Pin size={10} style={{ color: 'var(--accent)', flexShrink: 0, transform: 'rotate(45deg)' }} />}
-        <span className={log.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} style={{ flexShrink: 0 }}>
+        {log.pinned && <Pin size={compact ? 8 : 10} style={{ color: 'var(--accent)', flexShrink: 0, transform: 'rotate(45deg)' }} />}
+        <span className={log.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} style={{ flexShrink: 0, ...(compact ? { fontSize: 10 } : {}) }}>
           {modeLabel}
         </span>
-        <span className="list-row-title"><Highlight text={log.title} query={debouncedQuery} /></span>
-        <span className="meta" style={{ fontSize: 11, flexShrink: 0, whiteSpace: 'nowrap' }}>{formatRelativeTime(log.createdAt, lang === 'ja' ? 'ja' : 'en')}</span>
+        <span className="list-row-title" style={compact ? { fontSize: 12 } : undefined}><Highlight text={log.title} query={debouncedQuery} /></span>
+        <span className="meta" style={{ fontSize: compact ? 10 : 11, flexShrink: 0, whiteSpace: 'nowrap' }}>{formatRelativeTime(log.createdAt, lang === 'ja' ? 'ja' : 'en')}</span>
         {!selectMode && (
           <div style={{ position: 'relative', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
             <button className="action-menu-btn" aria-label={t('ariaMenu', lang)} style={{ opacity: 0 }} onClick={() => setActionSheetLog(actionSheetLog?.id === log.id ? null : log)}>
@@ -748,31 +754,36 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
     count: selectMode ? 0 : virtualData.length,
     getScrollElement: useCallback(() => scrollContainerRef.current, []),
     estimateSize: useCallback((index: number) => {
+      const listH = compact ? 30 : 44;
+      const baseH = compact ? 80 : 120;
+      const tagH = compact ? 20 : 32;
+      const actionH = compact ? 18 : 24;
+      const projectH = compact ? 20 : 28;
       if (groupKey !== 'none') {
         const item = flatItems[index];
         if (item?.type === 'header') return 44;
-        if (viewMode === 'list') return 44;
+        if (viewMode === 'list') return listH;
         if (item?.type === 'item') {
           const log = item.log;
-          let h = 120;
-          if (log.tags.length > 0) h += 32;
-          if (log.outputMode === 'handoff' && log.nextActions && log.nextActions.length > 0) h += 24;
-          if (!activeProjectId && !log.projectId && projects.length > 0) h += 28;
+          let h = baseH;
+          if (log.tags.length > 0) h += tagH;
+          if (log.outputMode === 'handoff' && log.nextActions && log.nextActions.length > 0) h += actionH;
+          if (!activeProjectId && !log.projectId && projects.length > 0) h += projectH;
           return h;
         }
       }
-      if (viewMode === 'list') return 44;
+      if (viewMode === 'list') return listH;
       // Non-grouped: use sorted array
       const log = sorted[index];
       if (log) {
-        let h = 120;
-        if (log.tags.length > 0) h += 32;
-        if (log.outputMode === 'handoff' && log.nextActions && log.nextActions.length > 0) h += 24;
-        if (!activeProjectId && !log.projectId && projects.length > 0) h += 28;
+        let h = baseH;
+        if (log.tags.length > 0) h += tagH;
+        if (log.outputMode === 'handoff' && log.nextActions && log.nextActions.length > 0) h += actionH;
+        if (!activeProjectId && !log.projectId && projects.length > 0) h += projectH;
         return h;
       }
-      return 120;
-    }, [groupKey, flatItems, viewMode, sorted, activeProjectId, projects.length]),
+      return baseH;
+    }, [groupKey, flatItems, viewMode, sorted, activeProjectId, projects.length, compact]),
     overscan: 5,
   });
 
@@ -922,7 +933,17 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
             </div>
           )}
         </div>
-        <div className="seg-control" style={{ marginLeft: 'auto' }}>
+        <button
+          className={`btn btn-sm${compact ? ' btn-active' : ''}`}
+          onClick={() => setViewDensity(compact ? 'comfortable' : 'compact')}
+          title={compact ? 'Comfortable' : 'Compact'}
+          aria-label={compact ? 'Switch to comfortable view' : 'Switch to compact view'}
+          style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 10px', minHeight: 26, marginLeft: 'auto' }}
+        >
+          <AlignJustify size={12} />
+          {compact ? 'Compact' : 'Comfortable'}
+        </button>
+        <div className="seg-control">
           <button
             className={`seg-control-btn${viewMode === 'card' ? ' active-worklog' : ''}`}
             onClick={() => setViewMode('card')}

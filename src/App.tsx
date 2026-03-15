@@ -30,7 +30,7 @@ const HelpView = lazy(() => import('./HelpView'));
 const WeeklyReportView = lazy(() => import('./WeeklyReportView'));
 const KnowledgeBaseView = lazy(() => import('./KnowledgeBaseView'));
 const PricingView = lazy(() => import('./PricingView'));
-import { loadLogs, loadProjects, loadTodos, loadMasterNotes, getUiLang, setUiLang, getTheme, setTheme as saveTheme, purgeExpiredTrash, updateLog, getLog, getAutoReportSetting, getLastReportDate, setLastReportDate, isDemoMode, setDemoMode, getFeatureEnabled } from './storage';
+import { loadLogs, loadProjects, loadTodos, loadMasterNotes, getUiLang, setUiLang, getTheme, setTheme as saveTheme, purgeExpiredTrash, updateLog, getLog, getAutoReportSetting, getLastReportDate, setLastReportDate, isDemoMode, setDemoMode, getFeatureEnabled, recordActivity } from './storage';
 import type { ThemePref } from './storage';
 import type { FontSize } from './types';
 import { t, tf } from './i18n';
@@ -220,6 +220,9 @@ export default function App() {
 
   // Purge expired trash on app load
   useEffect(() => { purgeExpiredTrash(); }, []);
+
+  // Record daily activity for streak tracking
+  useEffect(() => { recordActivity(); }, []);
 
   // Warn user when localStorage quota is exceeded
   useEffect(() => {

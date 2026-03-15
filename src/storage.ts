@@ -758,6 +758,42 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// ─── Activity Streak ───
+
+const ACTIVITY_DATES_KEY = 'threadlog_activity_dates';
+
+export function recordActivity(): void {
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const raw = localStorage.getItem(ACTIVITY_DATES_KEY);
+    const dates: string[] = raw ? JSON.parse(raw) : [];
+    if (!dates.includes(today)) {
+      dates.push(today);
+      // Keep only last 90 days
+      while (dates.length > 90) dates.shift();
+      localStorage.setItem(ACTIVITY_DATES_KEY, JSON.stringify(dates));
+    }
+  } catch { /* ignore */ }
+}
+
+export function getStreak(): number {
+  try {
+    const raw = localStorage.getItem(ACTIVITY_DATES_KEY);
+    if (!raw) return 0;
+    const dates: string[] = JSON.parse(raw);
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i <= 90; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      if (dates.includes(dateStr)) streak++;
+      else if (i > 0) break; // allow today to not be recorded yet
+    }
+    return streak;
+  } catch { return 0; }
+}
+
 // ─── Settings ───
 
 /** Returns the API key for the currently active provider */
