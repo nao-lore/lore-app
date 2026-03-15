@@ -179,7 +179,7 @@ export default function App() {
     return todos.filter((td) => !td.done && td.dueDate && td.dueDate < todayKey);
   }, [todos, todayKey]);
   const [bannerDismissed, setBannerDismissed] = useState(() =>
-    sessionStorage.getItem('threadlog_overdue_dismissed') === todayKey
+    safeGetItem('threadlog_overdue_dismissed') === todayKey
   );
   const showOverdueBanner = overdueTodos.length > 0 && !bannerDismissed;
 
@@ -266,12 +266,16 @@ export default function App() {
   }, []); // only on mount
 
   const handleOnboardingClose = useCallback(async () => {
-    if (!isSampleSeeded()) {
+    const isFirstLaunch = !isSampleSeeded();
+    if (isFirstLaunch) {
       const { seedSampleData } = await import('./sampleData');
       seedSampleData(lang);
       setLogsVersion((v) => v + 1);
     }
     setShowOnboarding(false);
+    if (isFirstLaunch) {
+      goToRaw('dashboard');
+    }
   }, [lang]);
 
   // Apply data-theme attribute; re-check hourly for time-based "system" mode
@@ -597,7 +601,7 @@ export default function App() {
             className="overdue-banner-close"
             onClick={() => {
               setBannerDismissed(true);
-              sessionStorage.setItem('threadlog_overdue_dismissed', todayKey);
+              safeSetItem('threadlog_overdue_dismissed', todayKey);
             }}
             aria-label={t('close', lang)}
           >

@@ -1,6 +1,6 @@
 import { t } from './i18n';
 import type { Lang } from './i18n';
-import { shouldUseBuiltinApi } from './provider';
+import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
 
 interface PricingViewProps {
   onBack: () => void;
@@ -70,6 +70,14 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
                 / {t('pricingMonth', lang)}
               </span>
             </div>
+            {shouldUseBuiltinApi() && (() => {
+              const { used, limit } = getBuiltinUsage();
+              return (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                  {used}/{limit} {t('pricingMonth', lang) === '月' ? '回使用済み（今日）' : 'used today'}
+                </div>
+              );
+            })()}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
