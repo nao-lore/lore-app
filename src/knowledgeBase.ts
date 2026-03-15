@@ -1,5 +1,5 @@
 import type { LogEntry, KnowledgeBase, KnowledgeEntry, SourcedItem } from './types';
-import { callProvider } from './provider';
+import { callProvider, shouldUseBuiltinApi } from './provider';
 import { getApiKey, getLogSummary, saveLogSummary } from './storage';
 
 // Re-use the log summary extraction from masterNote.ts (cached per log)
@@ -125,7 +125,7 @@ export async function generateKnowledgeBase(
   onProgress?: (p: KBProgress) => void,
 ): Promise<KnowledgeBase> {
   const apiKey = getApiKey();
-  if (!apiKey) throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
+  if (!apiKey && !shouldUseBuiltinApi()) throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
   if (logs.length === 0) throw new Error('No logs to analyze.');
 
   const sorted = [...logs].sort(

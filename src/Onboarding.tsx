@@ -3,12 +3,13 @@ import { t } from './i18n';
 import type { Lang } from './i18n';
 import { useFocusTrap } from './useFocusTrap';
 import { markOnboardingDone } from './onboardingState';
-import { setDemoMode } from './storage';
 
 interface OnboardingProps {
   lang: Lang;
   onLangChange: (lang: Lang) => void;
   onClose: () => void;
+  onPauseForSettings?: () => void;
+  initialStep?: number;
 }
 
 interface StepDef {
@@ -17,7 +18,7 @@ interface StepDef {
   action?: { labelKey: string; handler: () => void };
   final?: boolean;
   descAlign?: 'left';
-  custom?: 'lang';
+  custom?: 'lang' | 'extension';
 }
 
 const LANG_OPTIONS: { code: Lang; label: string; flag: string }[] = [
@@ -31,17 +32,14 @@ const LANG_OPTIONS: { code: Lang; label: string; flag: string }[] = [
   { code: 'pt', label: 'Português', flag: '🇧🇷' },
 ];
 
-export default function Onboarding({ lang, onLangChange, onClose }: OnboardingProps) {
+// Chrome Web Store URL — update when published
+const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/lore-capture/ioaccmbgjkaklailnmgklmipccmbneen';
+
+export default function Onboarding({ lang, onLangChange, onClose, onPauseForSettings, initialStep = 0 }: OnboardingProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(true);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(initialStep);
 
   const finish = useCallback(() => {
-    markOnboardingDone();
-    onClose();
-  }, [onClose]);
-
-  const finishWithDemo = useCallback(() => {
-    setDemoMode(true);
     markOnboardingDone();
     onClose();
   }, [onClose]);
@@ -54,6 +52,12 @@ export default function Onboarding({ lang, onLangChange, onClose }: OnboardingPr
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [finish]);
+
+  const handlePauseForSettings = useCallback(() => {
+    // Save current step so we can resume
+    try { localStorage.setItem('threadlog_onboarding_step', String(step)); } catch { /* ignore */ }
+    onPauseForSettings?.();
+  }, [step, onPauseForSettings]);
 
   const steps: StepDef[] = [
     {
@@ -71,8 +75,15 @@ export default function Onboarding({ lang, onLangChange, onClose }: OnboardingPr
       descAlign: 'left',
     },
     {
-      titleKey: 'onboardingSampleTitle',
-      descKey: 'onboardingSampleDesc',
+      titleKey: 'onboardingApiKeyTitle',
+      descKey: 'onboardingApiKeyDesc',
+      descAlign: 'left',
+      action: onPauseForSettings ? { labelKey: 'onboardingApiKeyAction', handler: handlePauseForSettings } : undefined,
+    },
+    {
+      titleKey: 'onboardingExtensionTitle',
+      descKey: 'onboardingExtensionDesc',
+      custom: 'extension',
     },
     {
       titleKey: 'onboardingReadyTitle',
@@ -145,6 +156,23 @@ export default function Onboarding({ lang, onLangChange, onClose }: OnboardingPr
               {t(current.descKey as Parameters<typeof t>[0], lang)}
             </p>
           </div>
+        ) : current.custom === 'extension' ? (
+          <>
+            <p style={{ textAlign: 'center', fontSize: 14, lineHeight: 1.7, color: 'var(--text-muted)', margin: '0 0 20px', maxWidth: 360, marginLeft: 'auto', marginRight: 'auto', whiteSpace: 'pre-line' }}>
+              {t(current.descKey as Parameters<typeof t>[0], lang)}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+              <a
+                href={CHROME_EXTENSION_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary"
+                style={{ padding: '8px 24px', fontSize: 14, fontWeight: 600, borderRadius: 10, textDecoration: 'none' }}
+              >
+                {t('onboardingExtensionInstall', lang)}
+              </a>
+            </div>
+          </>
         ) : current.descAlign === 'left' ? (
           <div style={{ display: 'flex', justifyContent: 'center', margin: '0 0 28px' }}>
             <p style={{ textAlign: 'left', fontSize: 14, lineHeight: 1.7, color: 'var(--text-muted)', margin: 0, maxWidth: 360, whiteSpace: 'pre-line' }}>
@@ -157,8 +185,8 @@ export default function Onboarding({ lang, onLangChange, onClose }: OnboardingPr
           </p>
         )}
 
-        {/* Action button (step-specific) */}
-        {current.action && (
+        {/* Action button (step-specific, not for extension which has its own) */}
+        {current.action && current.custom !== 'extension' && (
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
             <button
               className="btn btn-primary"
@@ -194,22 +222,13 @@ export default function Onboarding({ lang, onLangChange, onClose }: OnboardingPr
               </button>
             )}
             {current.final ? (
-              <>
-                <button
-                  className="btn"
-                  onClick={finishWithDemo}
-                  style={{ fontSize: 13, padding: '6px 16px', color: 'var(--accent)' }}
-                >
-                  {t('tryDemo', lang)}
-                </button>
-                <button
-                  className="btn btn-primary"
-                  onClick={finish}
-                  style={{ fontSize: 13, padding: '6px 20px', fontWeight: 600, borderRadius: 8 }}
-                >
-                  {t('onboardingGetStarted', lang)}
-                </button>
-              </>
+              <button
+                className="btn btn-primary"
+                onClick={finish}
+                style={{ fontSize: 13, padding: '6px 20px', fontWeight: 600, borderRadius: 8 }}
+              >
+                {t('onboardingGetStarted', lang)}
+              </button>
             ) : (
               <button
                 className="btn btn-primary"

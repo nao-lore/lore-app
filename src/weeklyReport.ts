@@ -1,6 +1,6 @@
 import type { LogEntry, Todo, WeeklyReport } from './types';
 import { getApiKey } from './storage';
-import { callProvider } from './provider';
+import { callProvider, shouldUseBuiltinApi } from './provider';
 import type { ProviderRequest } from './provider';
 import { extractJson } from './transform';
 
@@ -60,7 +60,7 @@ export interface GenerateWeeklyReportOptions {
 
 export async function generateWeeklyReport(opts: GenerateWeeklyReportOptions): Promise<WeeklyReport> {
   const apiKey = getApiKey();
-  if (!apiKey) throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
+  if (!apiKey && !shouldUseBuiltinApi()) throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
 
   opts.onProgress?.('preparing');
 

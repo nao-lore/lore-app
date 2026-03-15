@@ -5,6 +5,7 @@ import { ChunkEngine, getChunkTarget, getEngineConcurrency } from './chunkEngine
 import type { EngineProgress } from './chunkEngine';
 import { findSession } from './chunkDb';
 import { addLog, trashLog, updateLog, getLog, getApiKey, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateTodo as updateTodoStorage, duplicateLog, getAiContext, getMasterNote, linkLogs, unlinkLogs, isDemoMode } from './storage';
+import { shouldUseBuiltinApi } from './provider';
 import { demoTransformBoth, demoTransformHandoff, demoTransformText, demoTransformTodoOnly, demoTransformHandoffTodo, getDemoConversation } from './demoData';
 import { classifyLog, saveCorrection } from './classify';
 import { extractDocxText } from './docx';
@@ -319,7 +320,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     if (!demo && !navigator.onLine) { setError(t('offlineAiUnavailable', lang)); return; }
 
     const apiKey = getApiKey();
-    if (!demo && !apiKey) { setError('[API Key] Not set. Go to Settings and enter your API key.'); return; }
+    if (!demo && !apiKey && !shouldUseBuiltinApi()) { setError('[API Key] Not set. Go to Settings and enter your API key.'); return; }
 
     // Persist last used action
     setTransformAction(action);

@@ -1,5 +1,6 @@
 import type { TransformResult, HandoffResult, BothResult, DecisionWithRationale, NextActionItem, ResumeChecklistItem, HandoffMeta, LogEntry } from './types';
 import { getApiKey, getLang } from './storage';
+import { shouldUseBuiltinApi } from './provider';
 import { callProvider, callProviderStream } from './provider';
 import type { StreamCallback } from './provider';
 import { normalizeDecisions as normalizeDecisionsUtil } from './utils/decisions';
@@ -211,7 +212,7 @@ function getLangInstruction(lang: string): string {
 // Single-call transform for texts ≤ CHUNK_THRESHOLD
 export async function transformText(sourceText: string): Promise<TransformResult> {
   const apiKey = getApiKey();
-  if (!apiKey) {
+  if (!apiKey && !shouldUseBuiltinApi()) {
     throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
   }
 
@@ -511,7 +512,7 @@ export function buildHandoffLogEntry(
 
 export async function transformHandoff(sourceText: string): Promise<HandoffResult> {
   const apiKey = getApiKey();
-  if (!apiKey) {
+  if (!apiKey && !shouldUseBuiltinApi()) {
     throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
   }
 
@@ -702,7 +703,7 @@ OUTPUT LANGUAGE RULE:
 
 export async function transformTodoOnly(sourceText: string): Promise<TodoOnlyResult> {
   const apiKey = getApiKey();
-  if (!apiKey) {
+  if (!apiKey && !shouldUseBuiltinApi()) {
     throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
   }
 
@@ -757,7 +758,7 @@ export interface TransformBothOptions {
 export async function transformBoth(sourceText: string, opts?: TransformBothOptions): Promise<BothResult> {
   const { onStream, projects } = opts || {};
   const apiKey = getApiKey();
-  if (!apiKey) {
+  if (!apiKey && !shouldUseBuiltinApi()) {
     throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
   }
 

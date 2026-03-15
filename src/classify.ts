@@ -1,5 +1,5 @@
 import type { LogEntry, Project } from './types';
-import { callProvider } from './provider';
+import { callProvider, shouldUseBuiltinApi } from './provider';
 import { getApiKey } from './storage';
 import { extractJson } from './transform';
 
@@ -56,7 +56,7 @@ export async function classifyLog(
   if (projects.length === 0) return { projectId: null, confidence: 0 };
 
   const apiKey = getApiKey();
-  if (!apiKey) return { projectId: null, confidence: 0 };
+  if (!apiKey && !shouldUseBuiltinApi()) return { projectId: null, confidence: 0 };
 
   const corrections = loadCorrections();
   const examplesBlock = buildExamplesBlock(corrections, projects);

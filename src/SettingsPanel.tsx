@@ -36,9 +36,10 @@ interface SettingsPanelProps {
   onFontSizeChange: (size: FontSize) => void;
   showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void;
   onShowOnboarding?: () => void;
+  onResumeOnboarding?: () => void;
 }
 
-export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref, onThemeChange, fontSize, onFontSizeChange, showToast, onShowOnboarding }: SettingsPanelProps) {
+export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref, onThemeChange, fontSize, onFontSizeChange, showToast, onShowOnboarding, onResumeOnboarding }: SettingsPanelProps) {
   const [activeProvider, setActiveProviderState] = useState<ProviderName>(getActiveProvider);
   const [keys, setKeys] = useState<Record<ProviderName, string>>(() => ({
     anthropic: getProviderApiKey('anthropic'),
@@ -165,6 +166,27 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
         </button>
         <h2>{t('settingsTitle', lang)}</h2>
       </div>
+
+      {/* Resume onboarding banner */}
+      {onResumeOnboarding && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 16px', marginBottom: 12, borderRadius: 10,
+          background: 'var(--accent-bg, rgba(99,102,241,0.08))',
+          border: '1px solid var(--accent, #7c5cfc)',
+        }}>
+          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+            {t('onboardingReturnToSetup', lang)}
+          </span>
+          <button
+            className="btn btn-primary"
+            onClick={onResumeOnboarding}
+            style={{ fontSize: 12, padding: '5px 14px', borderRadius: 8, fontWeight: 600 }}
+          >
+            ← {t('onboardingReturnToSetup', lang)}
+          </button>
+        </div>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Provider selector */}

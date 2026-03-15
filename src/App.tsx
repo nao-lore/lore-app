@@ -93,6 +93,7 @@ export default function App() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<Record<string, number>>({});
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingPausedForSettings, setOnboardingPausedForSettings] = useState(false);
   const [helpFeedbackOpen, setHelpFeedbackOpen] = useState(false);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -414,7 +415,7 @@ export default function App() {
   };
 
   const renderWorkspace = () => {
-    if (view === 'settings') return <SettingsPanel onBack={() => goTo(prevView === 'settings' ? 'input' : prevView)} lang={lang} onUiLangChange={handleUiLangChange} themePref={themePref} onThemeChange={handleThemeChange} fontSize={fontSize} onFontSizeChange={handleFontSizeChange} showToast={showToast} onShowOnboarding={() => setShowOnboarding(true)} />;
+    if (view === 'settings') return <SettingsPanel onBack={() => goTo(prevView === 'settings' ? 'input' : prevView)} lang={lang} onUiLangChange={handleUiLangChange} themePref={themePref} onThemeChange={handleThemeChange} fontSize={fontSize} onFontSizeChange={handleFontSizeChange} showToast={showToast} onShowOnboarding={() => setShowOnboarding(true)} onResumeOnboarding={onboardingPausedForSettings ? () => { setOnboardingPausedForSettings(false); setShowOnboarding(true); } : undefined} />;
     if (view === 'help') return <HelpView onBack={() => goTo(prevView === 'help' ? 'input' : prevView)} lang={lang} onShowOnboarding={() => setShowOnboarding(true)} onFeedback={() => setHelpFeedbackOpen(true)} />;
     if (view === 'history') return <HistoryView logs={logs} onSelect={handleSelect} onBack={() => goTo('input')} onRefresh={refreshLogs} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onOpenMasterNote={handleOpenMasterNote} onOpenProject={handleOpenProjectLogs} tagFilter={tagFilter} onClearTagFilter={() => setTagFilter(null)} onTagFilter={setTagFilter} onDuplicate={(newId) => { refreshLogs(); handleSelect(newId); }} />;
     if (view === 'todos') return <TodoView logs={logs} onBack={() => goTo(prevView === 'todos' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} />;
@@ -626,6 +627,14 @@ export default function App() {
           lang={lang}
           onLangChange={handleUiLangChange}
           onClose={handleOnboardingClose}
+          onPauseForSettings={() => {
+            setShowOnboarding(false);
+            setOnboardingPausedForSettings(true);
+            goTo('settings');
+          }}
+          initialStep={(() => {
+            try { return parseInt(localStorage.getItem('threadlog_onboarding_step') || '0', 10); } catch { return 0; }
+          })()}
         />
       )}
       {helpFeedbackOpen && (

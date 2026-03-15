@@ -1,5 +1,5 @@
 import type { LogEntry, MasterNote, LogSummary, SourcedItem } from './types';
-import { callProvider } from './provider';
+import { callProvider, shouldUseBuiltinApi } from './provider';
 import { getApiKey, getLogSummary, saveLogSummary } from './storage';
 
 // ---------------------------------------------------------------------------
@@ -197,7 +197,7 @@ export async function refineMasterNote(
   instruction: string,
 ): Promise<MasterNote> {
   const apiKey = getApiKey();
-  if (!apiKey) throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
+  if (!apiKey && !shouldUseBuiltinApi()) throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
 
   const currentJson = JSON.stringify({
     overview: note.overview,
@@ -246,7 +246,7 @@ export async function generateMasterNote(
   onProgress?: (p: GenerateProgress) => void,
 ): Promise<MasterNote> {
   const apiKey = getApiKey();
-  if (!apiKey) throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
+  if (!apiKey && !shouldUseBuiltinApi()) throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
   if (logs.length === 0) throw new Error('No logs to generate from.');
 
   const sorted = [...logs].sort(

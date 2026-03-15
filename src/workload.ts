@@ -3,6 +3,7 @@
  */
 import type { LogEntry } from './types';
 import { getApiKey } from './storage';
+import { shouldUseBuiltinApi } from './provider';
 import { callProvider } from './provider';
 import type { ProviderRequest } from './provider';
 import { extractJson } from './transform';
@@ -39,7 +40,7 @@ function formatLogForAnalysis(log: LogEntry): string {
 
 export async function analyzeWorkload(log: LogEntry): Promise<'high' | 'medium' | 'low'> {
   const apiKey = getApiKey();
-  if (!apiKey) throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
+  if (!apiKey && !shouldUseBuiltinApi()) throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
 
   const req: ProviderRequest = {
     apiKey,

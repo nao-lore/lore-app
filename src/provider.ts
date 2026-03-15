@@ -3,6 +3,9 @@
  *
  * All callers use callProvider() which dispatches to the active provider.
  * Provider and per-provider API keys are stored in localStorage.
+ *
+ * When no API key is configured, requests are routed through the built-in
+ * server-side proxy (/api/generate) which uses a shared Gemini key.
  */
 
 export type ProviderName = 'anthropic' | 'gemini' | 'openai';
@@ -420,6 +423,121 @@ function handleHttpError(status: number, body: string): never {
 }
 
 // ---------------------------------------------------------------------------
+// Built-in API (server-side Gemini proxy at /api/generate)
+// ---------------------------------------------------------------------------
+
+async function callBuiltin(req: ProviderRequest): Promise<string> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: req.system,
+        userMessage: req.userMessage,
+        maxTokens: req.maxTokens,
+        stream: false,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      // Handle built-in specific errors
+      if (res.status === 429) {
+        try {
+          const err = JSON.parse(text);
+          throw new Error(err.error || '[Rate Limit]');
+        } catch (e) {
+          if (e instanceof Error && e.message !== '[Rate Limit]') throw e;
+          throw new Error('[Rate Limit]');
+        }
+      }
+      handleHttpError(res.status, text);
+    }
+
+    const data = await res.json();
+    const output = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    if (!output) throw new Error('[AI Response] Empty response. Try again.');
+    return output;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function callBuiltinStream(req: ProviderRequest, onChunk: StreamCallback): Promise<string> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: req.system,
+        userMessage: req.userMessage,
+        maxTokens: req.maxTokens,
+        stream: true,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      if (res.status === 429) {
+        try {
+          const err = JSON.parse(text);
+          throw new Error(err.error || '[Rate Limit]');
+        } catch (e) {
+          if (e instanceof Error && e.message !== '[Rate Limit]') throw e;
+          throw new Error('[Rate Limit]');
+        }
+      }
+      handleHttpError(res.status, text);
+    }
+
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error('[Stream] ReadableStream not supported');
+
+    const decoder = new TextDecoder();
+    let accumulated = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (!data || data === '[DONE]') continue;
+
+        try {
+          const event = JSON.parse(data);
+          const text = event.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            accumulated += text;
+            onChunk(text, accumulated);
+          }
+        } catch (e) {
+          if (e instanceof SyntaxError) continue;
+          throw e;
+        }
+      }
+    }
+
+    if (!accumulated) throw new Error('[AI Response] Empty streaming response. Try again.');
+    return accumulated;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Public API — single entry point
 // ---------------------------------------------------------------------------
 
@@ -447,6 +565,17 @@ export function setProviderApiKey(provider: ProviderName, key: string): void {
   try { localStorage.setItem(`threadlog_api_key_${provider}`, key); } catch { /* ignore */ }
 }
 
+/** Check if any user-provided API key is configured */
+export function hasAnyApiKey(): boolean {
+  return !!(getProviderApiKey('gemini') || getProviderApiKey('anthropic') || getProviderApiKey('openai'));
+}
+
+/** Whether the current call should use the built-in API (no user key for active provider) */
+export function shouldUseBuiltinApi(): boolean {
+  const provider = getActiveProvider();
+  return !getProviderApiKey(provider);
+}
+
 /** Migrate: if old single key exists, move it to anthropic slot */
 function migrateOldApiKey(): void {
   let old: string | null = null;
@@ -471,8 +600,12 @@ function migrateOldApiKey(): void {
 migrateOldApiKey();
 
 export async function callProvider(req: ProviderRequest): Promise<string> {
-  const provider = getActiveProvider();
+  // Use built-in API when no user key is configured
+  if (shouldUseBuiltinApi()) {
+    return callBuiltin(req);
+  }
 
+  const provider = getActiveProvider();
   switch (provider) {
     case 'anthropic':
       return callAnthropic(req);
@@ -486,8 +619,12 @@ export async function callProvider(req: ProviderRequest): Promise<string> {
 
 /** Streaming variant — calls onChunk with each text delta. Falls back to non-streaming for OpenAI. */
 export async function callProviderStream(req: ProviderRequest, onChunk: StreamCallback): Promise<string> {
-  const provider = getActiveProvider();
+  // Use built-in API when no user key is configured
+  if (shouldUseBuiltinApi()) {
+    return callBuiltinStream(req, onChunk);
+  }
 
+  const provider = getActiveProvider();
   if (provider === 'anthropic') {
     return callAnthropicStream(req, onChunk);
   }
