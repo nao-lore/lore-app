@@ -4,7 +4,7 @@ import type { TransformBothOptions } from './transform';
 import { ChunkEngine, getChunkTarget, getEngineConcurrency } from './chunkEngine';
 import type { EngineProgress } from './chunkEngine';
 import { findSession } from './chunkDb';
-import { addLog, trashLog, restoreLog, updateLog, getLog, getApiKey, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateTodo as updateTodoStorage, duplicateLog, getAiContext, getMasterNote, linkLogs, unlinkLogs, isDemoMode, getFeatureEnabled } from './storage';
+import { addLog, trashLog, restoreLog, updateLog, getLog, getApiKey, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateTodo as updateTodoStorage, duplicateLog, getAiContext, getMasterNote, linkLogs, unlinkLogs, isDemoMode, getFeatureEnabled, getStreak } from './storage';
 import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
 // demoData is only needed in demo mode — lazy-load it
 const loadDemoData = () => import('./demoData');
@@ -34,7 +34,7 @@ function isSlackConfigured(): boolean {
   try { return !!localStorage.getItem('threadlog_slack_webhook_url'); } catch { return false; }
 }
 
-import { formatDateFull, formatDateTimeFull } from './utils/dateFormat';
+import { formatDateFull, formatDateTimeFull, formatRelativeTime } from './utils/dateFormat';
 import { formatHandoffMarkdown, formatFullAiContext } from './formatHandoff';
 import { generateProjectContext } from './generateProjectContext';
 
@@ -878,8 +878,22 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     >
       {/* Greeting + Project Switcher */}
       <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', margin: '0 0 8px', color: 'var(--text-primary)', textAlign: 'center' }}>
-        {getGreeting(lang)}
+        {getGreeting(lang)}{(() => { const streak = getStreak(); return streak > 1 ? ` 🔥 ${streak}` : ''; })()}
       </h1>
+      {/* Quick stats */}
+      {(() => {
+        const pendingTodos = loadTodos().filter(t => !t.done && !t.archived).length;
+        const allLogs = loadLogs();
+        const lastLog = allLogs.length > 0 ? allLogs[allLogs.length - 1] : null;
+        const parts: string[] = [];
+        if (pendingTodos > 0) parts.push(`${pendingTodos} pending TODO${pendingTodos !== 1 ? 's' : ''}`);
+        if (lastLog) parts.push(`Last transform: ${formatRelativeTime(lastLog.createdAt, lang as 'en' | 'ja')}`);
+        return parts.length > 0 ? (
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', margin: '0 0 12px', fontWeight: 400 }}>
+            {parts.join(' · ')}
+          </p>
+        ) : null;
+      })()}
       {/* Post-generation preview panel */}
       {savedResult && (
         <div style={{ maxWidth: 760, margin: '0 auto', padding: 20 }}>
@@ -1040,6 +1054,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             {combined.length > 0 && (
               <span className="meta" style={{ fontSize: 11, color: overLimit ? 'var(--error-text)' : overWarn || willChunk ? 'var(--error-text)' : undefined }}>
                 {(text.length + files.reduce((sum, f) => sum + f.content.length, 0)).toLocaleString()}{t('chars', lang)}
+                {(() => { const wc = combined.trim() ? combined.trim().split(/\s+/).length : 0; const rm = Math.max(1, Math.ceil(wc / 200)); return wc > 0 ? ` · ${wc.toLocaleString()}${lang === 'ja' ? '語' : ' words'} · ${rm}${lang === 'ja' ? '分で読了' : ' min read'}` : ''; })()}
                 {(overWarn || willChunk) && !overLimit && t('longInputHint', lang)}
               </span>
             )}
