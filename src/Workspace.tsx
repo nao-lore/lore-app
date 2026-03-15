@@ -5,7 +5,7 @@ import { ChunkEngine, getChunkTarget, getEngineConcurrency } from './chunkEngine
 import type { EngineProgress } from './chunkEngine';
 import { findSession } from './chunkDb';
 import { addLog, trashLog, updateLog, getLog, getApiKey, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateTodo as updateTodoStorage, duplicateLog, getAiContext, getMasterNote, linkLogs, unlinkLogs, isDemoMode, getFeatureEnabled } from './storage';
-import { shouldUseBuiltinApi } from './provider';
+import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
 import { demoTransformBoth, demoTransformHandoff, demoTransformText, demoTransformTodoOnly, demoTransformHandoffTodo, getDemoConversation } from './demoData';
 import { classifyLog, saveCorrection } from './classify';
 import { extractDocxText } from './docx';

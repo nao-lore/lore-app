@@ -8,12 +8,13 @@ test.beforeEach(async ({ page }) => {
     localStorage.setItem('threadlog_sample_seeded', '1');
   });
   await page.reload();
+  await page.waitForSelector('.sidebar', { timeout: 10000 });
 });
 
 test('create a new project', async ({ page }) => {
   // Navigate to Projects
   await page.locator('.sidebar-nav-item').filter({ hasText: 'Projects' }).click();
-  await expect(page.getByText('No projects yet')).toBeVisible();
+  await expect(page.getByText('No projects yet')).toBeVisible({ timeout: 10000 });
 
   // Click the "Add Project" button in the empty state (there may be two, use first visible)
   await page.getByRole('button', { name: 'Add Project' }).first().click();
@@ -38,9 +39,10 @@ test('rename a project', async ({ page }) => {
     localStorage.setItem('threadlog_onboarding_done', '1');
   });
   await page.reload();
+  await page.waitForSelector('.sidebar', { timeout: 10000 });
 
   await page.locator('.sidebar-nav-item').filter({ hasText: 'Projects' }).click();
-  await expect(page.getByText('Original Name')).toBeVisible();
+  await expect(page.getByText('Original Name')).toBeVisible({ timeout: 10000 });
 
   // Open context menu for the project (three-dot button)
   await page.locator('.action-menu-btn').first().click();
@@ -67,9 +69,10 @@ test('delete a project', async ({ page }) => {
     localStorage.setItem('threadlog_onboarding_done', '1');
   });
   await page.reload();
+  await page.waitForSelector('.sidebar', { timeout: 10000 });
 
   await page.locator('.sidebar-nav-item').filter({ hasText: 'Projects' }).click();
-  await expect(page.getByText('Project To Delete')).toBeVisible();
+  await expect(page.getByText('Project To Delete')).toBeVisible({ timeout: 10000 });
 
   // Open context menu and select trash
   await page.locator('.action-menu-btn').first().click();

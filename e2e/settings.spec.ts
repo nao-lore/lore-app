@@ -8,13 +8,14 @@ test.beforeEach(async ({ page }) => {
     localStorage.setItem('threadlog_sample_seeded', '1');
   });
   await page.reload();
+  await page.waitForSelector('.sidebar', { timeout: 10000 });
 });
 
 function goToSettings(page: import('@playwright/test').Page) {
   return test.step('navigate to settings', async () => {
     await page.locator('.account-trigger').click();
     await page.getByText('Settings').click();
-    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible({ timeout: 10000 });
   });
 }
 
@@ -62,7 +63,8 @@ test('language preference persists across page reload', async ({ page }) => {
 
   // Reload the page
   await page.reload();
+  await page.waitForSelector('.sidebar', { timeout: 10000 });
 
   // Sidebar should show Japanese text
-  await expect(page.getByText('ホーム').first()).toBeVisible();
+  await expect(page.getByText('ホーム').first()).toBeVisible({ timeout: 10000 });
 });

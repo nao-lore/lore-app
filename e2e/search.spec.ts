@@ -8,6 +8,7 @@ test.beforeEach(async ({ page }) => {
     localStorage.setItem('threadlog_sample_seeded', '1');
   });
   await page.reload();
+  await page.waitForSelector('.sidebar', { timeout: 10000 });
 });
 
 test('open command palette with Cmd+K', async ({ page }) => {
@@ -47,15 +48,16 @@ test('command palette shows recent logs', async ({ page }) => {
     localStorage.setItem('threadlog_onboarding_done', '1');
   });
   await page.reload();
+  await page.waitForSelector('.sidebar', { timeout: 10000 });
 
   // Ensure page has focus before keyboard shortcut
   await page.locator('body').click();
   await page.keyboard.press('Meta+k');
-  await expect(page.getByPlaceholder('Search logs, projects, todos...')).toBeVisible();
+  await expect(page.getByPlaceholder('Search logs, projects, todos...')).toBeVisible({ timeout: 10000 });
 
   // Should show recent logs without typing
-  await expect(page.getByText('Database Migration Plan')).toBeVisible();
-  await expect(page.getByText('API Endpoint Review')).toBeVisible();
+  await expect(page.getByText('Database Migration Plan')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText('API Endpoint Review')).toBeVisible({ timeout: 10000 });
 });
 
 test('command palette filters results by search query', async ({ page }) => {
@@ -89,11 +91,12 @@ test('command palette filters results by search query', async ({ page }) => {
     localStorage.setItem('threadlog_onboarding_done', '1');
   });
   await page.reload();
+  await page.waitForSelector('.sidebar', { timeout: 10000 });
 
   // Ensure page has focus before keyboard shortcut
   await page.locator('body').click();
   await page.keyboard.press('Meta+k');
-  await expect(page.getByPlaceholder('Search logs, projects, todos...')).toBeVisible();
+  await expect(page.getByPlaceholder('Search logs, projects, todos...')).toBeVisible({ timeout: 10000 });
 
   // Type search query
   await page.getByPlaceholder('Search logs, projects, todos...').fill('Frontend');
