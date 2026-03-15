@@ -1,13 +1,11 @@
 import { useState, useRef } from 'react';
-import { Check, Download, Upload, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
+import { Check, Download, Upload, AlertTriangle } from 'lucide-react';
 import { getLang, setLang, getUiLang, exportAllData, validateBackup, importData, getDataUsage, formatBytes, getAutoReportSetting, setAutoReportSetting, isDemoMode, setDemoMode, getFeatureEnabled, setFeatureEnabled } from './storage';
 import { resetOnboarding } from './onboardingState';
 import type { ThemePref, LoreBackup } from './storage';
 import {
-  getActiveProvider, setActiveProvider,
   getProviderApiKey, setProviderApiKey,
-  PROVIDER_LABELS, PROVIDER_KEY_PLACEHOLDER,
-  PROVIDER_MODEL_LABELS,
+  PROVIDER_KEY_PLACEHOLDER,
 } from './provider';
 import type { ProviderName } from './provider';
 import { t, tf, OUTPUT_LANGS } from './i18n';
@@ -19,12 +17,6 @@ import {
   getNotionDatabaseId, setNotionDatabaseId,
   getSlackWebhookUrl, setSlackWebhookUrl,
 } from './integrations';
-
-const PROVIDER_DESC_KEYS: Record<ProviderName, 'providerDescGemini' | 'providerDescAnthropic' | 'providerDescOpenai'> = {
-  gemini: 'providerDescGemini',
-  anthropic: 'providerDescAnthropic',
-  openai: 'providerDescOpenai',
-};
 
 interface SettingsPanelProps {
   onBack: () => void;
@@ -40,7 +32,6 @@ interface SettingsPanelProps {
 }
 
 export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref, onThemeChange, fontSize, onFontSizeChange, showToast, onShowOnboarding, onResumeOnboarding }: SettingsPanelProps) {
-  const [activeProvider, setActiveProviderState] = useState<ProviderName>(getActiveProvider);
   const [keys, setKeys] = useState<Record<ProviderName, string>>(() => ({
     anthropic: getProviderApiKey('anthropic'),
     gemini: getProviderApiKey('gemini'),
@@ -49,10 +40,6 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
   const [savedProvider, setSavedProvider] = useState<ProviderName | null>(null);
   const [currentUiLang, setCurrentUiLang] = useState<Lang>(getUiLang());
   const [currentOutputLang, setCurrentOutputLang] = useState<string>(getLang());
-  const [otherProvidersOpen, setOtherProvidersOpen] = useState(() => {
-    // Default closed; open only if active provider is not gemini
-    return getActiveProvider() !== 'gemini' && getActiveProvider() !== undefined;
-  });
   const [importError, setImportError] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<{ backup: LoreBackup; mode: 'merge' | 'overwrite' } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -73,10 +60,6 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
   const [notionError, setNotionError] = useState('');
   const [slackError, setSlackError] = useState('');
 
-  const handleProviderChange = (p: ProviderName) => {
-    setActiveProviderState(p);
-    setActiveProvider(p);
-  };
 
   const validateApiKey = (p: ProviderName, key: string): string => {
     if (!key.trim()) return '';
