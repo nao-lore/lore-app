@@ -26,6 +26,7 @@ const DashboardView = lazy(() => import('./DashboardView'));
 const HelpView = lazy(() => import('./HelpView'));
 const WeeklyReportView = lazy(() => import('./WeeklyReportView'));
 const KnowledgeBaseView = lazy(() => import('./KnowledgeBaseView'));
+const PricingView = lazy(() => import('./PricingView'));
 import { loadLogs, loadProjects, loadTodos, loadMasterNotes, getUiLang, setUiLang, getTheme, setTheme as saveTheme, purgeExpiredTrash, updateLog, getLog, getAutoReportSetting, getLastReportDate, setLastReportDate, isDemoMode, setDemoMode, getFeatureEnabled } from './storage';
 import type { ThemePref } from './storage';
 import type { FontSize } from './types';
@@ -50,7 +51,7 @@ function safeRemoveItem(key: string): void {
   try { localStorage.removeItem(key); } catch { console.error(`Failed to remove localStorage key: ${key}`); }
 }
 
-type View = 'input' | 'detail' | 'settings' | 'history' | 'masternote' | 'projects' | 'todos' | 'trash' | 'summarylist' | 'projecthome' | 'timeline' | 'help' | 'weeklyreport' | 'knowledgebase' | 'dashboard';
+type View = 'input' | 'detail' | 'settings' | 'history' | 'masternote' | 'projects' | 'todos' | 'trash' | 'summarylist' | 'projecthome' | 'timeline' | 'help' | 'weeklyreport' | 'knowledgebase' | 'dashboard' | 'pricing';
 
 function resolveUiLang(): Lang {
   return getUiLang();
@@ -418,6 +419,7 @@ export default function App() {
   const renderWorkspace = () => {
     if (view === 'settings') return <SettingsPanel onBack={() => goTo(prevView === 'settings' ? 'input' : prevView)} lang={lang} onUiLangChange={handleUiLangChange} themePref={themePref} onThemeChange={handleThemeChange} fontSize={fontSize} onFontSizeChange={handleFontSizeChange} showToast={showToast} onShowOnboarding={() => setShowOnboarding(true)} onResumeOnboarding={onboardingPausedForSettings ? () => { setOnboardingPausedForSettings(false); setShowOnboarding(true); } : undefined} />;
     if (view === 'help') return <HelpView onBack={() => goTo(prevView === 'help' ? 'input' : prevView)} lang={lang} onShowOnboarding={() => setShowOnboarding(true)} onFeedback={() => setHelpFeedbackOpen(true)} />;
+    if (view === 'pricing') return <PricingView onBack={() => goTo(prevView === 'pricing' ? 'input' : prevView)} lang={lang} showToast={showToast} />;
     if (view === 'history') return <HistoryView logs={logs} onSelect={handleSelect} onBack={() => goTo('input')} onRefresh={refreshLogs} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onOpenMasterNote={handleOpenMasterNote} onOpenProject={handleOpenProjectLogs} tagFilter={tagFilter} onClearTagFilter={() => setTagFilter(null)} onTagFilter={setTagFilter} onDuplicate={(newId) => { refreshLogs(); handleSelect(newId); }} />;
     if (view === 'todos') return <TodoView logs={logs} onBack={() => goTo(prevView === 'todos' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} />;
     if (view === 'dashboard') return <DashboardView logs={logs} projects={projects} todos={todos} masterNotes={masterNotes} lang={lang} onOpenLog={handleSelect} onOpenProject={handleOpenProjectLogs} onOpenTodos={() => goTo('todos')} onOpenSummaryList={() => goTo('summarylist')} onOpenHistory={() => goTo('history')} onNewLog={() => goTo('input')} onToggleAction={(logId, actionIndex) => {
@@ -500,6 +502,7 @@ export default function App() {
           onOpenWeeklyReport={() => goTo('weeklyreport')}
           onOpenTrash={() => goTo('trash')}
           onOpenHelp={() => goTo('help')}
+          onOpenPricing={() => goTo('pricing')}
           onCollapse={() => { setSidebarOpen(false); safeSetItem(SIDEBAR_KEY, 'collapsed'); }}
           onHide={() => { setSidebarOpen(false); setSidebarHidden(true); safeSetItem(SIDEBAR_KEY, 'hidden'); }}
           onSelectProject={handleOpenProjectLogs}

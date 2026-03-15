@@ -96,6 +96,7 @@ interface SidebarProps {
   onOpenWeeklyReport?: () => void;
   onOpenTrash: () => void;
   onOpenHelp: () => void;
+  onOpenPricing?: () => void;
   onCollapse: () => void;
   onHide?: () => void;
   onSelectProject: (id: string) => void;
@@ -109,7 +110,7 @@ interface SidebarProps {
 
 const MAX_PINNED = 5;
 
-export default function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSelect, onNewLog, onOpenSettings, onOpenHistory, onOpenProjects, onOpenTodos, onOpenProjectSummaryList, onOpenDashboard, onOpenTimeline, onOpenWeeklyReport, onOpenTrash, onOpenHelp, onCollapse, onSelectProject, onOpenMasterNote, onRefresh, onDeleted, lang, showToast, todos }: SidebarProps) {
+export default function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSelect, onNewLog, onOpenSettings, onOpenHistory, onOpenProjects, onOpenTodos, onOpenProjectSummaryList, onOpenDashboard, onOpenTimeline, onOpenWeeklyReport, onOpenTrash, onOpenHelp, onOpenPricing, onCollapse, onSelectProject, onOpenMasterNote, onRefresh, onDeleted, lang, showToast, todos }: SidebarProps) {
   const [menuState, setMenuState] = useState<{ logId: string; rect: DOMRect } | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
@@ -463,7 +464,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
         <div className="account-avatar">U</div>
         <div className="account-info">
           <span className="account-name">{t('accountMenuUser', lang)}</span>
-          <span className="account-plan">{t('accountMenuPlan', lang)}</span>
+          <span className="account-plan" onClick={(e) => { e.stopPropagation(); onOpenPricing?.(); }} style={{ cursor: 'pointer' }}>{t('accountMenuPlan', lang)}</span>
         </div>
         <ChevronUp size={14} className="account-menu-chevron" />
       </button>
