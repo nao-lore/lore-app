@@ -78,7 +78,7 @@ export async function generateWeeklyReport(opts: GenerateWeeklyReportOptions): P
 
   // Add TODO context
   const weekTodos = todos.filter((td) => {
-    const created = new Date(td.createdAt).toISOString().slice(0, 10);
+    const created = new Date(td.createdAt).toLocaleDateString('sv-SE');
     return created >= weekStart && created <= weekEnd;
   });
   if (weekTodos.length > 0) {

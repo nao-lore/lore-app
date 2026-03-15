@@ -6,7 +6,8 @@ import type { EngineProgress } from './chunkEngine';
 import { findSession } from './chunkDb';
 import { addLog, trashLog, restoreLog, updateLog, getLog, getApiKey, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateTodo as updateTodoStorage, duplicateLog, getAiContext, getMasterNote, linkLogs, unlinkLogs, isDemoMode, getFeatureEnabled } from './storage';
 import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
-import { demoTransformBoth, demoTransformHandoff, demoTransformText, demoTransformTodoOnly, demoTransformHandoffTodo, getDemoConversation } from './demoData';
+// demoData is only needed in demo mode — lazy-load it
+const loadDemoData = () => import('./demoData');
 import { classifyLog, saveCorrection } from './classify';
 import { extractDocxText } from './docx';
 import { parseConversationJson } from './jsonImport';
@@ -22,13 +23,35 @@ import type { Lang } from './i18n';
 import ConfirmDialog from './ConfirmDialog';
 import ErrorRetryBanner from './ErrorRetryBanner';
 import { analyzeWorkload, WORKLOAD_CONFIG } from './workload';
-import { sendToNotion, sendToSlack, isNotionConfigured, isSlackConfigured } from './integrations';
+// integrations: isConfigured checks are inlined (lightweight localStorage reads);
+// sendToNotion/sendToSlack are dynamically imported only when actually sending
+function isNotionConfigured(): boolean {
+  try { return !!(localStorage.getItem('threadlog_notion_api_key') && localStorage.getItem('threadlog_notion_database_id')); } catch { return false; }
+}
+function isSlackConfigured(): boolean {
+  try { return !!localStorage.getItem('threadlog_slack_webhook_url'); } catch { return false; }
+}
 
 import { formatDateFull, formatDateTimeFull } from './utils/dateFormat';
 import { formatHandoffMarkdown, formatFullAiContext } from './formatHandoff';
 import { generateProjectContext } from './generateProjectContext';
 
 const formatDateUnified = formatDateFull;
+
+async function copyToClipboard(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  }
+}
 
 function downloadFile(content: string, fileName: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
@@ -82,6 +105,8 @@ interface CaptureInfo {
 }
 
 async function readFileContent(file: File): Promise<{ content: string; lastModified: number }> {
+  if (file.size === 0) throw new Error('File is empty');
+  if (file.size > 50_000_000) throw new Error('File too large (max 50MB)');
   const name = file.name.toLowerCase();
   if (name.endsWith('.txt') || name.endsWith('.md')) {
     const content = await new Promise<string>((resolve, reject) => {
@@ -203,7 +228,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
   // Pre-fill demo conversation if demo mode and empty
   useEffect(() => {
     if (isDemoMode() && !text && files.length === 0) {
-      setText(getDemoConversation(lang));
+      loadDemoData().then(({ getDemoConversation }) => setText(getDemoConversation(lang)));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -347,9 +372,10 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       let lastEntryId: string | null = null;
       let savedHandoffLog: LogEntry | null = null;
 
-      // --- Demo mode — return pre-generated results ---
+      // --- Demo mode — return pre-generated results (lazy-loaded) ---
       if (demo) {
         setSimStep(1);
+        const { demoTransformBoth, demoTransformHandoff, demoTransformText, demoTransformTodoOnly, demoTransformHandoffTodo } = await loadDemoData();
         if (isBoth) {
           const bothResult = await demoTransformBoth(lang);
           setSimStep(4);
@@ -703,7 +729,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       ? handoffResultToMarkdown(result as HandoffResult)
       : logToMarkdown(result as TransformResult);
     try {
-      await navigator.clipboard.writeText(md);
+      await copyToClipboard(md);
       setCopied(true); setTimeout(() => setCopied(false), 2000);
       showToast?.(t('logCopied', lang), 'success');
     } catch {
@@ -1625,6 +1651,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
     }
     setSendingNotion(true);
     try {
+      const { sendToNotion } = await import('./integrations');
       await sendToNotion(log);
       showToast?.(t('notionSent', lang), 'success');
     } catch (err) {
@@ -1642,6 +1669,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
     }
     setSendingSlack(true);
     try {
+      const { sendToSlack } = await import('./integrations');
       await sendToSlack(logToMarkdown(log));
       showToast?.(t('slackSent', lang), 'success');
     } catch (err) {

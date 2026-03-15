@@ -11,7 +11,10 @@ import Onboarding from './Onboarding';
 import ErrorBoundary from './ErrorBoundary';
 import FeedbackModal from './FeedbackModal';
 import { isOnboardingDone } from './onboardingState';
-import { seedSampleData, isSampleSeeded } from './sampleData';
+// sampleData is large (~874 lines) and only needed on first launch — lazy-load it
+function isSampleSeeded(): boolean {
+  return localStorage.getItem('threadlog_sample_seeded') === '1';
+}
 
 const HistoryView = lazy(() => import('./HistoryView'));
 const SettingsPanel = lazy(() => import('./SettingsPanel'));
@@ -262,8 +265,9 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // only on mount
 
-  const handleOnboardingClose = useCallback(() => {
+  const handleOnboardingClose = useCallback(async () => {
     if (!isSampleSeeded()) {
+      const { seedSampleData } = await import('./sampleData');
       seedSampleData(lang);
       setLogsVersion((v) => v + 1);
     }
