@@ -456,7 +456,14 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', height: '100%' }}>
-      {!sidebarOpen && (
+      {!sidebarOpen && !sidebarHidden && (
+        <div style={{ width: 48, minWidth: 48, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 14, gap: 4, background: 'transparent' }}>
+          <button className="toggle-btn" onClick={() => { setSidebarOpen(true); safeSetItem(SIDEBAR_KEY, 'open'); }} title={t('showSidebar', lang)} aria-label={t('ariaShowSidebar', lang)}>
+            <Menu size={18} />
+          </button>
+        </div>
+      )}
+      {!sidebarOpen && sidebarHidden && (
         <button
           className="mobile-menu-btn"
           onClick={() => { setSidebarHidden(false); setSidebarOpen(true); safeSetItem(SIDEBAR_KEY, 'open'); }}
@@ -465,11 +472,6 @@ export default function App() {
         >
           <Menu size={20} />
         </button>
-      )}
-      {!sidebarOpen && !sidebarHidden && (
-        <div style={{ width: 52, minWidth: 52, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 14 }}>
-          <button className="toggle-btn" onClick={() => { setSidebarOpen(true); safeSetItem(SIDEBAR_KEY, 'open'); }} title={t('showSidebar', lang)} aria-label={t('ariaShowSidebar', lang)}>◫</button>
-        </div>
       )}
       {sidebarHidden && (
         <div
