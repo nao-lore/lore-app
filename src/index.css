@@ -2764,13 +2764,13 @@ textarea.input:focus {
 
 /* ===== Search highlight ===== */
 .search-highlight {
-  background: rgba(250, 204, 21, 0.35);
+  background: rgba(250, 204, 21, 0.50);
   color: inherit;
   border-radius: 2px;
   padding: 0 1px;
 }
 [data-theme="dark"] .search-highlight {
-  background: rgba(250, 204, 21, 0.25);
+  background: rgba(234, 179, 8, 0.35);
 }
 
 /* ===== Date filter panel ===== */
@@ -3132,6 +3132,7 @@ textarea.input:focus {
   }
   .input-card-textarea {
     padding: 14px 16px;
+    min-height: 120px;
   }
 
   /* Page header: allow wrapping */
@@ -3190,6 +3191,14 @@ textarea.input:focus {
   /* Empty state: reduce padding */
   .empty-state {
     padding: 32px 16px;
+  }
+}
+
+/* ===== Small mobile: full-width modals ===== */
+@media (max-width: 640px) {
+  .confirm-dialog {
+    width: calc(100vw - 32px) !important;
+    max-width: none !important;
   }
 }
 
@@ -3461,6 +3470,7 @@ button:focus-visible,
   background: var(--bg-primary);
   padding-bottom: 12px;
   margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 /* ─── Micro-interactions ─── */
