@@ -343,14 +343,14 @@ h4 {
 }
 
 .btn-primary {
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 80%, #a855f7) 100%);
   color: #fff;
   border-color: transparent;
   font-weight: 600;
   transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .btn-primary:hover {
-  background: var(--accent-hover);
+  background: linear-gradient(135deg, var(--accent-hover) 0%, color-mix(in srgb, var(--accent-hover) 80%, #a855f7) 100%);
   border-color: transparent;
   color: #fff;
   box-shadow: 0 4px 12px rgba(124, 92, 252, 0.25);
@@ -2199,20 +2199,25 @@ textarea.input:focus {
   justify-content: flex-end;
 }
 
+/* ===== Glassmorphism sidebar ===== */
+@supports (backdrop-filter: blur(1px)) {
+  .sidebar {
+    background: color-mix(in srgb, var(--bg-sidebar) 92%, transparent) !important;
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  }
+}
+
 /* ===== Scrollbar ===== */
-::-webkit-scrollbar {
-  width: 5px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: var(--scrollbar);
-  border-radius: 3px;
+  background: linear-gradient(180deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 60%, transparent) 100%);
+  border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-hover);
-}
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+/* Firefox */
+* { scrollbar-width: thin; scrollbar-color: var(--accent) transparent; }
 
 /* ===== Command Palette (Cmd+K) ===== */
 .palette-overlay {
