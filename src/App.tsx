@@ -138,11 +138,24 @@ export default function App() {
   const masterNotes = loadMasterNotes();
   void logsVersion;
 
-  // Tab title: show pending TODO count
+  // Tab title: show pending TODO count + current view
   const pendingCount = useMemo(() => todos.filter((td) => !td.done).length, [todos]);
   useEffect(() => {
-    document.title = pendingCount > 0 ? `Lore (${pendingCount})` : 'Lore';
-  }, [pendingCount]);
+    const viewTitleMap: Partial<Record<View, string>> = {
+      dashboard: 'Dashboard — Lore',
+      todos: 'TODO — Lore',
+      history: 'Logs — Lore',
+      timeline: 'Timeline — Lore',
+      projects: 'Projects — Lore',
+      settings: 'Settings — Lore',
+      help: 'Help — Lore',
+      pricing: 'Pricing — Lore',
+    };
+    // detail view: keep current title unchanged
+    if (view === 'detail') return;
+    const base = viewTitleMap[view] || 'Lore';
+    document.title = pendingCount > 0 ? `(${pendingCount}) ${base}` : base;
+  }, [pendingCount, view]);
 
   // Overdue TODO banner
   const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
