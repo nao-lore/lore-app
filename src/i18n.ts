@@ -44,7 +44,7 @@ const labels = {
   ctxChangeProjectPrompt: { ja: '番号を入力:', en: 'Enter number:', es: 'Ingrese número:', fr: 'Entrez le numéro :', de: 'Nummer eingeben:', zh: '请输入编号:', ko: '번호를 입력하세요:', pt: 'Digite o número:' },
 
   // Command palette
-  searchPlaceholder: { ja: 'ログ・プロジェクト・TODOを検索...', en: 'Search logs, projects, todos...', es: 'Buscar registros, proyectos, TODOs...', fr: 'Rechercher logs, projets, TODOs...', de: 'Logs, Projekte, TODOs durchsuchen...', zh: '搜索日志、项目、TODO...', ko: '로그, 프로젝트, TODO 검색...', pt: 'Pesquisar registros, projetos, TODOs...' },
+  searchPlaceholder: { ja: 'ログ・プロジェクト・TODOを検索... ⌘K', en: 'Search logs, projects, todos... ⌘K', es: 'Buscar registros, proyectos, TODOs... ⌘K', fr: 'Rechercher logs, projets, TODOs... ⌘K', de: 'Logs, Projekte, TODOs durchsuchen... ⌘K', zh: '搜索日志、项目、TODO... ⌘K', ko: '로그, 프로젝트, TODO 검색... ⌘K', pt: 'Pesquisar registros, projetos, TODOs... ⌘K' },
   searchNoResults: { ja: '結果なし', en: 'No results', es: 'Sin resultados', fr: 'Aucun résultat', de: 'Keine Ergebnisse', zh: '无结果', ko: '결과 없음', pt: 'Sem resultados' },
   searchHint: { ja: '⌘K で検索', en: '⌘K to search', es: '⌘K para buscar', fr: '⌘K pour rechercher', de: '⌘K zum Suchen', zh: '⌘K 搜索', ko: '⌘K 검색', pt: '⌘K para pesquisar' },
 

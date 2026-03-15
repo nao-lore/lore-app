@@ -756,9 +756,23 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
               <span style={{
                 color: isOverdue(todo.dueDate) && !todo.done ? 'var(--error-text)' : isDueToday(todo.dueDate) ? 'var(--accent-text)' : undefined,
                 fontWeight: isOverdue(todo.dueDate) && !todo.done ? 500 : undefined,
+                display: 'inline-flex', alignItems: 'center', gap: 4,
               }}>
                 {isOverdue(todo.dueDate) && !todo.done ? t('todoOverdue', lang) + ': ' : isDueToday(todo.dueDate) ? t('todoToday', lang) + ': ' : t('todoDueDate', lang) + ': '}
                 {todo.dueDate}
+                {isOverdue(todo.dueDate) && !todo.done && (
+                  <span style={{
+                    color: '#ef4444',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    padding: '0px 5px',
+                    borderRadius: 3,
+                    lineHeight: '16px',
+                  }}>
+                    {lang === 'ja' ? '期限切れ' : 'Overdue'}
+                  </span>
+                )}
               </span>
             )}
             {todo.snoozedUntil && todo.snoozedUntil > now && (
