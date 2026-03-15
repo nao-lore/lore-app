@@ -318,7 +318,7 @@ h4 {
   cursor: pointer;
   background: var(--bg-surface);
   color: var(--text-muted);
-  transition: all 0.12s ease;
+  transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
   min-height: 44px;
   box-shadow: none;
   letter-spacing: -0.01em;
@@ -347,7 +347,7 @@ h4 {
   color: #fff;
   border-color: transparent;
   font-weight: 600;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .btn-primary:hover {
   background: var(--accent-hover);
@@ -601,7 +601,7 @@ textarea.input:focus {
   border-radius: 8px;
   cursor: pointer;
   border-left: none;
-  transition: all 0.12s ease;
+  transition: all 0.12s cubic-bezier(0.22, 1, 0.36, 1);
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-body);
@@ -649,7 +649,7 @@ textarea.input:focus {
   font-family: inherit;
   color: var(--text-body);
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: all 0.12s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .sidebar-nav-item:hover {
   background: var(--interactive-hover);
@@ -1396,7 +1396,7 @@ textarea.input:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.12s ease;
+  transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
   flex-shrink: 0;
 }
 .toggle-btn:hover {
@@ -1459,7 +1459,7 @@ textarea.input:focus {
 }
 .content-card-clickable {
   cursor: pointer;
-  transition: border-color 0.12s, box-shadow 0.12s, transform 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.12s, box-shadow 0.12s, transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.15s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .content-card-clickable:hover {
   border-color: var(--border-hover);
@@ -3350,7 +3350,7 @@ button:focus-visible,
   to { opacity: 1; }
 }
 .view-fade-in {
-  animation: view-fade-in 0.15s ease-out;
+  animation: view-fade-in 0.15s cubic-bezier(0.22, 1, 0.36, 1);
   width: 100%;
   height: 100%;
   display: flex;
@@ -3545,10 +3545,10 @@ button:focus-visible,
   to { opacity: 0; transform: scale(0.95); }
 }
 .shortcuts-modal, .confirm-dialog {
-  animation: modal-scale-in 0.15s ease-out;
+  animation: modal-scale-in 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .shortcuts-modal[data-closing], .confirm-dialog[data-closing] {
-  animation: modal-scale-out 0.12s ease-in forwards;
+  animation: modal-scale-out 0.12s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Error retry banner */
