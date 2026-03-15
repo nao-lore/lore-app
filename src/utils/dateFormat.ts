@@ -48,3 +48,20 @@ export function formatDateTimeFull(iso: string): string {
   const mi = String(d.getMinutes()).padStart(2, '0');
   return `${y}/${mo}/${day} ${h}:${mi}`;
 }
+
+/** Relative time: "just now", "2m ago", "3h ago", "Yesterday", or fallback to formatDateFull */
+export function formatRelativeTime(iso: string, locale: 'en' | 'ja' = 'en'): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  if (diffMs < 0) return formatDateFull(iso);
+
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHour = Math.floor(diffMs / 3600000);
+
+  if (diffMin < 1) return locale === 'ja' ? 'たった今' : 'just now';
+  if (diffMin < 60) return locale === 'ja' ? `${diffMin}分前` : `${diffMin}m ago`;
+  if (diffHour < 24) return locale === 'ja' ? `${diffHour}時間前` : `${diffHour}h ago`;
+  if (diffHour < 48) return locale === 'ja' ? '昨日' : 'Yesterday';
+  return formatDateFull(iso);
+}

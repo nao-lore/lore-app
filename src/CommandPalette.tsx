@@ -1,11 +1,18 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { ScrollText, FolderOpen, CheckSquare, BookOpen } from 'lucide-react';
+import { ScrollText, FolderOpen, CheckSquare, BookOpen, Terminal } from 'lucide-react';
 import type { LogEntry, Project, MasterNote } from './types';
 import { loadTodos } from './storage';
 import { search } from './search';
 import type { SearchResult } from './search';
 import { t } from './i18n';
 import type { Lang } from './i18n';
+
+interface ActionCommand {
+  id: string;
+  label: string;
+  keywords: string[];
+  action: () => void;
+}
 
 interface CommandPaletteProps {
   logs: LogEntry[];
@@ -16,9 +23,13 @@ interface CommandPaletteProps {
   onSelectSummary: (projectId: string) => void;
   onClose: () => void;
   lang: Lang;
+  // Action command callbacks (optional)
+  onNavigate?: (view: string) => void;
+  onToggleTheme?: (theme: 'light' | 'dark') => void;
+  onNewProject?: () => void;
 }
 
-export default function CommandPalette({ logs, projects, masterNotes, onSelectLog, onSelectProject, onSelectSummary, onClose, lang }: CommandPaletteProps) {
+export default function CommandPalette({ logs, projects, masterNotes, onSelectLog, onSelectProject, onSelectSummary, onClose, lang, onNavigate, onToggleTheme, onNewProject }: CommandPaletteProps) {
   const [query, setQueryRaw] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const setQuery = useCallback((q: string) => { setQueryRaw(q); setSelectedIndex(0); }, []);
@@ -43,6 +54,35 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
     return m;
   }, [logs]);
 
+  // --- Action commands mode (triggered by ">" prefix) ---
+  const isCommandMode = query.startsWith('>');
+
+  const actionCommands = useMemo((): ActionCommand[] => {
+    const cmds: ActionCommand[] = [];
+    if (onNewProject) {
+      cmds.push({ id: 'cmd-new-project', label: 'New Project', keywords: ['new', 'project', 'create'], action: onNewProject });
+    }
+    if (onToggleTheme) {
+      cmds.push({ id: 'cmd-dark-mode', label: 'Toggle Dark Mode', keywords: ['dark', 'mode', 'theme', 'toggle'], action: () => onToggleTheme('dark') });
+      cmds.push({ id: 'cmd-light-mode', label: 'Toggle Light Mode', keywords: ['light', 'mode', 'theme', 'toggle'], action: () => onToggleTheme('light') });
+    }
+    if (onNavigate) {
+      cmds.push({ id: 'cmd-open-settings', label: 'Open Settings', keywords: ['settings', 'preferences', 'config', 'open'], action: () => onNavigate('settings') });
+      cmds.push({ id: 'cmd-open-dashboard', label: 'Open Dashboard', keywords: ['dashboard', 'home', 'open'], action: () => onNavigate('dashboard') });
+    }
+    return cmds;
+  }, [onNewProject, onToggleTheme, onNavigate]);
+
+  const filteredCommands = useMemo((): ActionCommand[] => {
+    if (!isCommandMode) return [];
+    const cmdQuery = query.slice(1).trim().toLowerCase();
+    if (!cmdQuery) return actionCommands;
+    return actionCommands.filter((cmd) =>
+      cmd.label.toLowerCase().includes(cmdQuery) ||
+      cmd.keywords.some((kw) => kw.includes(cmdQuery))
+    );
+  }, [isCommandMode, query, actionCommands]);
+
   /** Build a content preview (~80 chars) from a log's fields */
   const getContentPreview = useCallback((log: LogEntry): string | undefined => {
     const parts = [
@@ -59,6 +99,7 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
   }, []);
 
   const results = useMemo((): SearchResult[] => {
+    if (isCommandMode) return []; // Commands handled separately
     const q = query.trim();
     if (!q) {
       // Show recent logs when empty
@@ -71,7 +112,10 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
     }
 
     return search(q, { logs, projects, todos, masterNotes, projectMap }, 30);
-  }, [query, logs, projects, todos, masterNotes, projectMap]);
+  }, [query, isCommandMode, logs, projects, todos, masterNotes, projectMap]);
+
+  // Unified item count for keyboard navigation
+  const totalItems = isCommandMode ? filteredCommands.length : results.length;
 
   // Scroll selected item into view
   useEffect(() => {
@@ -89,16 +133,25 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
     onClose();
   };
 
+  const handleCommandSelect = (cmd: ActionCommand) => {
+    cmd.action();
+    onClose();
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, results.length - 1));
+      setSelectedIndex((i) => Math.min(i + 1, totalItems - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setSelectedIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (results[selectedIndex]) handleSelect(results[selectedIndex]);
+      if (isCommandMode) {
+        if (filteredCommands[selectedIndex]) handleCommandSelect(filteredCommands[selectedIndex]);
+      } else {
+        if (results[selectedIndex]) handleSelect(results[selectedIndex]);
+      }
     } else if (e.key === 'Escape') {
       onClose();
     }
@@ -185,9 +238,9 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
           className="palette-input"
           type="text"
           role="combobox"
-          aria-expanded={results.length > 0}
+          aria-expanded={totalItems > 0}
           aria-controls="palette-listbox"
-          aria-activedescendant={results.length > 0 ? `palette-option-${selectedIndex}` : undefined}
+          aria-activedescendant={totalItems > 0 ? `palette-option-${selectedIndex}` : undefined}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -195,7 +248,42 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
           maxLength={200}
         />
         <div className="palette-results" ref={listRef} id="palette-listbox" role="listbox" aria-label={t('searchPlaceholder', lang)}>
-          {results.length === 0 ? (
+          {isCommandMode ? (
+            filteredCommands.length === 0 ? (
+              <div className="palette-empty">{t('searchNoResults', lang)}</div>
+            ) : (
+              filteredCommands.map((cmd, i) => (
+                <button
+                  key={cmd.id}
+                  id={`palette-option-${i}`}
+                  role="option"
+                  aria-selected={i === selectedIndex}
+                  className={`palette-item${i === selectedIndex ? ' active' : ''}`}
+                  onClick={() => handleCommandSelect(cmd)}
+                  onMouseEnter={() => setSelectedIndex(i)}
+                >
+                  <Terminal size={14} style={{ color: 'var(--accent-text)', flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span className="palette-item-title">{cmd.label}</span>
+                      <span style={{
+                        fontSize: 10,
+                        color: 'var(--accent-text)',
+                        background: 'var(--bg-surface)',
+                        padding: '1px 6px',
+                        borderRadius: 3,
+                        flexShrink: 0,
+                        lineHeight: '16px',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        Command
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              ))
+            )
+          ) : results.length === 0 ? (
             <div className="palette-empty">{t('searchNoResults', lang)}</div>
           ) : (
             results.map((r, i) => (

@@ -147,7 +147,7 @@ function buildPreview(log: LogEntry): string {
 }
 
 import { matchesLogQuery } from './search';
-import { formatDateFull, formatDateGroup } from './utils/dateFormat';
+import { formatDateFull, formatDateGroup, formatRelativeTime } from './utils/dateFormat';
 
 function matchesQuery(log: LogEntry, query: string): boolean {
   return matchesLogQuery(log, query);
@@ -592,7 +592,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
             )}
             <span className={log.outputMode === 'handoff' ? 'badge-handoff' : 'badge-worklog'}>{modeLabel}</span>
             <span className="meta" style={{ fontSize: 11, color: today ? 'var(--accent-text)' : undefined, fontWeight: today ? 500 : undefined }}>
-              {formatDateFull(log.createdAt)}
+              {formatRelativeTime(log.createdAt, lang === 'ja' ? 'ja' : 'en')}
             </span>
             {!activeProjectId && log.projectId && (() => {
               const proj = projects.find((p) => p.id === log.projectId);
@@ -703,7 +703,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
           {modeLabel}
         </span>
         <span className="list-row-title"><Highlight text={log.title} query={debouncedQuery} /></span>
-        <span className="meta" style={{ fontSize: 11, flexShrink: 0, whiteSpace: 'nowrap' }}>{formatDateFull(log.createdAt)}</span>
+        <span className="meta" style={{ fontSize: 11, flexShrink: 0, whiteSpace: 'nowrap' }}>{formatRelativeTime(log.createdAt, lang === 'ja' ? 'ja' : 'en')}</span>
         {!selectMode && (
           <div style={{ position: 'relative', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
             <button className="action-menu-btn" aria-label={t('ariaMenu', lang)} style={{ opacity: 0 }} onClick={() => setActionSheetLog(actionSheetLog?.id === log.id ? null : log)}>

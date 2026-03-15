@@ -675,6 +675,9 @@ export default function App() {
           onSelectSummary={handleOpenMasterNote}
           onClose={() => setPaletteOpen(false)}
           lang={lang}
+          onNavigate={(view) => { setPaletteOpen(false); goTo(view as View); }}
+          onToggleTheme={(theme) => { handleThemeChange(theme); }}
+          onNewProject={() => { setPaletteOpen(false); goTo('projects' as View); }}
         />
       )}
       {showOnboarding && (

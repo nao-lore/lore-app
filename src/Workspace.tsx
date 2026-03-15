@@ -1479,6 +1479,8 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
   const [analyzingWorkload, setAnalyzingWorkload] = useState(false);
   const [sendingNotion, setSendingNotion] = useState(false);
   const [sendingSlack, setSendingSlack] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   void todosVersion;
 
   // Prev/next navigation
@@ -1613,12 +1615,18 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
     }
   };
 
+  const flashSaved = () => {
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    setShowSaved(true);
+    savedTimerRef.current = setTimeout(() => setShowSaved(false), 2000);
+  };
+
   const handleTitleSave = () => {
     const trimmed = titleDraft.trim();
     if (trimmed && trimmed !== log?.title) {
       updateLog(id, { title: trimmed, updatedAt: new Date().toISOString() });
       onRefresh();
-      showToast?.(t('titleUpdated', lang), 'success');
+      flashSaved();
     }
     setEditingTitle(false);
   };
@@ -1631,7 +1639,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
     updateLog(id, { memo: memoDraft.trim() || undefined, updatedAt: new Date().toISOString() });
     setEditingMemo(false);
     onRefresh();
-    showToast?.(t('memoSaved', lang), 'success');
+    flashSaved();
   };
 
   const handleAnalyzeWorkload = async () => {
@@ -1684,16 +1692,55 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
     }
   };
 
-  const backLabel = prevView === 'history' ? t('backToLogs', lang) : t('back', lang);
   const isHandoff = log.outputMode === 'handoff';
   const project = log.projectId ? projects.find((p) => p.id === log.projectId) : undefined;
 
   return (
     <div className="workspace-content">
       <div className="page-header">
-        <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
-          ← {backLabel}
-        </button>
+        <nav style={{ display: 'flex', alignItems: 'center', fontSize: 12, marginBottom: 12, flexWrap: 'wrap', gap: 2 }}>
+          <span
+            style={{ color: 'var(--text-muted)', cursor: 'pointer', textDecoration: 'none' }}
+            onClick={onBack}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter') onBack(); }}
+          >
+            {t('logs', lang)}
+          </span>
+          {project && (
+            <>
+              <span style={{ color: 'var(--text-muted)', margin: '0 2px' }}>{' › '}</span>
+              <span
+                style={{
+                  color: 'var(--text-muted)',
+                  cursor: onOpenMasterNote ? 'pointer' : 'default',
+                }}
+                onClick={() => onOpenMasterNote?.(project.id)}
+                role={onOpenMasterNote ? 'button' : undefined}
+                tabIndex={onOpenMasterNote ? 0 : undefined}
+                onKeyDown={onOpenMasterNote ? (e) => { if (e.key === 'Enter') onOpenMasterNote(project.id); } : undefined}
+              >
+                {project.icon && <span style={{ marginRight: 3 }}>{project.icon}</span>}
+                {project.name}
+              </span>
+            </>
+          )}
+          <span style={{ color: 'var(--text-muted)', margin: '0 2px' }}>{' › '}</span>
+          <span
+            style={{
+              color: 'var(--text-secondary)',
+              fontWeight: 600,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              maxWidth: 300,
+            }}
+            title={log.title}
+          >
+            {log.title}
+          </span>
+        </nav>
         <div className="page-header-row">
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
@@ -1765,6 +1812,12 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
                 >
                   {log.title}
                 </h2>
+              )}
+              {showSaved && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12, color: '#22c55e', fontWeight: 500, flexShrink: 0, transition: 'opacity 0.3s', whiteSpace: 'nowrap' }}>
+                  <Check size={14} />
+                  {lang === 'ja' ? '保存済み' : 'Saved'}
+                </span>
               )}
               <button
                 className="card-menu-btn"
