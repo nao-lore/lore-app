@@ -1,13 +1,18 @@
 {
   "name": "Lore",
   "short_name": "Lore",
-  "description": "Automatically generate work logs and handoff notes from AI conversations",
+  "description": "Turn AI conversations into structured work logs and handoff notes. Capture threads from ChatGPT, Claude, and Gemini automatically.",
   "start_url": "/",
+  "id": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#0e0e10",
   "theme_color": "#7c5cfc",
+  "categories": ["productivity", "utilities"],
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

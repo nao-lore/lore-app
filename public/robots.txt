@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://lore-app.vercel.app/sitemap.xml
