@@ -14,5 +14,28 @@
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    {
+      "src": "/docs/screenshots/home-input.png",
+      "sizes": "1370x890",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Home screen with AI conversation input and handoff creation"
+    },
+    {
+      "src": "/docs/screenshots/dashboard.png",
+      "sizes": "730x480",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard with today's focus, projects, and activity trends"
+    },
+    {
+      "src": "/docs/screenshots/timeline.png",
+      "sizes": "730x480",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Timeline view with activity heatmap and history"
+    }
   ]
 }

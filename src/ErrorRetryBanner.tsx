@@ -4,11 +4,12 @@ import { X } from 'lucide-react';
 interface ErrorRetryBannerProps {
   message: string;
   retryLabel?: string;
+  dismissLabel?: string;
   onRetry?: () => void;
   onDismiss?: () => void;
 }
 
-export default function ErrorRetryBanner({ message, retryLabel = 'Retry', onRetry, onDismiss }: ErrorRetryBannerProps) {
+export default function ErrorRetryBanner({ message, retryLabel, dismissLabel, onRetry, onDismiss }: ErrorRetryBannerProps) {
   const [retrying, setRetrying] = useState(false);
 
   const handleRetry = () => {
@@ -53,7 +54,7 @@ export default function ErrorRetryBanner({ message, retryLabel = 'Retry', onRetr
             display: 'flex',
             alignItems: 'center',
           }}
-          aria-label="Dismiss"
+          aria-label={dismissLabel || 'Dismiss'}
         >
           <X size={14} />
         </button>

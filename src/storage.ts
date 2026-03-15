@@ -17,12 +17,13 @@ const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 const MAX_MN_SNAPSHOTS = 50;
 
-/** Safely write to localStorage, silently catching QuotaExceededError */
+/** Safely write to localStorage, dispatching event on quota exceeded */
 function safeSetItem(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // QuotaExceededError — silently ignore to prevent app crash
+  try { localStorage.setItem(key, value); } catch (e) {
+    if (import.meta.env.DEV) console.error(`Failed to write localStorage key: ${key}`);
+    if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+      window.dispatchEvent(new CustomEvent('lore-storage-full'));
+    }
   }
 }
 

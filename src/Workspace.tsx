@@ -281,8 +281,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       }
     }
     if (newFiles.length > 0) setFiles((prev) => [...prev, ...newFiles]);
-    if (errors.length > 0) setError(`Failed to read: ${errors.join(', ')}. Supported: .txt, .md, .docx, .json`);
-  }, []);
+    if (errors.length > 0) setError(tf('errorFileRead', lang, errors.join(', ')));
+  }, [lang]);
 
   const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files;
@@ -314,13 +314,13 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
   const runTransform = async (action: TransformAction) => {
     if (loading) return;
-    if (!combined.trim()) { setError('Please enter or import some text.'); return; }
+    if (!combined.trim()) { setError(t('errorEmptyInput', lang)); return; }
 
     const demo = isDemoMode();
     if (!demo && !navigator.onLine) { setError(t('offlineAiUnavailable', lang)); return; }
 
     const apiKey = getApiKey();
-    if (!demo && !apiKey && !shouldUseBuiltinApi()) { setError('[API Key] Not set. Go to Settings and enter your API key.'); return; }
+    if (!demo && !apiKey && !shouldUseBuiltinApi()) { setError(t('errorApiKeyMissing', lang)); return; }
 
     // Persist last used action
     setTransformAction(action);
@@ -638,7 +638,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       if (raw.includes('[API Key]')) {
         setError(t('errorApiKey', lang));
       } else if (raw.includes('[Rate Limit]')) {
-        setError(t('errorRateLimit', lang));
+        setError(shouldUseBuiltinApi() ? t('errorRateLimitBuiltin', lang) : t('errorRateLimit', lang));
       } else if (raw.includes('[Overloaded]')) {
         setError(t('errorServiceDown', lang));
       } else if (raw.includes('[Truncated]')) {
@@ -1022,7 +1022,15 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         </div>
 
         {/* Transform button — bottom right inside card */}
-        <div style={{ position: 'absolute', right: 14, bottom: 12 }}>
+        <div style={{ position: 'absolute', right: 14, bottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+          {!loading && shouldUseBuiltinApi() && (() => {
+            const { used, limit } = getBuiltinUsage();
+            return (
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                {used}/{limit}
+              </span>
+            );
+          })()}
           {loading ? (
             <button
               className="btn btn-primary"
@@ -1240,6 +1248,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         <ErrorRetryBanner
           message={error}
           retryLabel={t('tryAgain', lang)}
+          dismissLabel={t('ariaDismissNotification', lang)}
           onRetry={combined.trim() ? () => { setError(''); runTransform(transformAction); } : undefined}
           onDismiss={() => setError('')}
         />

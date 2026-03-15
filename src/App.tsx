@@ -192,6 +192,13 @@ export default function App() {
   // Purge expired trash on app load
   useEffect(() => { purgeExpiredTrash(); }, []);
 
+  // Warn user when localStorage quota is exceeded
+  useEffect(() => {
+    const handler = () => showToast(t('storageFullWarning', lang), 'error');
+    window.addEventListener('lore-storage-full', handler);
+    return () => window.removeEventListener('lore-storage-full', handler);
+  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto weekly report reminder on app load
   useEffect(() => {
     if (!getAutoReportSetting()) return;
