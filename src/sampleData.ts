@@ -685,5 +685,190 @@ export function seedSampleData(lang: Lang = 'en'): void {
   };
 
   saveMasterNote(masterNote);
+
+  // ── Project 3: Marketer / Business persona ──────────────────
+  const isJa3 = lang === 'ja';
+  const project3 = addProject(isJa3 ? 'プロダクトローンチ戦略' : 'Product Launch Campaign');
+  project3.icon = '📊';
+  // pinned defaults to false — leave it unpinned
+  const projects3 = JSON.parse(localStorage.getItem('threadlog_projects') || '[]');
+  const idx3 = projects3.findIndex((p: { id: string }) => p.id === project3.id);
+  if (idx3 >= 0) { projects3[idx3] = project3; localStorage.setItem('threadlog_projects', JSON.stringify(projects3)); }
+
+  const logId3_1 = crypto.randomUUID();
+
+  const log3_1: LogEntry = {
+    id: logId3_1,
+    createdAt: new Date(now - 5 * 60 * 60 * 1000).toISOString(),
+    title: isJa3 ? 'AI活用マーケティング戦略の策定' : 'AI-Assisted Marketing Strategy Session',
+    projectId: project3.id,
+    outputMode: 'handoff',
+    today: [],
+    decisions: [],
+    todo: [],
+    relatedProjects: [],
+    tags: isJa3
+      ? ['マーケティング', 'AI活用', '広告', 'ファネル']
+      : ['marketing', 'AI', 'ad-copy', 'funnel'],
+    currentStatus: isJa3
+      ? [
+          'ターゲットオーディエンスのペルソナ3パターンをAIで生成・検証済み',
+          'Facebook/Instagram広告コピーのA/Bテスト案を5パターン作成',
+          'ランディングページのファネル設計が初稿完了',
+        ]
+      : [
+          'Generated and validated 3 target audience personas using AI',
+          'Created 5 A/B test variations of Facebook/Instagram ad copy',
+          'First draft of landing page funnel design is complete',
+        ],
+    completed: isJa3
+      ? [
+          'Claude を使って競合分析レポートを作成',
+          'ペルソナごとの訴求軸とメッセージングフレームワークを整理',
+          '広告コピー5案の生成とトーン調整',
+        ]
+      : [
+          'Built competitive analysis report using Claude',
+          'Organized messaging framework and appeal axes per persona',
+          'Generated 5 ad copy drafts and adjusted tone for each',
+        ],
+    nextActions: isJa3
+      ? ['ファネル各ステップのメールシーケンス設計', 'LP のワイヤーフレーム確定']
+      : ['Design email sequence for each funnel step', 'Finalize landing page wireframe'],
+    nextActionItems: isJa3
+      ? [
+          { action: 'ファネル各ステップのメールシーケンス設計', whyImportant: 'リード育成の自動化に必須', priorityReason: 'ローンチ日までに配信設定が必要' },
+          { action: 'LP のワイヤーフレーム確定', whyImportant: '広告の遷移先がないとテスト開始できない', priorityReason: '広告出稿のブロッカー' },
+        ]
+      : [
+          { action: 'Design email sequence for each funnel step', whyImportant: 'Essential for automated lead nurturing', priorityReason: 'Must be configured before launch day' },
+          { action: 'Finalize landing page wireframe', whyImportant: 'Ads need a destination to start testing', priorityReason: 'Blocks ad deployment' },
+        ],
+    actionBacklog: [],
+    blockers: [],
+    constraints: isJa3
+      ? ['広告予算は月50万円以内', 'ローンチまで2週間']
+      : ['Monthly ad budget capped at $5,000', 'Two weeks until launch'],
+    decisionRationales: isJa3
+      ? [
+          { decision: 'まず Facebook/Instagram 広告に集中', rationale: 'ターゲット層（30-45歳ビジネスパーソン）のリーチが最も高い' },
+          { decision: 'AI で広告コピーを大量生成しA/Bテストで絞る', rationale: '少予算で最大効果を出すにはデータドリブンが不可欠' },
+        ]
+      : [
+          { decision: 'Focus on Facebook/Instagram ads first', rationale: 'Highest reach for target demographic (30-45 business professionals)' },
+          { decision: 'Use AI to bulk-generate ad copy and narrow down via A/B testing', rationale: 'Data-driven approach is essential to maximize ROI on a limited budget' },
+        ],
+    resumeContext: isJa3
+      ? ['ペルソナ定義は docs/personas.md を参照', '広告コピー案は Spreadsheet の「Ad Copy v2」シートにまとめ済み']
+      : ['See docs/personas.md for persona definitions', 'Ad copy drafts are in the "Ad Copy v2" tab of the shared spreadsheet'],
+    resumeChecklist: isJa3
+      ? [{ action: '広告コピー案のレビュー', whyNow: 'A/Bテスト開始前に最終チェック', ifSkipped: 'ブランドトーンと合わない広告が配信されるリスク' }]
+      : [{ action: 'Review ad copy drafts', whyNow: 'Final check needed before A/B test launch', ifSkipped: 'Risk of running ads that don\'t match brand tone' }],
+    handoffMeta: isJa3
+      ? { sessionFocus: 'AIを活用した広告戦略とファネル設計', whyThisSession: 'ローンチ2週間前、広告とLPの方向性を固める必要あり', timePressure: 'ローンチまで2週間' }
+      : { sessionFocus: 'AI-powered ad strategy and funnel design', whyThisSession: 'Two weeks before launch — need to lock down ad and LP direction', timePressure: 'Launch in 2 weeks' },
+  };
+
+  addLog(log3_1);
+
+  // ── Project 4: YouTuber / Content Creator persona ──────────
+  const isJa4 = lang === 'ja';
+  const project4 = addProject(isJa4 ? 'YouTube チャンネル運営' : 'YouTube Channel Growth');
+  project4.pinned = true;
+  project4.icon = '🎬';
+  const projects4 = JSON.parse(localStorage.getItem('threadlog_projects') || '[]');
+  const idx4 = projects4.findIndex((p: { id: string }) => p.id === project4.id);
+  if (idx4 >= 0) { projects4[idx4] = project4; localStorage.setItem('threadlog_projects', JSON.stringify(projects4)); }
+
+  const logId4_1 = crypto.randomUUID();
+
+  const log4_1: LogEntry = {
+    id: logId4_1,
+    createdAt: new Date(now - 8 * 60 * 60 * 1000).toISOString(),
+    title: isJa4 ? '動画企画 & AI活用プロダクション' : 'Video Planning & AI-Assisted Production',
+    projectId: project4.id,
+    outputMode: 'handoff',
+    today: [],
+    decisions: [],
+    todo: [],
+    relatedProjects: [],
+    tags: isJa4
+      ? ['YouTube', 'AI', '台本作成', 'SEO']
+      : ['YouTube', 'AI', 'scripting', 'SEO'],
+    currentStatus: isJa4
+      ? [
+          'AIと5つの動画トピックをブレストし、上位2つに絞り込み',
+          '「使ってないAIツール」動画の台本ドラフトが80%完成',
+          'AI画像生成プロンプトでサムネイルのコンセプトスケッチを作成',
+        ]
+      : [
+          'Brainstormed 5 video topics with AI and narrowed down to top 2',
+          'Draft script for "AI Tools You\'re Not Using" video is 80% done',
+          'Thumbnail concept sketches generated using AI image prompts',
+        ],
+    completed: isJa4
+      ? [
+          'AIを使い次の3本分のキーワードリサーチを実施（検索ボリューム、競合度）',
+          'AIとのコラボでフック・本編・CTAセクションを含むフル台本アウトラインを作成',
+          'AIで4パターンのサムネイルを生成し、A/Bテスト用に2つを選定',
+          'AIが提案したSEOキーワードでタイトルと説明文を最適化',
+        ]
+      : [
+          'Generated keyword research for next 3 videos using AI (search volume, competition)',
+          'Wrote full script outline with hook, body, and CTA sections via AI collaboration',
+          'Created 4 thumbnail variations with AI — picked 2 finalists for A/B testing',
+          'Optimized title and description with SEO keywords suggested by AI',
+        ],
+    nextActions: isJa4
+      ? ['ドラフト台本のナレーション収録', 'コミュニティタブで2つのサムネイル候補をA/Bテスト', 'ショート動画転用のためトレンド音源をリサーチ']
+      : ['Record voiceover for the drafted script', 'A/B test the two thumbnail finalists on Community tab', 'Research trending audio clips for Shorts repurposing'],
+    nextActionItems: isJa4
+      ? [
+          { action: 'ドラフト台本のナレーション収録', whyImportant: '台本は完成済み、収録がボトルネック', priorityReason: '編集作業すべてのブロッカー' },
+          { action: 'コミュニティタブでサムネイルA/Bテスト', whyImportant: 'サムネイルはクリック率の最重要要素', priorityReason: 'アップロード前に決定が必要' },
+        ]
+      : [
+          { action: 'Record voiceover for the drafted script', whyImportant: 'Script is ready, recording is the bottleneck', priorityReason: 'Blocks all editing work' },
+          { action: 'A/B test thumbnails via Community tab poll', whyImportant: 'Thumbnail is the #1 driver of click-through rate', priorityReason: 'Must decide before upload' },
+        ],
+    actionBacklog: isJa4
+      ? [{ action: '定番動画フォーマット用のプロンプトテンプレート集を作成', whyImportant: '今後の台本作成セッションの時短', priorityReason: '効率化だが緊急ではない' }]
+      : [{ action: 'Build a prompt template library for recurring video formats', whyImportant: 'Saves time on future scripting sessions', priorityReason: 'Efficiency gain but not urgent' }],
+    blockers: isJa4
+      ? ['新しいマイクの配達待ちで収録できない']
+      : ['Waiting for new microphone delivery before recording'],
+    constraints: isJa4
+      ? ['視聴維持率のため動画は15分以内', 'アルゴリズム対策のためアップロード期限は土曜日']
+      : ['Video must be under 15 minutes for optimal retention', 'Upload deadline is Saturday for algorithm consistency'],
+    decisionRationales: isJa4
+      ? [
+          { decision: 'AIはフル台本ではなくアウトライン作成に使う', rationale: 'AIドラフトは無個性になりがち — アウトライン＋自分でリライトが自然' },
+          { decision: 'トレンドよりSEO重視のトピック選び', rationale: 'エバーグリーンコンテンツは長期的に再生数が積み上がる' },
+        ]
+      : [
+          { decision: 'Use AI for script outlines, not full scripts', rationale: 'AI drafts feel generic — outline + personal rewrite keeps authenticity' },
+          { decision: 'Focus on SEO-driven topics over trending topics', rationale: 'Evergreen content compounds views over time vs. short spikes' },
+        ],
+    resumeContext: isJa4
+      ? [
+          '台本ドラフトはGoogleドキュメント「AIツール動画」ファイルにある',
+          'サムネイル候補はCanvaプロジェクトフォルダに保存済み',
+          'キーワードリサーチのスプレッドシートに次3本分のSEOデータあり',
+        ]
+      : [
+          'Script draft is in Google Docs "AI Tools Video" file',
+          'Thumbnail finalists saved in Canva project folder',
+          'Keyword research spreadsheet has the SEO data for next 3 videos',
+        ],
+    resumeChecklist: isJa4
+      ? [{ action: '台本ドラフトの個性と流れをレビュー', whyNow: 'AI生成アウトラインに自分の声を入れてから収録', ifSkipped: '動画がロボット的になり視聴者の信頼を損なう' }]
+      : [{ action: 'Review the script draft for personality and flow', whyNow: 'AI-generated outline needs personal voice before recording', ifSkipped: 'Video will sound robotic and hurt audience trust' }],
+    handoffMeta: isJa4
+      ? { sessionFocus: 'AIを活用した次の動画企画', whyThisSession: '週末収録に向けて台本とサムネイルを準備', timePressure: 'アップロード目標は来週土曜日' }
+      : { sessionFocus: 'Planning next video with AI assistance', whyThisSession: 'Need script and thumbnails ready before weekend recording', timePressure: 'Upload target is next Saturday' },
+  };
+
+  addLog(log4_1);
+
   markSampleSeeded();
 }
