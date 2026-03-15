@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { t } from './i18n';
 import type { Lang } from './i18n';
 import { X } from 'lucide-react';
+import { useFocusTrap } from './useFocusTrap';
 
 type FeedbackCategory = 'bug' | 'feature' | 'ux' | 'other';
 
@@ -35,6 +36,7 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
   const [body, setBody] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -70,7 +72,11 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
+        ref={trapRef}
         className="onboarding-card"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('feedbackTitle', lang)}
         style={{ maxWidth: 480, width: '90vw' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -79,7 +85,7 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
           <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
             {t('feedbackTitle', lang)}
           </h2>
-          <button className="btn" onClick={onClose} style={{ padding: 4 }}>
+          <button className="btn" onClick={onClose} style={{ padding: 4 }} aria-label={t('close', lang)}>
             <X size={18} />
           </button>
         </div>

@@ -9,6 +9,7 @@ import { useToast } from './useToast';
 import ConfirmDialog from './ConfirmDialog';
 import Onboarding from './Onboarding';
 import ErrorBoundary from './ErrorBoundary';
+import FeedbackModal from './FeedbackModal';
 import { isOnboardingDone } from './onboardingState';
 import { seedSampleData, isSampleSeeded } from './sampleData';
 
@@ -30,6 +31,7 @@ import type { ThemePref } from './storage';
 import type { FontSize } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
+import { registerSW } from 'virtual:pwa-register';
 
 const FONT_SIZE_KEY = 'threadlog_font_size';
 const LAST_VIEW_KEY = 'threadlog_last_view';
@@ -91,16 +93,18 @@ export default function App() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<Record<string, number>>({});
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [helpFeedbackOpen, setHelpFeedbackOpen] = useState(false);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [showReportReminder, setShowReportReminder] = useState(false);
   const [offlineStatus, setOfflineStatus] = useState<'online' | 'offline' | 'back'>(() =>
     navigator.onLine ? 'online' : 'offline'
   );
+  const [offlineDismissed, setOfflineDismissed] = useState(false);
 
   // Offline / online detection
   useEffect(() => {
-    const handleOffline = () => setOfflineStatus('offline');
+    const handleOffline = () => { setOfflineStatus('offline'); setOfflineDismissed(false); };
     const handleOnline = () => {
       setOfflineStatus('back');
       const timer = setTimeout(() => setOfflineStatus('online'), 3000);
@@ -113,6 +117,18 @@ export default function App() {
       window.removeEventListener('online', handleOnline);
     };
   }, []);
+
+  // PWA service worker update notification
+  useEffect(() => {
+    const updateSW = registerSW({
+      onNeedRefresh() {
+        showToast(t('updateAvailable', lang), 'default', {
+          label: t('updateReload', lang),
+          onClick: () => { updateSW(); },
+        });
+      },
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const logs = loadLogs();
   const projects = loadProjects();
@@ -399,7 +415,7 @@ export default function App() {
 
   const renderWorkspace = () => {
     if (view === 'settings') return <SettingsPanel onBack={() => goTo(prevView === 'settings' ? 'input' : prevView)} lang={lang} onUiLangChange={handleUiLangChange} themePref={themePref} onThemeChange={handleThemeChange} fontSize={fontSize} onFontSizeChange={handleFontSizeChange} showToast={showToast} onShowOnboarding={() => setShowOnboarding(true)} />;
-    if (view === 'help') return <HelpView onBack={() => goTo(prevView === 'help' ? 'input' : prevView)} lang={lang} onShowOnboarding={() => setShowOnboarding(true)} />;
+    if (view === 'help') return <HelpView onBack={() => goTo(prevView === 'help' ? 'input' : prevView)} lang={lang} onShowOnboarding={() => setShowOnboarding(true)} onFeedback={() => setHelpFeedbackOpen(true)} />;
     if (view === 'history') return <HistoryView logs={logs} onSelect={handleSelect} onBack={() => goTo('input')} onRefresh={refreshLogs} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onOpenMasterNote={handleOpenMasterNote} onOpenProject={handleOpenProjectLogs} tagFilter={tagFilter} onClearTagFilter={() => setTagFilter(null)} onTagFilter={setTagFilter} onDuplicate={(newId) => { refreshLogs(); handleSelect(newId); }} />;
     if (view === 'todos') return <TodoView logs={logs} onBack={() => goTo(prevView === 'todos' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} />;
     if (view === 'dashboard') return <DashboardView logs={logs} projects={projects} todos={todos} masterNotes={masterNotes} lang={lang} onOpenLog={handleSelect} onOpenProject={handleOpenProjectLogs} onOpenTodos={() => goTo('todos')} onOpenSummaryList={() => goTo('summarylist')} onOpenHistory={() => goTo('history')} onNewLog={() => goTo('input')} onToggleAction={(logId, actionIndex) => {
@@ -453,6 +469,10 @@ export default function App() {
           className="sidebar-reveal-bar"
           onClick={() => { setSidebarHidden(false); setSidebarOpen(true); safeSetItem(SIDEBAR_KEY, 'open'); }}
           title={t('showSidebar', lang)}
+          role="button"
+          tabIndex={0}
+          aria-label={t('ariaShowSidebar', lang)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSidebarHidden(false); setSidebarOpen(true); safeSetItem(SIDEBAR_KEY, 'open'); } }}
         />
       )}
       {!sidebarOpen && !sidebarHidden && (
@@ -527,6 +547,7 @@ export default function App() {
               setBannerDismissed(true);
               sessionStorage.setItem('threadlog_overdue_dismissed', todayKey);
             }}
+            aria-label={t('close', lang)}
           >
             ×
           </button>
@@ -548,6 +569,7 @@ export default function App() {
           <button
             className="overdue-banner-close"
             onClick={() => setShowReportReminder(false)}
+            aria-label={t('close', lang)}
           >
             ×
           </button>
@@ -562,15 +584,28 @@ export default function App() {
         }}
         lang={lang}
       />
-      {offlineStatus !== 'online' && (
+      {offlineStatus !== 'online' && !offlineDismissed && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
           background: offlineStatus === 'offline' ? 'var(--warning-bg, #f59e0b)' : 'var(--success-bg, #22c55e)',
           color: offlineStatus === 'offline' ? 'var(--warning-text, #78350f)' : 'var(--success-text, #052e16)',
           textAlign: 'center', fontSize: 12, padding: '4px 0',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           transition: 'opacity 0.3s',
         }}>
-          {offlineStatus === 'offline' ? t('offline', lang) : t('backOnline', lang)}
+          <span>{offlineStatus === 'offline' ? t('offline', lang) : t('backOnline', lang)}</span>
+          {offlineStatus === 'offline' && (
+            <button
+              onClick={() => setOfflineDismissed(true)}
+              aria-label={t('close', lang)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'inherit', fontSize: 14, lineHeight: 1, padding: '0 4px',
+              }}
+            >
+              ×
+            </button>
+          )}
         </div>
       )}
       <Toast {...toast} />
@@ -593,6 +628,9 @@ export default function App() {
           onClose={handleOnboardingClose}
         />
       )}
+      {helpFeedbackOpen && (
+        <FeedbackModal lang={lang} onClose={() => setHelpFeedbackOpen(false)} />
+      )}
       {pendingNav && (
         <ConfirmDialog
           title={t('unsavedInputTitle', lang)}
@@ -606,7 +644,7 @@ export default function App() {
       )}
       {shortcutsOpen && (
         <div className="modal-overlay" onClick={() => setShortcutsOpen(false)}>
-          <div className="shortcuts-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="shortcuts-modal" role="dialog" aria-modal="true" aria-label={t('shortcutsTitle', lang)} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 16px', fontSize: 16 }}>{t('shortcutsTitle', lang)}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {([

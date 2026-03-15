@@ -9,7 +9,7 @@ import { demoTransformBoth, demoTransformHandoff, demoTransformText, demoTransfo
 import { classifyLog, saveCorrection } from './classify';
 import { extractDocxText } from './docx';
 import { parseConversationJson } from './jsonImport';
-import { MoreVertical, Pin, CheckSquare, Square, ExternalLink, Copy, Check, Activity, X, Link } from 'lucide-react';
+import { MoreVertical, Pin, CheckSquare, Square, ExternalLink, Copy, Check, Activity, X, Link, Share2 } from 'lucide-react';
 import { getGreeting } from './greeting';
 import ProgressPanel from './ProgressPanel';
 import type { ProgressStep } from './ProgressPanel';
@@ -639,8 +639,10 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       // Translate internal error tags to user-facing messages
       if (raw.includes('[API Key]')) {
         setError(t('errorApiKey', lang));
-      } else if (raw.includes('[Rate Limit]') || raw.includes('[Overloaded]')) {
+      } else if (raw.includes('[Rate Limit]')) {
         setError(t('errorRateLimit', lang));
+      } else if (raw.includes('[Overloaded]')) {
+        setError(t('errorServiceDown', lang));
       } else if (raw.includes('[Truncated]')) {
         setError(t('errorTruncated', lang));
       } else if (raw.includes('[Parse Error]') || raw.includes('[Non-JSON Response]')) {
@@ -653,6 +655,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         setError(t('errorNetwork', lang));
       } else if (raw.includes('[AI Response]')) {
         setError(t('errorEmptyResponse', lang));
+      } else if (err instanceof DOMException && err.name === 'AbortError') {
+        setError(t('errorTimeout', lang));
       } else if (raw.includes('[API Error]')) {
         setError(t('errorApiGeneric', lang));
       } else if (err instanceof TypeError) {
@@ -896,6 +900,18 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             >
               {t('startNewLog', lang)}
             </button>
+            {typeof navigator.share === 'function' && (
+              <button className="btn" onClick={async () => {
+                try {
+                  await navigator.share({
+                    title: 'Lore Handoff',
+                    text: savedResult.fullContext || savedResult.markdown,
+                  });
+                } catch { /* ignore */ }
+              }}>
+                <Share2 size={14} /> {t('share', lang)}
+              </button>
+            )}
           </div>
 
           {/* Subtitle explaining the buttons */}
@@ -910,11 +926,46 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       {/* Input Card — hidden when preview panel is shown */}
       {!savedResult && (<div
         className="input-card-hero"
-        style={dragging ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 3px var(--accent-focus)' } : undefined}
+        style={dragging ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 3px var(--accent-focus)', position: 'relative' as const } : { position: 'relative' as const }}
       >
+        {/* Drag & drop overlay */}
+        {dragging && (
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'var(--accent-bg, rgba(99,102,241,0.08))',
+            borderRadius: 'inherit',
+            pointerEvents: 'none',
+          }}>
+            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--accent)', pointerEvents: 'none' }}>
+              {t('dropFilesHere', lang)}
+            </span>
+          </div>
+        )}
+
+        {/* Clear text button */}
+        {text.trim() && !loading && (
+          <button
+            onClick={() => { setText(''); textareaRef.current?.focus(); }}
+            style={{
+              position: 'absolute', top: 10, right: 14, zIndex: 5,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--text-muted)', padding: 4, lineHeight: 1,
+              borderRadius: 4, transition: 'color 0.12s',
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+            onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+            title={t('clearText', lang)}
+            aria-label={t('clearText', lang)}
+          >
+            <X size={16} />
+          </button>
+        )}
+
         <textarea
           ref={textareaRef}
           className="input-card-textarea"
+          aria-label={t('inputPlaceholder', lang)}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
@@ -1464,6 +1515,22 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
     setMenuOpen(false);
   };
 
+  const handleShare = async () => {
+    setMenuOpen(false);
+    const markdown = logToMarkdown(log);
+    try {
+      await navigator.share({
+        title: log.title,
+        text: markdown,
+      });
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        navigator.clipboard.writeText(markdown);
+        showToast?.(t('copiedToClipboard', lang), 'success');
+      }
+    }
+  };
+
   const handleAssignProject = (projectId: string) => {
     const newProjectId = projectId || undefined;
     updateLog(id, { projectId: newProjectId, suggestedProjectId: undefined });
@@ -1690,6 +1757,11 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
                 <button className="card-menu-item" onClick={() => handleDetailExport('json')}>
                   Export .json
                 </button>
+                {typeof navigator.share === 'function' && (
+                  <button className="card-menu-item" onClick={handleShare}>
+                    <Share2 size={14} /> {t('share', lang)}
+                  </button>
+                )}
                 <button className="card-menu-item" onClick={() => {
                   setMenuOpen(false);
                   const suffix = t('duplicateLogSuffix', lang);

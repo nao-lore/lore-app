@@ -3265,6 +3265,17 @@ button:focus-visible,
   border-radius: 6px;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @media print {
   .sidebar, .page-header button, .sidebar-reveal-bar, .overdue-banner {
     display: none !important;
@@ -3325,21 +3336,88 @@ button:focus-visible,
 
 /* ─── Print styles ─── */
 @media print {
-  .sidebar, .mobile-menu-btn, .toast-container, .btn-back,
-  .btn, button, .action-menu-btn, .command-palette-overlay,
-  .confirm-overlay, .mn-history-overlay { display: none !important; }
-
-  body { background: white !important; color: black !important; }
-
-  .workspace-content, .workspace-content-wide {
-    padding: 0 !important;
-    max-width: 100% !important;
+  /* Hide non-content elements */
+  .sidebar,
+  .mobile-menu-btn,
+  .toast-container,
+  .toast,
+  nav,
+  .btn,
+  .btn-primary,
+  .btn-back,
+  button,
+  .action-menu-btn,
+  .mode-selector,
+  .input-card-hero,
+  .modal-overlay,
+  .onboarding-overlay,
+  .command-palette-overlay,
+  .confirm-overlay,
+  .mn-history-overlay,
+  .sidebar-reveal-bar,
+  .error-retry-banner,
+  .page-header-sticky,
+  [class*="banner"] {
+    display: none !important;
   }
 
-  .content-card {
+  /* Full-width content */
+  .app-main,
+  .workspace-content,
+  .workspace-content-wide,
+  .workspace-content-centered {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Clean appearance */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 13px !important;
+  }
+
+  * {
+    background: transparent !important;
     box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Readable text */
+  h1, h2, h3, h4, h5, h6 {
+    color: #111 !important;
+  }
+
+  p, li, td, th, span, div {
+    color: #222 !important;
+  }
+
+  /* Cards */
+  .content-card {
     border: 1px solid #ddd !important;
+    box-shadow: none !important;
     break-inside: avoid;
+    background: white !important;
+  }
+
+  /* Links */
+  a {
+    color: #222 !important;
+    text-decoration: underline !important;
+  }
+
+  /* Remove fixed/sticky positioning */
+  * {
+    position: static !important;
+  }
+
+  /* Allow relative positioning for layout */
+  .workspace-content,
+  .workspace-content-wide,
+  .workspace-content-centered {
+    position: relative !important;
   }
 }
 

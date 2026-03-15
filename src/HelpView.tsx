@@ -6,9 +6,10 @@ interface HelpViewProps {
   onBack: () => void;
   lang: Lang;
   onShowOnboarding?: () => void;
+  onFeedback?: () => void;
 }
 
-export default function HelpView({ onBack, lang, onShowOnboarding }: HelpViewProps) {
+export default function HelpView({ onBack, lang, onShowOnboarding, onFeedback }: HelpViewProps) {
   return (
     <div className="workspace-content">
       <div className="page-header">
@@ -200,6 +201,23 @@ export default function HelpView({ onBack, lang, onShowOnboarding }: HelpViewPro
             ))}
           </div>
         </div>
+
+        {/* Feedback */}
+        {onFeedback && (
+          <div className="content-card">
+            <div className="content-card-header">{t('helpFeedbackTitle', lang)}</div>
+            <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-body)', margin: '0 0 12px' }}>
+              {t('helpFeedbackDesc', lang)}
+            </p>
+            <button
+              className="btn btn-primary"
+              onClick={onFeedback}
+              style={{ fontSize: 13, padding: '6px 20px', fontWeight: 600, borderRadius: 8 }}
+            >
+              {t('feedbackTitle', lang)}
+            </button>
+          </div>
+        )}
 
         {/* Show onboarding again */}
         {onShowOnboarding && (

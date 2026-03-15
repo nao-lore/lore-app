@@ -412,7 +412,7 @@ function handleHttpError(status: number, body: string): never {
     }
     throw new Error('[Rate Limit]');
   }
-  if (status === 529 || status === 503) throw new Error('[Overloaded]');
+  if (status === 500 || status === 503 || status === 529) throw new Error('[Overloaded]');
   if (status === 413 || body.includes('too long') || body.includes('too large')) {
     throw new Error('[Too Long] Input too large for the API.');
   }

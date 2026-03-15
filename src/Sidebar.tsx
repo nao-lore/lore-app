@@ -265,7 +265,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
   const menuLog = menuState ? logs.find((l) => l.id === menuState.logId) : null;
 
   return (
-    <div className="sidebar" style={{ width: 260, minWidth: 260, height: '100%', borderRight: '1px solid var(--border-default)', display: 'flex', flexDirection: 'column', background: 'var(--bg-sidebar)' }}>
+    <nav className="sidebar" aria-label={t('appName', lang)} style={{ width: 260, minWidth: 260, height: '100%', borderRight: '1px solid var(--border-default)', display: 'flex', flexDirection: 'column', background: 'var(--bg-sidebar)' }}>
       {/* Header */}
       <div style={{ padding: '16px 14px 12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
@@ -534,6 +534,6 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
         <FeedbackModal lang={lang} onClose={() => setFeedbackOpen(false)} />,
         document.body,
       )}
-    </div>
+    </nav>
   );
 }
