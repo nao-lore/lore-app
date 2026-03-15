@@ -6,6 +6,9 @@ export function Toast({ message, type, visible, action }: ToastState) {
     .filter(Boolean).join(' ');
   return (
     <div className={cls} style={{ whiteSpace: 'pre-line' }} aria-live="polite" role="status">
+      <span style={{ marginRight: 6, fontSize: 14 }}>
+        {type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ'}
+      </span>
       <span>{message}</span>
       {action && (
         <button

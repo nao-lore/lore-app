@@ -1459,12 +1459,13 @@ textarea.input:focus {
 }
 .content-card-clickable {
   cursor: pointer;
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition: border-color 0.12s, box-shadow 0.12s, transform 0.15s ease, box-shadow 0.15s ease;
 }
 .content-card-clickable:hover {
   border-color: var(--border-hover);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-card-hover, 0 4px 12px rgba(0,0,0,0.08));
   background: var(--interactive-hover);
+  transform: translateY(-2px);
 }
 .content-card h4 {
   margin-top: 0;
@@ -2062,6 +2063,7 @@ textarea.input:focus {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  animation: fadeInUp 0.3s ease-out;
 }
 .empty-state p {
   margin: 0;
@@ -2074,7 +2076,7 @@ textarea.input:focus {
 .empty-state-icon {
   font-size: 32px;
   margin-bottom: 12px;
-  opacity: 0.5;
+  opacity: 0.35;
 }
 .empty-state .btn {
   margin-top: 16px;
@@ -2221,6 +2223,9 @@ textarea.input:focus {
   display: flex;
   justify-content: center;
   padding-top: min(20vh, 160px);
+}
+[data-theme="dark"] .palette-overlay {
+  background: rgba(0, 0, 0, 0.4);
 }
 .palette-container {
   width: calc(100vw - 32px);
@@ -3481,8 +3486,8 @@ button:focus-visible,
 
 /* Card press/tap feedback */
 .content-card-clickable:active {
-  transform: scale(0.98);
-  transition: transform 0.1s ease;
+  transform: translateY(0);
+  box-shadow: var(--shadow-card);
 }
 
 /* Checkbox completion pop */
@@ -3498,13 +3503,26 @@ button:focus-visible,
   transform: scale(1.2);
 }
 
+/* Empty state fade-in */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Modal backdrop fade */
 @keyframes backdrop-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+@keyframes backdrop-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
 .modal-overlay, .mn-history-overlay, .palette-overlay {
   animation: backdrop-fade-in 0.15s ease-out;
+}
+.modal-overlay[data-closing], .mn-history-overlay[data-closing], .palette-overlay[data-closing] {
+  animation: backdrop-fade-out 0.12s ease-in forwards;
 }
 
 /* Modal content scale-in */
@@ -3512,8 +3530,15 @@ button:focus-visible,
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+@keyframes modal-scale-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.95); }
+}
 .shortcuts-modal, .confirm-dialog {
   animation: modal-scale-in 0.15s ease-out;
+}
+.shortcuts-modal[data-closing], .confirm-dialog[data-closing] {
+  animation: modal-scale-out 0.12s ease-in forwards;
 }
 
 /* Error retry banner */
