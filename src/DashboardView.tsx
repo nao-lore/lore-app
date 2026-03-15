@@ -242,7 +242,7 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
           <p className="page-subtitle">
             {t('dashboardWelcomeDesc', lang)}
           </p>
-          <FirstUseTooltip id="dashboard" text="Your AI project snapshots appear here" position="top">
+          <FirstUseTooltip id="dashboard" text={lang === 'ja' ? 'AIプロジェクトのスナップショットがここに表示されます' : 'Your AI project snapshots appear here'} position="top">
             <button className="btn btn-primary" onClick={onNewLog} style={{ marginTop: 16 }}>
               <Plus size={16} />
               {t('dashboardCreateFirstLog', lang)}

@@ -886,8 +886,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         const allLogs = loadLogs();
         const lastLog = allLogs.length > 0 ? allLogs[allLogs.length - 1] : null;
         const parts: string[] = [];
-        if (pendingTodos > 0) parts.push(`${pendingTodos} pending TODO${pendingTodos !== 1 ? 's' : ''}`);
-        if (lastLog) parts.push(`Last transform: ${formatRelativeTime(lastLog.createdAt, lang as 'en' | 'ja')}`);
+        if (pendingTodos > 0) parts.push(lang === 'ja' ? `未完了TODO ${pendingTodos}件` : `${pendingTodos} pending TODO${pendingTodos !== 1 ? 's' : ''}`);
+        if (lastLog) parts.push((lang === 'ja' ? '最終変換: ' : 'Last: ') + formatRelativeTime(lastLog.createdAt, lang as 'en' | 'ja'));
         return parts.length > 0 ? (
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', margin: '0 0 12px', fontWeight: 400 }}>
             {parts.join(' · ')}
@@ -1090,7 +1090,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
               {progressLabel}
             </button>
           ) : (
-            <FirstUseTooltip id="transform" text="Paste an AI conversation above, then click here!">
+            <FirstUseTooltip id="transform" text={lang === 'ja' ? 'AI会話を上に貼り付けて、ここをクリック！' : 'Paste an AI conversation above, then click here!'}>
               <button
                 className="btn btn-primary"
                 onClick={() => runTransform(transformAction)}
