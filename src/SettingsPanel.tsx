@@ -442,7 +442,11 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
             {([
               { key: 'streaming', labelKey: 'featureStreaming', descKey: 'featureStreamingDesc', default: true },
               { key: 'auto_classify', labelKey: 'featureAutoClassify', descKey: 'featureAutoClassifyDesc', default: true },
+              { key: 'todo_extract', labelKey: 'featureTodoExtract', descKey: 'featureTodoExtractDesc', default: true },
+              { key: 'project_summary', labelKey: 'featureProjectSummary', descKey: 'featureProjectSummaryDesc', default: true },
               { key: 'workload', labelKey: 'featureWorkload', descKey: 'featureWorkloadDesc', default: true },
+              { key: 'knowledge_base', labelKey: 'featureKnowledgeBase', descKey: 'featureKnowledgeBaseDesc', default: true },
+              { key: 'keyboard_shortcuts', labelKey: 'featureKeyboardShortcuts', descKey: 'featureKeyboardShortcutsDesc', default: true },
             ] as const).map(({ key, labelKey, descKey, default: def }) => (
               <label key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
                 <input

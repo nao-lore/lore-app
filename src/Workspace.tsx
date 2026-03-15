@@ -359,8 +359,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           const r = bothResult.worklog;
           setResult(r); setOutputMode('worklog');
           const worklogEntry: LogEntry = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), importedAt: new Date().toISOString(), title: r.title, projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length), outputMode: 'worklog', today: r.today, decisions: r.decisions, todo: r.todo, relatedProjects: r.relatedProjects, tags: r.tags };
-          addLog(worklogEntry); addTodosFromLog(worklogEntry.id, r.todo);
-          todoCount = r.todo.length; lastEntryId = worklogEntry.id; onSaved(worklogEntry.id);
+          addLog(worklogEntry); if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(worklogEntry.id, r.todo); todoCount = r.todo.length; }
+          lastEntryId = worklogEntry.id; onSaved(worklogEntry.id);
         } else if (isHandoffTodo) {
           const htr = await demoTransformHandoffTodo(lang);
           setSimStep(4);
@@ -370,7 +370,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           onSaved(handoffEntry.id);
           setSavedHandoffId(handoffEntry.id);
           setResult(htr.handoff); setOutputMode('handoff');
-          if (htr.todos.length > 0) {
+          if (htr.todos.length > 0 && getFeatureEnabled('todo_extract', true)) {
             addTodosFromLogWithMeta(handoffEntry.id, htr.todos.map(td => ({ title: td.title, priority: td.priority, dueDate: td.dueDate })));
             todoCount = htr.todos.length;
           }
@@ -392,8 +392,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           setSimStep(4);
           setResult(r); setOutputMode('worklog');
           const worklogEntry: LogEntry = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), importedAt: new Date().toISOString(), title: r.title, projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length), outputMode: 'worklog', today: r.today, decisions: r.decisions, todo: r.todo, relatedProjects: r.relatedProjects, tags: r.tags };
-          addLog(worklogEntry); addTodosFromLog(worklogEntry.id, r.todo);
-          todoCount = r.todo.length; lastEntryId = worklogEntry.id; onSaved(worklogEntry.id);
+          addLog(worklogEntry); if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(worklogEntry.id, r.todo); todoCount = r.todo.length; }
+          lastEntryId = worklogEntry.id; onSaved(worklogEntry.id);
         }
         // Post-save: generate savedResult for markdown/context buttons
         if (savedHandoffLog) {
@@ -461,8 +461,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           relatedProjects: r.relatedProjects, tags: r.tags,
         };
         addLog(worklogEntry);
-        addTodosFromLog(worklogEntry.id, r.todo);
-        todoCount = r.todo.length;
+        if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(worklogEntry.id, r.todo); todoCount = r.todo.length; }
         lastEntryId = worklogEntry.id; onSaved(worklogEntry.id);
 
         // Use inline classification from the combined response (no extra API call)
@@ -536,8 +535,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           relatedProjects: r.relatedProjects, tags: r.tags,
         };
         addLog(entry);
-        addTodosFromLog(entry.id, r.todo);
-        todoCount = r.todo.length;
+        if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(entry.id, r.todo); todoCount = r.todo.length; }
         lastEntryId = entry.id; onSaved(entry.id);
         if (!selectedProjectId && projects.length > 0) {
           triggerClassification(entry);
@@ -560,8 +558,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         entry.todo = htResult.todos.map(td => td.title);
         addLog(entry);
         savedHandoffLog = entry;
-        addTodosFromLogWithMeta(entry.id, htResult.todos);
-        todoCount = htResult.todos.length;
+        if (getFeatureEnabled('todo_extract', true)) { addTodosFromLogWithMeta(entry.id, htResult.todos); todoCount = htResult.todos.length; }
         lastEntryId = entry.id; onSaved(entry.id);
         if (!selectedProjectId && projects.length > 0) {
           triggerClassification(entry);
@@ -588,8 +585,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           relatedProjects: [], tags: [],
         };
         addLog(entry);
-        addTodosFromLogWithMeta(entry.id, todoResult.todos);
-        todoCount = todoResult.todos.length;
+        if (getFeatureEnabled('todo_extract', true)) { addTodosFromLogWithMeta(entry.id, todoResult.todos); todoCount = todoResult.todos.length; }
         setResult({ title: entry.title, today: [], decisions: [], todo: todoResult.todos.map(t => t.title), relatedProjects: [], tags: [] });
         setOutputMode('worklog');
         lastEntryId = entry.id; onSaved(entry.id);
@@ -760,12 +756,16 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     setSuggestion(null);
     onSaved(logId);
     // Show summary update prompt
-    const mn = getMasterNote(projectId);
-    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-    const isStale = mn && (Date.now() - mn.updatedAt > SEVEN_DAYS);
-    const msg = tf('addedToProject', lang, projectName)
-      + '\n' + (isStale ? t('updateSummaryStale', lang) : t('updateSummaryPrompt', lang));
-    showToast?.(msg, 'success');
+    if (getFeatureEnabled('project_summary', true)) {
+      const mn = getMasterNote(projectId);
+      const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+      const isStale = mn && (Date.now() - mn.updatedAt > SEVEN_DAYS);
+      const msg = tf('addedToProject', lang, projectName)
+        + '\n' + (isStale ? t('updateSummaryStale', lang) : t('updateSummaryPrompt', lang));
+      showToast?.(msg, 'success');
+    } else {
+      showToast?.(tf('addedToProject', lang, projectName), 'success');
+    }
   };
 
   const handleDismissSuggestion = () => {
@@ -788,12 +788,16 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     onSaved(logId);
     // Show summary update prompt
     if (project) {
-      const mn = getMasterNote(projectId);
-      const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-      const isStale = mn && (Date.now() - mn.updatedAt > SEVEN_DAYS);
-      const msg = tf('addedToProject', lang, project.name)
-        + '\n' + (isStale ? t('updateSummaryStale', lang) : t('updateSummaryPrompt', lang));
-      showToast?.(msg, 'success');
+      if (getFeatureEnabled('project_summary', true)) {
+        const mn = getMasterNote(projectId);
+        const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+        const isStale = mn && (Date.now() - mn.updatedAt > SEVEN_DAYS);
+        const msg = tf('addedToProject', lang, project.name)
+          + '\n' + (isStale ? t('updateSummaryStale', lang) : t('updateSummaryPrompt', lang));
+        showToast?.(msg, 'success');
+      } else {
+        showToast?.(tf('addedToProject', lang, project.name), 'success');
+      }
     }
   };
 

@@ -26,7 +26,7 @@ const DashboardView = lazy(() => import('./DashboardView'));
 const HelpView = lazy(() => import('./HelpView'));
 const WeeklyReportView = lazy(() => import('./WeeklyReportView'));
 const KnowledgeBaseView = lazy(() => import('./KnowledgeBaseView'));
-import { loadLogs, loadProjects, loadTodos, loadMasterNotes, getUiLang, setUiLang, getTheme, setTheme as saveTheme, purgeExpiredTrash, updateLog, getLog, getAutoReportSetting, getLastReportDate, setLastReportDate, isDemoMode, setDemoMode } from './storage';
+import { loadLogs, loadProjects, loadTodos, loadMasterNotes, getUiLang, setUiLang, getTheme, setTheme as saveTheme, purgeExpiredTrash, updateLog, getLog, getAutoReportSetting, getLastReportDate, setLastReportDate, isDemoMode, setDemoMode, getFeatureEnabled } from './storage';
 import type { ThemePref } from './storage';
 import type { FontSize } from './types';
 import { t, tf } from './i18n';
@@ -253,6 +253,7 @@ export default function App() {
   // Global keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (!getFeatureEnabled('keyboard_shortcuts', true)) return;
       const mod = e.metaKey || e.ctrlKey;
       // Cmd+K: toggle command palette
       if (mod && e.key === 'k') {
@@ -475,11 +476,6 @@ export default function App() {
           aria-label={t('ariaShowSidebar', lang)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSidebarHidden(false); setSidebarOpen(true); safeSetItem(SIDEBAR_KEY, 'open'); } }}
         />
-      )}
-      {!sidebarOpen && !sidebarHidden && (
-        <div style={{ width: 52, minWidth: 52, height: '100%', borderRight: '1px solid var(--border-default)', background: 'var(--bg-sidebar)', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 14 }}>
-          <button className="toggle-btn" onClick={() => { setSidebarOpen(true); safeSetItem(SIDEBAR_KEY, 'open'); }} title={t('showSidebar', lang)} aria-label={t('ariaShowSidebar', lang)}>◫</button>
-        </div>
       )}
       {sidebarOpen && (
         <Sidebar
