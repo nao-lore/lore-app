@@ -34,7 +34,7 @@ apiDescribe('nextActionItems real API extraction', () => {
       threadlog_provider: 'gemini',
       threadlog_api_key_gemini: GOOGLE_KEY,
     };
-    (globalThis as any).localStorage = {
+    (globalThis as unknown as { localStorage: { getItem: (k: string) => string | null; setItem: (k: string, v: string) => void; removeItem: (k: string) => void } }).localStorage = {
       getItem: (k: string) => store[k] ?? null,
       setItem: (k: string, v: string) => { store[k] = v; },
       removeItem: (k: string) => { delete store[k]; },

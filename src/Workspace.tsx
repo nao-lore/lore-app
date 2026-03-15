@@ -63,7 +63,7 @@ interface WorkspaceProps {
 
 export default function Workspace({ mode, selectedId, onSaved, onDeleted, onOpenLog, onBack, prevView, lang, activeProjectId, projects, onRefresh, showToast, onDirtyChange, onTagFilter, onOpenMasterNote, onSelectProject }: WorkspaceProps) {
   if (mode === 'detail' && selectedId) return <DetailView id={selectedId} onDeleted={onDeleted} onOpenLog={onOpenLog} onBack={onBack} prevView={prevView} lang={lang} projects={projects} onRefresh={onRefresh} showToast={showToast} onTagFilter={onTagFilter} allLogs={loadLogs()} onOpenMasterNote={onOpenMasterNote} />;
-  return <InputView onSaved={onSaved} onOpenLog={onOpenLog} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onDirtyChange={onDirtyChange} onSelectProject={onSelectProject} />;
+  return <InputView onSaved={onSaved} onOpenLog={onOpenLog} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onDirtyChange={onDirtyChange} />;
 }
 
 // --- Input View ---
@@ -152,7 +152,7 @@ function formatFileDate(ts: number): string {
   return `${month}/${day} ${hours}:${mins}`;
 }
 
-function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, onSelectProject: _onSelectProject }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void; onDirtyChange?: (dirty: boolean) => void; onSelectProject?: (projectId: string | null) => void }) {
+function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void; onDirtyChange?: (dirty: boolean) => void }) {
   const [text, setText] = useState('');
   const [files, setFiles] = useState<ImportedFile[]>([]);
   const [loading, setLoading] = useState(false);

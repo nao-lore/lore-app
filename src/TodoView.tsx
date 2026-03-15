@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { usePersistedState } from './usePersistedState';
 import { CheckSquare, Square, MoreHorizontal, MoreVertical, Star, Edit3, Trash2, Flag, Calendar, ExternalLink, Pin, Check, Undo2, Archive, ArchiveRestore, CheckCheck, GripVertical, AlertTriangle, Copy, Clock } from 'lucide-react';
 import type { Todo, LogEntry } from './types';
@@ -64,6 +64,7 @@ function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
 }) {
   const [subMenu, setSubMenu] = useState<'priority' | 'due' | 'snooze' | null>(null);
   const [dueValue, setDueValue] = useState(todo.dueDate || '');
+  const now = useMemo(() => Date.now(), []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
@@ -265,7 +266,7 @@ function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
               <Clock size={18} />
             </span>
             <span>{t('snooze', lang)}</span>
-            {todo.snoozedUntil && todo.snoozedUntil > Date.now() && (
+            {todo.snoozedUntil && todo.snoozedUntil > now && (
               <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
                 {t('snoozed', lang)}
               </span>
@@ -486,7 +487,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
     }
   };
 
-  const now = Date.now();
+  const now = useMemo(() => Date.now(), []);
   const isSnoozedNow = (td: Todo) => !!(td.snoozedUntil && td.snoozedUntil > now);
   const pending = todos.filter((td) => !td.done);
   const completed = todos.filter((td) => td.done);
@@ -760,7 +761,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
                 {todo.dueDate}
               </span>
             )}
-            {todo.snoozedUntil && todo.snoozedUntil > Date.now() && (
+            {todo.snoozedUntil && todo.snoozedUntil > now && (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 3,
                 fontSize: 10, padding: '1px 6px', borderRadius: 4,

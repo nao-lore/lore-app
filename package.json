@@ -1,7 +1,7 @@
 {
   "name": "threadlog",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Turn AI conversations into structured handoffs — paste a chat, get a handoff with status, tasks, and decisions",
   "keywords": ["ai", "handoff", "context", "chatgpt", "claude", "gemini", "productivity", "pwa", "react", "typescript"],
   "author": "Lore",
