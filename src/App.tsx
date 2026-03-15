@@ -107,17 +107,18 @@ export default function App() {
 
   // Offline / online detection
   useEffect(() => {
+    let onlineTimer: ReturnType<typeof setTimeout> | null = null;
     const handleOffline = () => { setOfflineStatus('offline'); setOfflineDismissed(false); };
     const handleOnline = () => {
       setOfflineStatus('back');
-      const timer = setTimeout(() => setOfflineStatus('online'), 3000);
-      return () => clearTimeout(timer);
+      onlineTimer = setTimeout(() => setOfflineStatus('online'), 3000);
     };
     window.addEventListener('offline', handleOffline);
     window.addEventListener('online', handleOnline);
     return () => {
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('online', handleOnline);
+      if (onlineTimer) clearTimeout(onlineTimer);
     };
   }, []);
 
