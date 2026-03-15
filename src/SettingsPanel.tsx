@@ -6,6 +6,7 @@ import type { ThemePref, LoreBackup } from './storage';
 import {
   getProviderApiKey, setProviderApiKey,
   PROVIDER_KEY_PLACEHOLDER,
+  shouldUseBuiltinApi, getBuiltinUsage,
 } from './provider';
 import type { ProviderName } from './provider';
 import { t, tf, OUTPUT_LANGS } from './i18n';
@@ -204,6 +205,33 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
           {keyErrors.gemini && (
             <p style={{ color: 'var(--error-text)', fontSize: 12, margin: '4px 0 0' }}>{keyErrors.gemini}</p>
           )}
+
+          {/* Built-in API usage */}
+          <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-subtle, rgba(255,255,255,0.03))' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
+              {t('builtinApiUsage', lang)}
+            </div>
+            {shouldUseBuiltinApi() ? (() => {
+              const { used, limit, remaining } = getBuiltinUsage();
+              const pct = Math.min((used / limit) * 100, 100);
+              const barColor = remaining <= 3 ? 'var(--error-text, #ef4444)' : remaining <= 8 ? '#f59e0b' : 'var(--accent)';
+              return (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                    <span>{used} / {limit}</span>
+                    <span>{remaining} {lang === 'ja' ? '回残り' : 'remaining'}</span>
+                  </div>
+                  <div style={{ height: 6, borderRadius: 3, background: 'var(--border-default)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, borderRadius: 3, background: barColor, transition: 'width 0.3s' }} />
+                  </div>
+                </>
+              );
+            })() : (
+              <div style={{ fontSize: 13, color: 'var(--success-text, #22c55e)' }}>
+                {t('builtinApiUsingOwn', lang)}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Theme */}

@@ -426,6 +426,38 @@ function handleHttpError(status: number, body: string): never {
 // Built-in API (server-side Gemini proxy at /api/generate)
 // ---------------------------------------------------------------------------
 
+const BUILTIN_USAGE_KEY = 'threadlog_builtin_usage';
+const BUILTIN_DAILY_LIMIT = 20;
+
+function saveBuiltinUsage(remaining: number): void {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.setItem(BUILTIN_USAGE_KEY, JSON.stringify({ remaining, date: today }));
+  } catch { /* ignore */ }
+}
+
+/** Get built-in API usage for today: { used, limit, remaining } */
+export function getBuiltinUsage(): { used: number; limit: number; remaining: number } {
+  try {
+    const raw = localStorage.getItem(BUILTIN_USAGE_KEY);
+    if (raw) {
+      const { remaining, date } = JSON.parse(raw);
+      const today = new Date().toISOString().slice(0, 10);
+      if (date === today) {
+        return { used: BUILTIN_DAILY_LIMIT - remaining, limit: BUILTIN_DAILY_LIMIT, remaining };
+      }
+    }
+  } catch { /* ignore */ }
+  return { used: 0, limit: BUILTIN_DAILY_LIMIT, remaining: BUILTIN_DAILY_LIMIT };
+}
+
+function captureRateLimit(res: Response): void {
+  const remaining = res.headers.get('X-RateLimit-Remaining');
+  if (remaining !== null) {
+    saveBuiltinUsage(parseInt(remaining, 10));
+  }
+}
+
 async function callBuiltin(req: ProviderRequest): Promise<string> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 60000);
@@ -457,6 +489,7 @@ async function callBuiltin(req: ProviderRequest): Promise<string> {
       handleHttpError(res.status, text);
     }
 
+    captureRateLimit(res);
     const data = await res.json();
     const output = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     if (!output) throw new Error('[AI Response] Empty response. Try again.');
@@ -495,6 +528,8 @@ async function callBuiltinStream(req: ProviderRequest, onChunk: StreamCallback):
       }
       handleHttpError(res.status, text);
     }
+
+    captureRateLimit(res);
 
     const reader = res.body?.getReader();
     if (!reader) throw new Error('[Stream] ReadableStream not supported');
