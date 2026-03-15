@@ -247,82 +247,6 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
             );
           })()}
 
-          {/* Other providers — collapsible */}
-          <button
-            onClick={() => setOtherProvidersOpen(!otherProvidersOpen)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: '6px 2px', fontFamily: 'inherit',
-              fontSize: 13, fontWeight: 600, color: 'var(--text-muted)',
-            }}
-          >
-            {otherProvidersOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            {t('providerOtherProviders', lang)}
-          </button>
-
-          {otherProvidersOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
-              <div style={{ fontSize: 12, color: 'var(--warning-text, orange)', padding: '4px 8px', lineHeight: 1.5 }}>
-                {t('providerUnstableWarning', lang)}
-              </div>
-              {(['anthropic', 'openai'] as ProviderName[]).map((p) => {
-                const isActive = activeProvider === p;
-                const hasKey = !!keys[p];
-                return (
-                  <button
-                    key={p}
-                    className="provider-option"
-                    data-active={isActive}
-                    onClick={() => handleProviderChange(p)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12, width: '100%',
-                      padding: '10px 14px', borderRadius: 10,
-                      border: isActive ? '2px solid var(--accent)' : '1px solid var(--border-default)',
-                      background: isActive ? 'var(--sidebar-active)' : 'none',
-                      cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
-                      transition: 'all 0.12s',
-                    }}
-                  >
-                    <div style={{
-                      width: 18, height: 18, borderRadius: '50%',
-                      border: isActive ? '2px solid var(--accent)' : '2px solid var(--border-default)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0,
-                    }}>
-                      {isActive && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {PROVIDER_LABELS[p]}
-                        {p === 'anthropic' && (
-                          <span title={t('providerClaudeWarning', lang)} style={{ cursor: 'help', fontSize: 14 }}>⚠️</span>
-                        )}
-                      </div>
-                      <div className="meta" style={{ fontSize: 11 }}>
-                        {PROVIDER_MODEL_LABELS[p]}
-                      </div>
-                      <div className="meta" style={{ fontSize: 12, marginTop: 2, color: 'var(--text-muted)' }}>
-                        {t(PROVIDER_DESC_KEYS[p], lang)}
-                      </div>
-                      {p === 'anthropic' && (
-                        <div style={{ fontSize: 11, marginTop: 3, color: 'var(--warning-text, #d97706)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <AlertTriangle size={11} />
-                          {t('providerClaudeWarning', lang)}
-                        </div>
-                      )}
-                    </div>
-                    <span className="meta" style={{
-                      fontSize: 11, flexShrink: 0,
-                      color: hasKey ? 'var(--success-text)' : 'var(--text-placeholder)',
-                    }}>
-                      {hasKey ? t('providerKeyConfigured', lang) : t('providerKeyNotSet', lang)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
 
         {/* API Keys */}
@@ -332,8 +256,8 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
             {t('apiKeyDesc', lang)}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Gemini first */}
-            {(['gemini', 'anthropic', 'openai'] as ProviderName[]).map((p) => (
+            {/* Gemini only */}
+            {(['gemini'] as ProviderName[]).map((p) => (
               <div key={p}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)' }}>
