@@ -5,6 +5,7 @@ import { WORKLOAD_CONFIG } from './workload';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import ActivityHeatmap from './ActivityHeatmap';
+import { EmptyTimeline } from './EmptyIllustrations';
 
 type EventType = 'log' | 'handoff' | 'project' | 'summary' | 'todo-add' | 'todo-done' | 'todo-trash';
 type FilterKey = 'all' | 'worklog' | 'handoff' | 'todo';
@@ -495,7 +496,7 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
 
       {filteredEvents.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">&#128197;</div>
+          <EmptyTimeline />
           <p>{t('timelineEmpty', lang)}</p>
           <p className="page-subtitle">{t('timelineEmptyHint', lang)}</p>
           {onNewLog && (

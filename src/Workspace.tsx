@@ -17,11 +17,13 @@ import ProgressPanel from './ProgressPanel';
 import type { ProgressStep } from './ProgressPanel';
 import SkeletonLoader from './SkeletonLoader';
 import { logToMarkdown, handoffResultToMarkdown } from './markdown';
+import { playSuccess, playDelete } from './sounds';
 import type { TransformResult, HandoffResult, BothResult, LogEntry, OutputMode, SourceReference, Project, Todo, NextActionItem } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import ConfirmDialog from './ConfirmDialog';
 import ErrorRetryBanner from './ErrorRetryBanner';
+import FirstUseTooltip from './FirstUseTooltip';
 import { analyzeWorkload, WORKLOAD_CONFIG } from './workload';
 // integrations: isConfigured checks are inlined (lightweight localStorage reads);
 // sendToNotion/sendToSlack are dynamically imported only when actually sending
@@ -663,6 +665,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         }
         const toastMsg = lines.join('\n');
         showToast?.(isFirstTransform ? `🎉 ${toastMsg}` : toastMsg, 'success');
+        playSuccess();
       }
     } catch (err) {
       const raw = err instanceof Error ? err.message : 'Transform failed.';
@@ -1072,20 +1075,22 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
               {progressLabel}
             </button>
           ) : (
-            <button
-              className="btn btn-primary"
-              onClick={() => runTransform(transformAction)}
-              disabled={!combined.trim() || overLimit}
-              style={{
-                padding: '8px 20px',
-                fontSize: 13,
-                fontWeight: 600,
-                borderRadius: 10,
-                opacity: (!combined.trim() || overLimit) ? 0.35 : 1,
-              }}
-            >
-              {t(transformAction === 'handoff_todo' ? 'createBtnHandoffTodo' : transformAction === 'todo_only' ? 'createBtnTodoOnly' : transformAction === 'both' || transformAction === 'worklog_handoff' ? 'createBtnBoth' : transformAction === 'handoff' ? 'createBtnHandoff' : 'createBtnWorklog', lang)}
-            </button>
+            <FirstUseTooltip id="transform" text="Paste an AI conversation above, then click here!">
+              <button
+                className="btn btn-primary"
+                onClick={() => runTransform(transformAction)}
+                disabled={!combined.trim() || overLimit}
+                style={{
+                  padding: '8px 20px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  borderRadius: 10,
+                  opacity: (!combined.trim() || overLimit) ? 0.35 : 1,
+                }}
+              >
+                {t(transformAction === 'handoff_todo' ? 'createBtnHandoffTodo' : transformAction === 'todo_only' ? 'createBtnTodoOnly' : transformAction === 'both' || transformAction === 'worklog_handoff' ? 'createBtnBoth' : transformAction === 'handoff' ? 'createBtnHandoff' : 'createBtnWorklog', lang)}
+              </button>
+            </FirstUseTooltip>
           )}
         </div>
       </div>)}
@@ -2114,7 +2119,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
           description={t('deleteConfirmDesc', lang)}
           confirmLabel={t('confirmDeleteBtn', lang)}
           cancelLabel={t('cancel', lang)}
-          onConfirm={() => { const deletedId = log.id; trashLog(deletedId); setConfirmDelete(false); onDeleted(); showToast?.(t('movedToTrash', lang), 'success', { label: t('undo', lang), onClick: () => { restoreLog(deletedId); onRefresh(); } }); }}
+          onConfirm={() => { const deletedId = log.id; trashLog(deletedId); setConfirmDelete(false); onDeleted(); playDelete(); showToast?.(t('movedToTrash', lang), 'success', { label: t('undo', lang), onClick: () => { restoreLog(deletedId); onRefresh(); } }); }}
           onCancel={() => setConfirmDelete(false)}
         />
       )}

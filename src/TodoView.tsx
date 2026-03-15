@@ -7,6 +7,7 @@ import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import DropdownMenu from './DropdownMenu';
 import ConfirmDialog from './ConfirmDialog';
+import { EmptyTodos } from './EmptyIllustrations';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -28,6 +29,7 @@ function isStaleTodo(todo: Todo): boolean {
 const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
 import { formatDateGroup } from './utils/dateFormat';
+import { playComplete } from './sounds';
 
 function formatDateGroupTs(ts: number): string {
   return formatDateGroup(new Date(ts).toISOString());
@@ -402,6 +404,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
   const handleToggle = (id: string, done: boolean) => {
     updateTodo(id, { done: !done });
     refresh();
+    if (!done) playComplete();
     showToast?.(!done ? t('todoMarkDone', lang) : t('todoMarkUndone', lang), 'success');
   };
 
@@ -1139,7 +1142,8 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
       {/* TODO list */}
       {sorted.length === 0 && !addOpen ? (
         <div className="empty-state">
-          <div className="empty-state-icon">{activeTab === 'archived' ? '\u{1F4E6}' : '\u2611'}</div>
+          {activeTab !== 'archived' && <EmptyTodos />}
+          {activeTab === 'archived' && <div className="empty-state-icon">{'\u{1F4E6}'}</div>}
           <p>{activeTab === 'archived' ? t('todoNoArchived', lang) : t('noTodos', lang)}</p>
           {activeTab === 'pending' && <p className="page-subtitle">{t('noTodosDesc', lang)}</p>}
           {activeTab === 'archived' && <p className="page-subtitle">{t('todoNoArchivedDesc', lang)}</p>}

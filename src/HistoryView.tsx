@@ -7,6 +7,7 @@ import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { trashLog, updateLog, loadLogs, getMasterNote, duplicateLog } from './storage';
 import { logToMarkdown } from './markdown';
+import { EmptyLogs } from './EmptyIllustrations';
 import LogPickerModal from './LogPickerModal';
 import DropdownMenu from './DropdownMenu';
 import ConfirmDialog from './ConfirmDialog';
@@ -1024,7 +1025,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
       {/* Log list */}
       {sorted.length === 0 ? (
         <div className="empty-state">
-          {!debouncedQuery.trim() && modeFilter === 'all' && <div className="empty-state-icon">&#128221;</div>}
+          {!debouncedQuery.trim() && modeFilter === 'all' && <EmptyLogs />}
           <p>{debouncedQuery.trim() || modeFilter !== 'all' ? t('noMatchingLogs', lang) : t('noLogsYet', lang)}</p>
           {!debouncedQuery.trim() && modeFilter === 'all' && !activeProjectId && <p className="page-subtitle">{t('noLogsYetDesc', lang)}</p>}
           {!debouncedQuery.trim() && modeFilter === 'all' && activeProjectId && (

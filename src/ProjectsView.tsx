@@ -9,6 +9,7 @@ import DropdownMenu from './DropdownMenu';
 import ConfirmDialog from './ConfirmDialog';
 import ProjectAppearanceModal from './ProjectAppearanceModal';
 import { getProjectColor } from './projectColors';
+import { EmptyProjects } from './EmptyIllustrations';
 
 type SortKey = 'created' | 'name' | 'logCount';
 
@@ -269,7 +270,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
       {/* Project grid */}
       {sorted.length === 0 ? (
         <div className="empty-state">
-          {!query.trim() && <div className="empty-state-icon">&#128194;</div>}
+          {!query.trim() && <EmptyProjects />}
           <p>{query.trim() ? t('noMatches', lang) : t('noProjects', lang)}</p>
           {!query.trim() && <p className="page-subtitle">{t('noProjectsDesc', lang)}</p>}
           {!query.trim() && (

@@ -4,6 +4,7 @@ import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { getGreeting } from './greeting';
+import FirstUseTooltip from './FirstUseTooltip';
 
 interface DashboardViewProps {
   logs: LogEntry[];
@@ -205,10 +206,12 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
           <p className="page-subtitle">
             {t('dashboardWelcomeDesc', lang)}
           </p>
-          <button className="btn btn-primary" onClick={onNewLog} style={{ marginTop: 16 }}>
-            <Plus size={16} />
-            {t('dashboardCreateFirstLog', lang)}
-          </button>
+          <FirstUseTooltip id="dashboard" text="Your AI project snapshots appear here" position="top">
+            <button className="btn btn-primary" onClick={onNewLog} style={{ marginTop: 16 }}>
+              <Plus size={16} />
+              {t('dashboardCreateFirstLog', lang)}
+            </button>
+          </FirstUseTooltip>
         </div>
       </div>
     );
