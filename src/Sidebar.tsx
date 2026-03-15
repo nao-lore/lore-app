@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { FileText, ScrollText, FolderOpen, CheckSquare, MoreHorizontal, Settings, Trash2, HelpCircle, LogOut, ChevronUp, ChevronDown, ChevronRight, BookOpen, Clock, BarChart2, FileBarChart, LayoutDashboard, MessageSquare, Menu } from 'lucide-react';
+import { FileText, ScrollText, FolderOpen, CheckSquare, MoreHorizontal, Settings, Trash2, HelpCircle, LogOut, ChevronUp, ChevronDown, ChevronRight, BookOpen, Clock, BarChart2, FileBarChart, LayoutDashboard, MessageSquare, Menu, CreditCard } from 'lucide-react';
 import type { LogEntry, Project, Todo } from './types';
 import { t } from './i18n';
 import type { Lang } from './i18n';
@@ -484,6 +484,10 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
             <button className="account-popover-item" onClick={() => { setAccountMenuOpen(false); onOpenSettings(); }}>
               <Settings size={16} />
               <span>{t('accountMenuSettings', lang)}</span>
+            </button>
+            <button className="account-popover-item" onClick={() => { setAccountMenuOpen(false); onOpenPricing?.(); }}>
+              <CreditCard size={16} />
+              <span>{t('navPricing', lang)}</span>
             </button>
             <button className="account-popover-item" onClick={() => { setAccountMenuOpen(false); setStatsOpen(true); }}>
               <BarChart2 size={16} />

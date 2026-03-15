@@ -219,13 +219,14 @@ export default function App() {
         setInputKey((k) => k + 1);
         inputDirtyRef.current = false;
         setView('input');
+        showToast(t('extensionReceived', lang), 'success');
       }
     };
     // Check on mount (in case app loaded with hash already set)
     handleExtensionImport();
     window.addEventListener('hashchange', handleExtensionImport);
     return () => window.removeEventListener('hashchange', handleExtensionImport);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Show onboarding on first launch (0 logs + flag not set)
   useEffect(() => {
