@@ -529,7 +529,7 @@ export default function App() {
         )}
         <div style={{ height: '100%' }}>
           <ErrorBoundary>
-            <Suspense fallback={null}>
+            <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)', fontSize: 13 }}>Loading…</div>}>
               <div className="view-fade-in" key={view}>
                 {renderWorkspace()}
               </div>

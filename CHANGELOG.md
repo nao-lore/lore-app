@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.1.0] - 2026-03-15
+
+### Added
+- Built-in AI API (no API key required, 20 free uses/day)
+- Pricing page (Free vs Pro comparison)
+- Feature toggles in Settings (7 configurable features)
+- Built-in API usage display with progress bar
+- Chrome extension store link in onboarding
+
+### Changed
+- Onboarding redesigned (API key not required messaging)
+- Settings simplified (Gemini only, removed other providers)
+- Sidebar collapse rail redesigned (Claude-style)
+- Landing page updated (no API key messaging)
+- Version bumped to 0.1.0
+
+### Fixed
+- Console.log statements guarded for production
+- CSS skeleton-shimmer syntax warning
+- Chrome extension URL (staging → production)
+- Build chunk size optimization
+- Accessibility improvements (ARIA labels)
+
 ## [0.1.0-beta] - 2026-03-14
 
 ### Added
