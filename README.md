@@ -1,6 +1,11 @@
 <h1 align="center">Lore</h1>
 
 <p align="center">
+  <a href="https://github.com/nao-lore/lore-app/actions"><img src="https://github.com/nao-lore/lore-app/actions/workflows/playwright.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/nao-lore/lore-app/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+</p>
+
+<p align="center">
   <strong>Turn AI conversations into structured handoffs</strong><br/>
   Stop losing context between AI sessions. Paste a chat, get a handoff.
 </p>
@@ -10,6 +15,10 @@
   <a href="#features">Features</a> ·
   <a href="#getting-started">Getting Started</a> ·
   <a href="#chrome-extension">Chrome Extension</a>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/handoff-detail.png" alt="Lore Handoff View" width="800">
 </p>
 
 ---
@@ -24,6 +33,34 @@ Paste your ChatGPT / Claude / Gemini conversation into Lore, and it automaticall
 - **TODO list** — Action items auto-extracted with priority levels
 - **Project Summary** — A living overview built from all your handoffs
 - **AI Context** — Copy-paste-ready context for your next AI session
+
+## Screenshots
+
+<details>
+<summary>Click to expand</summary>
+
+### Dashboard
+<img src="docs/screenshots/dashboard.png" alt="Dashboard" width="800">
+
+### Logs
+<img src="docs/screenshots/logs-view.png" alt="Logs View" width="800">
+
+### Handoff Detail
+<img src="docs/screenshots/handoff-detail.png" alt="Handoff Detail" width="800">
+
+### TODO Management
+<img src="docs/screenshots/todo.png" alt="TODO" width="800">
+
+### Timeline
+<img src="docs/screenshots/timeline.png" alt="Timeline" width="800">
+
+### Weekly Report
+<img src="docs/screenshots/weekly-report.png" alt="Weekly Report" width="800">
+
+### Project Detail
+<img src="docs/screenshots/project-detail.png" alt="Project Detail" width="800">
+
+</details>
 
 ## Features
 
@@ -61,6 +98,8 @@ Go to **[lore-app.vercel.app](https://lore-app.vercel.app)** — no signup requi
 1. Set up a free Gemini API key at [aistudio.google.com](https://aistudio.google.com)
 2. Paste it in Settings
 3. Paste an AI conversation and hit "Transform to Handoff"
+
+> **No API key?** Select "Try without API key" during onboarding to explore Lore with pre-generated sample data.
 
 ### Run locally
 
@@ -112,6 +151,10 @@ To install locally:
 - API keys never leave your browser — they're sent directly to the AI provider
 - No analytics, no tracking, no accounts required
 - Export/import your data anytime from Settings
+
+## Feedback
+
+Found a bug or have a suggestion? [Open an issue](https://github.com/nao-lore/lore-app/issues/new/choose) or use the in-app feedback button (Help → Feedback).
 
 ## License
 
