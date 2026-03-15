@@ -458,6 +458,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
               { key: 'workload', labelKey: 'featureWorkload', descKey: 'featureWorkloadDesc', default: true },
               { key: 'knowledge_base', labelKey: 'featureKnowledgeBase', descKey: 'featureKnowledgeBaseDesc', default: true },
               { key: 'keyboard_shortcuts', labelKey: 'featureKeyboardShortcuts', descKey: 'featureKeyboardShortcutsDesc', default: true },
+              { key: 'sounds', labelKey: 'featureSounds', descKey: 'featureSoundsDesc', default: true },
             ] as const).map(({ key, labelKey, descKey, default: def }) => (
               <label key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
                 <input

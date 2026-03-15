@@ -466,9 +466,103 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
           </div>
         )}
 
+        {/* ── Your Activity (summary card) ── */}
+        <ActivitySummaryCard logs={logs} todos={todos} projects={projects} lang={lang} />
+
         {/* ── Trends ── */}
         <TrendsSection logs={logs} todos={todos} lang={lang} />
 
+    </div>
+  );
+}
+
+// ── Activity Summary Card ──
+
+function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]; todos: Todo[]; projects: Project[]; lang: Lang }) {
+  const stats = useMemo(() => {
+    const totalLogs = logs.length;
+    const todosDone = todos.filter((td) => td.done).length;
+    const todosPending = todos.filter((td) => !td.done).length;
+    const activeProjects = projects.filter((p) => logs.some((l) => l.projectId === p.id)).length;
+
+    // Logs this week vs last week
+    const now = new Date();
+    const weekStart = getWeekStart(now);
+    const lastWeekStart = new Date(weekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+    const thisWeekLogs = logs.filter((l) => new Date(l.createdAt) >= weekStart).length;
+    const lastWeekLogs = logs.filter((l) => {
+      const d = new Date(l.createdAt);
+      return d >= lastWeekStart && d < weekStart;
+    }).length;
+    const weekDiff = thisWeekLogs - lastWeekLogs;
+
+    // Most active project
+    const projectCounts: Record<string, number> = {};
+    for (const l of logs) {
+      if (l.projectId) projectCounts[l.projectId] = (projectCounts[l.projectId] || 0) + 1;
+    }
+    let topProjectName: string | null = null;
+    let topCount = 0;
+    for (const [pid, count] of Object.entries(projectCounts)) {
+      if (count > topCount) {
+        topCount = count;
+        const proj = projects.find((p) => p.id === pid);
+        topProjectName = proj ? `${proj.icon || '📂'} ${proj.name}` : null;
+      }
+    }
+
+    return { totalLogs, todosDone, todosPending, activeProjects, thisWeekLogs, lastWeekLogs, weekDiff, topProjectName, topCount };
+  }, [logs, todos, projects]);
+
+  if (stats.totalLogs === 0) return null;
+
+  const diffLabel = stats.weekDiff >= 0 ? `+${stats.weekDiff}` : `${stats.weekDiff}`;
+  const diffColor = stats.weekDiff >= 0 ? 'var(--success-text, #22c55e)' : 'var(--error-text, #ef4444)';
+  const isJa = lang === 'ja';
+
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <div
+        style={{
+          padding: '18px 22px', borderRadius: 12,
+          background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
+        }}
+      >
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 14 }}>
+          {isJa ? 'あなたのアクティビティ' : 'Your Activity'}
+        </div>
+
+        {/* Row 1: headline stats */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.8 }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-secondary)' }}>{stats.totalLogs}</span>
+          <span>{isJa ? 'ログ' : 'logs'}</span>
+          <span style={{ color: 'var(--text-placeholder)', margin: '0 2px' }}>&middot;</span>
+          <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-secondary)' }}>{stats.todosDone}</span>
+          <span>{isJa ? 'TODO完了' : 'TODOs done'}</span>
+          <span style={{ color: 'var(--text-placeholder)', margin: '0 2px' }}>&middot;</span>
+          <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-secondary)' }}>{stats.activeProjects}</span>
+          <span>{isJa ? 'プロジェクト' : 'projects'}</span>
+        </div>
+
+        {/* Row 2: this week comparison */}
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
+          {isJa ? '今週' : 'This week'}: <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>{stats.thisWeekLogs}</span> {isJa ? 'ログ' : 'logs'}
+          {' '}
+          <span style={{ color: diffColor, fontWeight: 600 }}>
+            ({diffLabel} {isJa ? '先週比' : 'from last week'})
+          </span>
+        </div>
+
+        {/* Row 3: most active project */}
+        {stats.topProjectName && (
+          <div style={{ fontSize: 12, color: 'var(--text-placeholder)', marginTop: 6 }}>
+            {isJa ? '最も活発:' : 'Most active:'} <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{stats.topProjectName}</span>
+            <span style={{ opacity: 0.6 }}> ({stats.topCount} {isJa ? 'ログ' : 'logs'})</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
