@@ -63,6 +63,7 @@ const GEMINI_MODELS = ['gemini-2.5-flash'];
 
 const ALLOWED_ORIGINS = [
   'https://lore-app.vercel.app',
+  'https://lore-app-r5dl.vercel.app',
   'http://localhost:5173',
   'http://localhost:4173',
 ];
