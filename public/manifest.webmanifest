@@ -37,5 +37,12 @@
       "form_factor": "wide",
       "label": "Timeline view with activity heatmap and history"
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "text": "text"
+    }
+  }
 }

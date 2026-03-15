@@ -167,6 +167,16 @@ export default function HelpView({ onBack, lang, onShowOnboarding, onFeedback }:
           </ul>
         </div>
 
+        {/* Pricing */}
+        <div className="content-card" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 14, color: 'var(--text-body)' }}>
+            {t('navPricing', lang)}
+          </span>
+          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            — {lang === 'ja' ? 'アカウントメニューから料金プランを確認できます' : 'Check the Pricing page from the account menu'}
+          </span>
+        </div>
+
         {/* 6. よくある質問 */}
         <div className="content-card">
           <div className="content-card-header">{t('helpFaqTitle', lang)}</div>
