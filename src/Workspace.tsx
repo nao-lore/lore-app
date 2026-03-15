@@ -4,7 +4,7 @@ import type { TransformBothOptions } from './transform';
 import { ChunkEngine, getChunkTarget, getEngineConcurrency } from './chunkEngine';
 import type { EngineProgress } from './chunkEngine';
 import { findSession } from './chunkDb';
-import { addLog, trashLog, updateLog, getLog, getApiKey, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateTodo as updateTodoStorage, duplicateLog, getAiContext, getMasterNote, linkLogs, unlinkLogs, isDemoMode, getFeatureEnabled } from './storage';
+import { addLog, trashLog, restoreLog, updateLog, getLog, getApiKey, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateTodo as updateTodoStorage, duplicateLog, getAiContext, getMasterNote, linkLogs, unlinkLogs, isDemoMode, getFeatureEnabled } from './storage';
 import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
 import { demoTransformBoth, demoTransformHandoff, demoTransformText, demoTransformTodoOnly, demoTransformHandoffTodo, getDemoConversation } from './demoData';
 import { classifyLog, saveCorrection } from './classify';
@@ -179,6 +179,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
   const [suggestion, setSuggestion] = useState<{ logId: string; projectId: string; projectName: string; confidence: number } | null>(null);
   const [postSavePickerOpen, setPostSavePickerOpen] = useState(false);
   const [savedResult, setSavedResult] = useState<{ log: LogEntry; markdown: string; fullContext: string | null } | null>(null);
+  const [wasFirstTransform, setWasFirstTransform] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const engineRef = useRef<ChunkEngine | null>(null);
@@ -328,6 +329,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
     setError(''); setLoading(true); setResult(null); setSavedId(null); setSavedHandoffId(null); setSavedResult(null); setProgress(null); setSimStep(0); setStreamDetail(null);
 
+    const isFirstTransform = loadLogs().length === 0;
     const _t0 = import.meta.env.DEV ? performance.now() : 0;
 
     // Normalize worklog_handoff → both internally
@@ -399,6 +401,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         if (savedHandoffLog) {
           const md = formatHandoffMarkdown(savedHandoffLog);
           setSavedResult({ log: savedHandoffLog, markdown: md, fullContext: null });
+          setWasFirstTransform(isFirstTransform);
         }
         setSavedId(lastEntryId);
         if (todoCount > 0) showToast?.(tf('toastTodosExtracted', lang, todoCount), 'success');
@@ -610,9 +613,11 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           }
         }
         setSavedResult({ log: savedHandoffLog, markdown: handoffMd, fullContext: fullContextMd });
+        setWasFirstTransform(isFirstTransform);
         // Still show todo count toast for handoff_todo mode
         if (isHandoffTodo && todoCount > 0) {
-          showToast?.(tf('toastTodosExtracted', lang, todoCount), 'success');
+          const todoMsg = tf('toastTodosExtracted', lang, todoCount);
+          showToast?.(isFirstTransform ? `🎉 ${todoMsg}` : todoMsg, 'success');
         }
       } else {
         // Worklog-only or todo-only — just toast
@@ -630,7 +635,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             lines.push(tf('toastTodosAdded', lang, todoCount));
           }
         }
-        showToast?.(lines.join('\n'), 'success');
+        const toastMsg = lines.join('\n');
+        showToast?.(isFirstTransform ? `🎉 ${toastMsg}` : toastMsg, 'success');
       }
     } catch (err) {
       const raw = err instanceof Error ? err.message : 'Transform failed.';
@@ -848,7 +854,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       {/* Post-generation preview panel */}
       {savedResult && (
         <div style={{ maxWidth: 760, margin: '0 auto', padding: 20 }}>
-          <h3 style={{ marginBottom: 12, fontSize: 18, fontWeight: 700 }}>{t('logSaved', lang)}</h3>
+          <h3 style={{ marginBottom: 12, fontSize: 18, fontWeight: 700 }}>{wasFirstTransform ? `🎉 ${t('logSaved', lang)}` : t('logSaved', lang)}</h3>
 
           {/* Markdown preview in a scrollable code-block style container */}
           <div style={{
@@ -1070,10 +1076,17 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                 : 'modeLabelTodoOnly',
                 lang
               );
+              const tooltip = t(
+                a === 'handoff_todo' ? 'tooltipHandoffTodo'
+                : a === 'handoff' ? 'tooltipHandoff'
+                : 'tooltipTodoOnly',
+                lang
+              );
               return (
                 <button
                   key={a}
                   className={`mode-selector-btn${isActive ? ' active' : ''}`}
+                  title={tooltip}
                   onClick={() => { setTransformAction(a); try { localStorage.setItem('threadlog_transform_action', a); } catch { /* ignore */ } }}
                 >
                   {label}
@@ -2072,7 +2085,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
           description={t('deleteConfirmDesc', lang)}
           confirmLabel={t('confirmDeleteBtn', lang)}
           cancelLabel={t('cancel', lang)}
-          onConfirm={() => { trashLog(log.id); setConfirmDelete(false); onDeleted(); }}
+          onConfirm={() => { const deletedId = log.id; trashLog(deletedId); setConfirmDelete(false); onDeleted(); showToast?.(t('movedToTrash', lang), 'success', { label: t('undo', lang), onClick: () => { restoreLog(deletedId); onRefresh(); } }); }}
           onCancel={() => setConfirmDelete(false)}
         />
       )}
