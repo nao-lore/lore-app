@@ -42,6 +42,9 @@ export default defineConfig({
           if (id.includes('node_modules/mammoth')) {
             return 'mammoth';
           }
+          if (id.includes('/src/provider') || id.includes('/src/transform')) {
+            return 'provider-transform';
+          }
         },
       },
     },
