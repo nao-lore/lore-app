@@ -466,6 +466,11 @@ export default function App() {
           <Menu size={20} />
         </button>
       )}
+      {!sidebarOpen && !sidebarHidden && (
+        <div style={{ width: 52, minWidth: 52, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 14 }}>
+          <button className="toggle-btn" onClick={() => { setSidebarOpen(true); safeSetItem(SIDEBAR_KEY, 'open'); }} title={t('showSidebar', lang)} aria-label={t('ariaShowSidebar', lang)}>◫</button>
+        </div>
+      )}
       {sidebarHidden && (
         <div
           className="sidebar-reveal-bar"
