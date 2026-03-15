@@ -18,7 +18,7 @@
   --text-body: #374151;
   --text-muted: #6b7280;
   --text-subtle: #9ca3af;
-  --text-placeholder: #c0c0c0;
+  --text-placeholder: #808080;
   --accent: #7c5cfc;
   --accent-hover: #8b6dff;
   --accent-active: #6b4ce6;
@@ -1738,7 +1738,7 @@ textarea.input:focus {
 .mn-action-bar-buttons .btn {
   font-size: 13px;
   padding: 6px 14px;
-  min-height: 32px;
+  min-height: 44px;
 }
 
 /* Refine panel */
@@ -1858,7 +1858,7 @@ textarea.input:focus {
 /* Export menu */
 .mn-export-trigger {
   padding: 6px 8px;
-  min-height: 32px;
+  min-height: 44px;
   color: var(--text-subtle);
 }
 .mn-export-trigger:hover {

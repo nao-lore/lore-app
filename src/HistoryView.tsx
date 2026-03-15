@@ -294,7 +294,8 @@ interface HistoryViewProps {
 }
 
 export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId, projects, showToast, onOpenMasterNote, onOpenProject, tagFilter, onClearTagFilter, onTagFilter, onDuplicate }: HistoryViewProps) {
-  const [query, setQuery] = useState('');
+  const [rawQuery, setRawQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [modeFilter, setModeFilter] = usePersistedState<ModeFilter>('threadlog_logs_filter', 'all');
   const [sortKey, setSortKey] = usePersistedState<SortKey>('threadlog_logs_sort', 'created');
   const [groupKey, setGroupKey] = usePersistedState<GroupKey>('threadlog_logs_group', 'none');
@@ -311,6 +312,12 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
   const [dateTo, setDateTo] = useState('');
   const [datePreset, setDatePreset] = useState<DatePreset | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Debounce search query by 200ms
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(rawQuery), 200);
+    return () => clearTimeout(timer);
+  }, [rawQuery]);
 
   useEffect(() => {
     if (!projectPickerOpen) return;
@@ -336,22 +343,22 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
   // Scroll to top when filters change
   useEffect(() => {
     scrollContainerRef.current?.scrollTo(0, 0);
-  }, [query, modeFilter, sortKey, groupKey, dateFrom, dateTo, tagFilter]);
+  }, [debouncedQuery, modeFilter, sortKey, groupKey, dateFrom, dateTo, tagFilter]);
 
   const keywords = useMemo(() => extractKeywords(logs), [logs]);
 
-  // Filter
-  const filtered = logs.filter((log) => {
+  // Filter (memoised)
+  const filtered = useMemo(() => logs.filter((log) => {
     if (modeFilter === 'pinned' && !log.pinned) return false;
     if (modeFilter !== 'all' && modeFilter !== 'pinned' && (log.outputMode ?? 'worklog') !== modeFilter) return false;
-    if (query.trim() && !matchesQuery(log, query.trim())) return false;
+    if (debouncedQuery.trim() && !matchesQuery(log, debouncedQuery.trim())) return false;
     if (tagFilter && !log.tags.includes(tagFilter)) return false;
     if ((dateFrom || dateTo) && !matchesDateRange(log, dateFrom, dateTo)) return false;
     return true;
-  });
+  }), [logs, modeFilter, debouncedQuery, tagFilter, dateFrom, dateTo]);
 
-  // Sort (pinned first always)
-  const sorted = [...filtered].sort((a, b) => {
+  // Sort (pinned first always, memoised)
+  const sorted = useMemo(() => [...filtered].sort((a, b) => {
     if (a.pinned && !b.pinned) return -1;
     if (!a.pinned && b.pinned) return 1;
     switch (sortKey) {
@@ -366,7 +373,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
       default:
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }
-  });
+  }), [filtered, sortKey]);
 
   // Group
   type GroupedEntry = { key: string; label: string; items: LogEntry[] };
@@ -602,10 +609,10 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
           </div>
           {/* Row 2: title */}
           <div className="card-title-clamp" style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.4, paddingRight: 48 }}>
-            <Highlight text={log.title} query={query} />
+            <Highlight text={log.title} query={debouncedQuery} />
           </div>
           {/* Row 3: preview */}
-          {preview && <div className="meta" style={{ marginTop: 5, lineHeight: 1.55, fontSize: 12.5 }}><Highlight text={preview} query={query} /></div>}
+          {preview && <div className="meta" style={{ marginTop: 5, lineHeight: 1.55, fontSize: 12.5 }}><Highlight text={preview} query={debouncedQuery} /></div>}
           {/* Row 3.5: nextActions progress */}
           {log.outputMode === 'handoff' && log.nextActions && log.nextActions.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5, fontSize: 12, color: 'var(--text-placeholder)' }}>
@@ -664,7 +671,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
                   style={{ cursor: 'pointer' }}
                   onClick={(e) => { e.stopPropagation(); onTagFilter?.(tg); }}
                 >
-                  <Highlight text={tg} query={query} />
+                  <Highlight text={tg} query={debouncedQuery} />
                 </span>
               ))}
               {log.tags.length > 5 && <span className="meta" style={{ fontSize: 11, alignSelf: 'center' }}>+{log.tags.length - 5}</span>}
@@ -694,7 +701,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
         <span className={log.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} style={{ flexShrink: 0 }}>
           {modeLabel}
         </span>
-        <span className="list-row-title"><Highlight text={log.title} query={query} /></span>
+        <span className="list-row-title"><Highlight text={log.title} query={debouncedQuery} /></span>
         <span className="meta" style={{ fontSize: 11, flexShrink: 0, whiteSpace: 'nowrap' }}>{formatDateFull(log.createdAt)}</span>
         {!selectMode && (
           <div style={{ position: 'relative', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
@@ -834,8 +841,8 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
         <input
           className="input input-sm"
           type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          value={rawQuery}
+          onChange={(e) => setRawQuery(e.target.value)}
           placeholder={t('searchLogs', lang)}
           maxLength={200}
           style={{ flex: 1, minWidth: 120 }}
@@ -952,7 +959,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
       )}
 
       {/* Top Keywords */}
-      {!query.trim() && !tagFilter && modeFilter === 'all' && logs.length >= 3 && (() => {
+      {!debouncedQuery.trim() && !tagFilter && modeFilter === 'all' && logs.length >= 3 && (() => {
         if (keywords.length === 0) return null;
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
@@ -967,8 +974,8 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
                 role="button"
                 tabIndex={0}
                 style={{ cursor: 'pointer', fontSize: 12 }}
-                onClick={() => setQuery(kw.word)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setQuery(kw.word); } }}
+                onClick={() => setRawQuery(kw.word)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setRawQuery(kw.word); } }}
               >
                 {kw.word}
                 <span style={{ marginLeft: 4, fontSize: 10, opacity: 0.6 }}>{kw.count}</span>
@@ -994,7 +1001,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
       )}
 
       {/* Unassigned logs hint */}
-      {!activeProjectId && !selectMode && !query.trim() && modeFilter === 'all' && projects.length > 0 && (() => {
+      {!activeProjectId && !selectMode && !debouncedQuery.trim() && modeFilter === 'all' && projects.length > 0 && (() => {
         const unassigned = sorted.filter((l) => !l.projectId).length;
         if (unassigned === 0 || unassigned === sorted.length) return null;
         return (
@@ -1017,10 +1024,10 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
       {/* Log list */}
       {sorted.length === 0 ? (
         <div className="empty-state">
-          {!query.trim() && modeFilter === 'all' && <div className="empty-state-icon">&#128221;</div>}
-          <p>{query.trim() || modeFilter !== 'all' ? t('noMatchingLogs', lang) : t('noLogsYet', lang)}</p>
-          {!query.trim() && modeFilter === 'all' && !activeProjectId && <p className="page-subtitle">{t('noLogsYetDesc', lang)}</p>}
-          {!query.trim() && modeFilter === 'all' && activeProjectId && (
+          {!debouncedQuery.trim() && modeFilter === 'all' && <div className="empty-state-icon">&#128221;</div>}
+          <p>{debouncedQuery.trim() || modeFilter !== 'all' ? t('noMatchingLogs', lang) : t('noLogsYet', lang)}</p>
+          {!debouncedQuery.trim() && modeFilter === 'all' && !activeProjectId && <p className="page-subtitle">{t('noLogsYetDesc', lang)}</p>}
+          {!debouncedQuery.trim() && modeFilter === 'all' && activeProjectId && (
             <>
               <p className="page-subtitle">{t('addLogsEmptyHint', lang)}</p>
               <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={() => setLogPickerOpen(true)}>
