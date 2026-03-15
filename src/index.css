@@ -3344,6 +3344,48 @@ button:focus-visible,
   100% { background-position: -200% 0; }
 }
 
+/* Skeleton list variant */
+.skeleton-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-default);
+}
+.skeleton-list-row:last-child { border-bottom: none; }
+.skeleton-icon {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 8px;
+  margin-bottom: 0;
+}
+.skeleton-list-text {
+  flex: 1;
+  min-width: 0;
+}
+.skeleton-list-text .skeleton-bar:last-child {
+  margin-bottom: 0;
+}
+
+/* Skeleton card variant */
+.skeleton-card {
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  padding: 20px;
+}
+.skeleton-card .skeleton-bar:first-child {
+  margin-bottom: 16px;
+}
+.skeleton-card .skeleton-bar:last-child {
+  margin-bottom: 0;
+}
+
+/* Skeleton detail variant */
+.skeleton-detail .skeleton-bar:first-child {
+  margin-bottom: 0;
+}
+
 /* View fade-in transition */
 @keyframes view-fade-in {
   from { opacity: 0; }

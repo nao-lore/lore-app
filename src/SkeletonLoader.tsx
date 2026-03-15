@@ -4,23 +4,70 @@ import type { Lang } from './i18n';
 interface SkeletonLoaderProps {
   message?: string;
   lang: Lang;
+  variant?: 'list' | 'card' | 'detail';
 }
 
-const BAR_WIDTHS = ['100%', '85%', '92%', '70%', '60%'];
+function SkeletonBar({ width, delay = 0, height }: { width: string; delay?: number; height?: number }) {
+  return (
+    <div
+      className="skeleton-bar"
+      style={{ width, animationDelay: `${delay}s`, ...(height ? { height } : {}) }}
+    />
+  );
+}
 
-export default function SkeletonLoader({ message, lang }: SkeletonLoaderProps) {
+function ListSkeleton() {
+  return (
+    <div className="skeleton-list">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="skeleton-list-row" style={{ animationDelay: `${i * 0.1}s` }}>
+          <div className="skeleton-bar skeleton-icon" style={{ animationDelay: `${i * 0.1}s` }} />
+          <div className="skeleton-list-text">
+            <SkeletonBar width={['75%', '60%', '80%', '55%'][i]} delay={i * 0.1} height={14} />
+            <SkeletonBar width={['50%', '40%', '55%', '35%'][i]} delay={i * 0.1 + 0.05} height={10} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CardSkeleton() {
+  return (
+    <div className="skeleton-card">
+      <SkeletonBar width="60%" delay={0} height={16} />
+      <SkeletonBar width="90%" delay={0.15} />
+      <SkeletonBar width="70%" delay={0.3} />
+    </div>
+  );
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="skeleton-detail">
+      <SkeletonBar width="45%" delay={0} height={22} />
+      <div style={{ marginTop: 16 }}>
+        <SkeletonBar width="100%" delay={0.1} />
+        <SkeletonBar width="95%" delay={0.2} />
+        <SkeletonBar width="88%" delay={0.3} />
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <SkeletonBar width="100%" delay={0.4} />
+        <SkeletonBar width="72%" delay={0.5} />
+      </div>
+    </div>
+  );
+}
+
+export default function SkeletonLoader({ message, lang, variant = 'list' }: SkeletonLoaderProps) {
   return (
     <div className="skeleton-loader">
       <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
         {message ?? t('aiThinking', lang)}
       </div>
-      {BAR_WIDTHS.map((width, i) => (
-        <div
-          key={i}
-          className="skeleton-bar"
-          style={{ width, animationDelay: `${i * 0.15}s` }}
-        />
-      ))}
+      {variant === 'list' && <ListSkeleton />}
+      {variant === 'card' && <CardSkeleton />}
+      {variant === 'detail' && <DetailSkeleton />}
     </div>
   );
 }
