@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
-import { Menu } from 'lucide-react';
+import { Menu, ChevronUp } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Workspace from './Workspace';
 import CommandPalette from './CommandPalette';
@@ -103,6 +103,7 @@ export default function App() {
     navigator.onLine ? 'online' : 'offline'
   );
   const [offlineDismissed, setOfflineDismissed] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Offline / online detection
   useEffect(() => {
@@ -118,6 +119,17 @@ export default function App() {
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('online', handleOnline);
     };
+  }, []);
+
+  // Scroll-to-top button visibility
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      setShowScrollTop(el.scrollTop > 400);
+    };
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
   }, []);
 
   // PWA service worker update notification
@@ -558,6 +570,13 @@ export default function App() {
           </ErrorBoundary>
         </div>
       </div>
+      <button
+        className={`scroll-to-top${showScrollTop ? ' visible' : ''}`}
+        onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+        aria-label="Scroll to top"
+      >
+        <ChevronUp size={18} />
+      </button>
       {showOverdueBanner && (
         <div className="overdue-banner">
           <span>
@@ -687,6 +706,7 @@ export default function App() {
                 { keys: '⌘ N', desc: t('shortcutNewLog', lang) },
                 { keys: '⌘ K', desc: t('shortcutSearch', lang) },
                 { keys: '⌘ ,', desc: t('shortcutSettings', lang) },
+                { keys: '⌘ Enter', desc: t('shortcutSubmit', lang) },
                 { keys: '?', desc: t('shortcutShortcuts', lang) },
                 { keys: 'Esc', desc: t('shortcutEscape', lang) },
               ]).map((s) => (

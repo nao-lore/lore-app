@@ -740,6 +740,7 @@ const labels = {
   shortcutSearch: { ja: '検索バーを開く', en: 'Open search bar', es: 'Abrir barra de búsqueda', fr: 'Ouvrir la barre de recherche', de: 'Suchleiste öffnen', zh: '打开搜索栏', ko: '검색 바 열기', pt: 'Abrir barra de pesquisa' },
   shortcutSettings: { ja: '設定を開く', en: 'Open Settings', es: 'Abrir configuración', fr: 'Ouvrir les paramètres', de: 'Einstellungen öffnen', zh: '打开设置', ko: '설정 열기', pt: 'Abrir Configurações' },
   shortcutShortcuts: { ja: 'ショートカット一覧', en: 'Show shortcuts', es: 'Mostrar atajos', fr: 'Afficher les raccourcis', de: 'Tastenkombinationen anzeigen', zh: '快捷键列表', ko: '단축키 목록', pt: 'Mostrar atalhos' },
+  shortcutSubmit: { ja: '変換を実行', en: 'Submit / Transform', es: 'Enviar / Transformar', fr: 'Soumettre / Transformer', de: 'Absenden / Transformieren', zh: '提交 / 转换', ko: '제출 / 변환', pt: 'Enviar / Transformar' },
   shortcutEscape: { ja: '戻る / 閉じる', en: 'Go back / Close', es: 'Volver / Cerrar', fr: 'Retour / Fermer', de: 'Zurück / Schließen', zh: '返回 / 关闭', ko: '뒤로 / 닫기', pt: 'Voltar / Fechar' },
 
   // Stats
