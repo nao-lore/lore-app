@@ -58,7 +58,7 @@ async function extractLogSummary(log: LogEntry, apiKey: string): Promise<LogSumm
 
   const jsonMatch = rawText.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    console.error('[MasterNote] extractLogSummary parse failed, raw:', rawText.slice(0, 200));
+    if (import.meta.env.DEV) console.error('[MasterNote] extractLogSummary parse failed, raw:', rawText.slice(0, 200));
     throw new Error('[Parse Error] Could not extract JSON from response.');
   }
 
@@ -280,7 +280,7 @@ export async function generateMasterNote(
 
   const jsonMatch = rawText.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    console.error('[MasterNote] Merge parse failed, raw:', rawText.slice(0, 300));
+    if (import.meta.env.DEV) console.error('[MasterNote] Merge parse failed, raw:', rawText.slice(0, 300));
     throw new Error('[Parse Error] Could not extract JSON from merge response.');
   }
 
@@ -288,7 +288,7 @@ export async function generateMasterNote(
   try {
     parsed = JSON.parse(jsonMatch[0]);
   } catch (parseErr) {
-    console.error('[MasterNote] Merge JSON.parse error:', parseErr, 'raw:', jsonMatch[0].slice(0, 300));
+    if (import.meta.env.DEV) console.error('[MasterNote] Merge JSON.parse error:', parseErr, 'raw:', jsonMatch[0].slice(0, 300));
     throw new Error('[Parse Error] Invalid JSON in merge response.');
   }
 

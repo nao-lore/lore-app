@@ -236,6 +236,7 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
                   key={n.key}
                   role="button"
                   tabIndex={0}
+                  aria-label={n.label}
                   onClick={() => { n.onClick(); }}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); n.onClick(); } }}
                   style={{
@@ -292,6 +293,7 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
                     key={snap.project.id}
                     role="button"
                     tabIndex={0}
+                    aria-label={snap.project.name}
                     onClick={() => onOpenProject(snap.project.id)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenProject(snap.project.id); } }}
                     style={{
@@ -361,7 +363,11 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
               {focusTasks.map((action) => (
                 <div
                   key={`${action.logId}-${action.index}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={action.text}
                   onClick={() => onToggleAction(action.logId, action.index)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleAction(action.logId, action.index); } }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 10,
                     padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
@@ -396,7 +402,11 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
                 {uncheckedActions.slice(5, 25).map((action) => (
                   <div
                     key={`${action.logId}-${action.index}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={action.text}
                     onClick={() => onToggleAction(action.logId, action.index)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleAction(action.logId, action.index); } }}
                     style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', userSelect: 'none' }}
                   >
                     <Square size={12} style={{ color: 'var(--text-placeholder)', flexShrink: 0 }} />
@@ -442,6 +452,7 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
                   key={snap.project.id}
                   role="button"
                   tabIndex={0}
+                  aria-label={`${snap.project.name}: ${snap.blockers[0]}`}
                   onClick={() => onOpenProject(snap.project.id)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenProject(snap.project.id); } }}
                   style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', background: 'color-mix(in srgb, var(--error-text, #ef4444) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--error-text, #ef4444) 10%, transparent)' }}

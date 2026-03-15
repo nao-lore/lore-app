@@ -243,7 +243,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       }
       showToast?.(t('extensionReceived', lang), 'success');
     } catch (err) {
-      console.error('[Hash Import] Failed:', err);
+      if (import.meta.env.DEV) console.error('[Hash Import] Failed:', err);
       setError('Failed to import from extension.');
     }
   }, [showToast, lang]);
@@ -262,7 +262,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     findSession(combined).then((info) => {
       if (!cancelled) setResumeInfo(info ?? null);
     }).catch((e) => {
-      console.warn('findSession failed:', e);
+      if (import.meta.env.DEV) console.warn('findSession failed:', e);
       if (!cancelled) setResumeInfo(null);
     });
     return () => { cancelled = true; };
@@ -737,7 +737,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         updateLog(entry.id, { suggestedProjectId: result.projectId, classificationConfidence: result.confidence });
       }
     } catch (err) {
-      console.warn('[Classify] Error:', err);
+      if (import.meta.env.DEV) console.warn('[Classify] Error:', err);
     } finally {
       setClassifying(false);
     }
@@ -1117,6 +1117,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             onClick={() => setCaptureInfo(null)}
             className="capture-banner-close"
             title="Dismiss"
+            aria-label={t('ariaDismissNotification', lang)}
           >×</button>
         </div>
       )}
@@ -1141,6 +1142,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                 onClick={() => removeFile(i)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--border-hover)', fontSize: 16, padding: '0 4px', lineHeight: 1, transition: 'color 0.12s' }}
                 title="Remove file"
+                aria-label={`Remove ${f.name}`}
                 onMouseOver={(e) => (e.currentTarget.style.color = 'var(--error-text)')}
                 onMouseOut={(e) => (e.currentTarget.style.color = 'var(--border-hover)')}
               >
@@ -1719,6 +1721,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
                 }}
                 style={log.pinned ? { color: 'var(--accent)', flexShrink: 0, marginTop: 2 } : { flexShrink: 0, marginTop: 2 }}
                 title={log.pinned ? 'Unpin' : 'Pin'}
+                aria-label={log.pinned ? t('ariaUnpin', lang) : t('ariaPin', lang)}
               >
                 <Pin size={18} style={{ transform: 'rotate(45deg)' }} fill={log.pinned ? 'currentColor' : 'none'} />
               </button>
@@ -1742,6 +1745,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects
               data-menu-trigger="detail"
               onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
               title="Actions"
+              aria-label={t('ariaMenu', lang)}
             >
               <MoreVertical size={18} />
             </button>

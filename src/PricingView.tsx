@@ -13,7 +13,7 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
 
   const handleUpgrade = () => {
     // TODO: Replace with actual Stripe payment link when approved
-    window.open('https://buy.stripe.com/TODO', '_blank');
+    showToast?.(t('planComingSoon', lang), 'default');
   };
 
   return (

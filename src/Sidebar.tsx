@@ -377,6 +377,8 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
             onClick={togglePinned}
             role="button"
             tabIndex={0}
+            aria-label={t('pinned', lang)}
+            aria-expanded={pinnedOpen}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePinned(); } }}
           >
             {pinnedOpen ? <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 4 }} /> : <ChevronRight size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 4 }} />}

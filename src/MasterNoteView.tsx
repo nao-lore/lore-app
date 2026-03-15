@@ -529,7 +529,7 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
       setEditing(false);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      console.error('[MasterNote] Generation failed:', msg);
+      if (import.meta.env.DEV) console.error('[MasterNote] Generation failed:', msg);
       setError(msg);
       showToast?.(t('failed', lang), 'error');
     } finally {

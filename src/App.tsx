@@ -42,13 +42,13 @@ const SIDEBAR_KEY = 'threadlog_sidebar';
 const FONT_SIZE_SCALE: Record<FontSize, number> = { small: 0.87, medium: 1, large: 1.13 };
 
 function safeGetItem(key: string): string | null {
-  try { return localStorage.getItem(key); } catch { console.error(`Failed to read localStorage key: ${key}`); return null; }
+  try { return localStorage.getItem(key); } catch { if (import.meta.env.DEV) console.error(`Failed to read localStorage key: ${key}`); return null; }
 }
 function safeSetItem(key: string, value: string): void {
-  try { localStorage.setItem(key, value); } catch { console.error(`Failed to write localStorage key: ${key}`); }
+  try { localStorage.setItem(key, value); } catch { if (import.meta.env.DEV) console.error(`Failed to write localStorage key: ${key}`); }
 }
 function safeRemoveItem(key: string): void {
-  try { localStorage.removeItem(key); } catch { console.error(`Failed to remove localStorage key: ${key}`); }
+  try { localStorage.removeItem(key); } catch { if (import.meta.env.DEV) console.error(`Failed to remove localStorage key: ${key}`); }
 }
 
 type View = 'input' | 'detail' | 'settings' | 'history' | 'masternote' | 'projects' | 'todos' | 'trash' | 'summarylist' | 'projecthome' | 'timeline' | 'help' | 'weeklyreport' | 'knowledgebase' | 'dashboard' | 'pricing';
