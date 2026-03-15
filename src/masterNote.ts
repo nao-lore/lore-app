@@ -44,11 +44,11 @@ function logToInputText(log: LogEntry): string {
 async function extractLogSummary(log: LogEntry, apiKey: string): Promise<LogSummary> {
   const cached = getLogSummary(log.id);
   if (cached) {
-    console.log('[MasterNote] extractLogSummary cache hit:', log.id);
+    if (import.meta.env.DEV) console.log('[MasterNote] extractLogSummary cache hit:', log.id);
     return cached;
   }
 
-  console.log('[MasterNote] extractLogSummary API call:', log.id);
+  if (import.meta.env.DEV) console.log('[MasterNote] extractLogSummary API call:', log.id);
   const rawText = await callProvider({
     apiKey,
     system: EXTRACT_PROMPT,
@@ -72,7 +72,7 @@ async function extractLogSummary(log: LogEntry, apiKey: string): Promise<LogSumm
     cachedAt: Date.now(),
   };
 
-  console.log('[MasterNote] extractLogSummary done:', log.id, { summary: summary.summary.slice(0, 50) });
+  if (import.meta.env.DEV) console.log('[MasterNote] extractLogSummary done:', log.id, { summary: summary.summary.slice(0, 50) });
   saveLogSummary(summary);
   return summary;
 }
@@ -267,7 +267,7 @@ export async function generateMasterNote(
 
   // Step 2: Merge into MasterNote
   onProgress?.({ phase: 'merge', current: 0, total: 1 });
-  console.log('[MasterNote] Starting merge with', summaries.length, 'summaries');
+  if (import.meta.env.DEV) console.log('[MasterNote] Starting merge with', summaries.length, 'summaries');
 
   const mergeInput = summariesToMergeInput(summaries, existing);
 
@@ -292,7 +292,7 @@ export async function generateMasterNote(
     throw new Error('[Parse Error] Invalid JSON in merge response.');
   }
 
-  console.log('[MasterNote] Merge parsed:', {
+  if (import.meta.env.DEV) console.log('[MasterNote] Merge parsed:', {
     overview: typeof parsed.overview === 'string' ? parsed.overview.slice(0, 50) : parsed.overview,
     decisions: Array.isArray(parsed.decisions) ? parsed.decisions.length : parsed.decisions,
     openIssues: Array.isArray(parsed.openIssues) ? parsed.openIssues.length : parsed.openIssues,
@@ -313,7 +313,7 @@ export async function generateMasterNote(
     updatedAt: Date.now(),
   };
 
-  console.log('[MasterNote] Final note:', {
+  if (import.meta.env.DEV) console.log('[MasterNote] Final note:', {
     id: note.id,
     overview: note.overview.slice(0, 50),
     decisions: note.decisions.length,

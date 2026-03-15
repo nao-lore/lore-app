@@ -499,7 +499,7 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
   const generatingRef = useRef(false);
   const handleGenerate = async () => {
     if (generatingRef.current) {
-      console.warn('[MasterNote] handleGenerate already running — skipping duplicate call');
+      if (import.meta.env.DEV) console.warn('[MasterNote] handleGenerate already running — skipping duplicate call');
       return;
     }
     generatingRef.current = true;
@@ -508,17 +508,17 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
     setProgress(null);
     setSimStep(0);
     try {
-      console.log('[MasterNote] Starting generation for project:', project.id, 'logs:', projectLogs.length);
+      if (import.meta.env.DEV) console.log('[MasterNote] Starting generation for project:', project.id, 'logs:', projectLogs.length);
       const proposed = await generateMasterNote(project.id, projectLogs, saved, (p) => {
         setProgress(p);
-        console.log('[MasterNote] Progress:', p.phase, p.current, '/', p.total);
+        if (import.meta.env.DEV) console.log('[MasterNote] Progress:', p.phase, p.current, '/', p.total);
         if (p.phase === 'extract') {
           setSimStep(p.current <= 1 ? 0 : 1);
         } else {
           setSimStep(2);
         }
       });
-      console.log('[MasterNote] Generation complete:', {
+      if (import.meta.env.DEV) console.log('[MasterNote] Generation complete:', {
         overview: proposed.overview?.slice(0, 50),
         decisions: proposed.decisions.length,
         openIssues: proposed.openIssues.length,
