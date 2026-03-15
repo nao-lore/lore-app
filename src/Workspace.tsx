@@ -1100,6 +1100,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             value={selectedProjectId ?? ''}
             onChange={(e) => setSelectedProjectId(e.target.value || undefined)}
             disabled={loading}
+            aria-label={t('selectProject', lang)}
             style={{ minWidth: 140, padding: '4px 8px', fontSize: 12, minHeight: 0, width: 'auto', flexShrink: 0 }}
           >
             <option value="">{t('selectProject', lang)}</option>

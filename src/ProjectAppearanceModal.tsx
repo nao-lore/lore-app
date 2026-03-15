@@ -46,7 +46,7 @@ export default function ProjectAppearanceModal({ project, lang, onClose, onUpdat
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div ref={trapRef} className="shortcuts-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+      <div ref={trapRef} className="shortcuts-modal" role="dialog" aria-modal="true" aria-label={t('projectEditAppearance', lang)} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
         <h3 style={{ margin: '0 0 20px', fontSize: 16 }}>
           {t('projectEditAppearance', lang)}
         </h3>

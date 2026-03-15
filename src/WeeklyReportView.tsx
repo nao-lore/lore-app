@@ -343,6 +343,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
             className="input input-sm"
             value={projectFilter}
             onChange={(e) => setProjectFilter(e.target.value)}
+            aria-label={t('weeklyReportAllProjects', lang)}
             style={{ fontSize: 13, padding: '4px 8px', minHeight: 28, maxWidth: 200 }}
           >
             <option value="">{t('weeklyReportAllProjects', lang)}</option>

@@ -99,7 +99,7 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
 
   return (
     <div className="onboarding-overlay">
-      <div ref={trapRef} className="onboarding-card" role="dialog" aria-modal="true">
+      <div ref={trapRef} className="onboarding-card" role="dialog" aria-modal="true" aria-label="Setup wizard">
         {/* Progress dots */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 24 }}>
           {steps.map((_, i) => (

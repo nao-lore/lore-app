@@ -49,6 +49,7 @@ function StatsModal({ stats, lang, onClose, onOpenHistory, onOpenProjects, onOpe
         className="shortcuts-modal"
         role="dialog"
         aria-modal="true"
+        aria-label={t('statsTitle', lang)}
         onClick={(e) => e.stopPropagation()}
       >
         <h3 style={{ margin: '0 0 16px', fontSize: 16 }}>{t('statsTitle', lang)}</h3>
