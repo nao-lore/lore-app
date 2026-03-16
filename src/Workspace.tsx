@@ -3,7 +3,6 @@ import { transformText, transformHandoff, transformBoth, transformTodoOnly, tran
 import type { TransformBothOptions } from './transform';
 import { ChunkEngine, getChunkTarget, getEngineConcurrency } from './chunkEngine';
 import type { EngineProgress } from './chunkEngine';
-import { findSession } from './chunkDb';
 import { addLog, trashLog, restoreLog, updateLog, getLog, getApiKey, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateTodo as updateTodoStorage, duplicateLog, getAiContext, getMasterNote, linkLogs, unlinkLogs, isDemoMode, getFeatureEnabled, getStreak } from './storage';
 import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
 // demoData is only needed in demo mode — lazy-load it
@@ -25,14 +24,7 @@ import ConfirmDialog from './ConfirmDialog';
 import ErrorRetryBanner from './ErrorRetryBanner';
 import FirstUseTooltip from './FirstUseTooltip';
 import { analyzeWorkload, WORKLOAD_CONFIG } from './workload';
-// integrations: isConfigured checks are inlined (lightweight localStorage reads);
-// sendToNotion/sendToSlack are dynamically imported only when actually sending
-function isNotionConfigured(): boolean {
-  try { return !!(localStorage.getItem('threadlog_notion_api_key') && localStorage.getItem('threadlog_notion_database_id')); } catch { return false; }
-}
-function isSlackConfigured(): boolean {
-  try { return !!localStorage.getItem('threadlog_slack_webhook_url'); } catch { return false; }
-}
+import { isNotionConfigured, isSlackConfigured } from './integrations';
 
 import { formatDateFull, formatDateTimeFull, formatRelativeTime } from './utils/dateFormat';
 import { formatHandoffMarkdown, formatFullAiContext } from './formatHandoff';
@@ -194,7 +186,6 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
   const [progress, setProgress] = useState<EngineProgress | null>(null);
   const [simStep, setSimStep] = useState(0); // simulated step for single transforms
   const [streamDetail, setStreamDetail] = useState<string | null>(null); // streaming progress text
-  const [, setResumeInfo] = useState<{ completedChunks: number; totalChunks: number } | null>(null);
   const [outputMode, setOutputMode] = useState<OutputMode>('handoff');
   type TransformAction = 'both' | 'handoff' | 'worklog' | 'todo_only' | 'worklog_handoff' | 'handoff_todo';
   const [transformAction, setTransformAction] = useState<TransformAction>(() => {
@@ -284,18 +275,6 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     return () => window.removeEventListener('hashchange', handleHashImport);
   }, [handleHashImport]);
 
-  // Check for resumable session when text changes
-  useEffect(() => {
-    if (!willChunk) { setResumeInfo(null); return; }
-    let cancelled = false;
-    findSession(combined).then((info) => {
-      if (!cancelled) setResumeInfo(info ?? null);
-    }).catch((e) => {
-      if (import.meta.env.DEV) console.warn('findSession failed:', e);
-      if (!cancelled) setResumeInfo(null);
-    });
-    return () => { cancelled = true; };
-  }, [combined, willChunk]);
 
   const addFiles = useCallback(async (fileList: File[]) => {
     setError('');

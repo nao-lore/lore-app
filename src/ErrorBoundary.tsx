@@ -4,6 +4,7 @@ import { t } from './i18n';
 
 interface Props {
   children: ReactNode;
+  onGoHome?: () => void;
 }
 
 interface State {
@@ -92,6 +93,23 @@ export default class ErrorBoundary extends Component<Props, State> {
             >
               {t('reloadPage', lang)}
             </button>
+            {this.props.onGoHome && (
+              <button
+                onClick={() => { this.setState({ hasError: false, error: null }); this.props.onGoHome!(); }}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: 8,
+                  border: '1px solid var(--border-default)',
+                  background: 'var(--bg-surface-secondary)',
+                  color: 'var(--text-body)',
+                  fontWeight: 500,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                }}
+              >
+                {t('goBackToHome', lang)}
+              </button>
+            )}
           </div>
           {error && (
             <details style={{ marginTop: 16 }}>

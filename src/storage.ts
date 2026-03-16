@@ -17,8 +17,16 @@ const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 const MAX_MN_SNAPSHOTS = 50;
 
+export function safeGetItem(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { if (import.meta.env.DEV) console.error(`Failed to read localStorage key: ${key}`); return null; }
+}
+
+export function safeRemoveItem(key: string): void {
+  try { localStorage.removeItem(key); } catch { if (import.meta.env.DEV) console.error(`Failed to remove localStorage key: ${key}`); }
+}
+
 /** Safely write to localStorage, dispatching event on quota exceeded */
-function safeSetItem(key: string, value: string): void {
+export function safeSetItem(key: string, value: string): void {
   try { localStorage.setItem(key, value); } catch (e) {
     if (import.meta.env.DEV) console.error(`Failed to write localStorage key: ${key}`);
     if (e instanceof DOMException && e.name === 'QuotaExceededError') {

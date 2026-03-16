@@ -11,10 +11,7 @@ import Onboarding from './Onboarding';
 import ErrorBoundary from './ErrorBoundary';
 import FeedbackModal from './FeedbackModal';
 import { isOnboardingDone } from './onboardingState';
-// sampleData is large (~874 lines) and only needed on first launch — lazy-load it
-function isSampleSeeded(): boolean {
-  return localStorage.getItem('threadlog_sample_seeded') === '1';
-}
+import { isSampleSeeded } from './sampleData';
 
 const HistoryView = lazy(() => import('./HistoryView'));
 const SettingsPanel = lazy(() => import('./SettingsPanel'));
@@ -30,7 +27,7 @@ const HelpView = lazy(() => import('./HelpView'));
 const WeeklyReportView = lazy(() => import('./WeeklyReportView'));
 const KnowledgeBaseView = lazy(() => import('./KnowledgeBaseView'));
 const PricingView = lazy(() => import('./PricingView'));
-import { loadLogs, loadProjects, loadTodos, loadMasterNotes, getUiLang, setUiLang, getTheme, setTheme as saveTheme, purgeExpiredTrash, updateLog, getLog, getAutoReportSetting, getLastReportDate, setLastReportDate, isDemoMode, setDemoMode, getFeatureEnabled, recordActivity } from './storage';
+import { loadLogs, loadProjects, loadTodos, loadMasterNotes, getUiLang, setUiLang, getTheme, setTheme as saveTheme, purgeExpiredTrash, updateLog, getLog, getAutoReportSetting, getLastReportDate, setLastReportDate, isDemoMode, setDemoMode, getFeatureEnabled, recordActivity, safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import type { ThemePref } from './storage';
 import type { FontSize } from './types';
 import { t, tf } from './i18n';
@@ -43,16 +40,6 @@ const LAST_PROJECT_KEY = 'threadlog_last_project';
 const SIDEBAR_KEY = 'threadlog_sidebar';
 
 const FONT_SIZE_SCALE: Record<FontSize, number> = { small: 0.87, medium: 1, large: 1.13 };
-
-function safeGetItem(key: string): string | null {
-  try { return localStorage.getItem(key); } catch { if (import.meta.env.DEV) console.error(`Failed to read localStorage key: ${key}`); return null; }
-}
-function safeSetItem(key: string, value: string): void {
-  try { localStorage.setItem(key, value); } catch { if (import.meta.env.DEV) console.error(`Failed to write localStorage key: ${key}`); }
-}
-function safeRemoveItem(key: string): void {
-  try { localStorage.removeItem(key); } catch { if (import.meta.env.DEV) console.error(`Failed to remove localStorage key: ${key}`); }
-}
 
 type View = 'input' | 'detail' | 'settings' | 'history' | 'masternote' | 'projects' | 'todos' | 'trash' | 'summarylist' | 'projecthome' | 'timeline' | 'help' | 'weeklyreport' | 'knowledgebase' | 'dashboard' | 'pricing';
 
@@ -462,28 +449,30 @@ export default function App() {
     handleOpenProjectLogs(projectId);
   };
 
+  const goHome = useCallback(() => { setSelectedId(null); setInputKey((k) => k + 1); inputDirtyRef.current = false; goToRaw('input'); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const renderWorkspace = () => {
-    if (view === 'settings') return <SettingsPanel onBack={() => goTo(prevView === 'settings' ? 'input' : prevView)} lang={lang} onUiLangChange={handleUiLangChange} themePref={themePref} onThemeChange={handleThemeChange} fontSize={fontSize} onFontSizeChange={handleFontSizeChange} showToast={showToast} onShowOnboarding={() => setShowOnboarding(true)} onResumeOnboarding={onboardingPausedForSettings ? () => { setOnboardingPausedForSettings(false); setShowOnboarding(true); } : undefined} />;
-    if (view === 'help') return <HelpView onBack={() => goTo(prevView === 'help' ? 'input' : prevView)} lang={lang} onShowOnboarding={() => setShowOnboarding(true)} onFeedback={() => setHelpFeedbackOpen(true)} />;
-    if (view === 'pricing') return <PricingView onBack={() => goTo(prevView === 'pricing' ? 'input' : prevView)} lang={lang} showToast={showToast} />;
-    if (view === 'history') return <HistoryView logs={logs} onSelect={handleSelect} onBack={() => goTo('input')} onRefresh={refreshLogs} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onOpenMasterNote={handleOpenMasterNote} onOpenProject={handleOpenProjectLogs} tagFilter={tagFilter} onClearTagFilter={() => setTagFilter(null)} onTagFilter={setTagFilter} onDuplicate={(newId) => { refreshLogs(); handleSelect(newId); }} />;
-    if (view === 'todos') return <TodoView logs={logs} onBack={() => goTo(prevView === 'todos' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} />;
-    if (view === 'dashboard') return <DashboardView logs={logs} projects={projects} todos={todos} masterNotes={masterNotes} lang={lang} onOpenLog={handleSelect} onOpenProject={handleOpenProjectLogs} onOpenTodos={() => goTo('todos')} onOpenSummaryList={() => goTo('summarylist')} onOpenHistory={() => goTo('history')} onNewLog={() => goTo('input')} onToggleAction={(logId, actionIndex) => {
+    if (view === 'settings') return <ErrorBoundary key="settings" onGoHome={goHome}><SettingsPanel onBack={() => goTo(prevView === 'settings' ? 'input' : prevView)} lang={lang} onUiLangChange={handleUiLangChange} themePref={themePref} onThemeChange={handleThemeChange} fontSize={fontSize} onFontSizeChange={handleFontSizeChange} showToast={showToast} onShowOnboarding={() => setShowOnboarding(true)} onResumeOnboarding={onboardingPausedForSettings ? () => { setOnboardingPausedForSettings(false); setShowOnboarding(true); } : undefined} /></ErrorBoundary>;
+    if (view === 'help') return <ErrorBoundary key="help" onGoHome={goHome}><HelpView onBack={() => goTo(prevView === 'help' ? 'input' : prevView)} lang={lang} onShowOnboarding={() => setShowOnboarding(true)} onFeedback={() => setHelpFeedbackOpen(true)} /></ErrorBoundary>;
+    if (view === 'pricing') return <ErrorBoundary key="pricing" onGoHome={goHome}><PricingView onBack={() => goTo(prevView === 'pricing' ? 'input' : prevView)} lang={lang} showToast={showToast} /></ErrorBoundary>;
+    if (view === 'history') return <ErrorBoundary key="history" onGoHome={goHome}><HistoryView logs={logs} onSelect={handleSelect} onBack={() => goTo('input')} onRefresh={refreshLogs} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onOpenMasterNote={handleOpenMasterNote} onOpenProject={handleOpenProjectLogs} tagFilter={tagFilter} onClearTagFilter={() => setTagFilter(null)} onTagFilter={setTagFilter} onDuplicate={(newId) => { refreshLogs(); handleSelect(newId); }} /></ErrorBoundary>;
+    if (view === 'todos') return <ErrorBoundary key="todos" onGoHome={goHome}><TodoView logs={logs} onBack={() => goTo(prevView === 'todos' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} /></ErrorBoundary>;
+    if (view === 'dashboard') return <ErrorBoundary key="dashboard" onGoHome={goHome}><DashboardView logs={logs} projects={projects} todos={todos} masterNotes={masterNotes} lang={lang} onOpenLog={handleSelect} onOpenProject={handleOpenProjectLogs} onOpenTodos={() => goTo('todos')} onOpenSummaryList={() => goTo('summarylist')} onOpenHistory={() => goTo('history')} onNewLog={() => goTo('input')} onToggleAction={(logId, actionIndex) => {
       const log = getLog(logId);
       if (!log) return;
       const current = log.checkedActions || [];
       const next = current.includes(actionIndex) ? current.filter((i) => i !== actionIndex) : [...current, actionIndex];
       updateLog(logId, { checkedActions: next });
       refreshLogs();
-    }} />;
-    if (view === 'timeline') return <TimelineView logs={logs} projects={projects} todos={todos} masterNotes={masterNotes} onBack={() => goTo(prevView === 'timeline' ? 'input' : prevView)} onOpenLog={handleSelect} onOpenProject={handleOpenProjectLogs} onOpenSummary={handleOpenMasterNote} onNewLog={() => goTo('input')} lang={lang} />;
-    if (view === 'weeklyreport') return <WeeklyReportView logs={logs} projects={projects} todos={todos} onBack={() => goTo(prevView === 'weeklyreport' ? 'input' : prevView)} lang={lang} showToast={showToast} />;
-    if (view === 'trash') return <TrashView onBack={() => goTo(prevView === 'trash' ? 'input' : prevView)} onRefresh={refreshLogs} lang={lang} showToast={showToast} />;
-    if (view === 'summarylist') return <ProjectSummaryListView projects={projects} logs={logs} onBack={() => goTo(prevView === 'summarylist' ? 'input' : prevView)} onOpenSummary={handleOpenMasterNote} lang={lang} />;
-    if (view === 'projects') return <ProjectsView projects={projects} logs={logs} onBack={() => goTo(prevView === 'projects' ? 'input' : prevView)} onSelectProject={handleOpenProjectLogs} onOpenMasterNote={handleOpenMasterNote} onRefresh={refreshLogs} lang={lang} showToast={showToast} />;
+    }} /></ErrorBoundary>;
+    if (view === 'timeline') return <ErrorBoundary key="timeline" onGoHome={goHome}><TimelineView logs={logs} projects={projects} todos={todos} masterNotes={masterNotes} onBack={() => goTo(prevView === 'timeline' ? 'input' : prevView)} onOpenLog={handleSelect} onOpenProject={handleOpenProjectLogs} onOpenSummary={handleOpenMasterNote} onNewLog={() => goTo('input')} lang={lang} /></ErrorBoundary>;
+    if (view === 'weeklyreport') return <ErrorBoundary key="weeklyreport" onGoHome={goHome}><WeeklyReportView logs={logs} projects={projects} todos={todos} onBack={() => goTo(prevView === 'weeklyreport' ? 'input' : prevView)} lang={lang} showToast={showToast} /></ErrorBoundary>;
+    if (view === 'trash') return <ErrorBoundary key="trash" onGoHome={goHome}><TrashView onBack={() => goTo(prevView === 'trash' ? 'input' : prevView)} onRefresh={refreshLogs} lang={lang} showToast={showToast} /></ErrorBoundary>;
+    if (view === 'summarylist') return <ErrorBoundary key="summarylist" onGoHome={goHome}><ProjectSummaryListView projects={projects} logs={logs} onBack={() => goTo(prevView === 'summarylist' ? 'input' : prevView)} onOpenSummary={handleOpenMasterNote} lang={lang} /></ErrorBoundary>;
+    if (view === 'projects') return <ErrorBoundary key="projects" onGoHome={goHome}><ProjectsView projects={projects} logs={logs} onBack={() => goTo(prevView === 'projects' ? 'input' : prevView)} onSelectProject={handleOpenProjectLogs} onOpenMasterNote={handleOpenMasterNote} onRefresh={refreshLogs} lang={lang} showToast={showToast} /></ErrorBoundary>;
     if (view === 'projecthome' && activeProjectId) {
       const project = projects.find((p) => p.id === activeProjectId);
-      if (project) return <ProjectHomeView project={project} logs={logs} onBack={() => { setActiveProjectId(null); goTo('input'); }} onOpenLog={handleSelect} onOpenSummary={handleOpenMasterNote} onOpenKnowledgeBase={handleOpenKnowledgeBase} onNewLog={handleNewLog} onRefresh={refreshLogs} lang={lang} showToast={showToast} />;
+      if (project) return <ErrorBoundary key={`projecthome-${activeProjectId}`} onGoHome={goHome}><ProjectHomeView project={project} logs={logs} onBack={() => { setActiveProjectId(null); goTo('input'); }} onOpenLog={handleSelect} onOpenSummary={handleOpenMasterNote} onOpenKnowledgeBase={handleOpenKnowledgeBase} onNewLog={handleNewLog} onRefresh={refreshLogs} lang={lang} showToast={showToast} /></ErrorBoundary>;
     }
     if (view === 'masternote' && activeProjectId) {
       const project = projects.find((p) => p.id === activeProjectId);
@@ -491,15 +480,15 @@ export default function App() {
         const latestHandoff = logs
           .filter((l) => l.projectId === activeProjectId && l.outputMode === 'handoff')
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] || undefined;
-        return <MasterNoteView project={project} logs={logs} latestHandoff={latestHandoff} onBack={() => goTo(prevView === 'masternote' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} />;
+        return <ErrorBoundary key={`masternote-${activeProjectId}`} onGoHome={goHome}><MasterNoteView project={project} logs={logs} latestHandoff={latestHandoff} onBack={() => goTo(prevView === 'masternote' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} /></ErrorBoundary>;
       }
     }
     if (view === 'knowledgebase' && activeProjectId) {
       const project = projects.find((p) => p.id === activeProjectId);
-      if (project) return <KnowledgeBaseView project={project} logs={logs} onBack={() => goTo(prevView === 'knowledgebase' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} />;
+      if (project) return <ErrorBoundary key={`knowledgebase-${activeProjectId}`} onGoHome={goHome}><KnowledgeBaseView project={project} logs={logs} onBack={() => goTo(prevView === 'knowledgebase' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} /></ErrorBoundary>;
     }
     // Fallback: 'input', 'detail', and any view that couldn't render (e.g. projecthome without activeProjectId)
-    return <Workspace key={inputKey} mode={view === 'detail' ? 'detail' : 'input'} selectedId={selectedId} onSaved={handleSaved} onDeleted={handleDeleted} onOpenLog={handleSelect} onBack={handleBack} prevView={prevView} lang={lang} activeProjectId={activeProjectId} projects={projects} onRefresh={refreshLogs} showToast={showToast} onDirtyChange={(dirty: boolean) => { inputDirtyRef.current = dirty; }} onTagFilter={handleTagFilter} onOpenMasterNote={handleOpenMasterNote} onSelectProject={setActiveProjectId} />;
+    return <ErrorBoundary key={`workspace-${inputKey}`} onGoHome={goHome}><Workspace key={inputKey} mode={view === 'detail' ? 'detail' : 'input'} selectedId={selectedId} onSaved={handleSaved} onDeleted={handleDeleted} onOpenLog={handleSelect} onBack={handleBack} prevView={prevView} lang={lang} activeProjectId={activeProjectId} projects={projects} onRefresh={refreshLogs} showToast={showToast} onDirtyChange={(dirty: boolean) => { inputDirtyRef.current = dirty; }} onTagFilter={handleTagFilter} onOpenMasterNote={handleOpenMasterNote} onSelectProject={setActiveProjectId} /></ErrorBoundary>;
   };
 
   return (
@@ -574,13 +563,11 @@ export default function App() {
           </div>
         )}
         <div style={{ height: '100%' }}>
-          <ErrorBoundary>
-            <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)', fontSize: 13 }}>Loading…</div>}>
-              <div className="view-fade-in" key={view}>
-                {renderWorkspace()}
-              </div>
-            </Suspense>
-          </ErrorBoundary>
+          <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)', fontSize: 13 }}>Loading…</div>}>
+            <div className="view-fade-in" key={view}>
+              {renderWorkspace()}
+            </div>
+          </Suspense>
         </div>
       </div>
       <button

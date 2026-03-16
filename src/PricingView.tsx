@@ -12,7 +12,8 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
   const isFreePlan = shouldUseBuiltinApi();
 
   const handleUpgrade = () => {
-    // TODO: Replace with actual Stripe payment link when approved
+    // Stripe Checkout URL will be configured here after Stripe account approval.
+    // For now, show a "coming soon" toast as the beta placeholder.
     showToast?.(t('planComingSoon', lang), 'default');
   };
 
