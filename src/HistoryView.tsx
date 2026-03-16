@@ -148,7 +148,7 @@ function buildPreview(log: LogEntry): string {
 }
 
 import { matchesLogQuery } from './search';
-import { formatDateFull, formatDateGroup, formatRelativeTime } from './utils/dateFormat';
+import { formatDateGroup, formatRelativeTime } from './utils/dateFormat';
 
 function matchesQuery(log: LogEntry, query: string): boolean {
   return matchesLogQuery(log, query);

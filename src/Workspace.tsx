@@ -86,7 +86,8 @@ interface WorkspaceProps {
   onSelectProject?: (projectId: string | null) => void;
 }
 
-export default function Workspace({ mode, selectedId, onSaved, onDeleted, onOpenLog, onBack, prevView, lang, activeProjectId, projects, onRefresh, showToast, onDirtyChange, onTagFilter, onOpenMasterNote, onSelectProject }: WorkspaceProps) {
+export default function Workspace({ mode, selectedId, onSaved, onDeleted, onOpenLog, onBack, prevView, lang, activeProjectId, projects, onRefresh, showToast, onDirtyChange, onTagFilter, onOpenMasterNote, onSelectProject: _onSelectProject }: WorkspaceProps) {
+  void _onSelectProject;
   if (mode === 'detail' && selectedId) return <DetailView id={selectedId} onDeleted={onDeleted} onOpenLog={onOpenLog} onBack={onBack} prevView={prevView} lang={lang} projects={projects} onRefresh={onRefresh} showToast={showToast} onTagFilter={onTagFilter} allLogs={loadLogs()} onOpenMasterNote={onOpenMasterNote} />;
   return <InputView onSaved={onSaved} onOpenLog={onOpenLog} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onDirtyChange={onDirtyChange} />;
 }
@@ -882,7 +883,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       </h1>
       {/* Quick stats */}
       {(() => {
-        const pendingTodos = loadTodos().filter(t => !t.done && !t.archived).length;
+        const pendingTodos = loadTodos().filter(t => !t.done && !t.archivedAt).length;
         const allLogs = loadLogs();
         const lastLog = allLogs.length > 0 ? allLogs[allLogs.length - 1] : null;
         const parts: string[] = [];
@@ -1478,7 +1479,8 @@ function HandoffResultDisplay({ result, lang }: { result: HandoffResult; lang: L
 
 // --- Detail View ---
 
-function DetailView({ id, onDeleted, onOpenLog, onBack, prevView, lang, projects, onRefresh, showToast, onTagFilter, allLogs, onOpenMasterNote }: { id: string; onDeleted: () => void; onOpenLog: (id: string) => void; onBack: () => void; prevView: string; lang: Lang; projects: Project[]; onRefresh: () => void; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onTagFilter?: (tag: string) => void; allLogs: LogEntry[]; onOpenMasterNote?: (projectId: string) => void }) {
+function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lang, projects, onRefresh, showToast, onTagFilter, allLogs, onOpenMasterNote }: { id: string; onDeleted: () => void; onOpenLog: (id: string) => void; onBack: () => void; prevView: string; lang: Lang; projects: Project[]; onRefresh: () => void; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onTagFilter?: (tag: string) => void; allLogs: LogEntry[]; onOpenMasterNote?: (projectId: string) => void }) {
+  void _prevView;
   const log = getLog(id);
   const [menuOpen, setMenuOpen] = useState(false);
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
