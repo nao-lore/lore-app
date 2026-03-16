@@ -1522,7 +1522,7 @@ textarea.input:focus {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: safe center;
 }
 
 @media (max-width: 640px) {
