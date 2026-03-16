@@ -466,7 +466,7 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
             className="input"
             value={jumpDate ? dateKeyToInput(jumpDate) : dateKeyToInput(todayKey())}
             onChange={(e) => handleDateInput(e.target.value)}
-            style={{ fontSize: 13, padding: '4px 8px 4px 28px', minHeight: 28, width: 160 }}
+            style={{ fontSize: 13, padding: '4px 8px 4px 28px', minHeight: 28, maxWidth: 160, width: 'auto' }}
           />
         </div>
         <button className="btn btn-ghost" onClick={handleNextDay} style={{ padding: '4px 6px', minHeight: 28 }} title={t('timelineNextDay', lang)}>

@@ -1751,7 +1751,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              maxWidth: 300,
+              maxWidth: 'min(300px, 50vw)',
             }}
             title={log.title}
           >
@@ -2323,7 +2323,7 @@ function RelatedLogsSection({ log, onOpenLog, lang }: { log: LogEntry; onOpenLog
             <div style={{
               position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 100,
               background: 'var(--card-bg)', border: '1px solid var(--border-default)',
-              borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', width: 320, maxHeight: 300, overflow: 'hidden',
+              borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', width: 'min(320px, calc(100vw - 40px))', maxHeight: 300, overflow: 'hidden',
             }}>
               <div style={{ padding: 8 }}>
                 <input
