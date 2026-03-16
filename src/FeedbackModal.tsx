@@ -63,7 +63,7 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
 
   const handleCopy = () => {
     const text = `[${getCategoryLabel(category, 'en')}]\n${body.trim()}`;
-    navigator.clipboard.writeText(text);
+    try { navigator.clipboard.writeText(text); } catch { /* non-critical */ }
     setSubmitted(true);
   };
 

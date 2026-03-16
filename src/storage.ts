@@ -22,7 +22,7 @@ function safeSetItem(key: string, value: string): void {
   try { localStorage.setItem(key, value); } catch (e) {
     if (import.meta.env.DEV) console.error(`Failed to write localStorage key: ${key}`);
     if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-      window.dispatchEvent(new CustomEvent('lore-storage-full'));
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('lore-storage-full'));
     }
   }
 }

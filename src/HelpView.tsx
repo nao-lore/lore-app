@@ -47,7 +47,7 @@ export default function HelpView({ onBack, lang, onShowOnboarding, onFeedback }:
                   flexShrink: 0,
                   fontSize: 11,
                   fontWeight: 700,
-                  color: '#fff',
+                  color: 'var(--button-text, #fff)',
                   background: 'var(--accent)',
                   borderRadius: 6,
                   padding: '2px 8px',

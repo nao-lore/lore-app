@@ -89,6 +89,9 @@
   --resume-hero-bg: rgba(124, 92, 252, 0.06);
   --resume-hero-border: rgba(124, 92, 252, 0.18);
   --resume-hero-label: #7c5cfc;
+  --card-bg: #fff;
+  --bg-primary: #f7f7f5;
+  --bg-card: #fff;
 }
 
 [data-theme="dark"] {
@@ -177,6 +180,9 @@
   --resume-hero-bg: rgba(124, 92, 252, 0.12);
   --resume-hero-border: rgba(124, 92, 252, 0.25);
   --resume-hero-label: #a78bfa;
+  --card-bg: #1a1a1a;
+  --bg-primary: #111;
+  --bg-card: #1a1a1a;
 }
 
 /* ─── Design tokens ─── */

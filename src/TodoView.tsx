@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { usePersistedState } from './usePersistedState';
 import { CheckSquare, Square, MoreHorizontal, MoreVertical, Star, Edit3, Trash2, Flag, Calendar, ExternalLink, Pin, Check, Undo2, Archive, ArchiveRestore, CheckCheck, GripVertical, AlertTriangle, Copy, Clock } from 'lucide-react';
 import type { Todo, LogEntry } from './types';
@@ -66,7 +66,7 @@ function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
 }) {
   const [subMenu, setSubMenu] = useState<'priority' | 'due' | 'snooze' | null>(null);
   const [dueValue, setDueValue] = useState(todo.dueDate || '');
-  const now = useMemo(() => Date.now(), []);
+  const [now] = useState(() => Math.floor(Date.now() / 60000) * 60000);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
@@ -87,7 +87,7 @@ function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
   };
 
   const priorityColor = (p: string) => {
-    const colors: Record<string, string> = { high: '#ef4444', medium: '#f59e0b', low: '#6b7280' };
+    const colors: Record<string, string> = { high: 'var(--error-text, #ef4444)', medium: 'var(--warning-text, #f59e0b)', low: 'var(--text-muted, #6b7280)' };
     return colors[p] || 'var(--text-muted)';
   };
 
@@ -490,7 +490,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
     }
   };
 
-  const now = useMemo(() => Date.now(), []);
+  const [now] = useState(() => Math.floor(Date.now() / 60000) * 60000);
   const isSnoozedNow = (td: Todo) => !!(td.snoozedUntil && td.snoozedUntil > now);
   const pending = todos.filter((td) => !td.done);
   const completed = todos.filter((td) => td.done);
@@ -765,7 +765,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
                 {todo.dueDate}
                 {isOverdue(todo.dueDate) && !todo.done && (
                   <span style={{
-                    color: '#ef4444',
+                    color: 'var(--error-text, #ef4444)',
                     fontSize: 11,
                     fontWeight: 600,
                     background: 'rgba(239, 68, 68, 0.1)',
@@ -1041,7 +1041,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12, padding: '8px 14px', background: 'var(--bg-card, var(--sidebar-bg))', borderRadius: 8, border: '1px solid var(--border-default)' }}>
             <svg width="50" height="50" style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
               <circle cx="25" cy="25" r={radius} fill="none" stroke="var(--border-default)" strokeWidth="4" />
-              <circle cx="25" cy="25" r={radius} fill="none" stroke="#22c55e" strokeWidth="4"
+              <circle cx="25" cy="25" r={radius} fill="none" stroke="var(--success-text, #22c55e)" strokeWidth="4"
                 strokeDasharray={circumference} strokeDashoffset={circumference * (1 - progress)}
                 strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
             </svg>
@@ -1049,12 +1049,12 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
               {doneCount}/{total} {t('todoProgress', lang)}
             </span>
             {overdueCount > 0 && (
-              <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 500 }}>
+              <span style={{ fontSize: 12, color: 'var(--error-text, #ef4444)', fontWeight: 500 }}>
                 {overdueCount} {t('todoOverdue2', lang)}
               </span>
             )}
             {dueTodayCount > 0 && (
-              <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 500 }}>
+              <span style={{ fontSize: 12, color: 'var(--warning-text, #f59e0b)', fontWeight: 500 }}>
                 {dueTodayCount} {t('todoDueToday2', lang)}
               </span>
             )}

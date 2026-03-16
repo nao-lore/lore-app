@@ -1705,6 +1705,41 @@ const labels = {
   errorDetails: { ja: 'エラー詳細', en: 'Error details', es: 'Detalles del error', fr: 'Détails de l\'erreur', de: 'Fehlerdetails', zh: '错误详情', ko: '오류 상세', pt: 'Detalhes do erro' },
   storageFullWarning: { ja: 'ストレージ容量が上限に達しました。ゴミ箱を空にするかデータをエクスポートしてください。', en: 'Storage is full. Clear trash or export your data to free up space.', es: 'El almacenamiento está lleno. Vacía la papelera o exporta tus datos.', fr: 'Le stockage est plein. Videz la corbeille ou exportez vos données.', de: 'Der Speicher ist voll. Leeren Sie den Papierkorb oder exportieren Sie Ihre Daten.', zh: '存储空间已满。请清空回收站或导出数据以释放空间。', ko: '저장 공간이 가득 찼습니다. 휴지통을 비우거나 데이터를 내보내세요.', pt: 'O armazenamento está cheio. Esvazie a lixeira ou exporte seus dados.' },
 
+  // Hardcoded string fixes
+  ariaSelectFile: { ja: 'ファイルを選択', en: 'Select file', es: 'Seleccionar archivo', fr: 'Sélectionner un fichier', de: 'Datei auswählen', zh: '选择文件', ko: '파일 선택', pt: 'Selecionar arquivo' },
+  titleDismiss: { ja: '閉じる', en: 'Dismiss', es: 'Cerrar', fr: 'Fermer', de: 'Schließen', zh: '关闭', ko: '닫기', pt: 'Dispensar' },
+  ariaRemoveFile: (name: string) => ({
+    ja: `${name} を削除`,
+    en: `Remove ${name}`,
+    es: `Eliminar ${name}`,
+    fr: `Supprimer ${name}`,
+    de: `${name} entfernen`,
+    zh: `移除 ${name}`,
+    ko: `${name} 제거`,
+    pt: `Remover ${name}`,
+  }),
+  titleRemoveFile: { ja: 'ファイルを削除', en: 'Remove file', es: 'Eliminar archivo', fr: 'Supprimer le fichier', de: 'Datei entfernen', zh: '移除文件', ko: '파일 제거', pt: 'Remover arquivo' },
+  exportMd: { ja: 'Export .md', en: 'Export .md', es: 'Exportar .md', fr: 'Exporter .md', de: 'Export .md', zh: '导出 .md', ko: 'Export .md', pt: 'Exportar .md' },
+  exportJson: { ja: 'Export .json', en: 'Export .json', es: 'Exportar .json', fr: 'Exporter .json', de: 'Export .json', zh: '导出 .json', ko: 'Export .json', pt: 'Exportar .json' },
+  detailSaved: { ja: '保存済み', en: 'Saved', es: 'Guardado', fr: 'Enregistré', de: 'Gespeichert', zh: '已保存', ko: '저장됨', pt: 'Salvo' },
+  titleActions: { ja: 'アクション', en: 'Actions', es: 'Acciones', fr: 'Actions', de: 'Aktionen', zh: '操作', ko: '작업', pt: 'Ações' },
+  titlePin: { ja: 'ピン留め', en: 'Pin', es: 'Fijar', fr: 'Épingler', de: 'Anheften', zh: '固定', ko: '고정', pt: 'Fixar' },
+  titleUnpin: { ja: 'ピン留め解除', en: 'Unpin', es: 'Desfijar', fr: 'Désépingler', de: 'Loslösen', zh: '取消固定', ko: '고정 해제', pt: 'Desafixar' },
+  viewCompact: { ja: 'コンパクト', en: 'Compact', es: 'Compacto', fr: 'Compact', de: 'Kompakt', zh: '紧凑', ko: '컴팩트', pt: 'Compacto' },
+  viewComfortable: { ja: '標準', en: 'Comfortable', es: 'Cómodo', fr: 'Confortable', de: 'Komfortabel', zh: '舒适', ko: '편안함', pt: 'Confortável' },
+  ariaSwitchToComfortable: { ja: '標準表示に切り替え', en: 'Switch to comfortable view', es: 'Cambiar a vista cómoda', fr: 'Passer à la vue confortable', de: 'Zur komfortablen Ansicht wechseln', zh: '切换到舒适视图', ko: '편안한 보기로 전환', pt: 'Mudar para visualização confortável' },
+  ariaSwitchToCompact: { ja: 'コンパクト表示に切り替え', en: 'Switch to compact view', es: 'Cambiar a vista compacta', fr: 'Passer à la vue compacte', de: 'Zur kompakten Ansicht wechseln', zh: '切换到紧凑视图', ko: '컴팩트 보기로 전환', pt: 'Mudar para visualização compacta' },
+  ariaBulkCheckbox: { ja: 'ログを選択', en: 'Select log', es: 'Seleccionar registro', fr: 'Sélectionner le log', de: 'Log auswählen', zh: '选择日志', ko: '로그 선택', pt: 'Selecionar registro' },
+  ariaScrollToTop: { ja: 'トップへスクロール', en: 'Scroll to top', es: 'Volver arriba', fr: 'Retour en haut', de: 'Nach oben scrollen', zh: '滚动到顶部', ko: '맨 위로 스크롤', pt: 'Voltar ao topo' },
+  tabTitleDashboard: { ja: 'ダッシュボード', en: 'Dashboard', es: 'Panel', fr: 'Tableau de bord', de: 'Dashboard', zh: '仪表盘', ko: '대시보드', pt: 'Painel' },
+  tabTitleTodos: { ja: 'TODO', en: 'TODO', es: 'TODO', fr: 'TODO', de: 'TODO', zh: 'TODO', ko: 'TODO', pt: 'TODO' },
+  tabTitleHistory: { ja: 'ログ', en: 'Logs', es: 'Registros', fr: 'Logs', de: 'Logs', zh: '日志', ko: '로그', pt: 'Registros' },
+  tabTitleTimeline: { ja: 'タイムライン', en: 'Timeline', es: 'Línea de tiempo', fr: 'Chronologie', de: 'Zeitleiste', zh: '时间线', ko: '타임라인', pt: 'Linha do tempo' },
+  tabTitleProjects: { ja: 'プロジェクト', en: 'Projects', es: 'Proyectos', fr: 'Projets', de: 'Projekte', zh: '项目', ko: '프로젝트', pt: 'Projetos' },
+  tabTitleSettings: { ja: '設定', en: 'Settings', es: 'Configuración', fr: 'Paramètres', de: 'Einstellungen', zh: '设置', ko: '설정', pt: 'Configurações' },
+  tabTitleHelp: { ja: 'ヘルプ', en: 'Help', es: 'Ayuda', fr: 'Aide', de: 'Hilfe', zh: '帮助', ko: '도움말', pt: 'Ajuda' },
+  tabTitlePricing: { ja: '料金', en: 'Pricing', es: 'Precios', fr: 'Tarifs', de: 'Preise', zh: '定价', ko: '요금', pt: 'Preços' },
+
 } as const;
 
 /** Exported for testing — do not use in application code. */

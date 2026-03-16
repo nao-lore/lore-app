@@ -154,6 +154,8 @@ describe('i18n', () => {
       trashItemCount: [6],
       toastTodosExtracted: [4],
       toastTodosAdded: [3],
+      errorFileRead: ['test.pdf'],
+      ariaRemoveFile: ['file.txt'],
     };
 
     it('all function labels return non-empty strings for ja', () => {

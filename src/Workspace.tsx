@@ -924,7 +924,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                 className="btn btn-primary"
                 onClick={() => {
                   const text = savedResult.fullContext + '\n\n---\n\n' + savedResult.markdown;
-                  navigator.clipboard.writeText(text);
+                  try { navigator.clipboard.writeText(text); } catch { /* non-critical */ }
                   showToast?.(t('copiedToClipboard', lang), 'success');
                 }}
               >
@@ -934,7 +934,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
               <button
                 className="btn btn-primary"
                 onClick={() => {
-                  navigator.clipboard.writeText(savedResult.markdown);
+                  try { navigator.clipboard.writeText(savedResult.markdown); } catch { /* non-critical */ }
                   showToast?.(t('copiedToClipboard', lang), 'success');
                 }}
               >
@@ -1154,7 +1154,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
 
-          <input ref={fileRef} type="file" accept=".txt,.md,.docx,.json" multiple onChange={handleFiles} aria-label="ファイルを選択" style={{ display: 'none' }} />
+          <input ref={fileRef} type="file" accept=".txt,.md,.docx,.json" multiple onChange={handleFiles} aria-label={t('ariaSelectFile', lang)} style={{ display: 'none' }} />
           <button className="input input-sm" onClick={() => fileRef.current?.click()} disabled={loading} style={{ minWidth: 'auto', padding: '4px 8px', fontSize: 12, minHeight: 0, width: 'auto', flexShrink: 0, cursor: 'pointer', textAlign: 'left' }}>
             + {files.length === 0 ? t('importFiles', lang) : t('addMoreFiles', lang)}
           </button>
@@ -1185,7 +1185,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           <button
             onClick={() => setCaptureInfo(null)}
             className="capture-banner-close"
-            title="Dismiss"
+            title={t('titleDismiss', lang)}
             aria-label={t('ariaDismissNotification', lang)}
           >×</button>
         </div>
@@ -1210,8 +1210,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
               <button
                 onClick={() => removeFile(i)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--border-hover)', fontSize: 16, padding: '0 4px', lineHeight: 1, transition: 'color 0.12s' }}
-                title="Remove file"
-                aria-label={`Remove ${f.name}`}
+                title={t('titleRemoveFile', lang)}
+                aria-label={tf('ariaRemoveFile', lang, f.name)}
                 onMouseOver={(e) => (e.currentTarget.style.color = 'var(--error-text)')}
                 onMouseOut={(e) => (e.currentTarget.style.color = 'var(--border-hover)')}
               >
@@ -1394,10 +1394,10 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
               {copied ? <><Check size={14} /> {t('copied', lang)}</> : <><Copy size={14} /> {t('copyMarkdown', lang)}</>}
             </button>
             <button className="btn" onClick={() => handleExport('md')}>
-              Export .md
+              {t('exportMd', lang)}
             </button>
             <button className="btn" onClick={() => handleExport('json')}>
-              Export .json
+              {t('exportJson', lang)}
             </button>
           </div>
         </div>
@@ -1607,7 +1607,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
       });
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
-        navigator.clipboard.writeText(markdown);
+        try { navigator.clipboard.writeText(markdown); } catch { /* non-critical */ }
         showToast?.(t('copiedToClipboard', lang), 'success');
       }
     }
@@ -1831,9 +1831,9 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                 </h2>
               )}
               {showSaved && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12, color: '#22c55e', fontWeight: 500, flexShrink: 0, transition: 'opacity 0.3s', whiteSpace: 'nowrap' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12, color: 'var(--success-text, #22c55e)', fontWeight: 500, flexShrink: 0, transition: 'opacity 0.3s', whiteSpace: 'nowrap' }}>
                   <Check size={14} />
-                  {lang === 'ja' ? '保存済み' : 'Saved'}
+                  {t('detailSaved', lang)}
                 </span>
               )}
               <button
@@ -1846,7 +1846,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                   updateLog(id, { pinned: !log.pinned }); onRefresh();
                 }}
                 style={log.pinned ? { color: 'var(--accent)', flexShrink: 0, marginTop: 2 } : { flexShrink: 0, marginTop: 2 }}
-                title={log.pinned ? 'Unpin' : 'Pin'}
+                title={log.pinned ? t('titleUnpin', lang) : t('titlePin', lang)}
                 aria-label={log.pinned ? t('ariaUnpin', lang) : t('ariaPin', lang)}
               >
                 <Pin size={18} style={{ transform: 'rotate(45deg)' }} fill={log.pinned ? 'currentColor' : 'none'} />
@@ -1870,7 +1870,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
               className="card-menu-btn"
               data-menu-trigger="detail"
               onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
-              title="Actions"
+              title={t('titleActions', lang)}
               aria-label={t('ariaMenu', lang)}
             >
               <MoreVertical size={18} />
@@ -1889,10 +1889,10 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                   {t('copyWithContext', lang)}
                 </button>
                 <button className="card-menu-item" onClick={() => handleDetailExport('md')}>
-                  Export .md
+                  {t('exportMd', lang)}
                 </button>
                 <button className="card-menu-item" onClick={() => handleDetailExport('json')}>
-                  Export .json
+                  {t('exportJson', lang)}
                 </button>
                 {typeof navigator.share === 'function' && (
                   <button className="card-menu-item" onClick={handleShare}>

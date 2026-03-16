@@ -158,20 +158,20 @@ export default function App() {
   const pendingCount = useMemo(() => todos.filter((td) => !td.done).length, [todos]);
   useEffect(() => {
     const viewTitleMap: Partial<Record<View, string>> = {
-      dashboard: 'Dashboard — Lore',
-      todos: 'TODO — Lore',
-      history: 'Logs — Lore',
-      timeline: 'Timeline — Lore',
-      projects: 'Projects — Lore',
-      settings: 'Settings — Lore',
-      help: 'Help — Lore',
-      pricing: 'Pricing — Lore',
+      dashboard: `${t('tabTitleDashboard', lang)} — Lore`,
+      todos: `${t('tabTitleTodos', lang)} — Lore`,
+      history: `${t('tabTitleHistory', lang)} — Lore`,
+      timeline: `${t('tabTitleTimeline', lang)} — Lore`,
+      projects: `${t('tabTitleProjects', lang)} — Lore`,
+      settings: `${t('tabTitleSettings', lang)} — Lore`,
+      help: `${t('tabTitleHelp', lang)} — Lore`,
+      pricing: `${t('tabTitlePricing', lang)} — Lore`,
     };
     // detail view: keep current title unchanged
     if (view === 'detail') return;
     const base = viewTitleMap[view] || 'Lore';
     document.title = pendingCount > 0 ? `(${pendingCount}) ${base}` : base;
-  }, [pendingCount, view]);
+  }, [pendingCount, view, lang]);
 
   // Overdue TODO banner
   const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
@@ -279,6 +279,7 @@ export default function App() {
     if (isFirstLaunch) {
       goToRaw('dashboard');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- goToRaw is stable (depends on setState only)
   }, [lang]);
 
   // Apply data-theme attribute; re-check hourly for time-based "system" mode
@@ -585,7 +586,7 @@ export default function App() {
       <button
         className={`scroll-to-top${showScrollTop ? ' visible' : ''}`}
         onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
-        aria-label="Scroll to top"
+        aria-label={t('ariaScrollToTop', lang)}
       >
         <ChevronUp size={18} />
       </button>

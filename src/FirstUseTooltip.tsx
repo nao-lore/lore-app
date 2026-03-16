@@ -35,7 +35,7 @@ export default function FirstUseTooltip({ id, text, position = 'bottom', childre
             left: position === 'top' || position === 'bottom' ? '50%' : undefined,
             transform: position === 'top' || position === 'bottom' ? 'translateX(-50%)' : undefined,
             background: 'var(--accent)',
-            color: '#fff',
+            color: 'var(--button-text, #fff)',
             padding: '6px 12px',
             borderRadius: 8,
             fontSize: 12,

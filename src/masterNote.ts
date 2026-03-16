@@ -1,6 +1,7 @@
 import type { LogEntry, MasterNote, LogSummary, SourcedItem } from './types';
 import { callProvider, shouldUseBuiltinApi } from './provider';
 import { getApiKey, getLogSummary, saveLogSummary } from './storage';
+import { extractJson } from './transform';
 
 // ---------------------------------------------------------------------------
 // Step 1: Extract structured summary from a single log (cached)
@@ -41,11 +42,11 @@ function logToInputText(log: LogEntry): string {
   return parts.join('\n');
 }
 
-async function extractLogSummary(log: LogEntry, apiKey: string): Promise<LogSummary> {
+async function extractLogSummary(log: LogEntry, apiKey: string): Promise<LogSummary & { fromCache: boolean }> {
   const cached = getLogSummary(log.id);
   if (cached) {
     if (import.meta.env.DEV) console.log('[MasterNote] extractLogSummary cache hit:', log.id);
-    return cached;
+    return { ...cached, fromCache: true };
   }
 
   if (import.meta.env.DEV) console.log('[MasterNote] extractLogSummary API call:', log.id);
@@ -56,13 +57,8 @@ async function extractLogSummary(log: LogEntry, apiKey: string): Promise<LogSumm
     maxTokens: 8192,
   });
 
-  const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    if (import.meta.env.DEV) console.error('[MasterNote] extractLogSummary parse failed, raw:', rawText.slice(0, 200));
-    throw new Error('[Parse Error] Could not extract JSON from response.');
-  }
-
-  const parsed = JSON.parse(jsonMatch[0]);
+  const jsonText = extractJson(rawText);
+  const parsed = JSON.parse(jsonText);
   const summary: LogSummary = {
     logId: log.id,
     summary: parsed.summary || '',
@@ -74,7 +70,7 @@ async function extractLogSummary(log: LogEntry, apiKey: string): Promise<LogSumm
 
   if (import.meta.env.DEV) console.log('[MasterNote] extractLogSummary done:', log.id, { summary: summary.summary.slice(0, 50) });
   saveLogSummary(summary);
-  return summary;
+  return { ...summary, fromCache: false };
 }
 
 // ---------------------------------------------------------------------------
@@ -213,10 +209,8 @@ export async function refineMasterNote(
     maxTokens: 8192,
   });
 
-  const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('[Parse Error] Could not extract JSON from response.');
-
-  const parsed = JSON.parse(jsonMatch[0]);
+  const jsonText = extractJson(rawText);
+  const parsed = JSON.parse(jsonText);
 
   return {
     ...note,
@@ -259,8 +253,8 @@ export async function generateMasterNote(
     onProgress?.({ phase: 'extract', current: i + 1, total: sorted.length });
     const summary = await extractLogSummary(sorted[i], apiKey);
     summaries.push(summary);
-    // Delay between non-cached API calls to avoid rate limiting
-    if (i < sorted.length - 1 && !summary.cachedAt) {
+    // Delay between fresh API calls to avoid rate limiting
+    if (i < sorted.length - 1 && !summary.fromCache) {
       await new Promise((r) => setTimeout(r, 500));
     }
   }
@@ -278,17 +272,13 @@ export async function generateMasterNote(
     maxTokens: 8192,
   });
 
-  const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    if (import.meta.env.DEV) console.error('[MasterNote] Merge parse failed, raw:', rawText.slice(0, 300));
-    throw new Error('[Parse Error] Could not extract JSON from merge response.');
-  }
+  const jsonText = extractJson(rawText);
 
   let parsed: Record<string, unknown>;
   try {
-    parsed = JSON.parse(jsonMatch[0]);
+    parsed = JSON.parse(jsonText);
   } catch (parseErr) {
-    if (import.meta.env.DEV) console.error('[MasterNote] Merge JSON.parse error:', parseErr, 'raw:', jsonMatch[0].slice(0, 300));
+    if (import.meta.env.DEV) console.error('[MasterNote] Merge JSON.parse error:', parseErr, 'raw:', jsonText.slice(0, 300));
     throw new Error('[Parse Error] Invalid JSON in merge response.');
   }
 

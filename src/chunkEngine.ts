@@ -245,12 +245,13 @@ function extractJson(raw: string): string {
   if (start === -1) throw new Error('[Parse Error] No JSON found');
 
   let depth = 0;
-  const inString = false;
+  let inString = false;
   let escape = false;
   for (let i = start; i < stripped.length; i++) {
     const ch = stripped[i];
     if (escape) { escape = false; continue; }
     if (ch === '\\' && inString) { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
     if (inString) continue;
     if (ch === '{') depth++;
     if (ch === '}') { depth--; if (depth === 0) return stripped.slice(start, i + 1); }
@@ -1589,8 +1590,8 @@ export class ChunkEngine {
             if (activeDecisions) console.log('[FinalSummarization] applied activeDecisions:', activeDecisions.length);
           }
         }
-      } catch {
-        // Non-fatal: if entire post-merge fails, use the original merged result
+      } catch (err) {
+        if (import.meta.env.DEV) console.warn('[chunkEngine] post-merge failed:', err);
       }
 
     }

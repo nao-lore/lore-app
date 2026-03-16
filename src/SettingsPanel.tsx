@@ -214,7 +214,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
             {shouldUseBuiltinApi() ? (() => {
               const { used, limit, remaining } = getBuiltinUsage();
               const pct = Math.min((used / limit) * 100, 100);
-              const barColor = remaining <= 3 ? 'var(--error-text, #ef4444)' : remaining <= 8 ? '#f59e0b' : 'var(--accent)';
+              const barColor = remaining <= 3 ? 'var(--error-text, #ef4444)' : remaining <= 8 ? 'var(--warning-text, #f59e0b)' : 'var(--accent)';
               return (
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
@@ -510,7 +510,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
           {/* Data Usage */}
           {(() => {
             const usage = getDataUsage();
-            const barColor = usage.percentage >= 100 ? 'var(--error-text)' : usage.percentage >= 80 ? '#f59e0b' : 'var(--accent)';
+            const barColor = usage.percentage >= 100 ? 'var(--error-text)' : usage.percentage >= 80 ? 'var(--warning-text, #f59e0b)' : 'var(--accent)';
             const isWarning = usage.percentage >= 80;
             return (
               <div style={{ marginBottom: 16, padding: '12px 14px', background: 'var(--sidebar-hover)', borderRadius: 8 }}>

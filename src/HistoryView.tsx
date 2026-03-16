@@ -568,7 +568,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
       <div key={log.id} className={`card${isSelected ? ' card-selected' : ''}`} role="button" tabIndex={0} onClick={() => handleCardClick(log.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick(log.id); } }} style={{ position: 'relative', display: 'flex', gap: selectMode ? 12 : 0, ...(projectColor ? { borderLeft: `3px solid ${projectColor}` } : {}), ...(compact ? { padding: '4px 8px', fontSize: 12, lineHeight: 1.3 } : {}) }}>
         {selectMode && (
           <div style={{ paddingTop: 2, flexShrink: 0 }}>
-            <input type="checkbox" className="bulk-checkbox" checked={isSelected} onChange={() => toggleSelect(log.id)} onClick={(e) => e.stopPropagation()} />
+            <input type="checkbox" className="bulk-checkbox" checked={isSelected} onChange={() => toggleSelect(log.id)} onClick={(e) => e.stopPropagation()} aria-label={t('ariaBulkCheckbox', lang)} />
           </div>
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -936,12 +936,12 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
         <button
           className={`btn btn-sm${compact ? ' btn-active' : ''}`}
           onClick={() => setViewDensity(compact ? 'comfortable' : 'compact')}
-          title={compact ? 'Comfortable' : 'Compact'}
-          aria-label={compact ? 'Switch to comfortable view' : 'Switch to compact view'}
+          title={compact ? t('viewComfortable', lang) : t('viewCompact', lang)}
+          aria-label={compact ? t('ariaSwitchToComfortable', lang) : t('ariaSwitchToCompact', lang)}
           style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 10px', minHeight: 26, marginLeft: 'auto' }}
         >
           <AlignJustify size={12} />
-          {compact ? 'Compact' : 'Comfortable'}
+          {compact ? t('viewCompact', lang) : t('viewComfortable', lang)}
         </button>
         <div className="seg-control">
           <button
