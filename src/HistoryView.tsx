@@ -1061,7 +1061,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
       ) : selectMode ? (
         /* Select mode: render all items without virtualization (needed for bulk selection UX) */
         groupKey === 'none' ? (
-          <>{sorted.map(renderItem)}</>
+          <div role="list">{sorted.map(renderItem)}</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {groups.map((group) => (
@@ -1088,7 +1088,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
           ref={scrollContainerRef}
           style={{ flex: 1, minHeight: 0, overflow: 'auto', maxHeight: 'calc(100vh - 200px)' }}
         >
-          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+          <div role="list" style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
             {virtualizer.getVirtualItems().map((virtualItem) => {
               if (groupKey !== 'none') {
                 const flatItem = flatItems[virtualItem.index];
@@ -1096,6 +1096,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
                   return (
                     <div
                       key={virtualItem.key}
+                      role="presentation"
                       style={{
                         position: 'absolute',
                         top: virtualItem.start,
@@ -1126,6 +1127,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
                 return (
                   <div
                     key={virtualItem.key}
+                    role="listitem"
                     style={{
                       position: 'absolute',
                       top: virtualItem.start,
@@ -1140,6 +1142,7 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
               return (
                 <div
                   key={virtualItem.key}
+                  role="listitem"
                   style={{
                     position: 'absolute',
                     top: virtualItem.start,

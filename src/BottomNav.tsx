@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { LayoutDashboard, BarChart2, CheckSquare, ScrollText, MoreHorizontal, FolderOpen, Clock, FileBarChart, Settings } from 'lucide-react';
+import { LayoutDashboard, BarChart2, CheckSquare, ScrollText, MoreHorizontal, FolderOpen, Clock, FileBarChart, BookOpen, Settings } from 'lucide-react';
 import { t } from './i18n';
 import type { Lang } from './i18n';
 
@@ -12,14 +12,15 @@ interface BottomNavProps {
 const PRIMARY_TABS = [
   { view: 'input', icon: LayoutDashboard, labelKey: 'navHome' as const },
   { view: 'dashboard', icon: BarChart2, labelKey: 'navDashboard' as const },
-  { view: 'todos', icon: CheckSquare, labelKey: 'navTodo' as const },
   { view: 'history', icon: ScrollText, labelKey: 'navLogs' as const },
+  { view: 'projects', icon: FolderOpen, labelKey: 'navProjects' as const },
 ];
 
 const MORE_ITEMS = [
-  { view: 'projects', icon: FolderOpen, labelKey: 'navProjects' as const },
+  { view: 'todos', icon: CheckSquare, labelKey: 'navTodo' as const },
   { view: 'timeline', icon: Clock, labelKey: 'navTimeline' as const },
   { view: 'weeklyreport', icon: FileBarChart, labelKey: 'navWeeklyReport' as const },
+  { view: 'summarylist', icon: BookOpen, labelKey: 'navProjectSummary' as const },
   { view: 'settings', icon: Settings, labelKey: 'settings' as const },
 ];
 

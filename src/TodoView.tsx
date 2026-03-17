@@ -8,8 +8,8 @@ import type { Lang } from './i18n';
 import DropdownMenu from './DropdownMenu';
 import ConfirmDialog from './ConfirmDialog';
 import { EmptyTodos } from './EmptyIllustrations';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 
@@ -648,7 +648,10 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
 
   // Drag-and-drop: only when pending tab, no grouping, sort=created, not in select mode
   const dragEnabled = activeTab === 'pending' && groupKey === 'none' && sortKey === 'created' && !selectMode;
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -697,6 +700,8 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
       <div
         key={todo.id}
         className="todo-item"
+        role="listitem"
+        tabIndex={0}
         style={{
           display: 'flex', alignItems: 'flex-start', gap: 8,
           padding: '8px 10px', borderRadius: 8,
@@ -708,6 +713,10 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
         onMouseEnter={(e) => { if (!selectMode) e.currentTarget.style.background = ps.hoverBg; }}
         onMouseLeave={(e) => { if (!selectMode) e.currentTarget.style.background = ps.bg; }}
         onClick={selectMode ? () => toggleSelect(todo.id) : undefined}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); if (selectMode) { toggleSelect(todo.id); } else { handleToggle(todo.id, todo.done); } }
+          if (e.key === ' ') { e.preventDefault(); if (selectMode) { toggleSelect(todo.id); } else { handleToggle(todo.id, todo.done); } }
+        }}
       >
         {/* Drag handle */}
         {dragEnabled && handleProps && (
@@ -837,14 +846,14 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
               <>
                 <button
                   className="btn btn-primary"
-                  style={{ fontSize: 13, padding: '5px 14px', minHeight: 30 }}
+                  style={{ fontSize: 13, padding: '5px 14px', minHeight: 44 }}
                   onClick={() => { setAddOpen(true); setTimeout(() => inputRef.current?.focus(), 50); }}
                 >
                   {t('todoAdd', lang)}
                 </button>
                 <button
                   className="btn"
-                  style={{ fontSize: 13, padding: '5px 14px', minHeight: 30, display: 'flex', alignItems: 'center', gap: 4 }}
+                  style={{ fontSize: 13, padding: '5px 14px', minHeight: 44, display: 'flex', alignItems: 'center', gap: 4 }}
                   onClick={() => { setSelectMode(true); setSelectedIds(new Set()); }}
                   disabled={displayed.length === 0}
                 >
@@ -855,7 +864,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
             <div ref={overflowRef} style={{ position: 'relative' }}>
               <button
                 className="btn btn-ghost"
-                style={{ padding: '5px 6px', minHeight: 30 }}
+                style={{ padding: '5px 6px', minHeight: 44 }}
                 onClick={() => setOverflowOpen(!overflowOpen)}
               >
                 <MoreVertical size={18} />
@@ -1163,7 +1172,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
             {dragEnabled ? (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={sorted.slice(0, todoVisibleCount).map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div role="list" style={{ display: 'flex', flexDirection: 'column' }}>
                     {sorted.slice(0, todoVisibleCount).map((todo) => (
                       <SortableTodoItem key={todo.id} id={todo.id} disabled={false}>
                         {({ handleProps }) => renderTodoItem(todo, true, handleProps)}
@@ -1173,7 +1182,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
                 </SortableContext>
               </DndContext>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div role="list" style={{ display: 'flex', flexDirection: 'column' }}>
                 {sorted.slice(0, todoVisibleCount).map((todo) => renderTodoItem(todo, true))}
               </div>
             )}
@@ -1212,7 +1221,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
                   })()}
                 </div>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div role="list" style={{ display: 'flex', flexDirection: 'column' }}>
                 {group.items.map((todo) => renderTodoItem(todo, showSourcePerItem))}
               </div>
             </div>

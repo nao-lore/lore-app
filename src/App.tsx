@@ -49,9 +49,8 @@ function resolveUiLang(): Lang {
 
 function resolveEffectiveTheme(pref: ThemePref): 'light' | 'dark' {
   if (pref === 'light' || pref === 'dark') return pref;
-  // Time-based: 7:00–19:00 local time = light, otherwise dark
-  const hour = new Date().getHours();
-  return (hour >= 7 && hour < 19) ? 'light' : 'dark';
+  // Use OS preference via media query
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 export default function App() {
@@ -135,11 +134,10 @@ export default function App() {
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const logs = loadLogs();
-  const projects = loadProjects();
-  const todos = loadTodos();
-  const masterNotes = loadMasterNotes();
-  void logsVersion;
+  const logs = useMemo(() => loadLogs(), [logsVersion]);
+  const projects = useMemo(() => loadProjects(), [logsVersion]);
+  const todos = useMemo(() => loadTodos(), [logsVersion]);
+  const masterNotes = useMemo(() => loadMasterNotes(), [logsVersion]);
 
   // Tab title: show pending TODO count + current view
   const pendingCount = useMemo(() => todos.filter((td) => !td.done).length, [todos]);
@@ -269,7 +267,7 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- goToRaw is stable (depends on setState only)
   }, [lang]);
 
-  // Apply data-theme attribute; re-check hourly for time-based "system" mode
+  // Apply data-theme attribute; listen for OS theme changes when in "system" mode
   useEffect(() => {
     const apply = () => {
       const effective = resolveEffectiveTheme(themePref);
@@ -278,9 +276,11 @@ export default function App() {
     apply();
 
     if (themePref === 'system') {
-      // Re-evaluate every 60 min to catch day/night transitions
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      mq.addEventListener('change', apply);
+      // Also re-check hourly as a fallback
       const timer = setInterval(apply, 60 * 60 * 1000);
-      return () => clearInterval(timer);
+      return () => { mq.removeEventListener('change', apply); clearInterval(timer); };
     }
   }, [themePref]);
 
@@ -493,6 +493,7 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', height: '100%' }}>
+      <a href="#main-content" className="skip-link">Skip to content</a>
       {!sidebarOpen && !sidebarHidden && (
         <div style={{ width: 48, minWidth: 48, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 14, gap: 4, background: 'transparent' }}>
           <button className="toggle-btn" onClick={() => { setSidebarOpen(true); safeSetItem(SIDEBAR_KEY, 'open'); }} title={t('showSidebar', lang)} aria-label={t('ariaShowSidebar', lang)}>
@@ -548,7 +549,7 @@ export default function App() {
           showToast={showToast}
         />
       )}
-      <div ref={scrollRef} data-main-scroll style={{ flex: 1, overflowY: 'auto', minHeight: 0, background: 'var(--bg-app)' }}>
+      <div id="main-content" ref={scrollRef} data-main-scroll style={{ flex: 1, overflowY: 'auto', minHeight: 0, background: 'var(--bg-app)' }}>
         {isDemoMode() && (
           <div style={{ background: 'var(--accent-bg, rgba(99,102,241,0.08))', borderBottom: '1px solid var(--accent)', padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, fontSize: 13 }}>
             <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{t('demoBadge', lang)}</span>

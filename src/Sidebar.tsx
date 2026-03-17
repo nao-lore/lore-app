@@ -117,10 +117,18 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
   const [statsOpen, setStatsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [confirmTrashId, setConfirmTrashId] = useState<string | null>(null);
+  const [moreOpen, setMoreOpen] = useState(() => {
+    try { return localStorage.getItem('threadlog_sidebar_more') === 'open'; } catch { return false; }
+  });
   const [pinnedOpen, setPinnedOpen] = useState(() => {
     try { return localStorage.getItem('threadlog_sidebar_pinned') !== 'closed'; } catch { return true; }
   });
 
+  const toggleMore = () => {
+    const next = !moreOpen;
+    setMoreOpen(next);
+    try { localStorage.setItem('threadlog_sidebar_more', next ? 'open' : 'closed'); } catch { /* ignore */ }
+  };
   const togglePinned = () => {
     const next = !pinnedOpen;
     setPinnedOpen(next);
@@ -281,7 +289,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
         </button>
       </div>
 
-      {/* Navigation — Home + Views */}
+      {/* Navigation — Primary */}
       <div style={{ padding: '4px 10px 0' }}>
         <div style={{ borderTop: '1px solid var(--border-default)', margin: '0 4px 4px', paddingTop: 8 }} />
         <button
@@ -301,41 +309,6 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
           <span>{t('navDashboard', lang)}</span>
         </button>
         <button
-          className={`sidebar-nav-item${activeView === 'todos' ? ' active' : ''}`}
-          onClick={onOpenTodos}
-          title={t('navTodoTitle', lang)}
-        >
-          <CheckSquare size={15} />
-          <span>{t('navTodo', lang)}</span>
-          {dots.overdueTodos && <span className="nav-dot warning" />}
-        </button>
-        <button
-          className={`sidebar-nav-item${activeView === 'timeline' ? ' active' : ''}`}
-          onClick={onOpenTimeline}
-          title={t('navTimelineTitle', lang)}
-        >
-          <Clock size={15} />
-          <span>{t('navTimeline', lang)}</span>
-        </button>
-        {onOpenWeeklyReport && (
-          <button
-            className={`sidebar-nav-item${activeView === 'weeklyreport' ? ' active' : ''}`}
-            onClick={onOpenWeeklyReport}
-            title={t('navWeeklyReportTitle', lang)}
-          >
-            <FileBarChart size={15} />
-            <span>{t('navWeeklyReport', lang)}</span>
-          </button>
-        )}
-      </div>
-
-      {/* Navigation — Workflow (Logs → Projects → Summaries) */}
-      <div style={{ padding: '4px 10px 0' }}>
-        <div style={{ borderTop: '1px solid var(--border-default)', margin: '4px 4px 4px' }} />
-        <div style={{ padding: '0 4px 4px', fontSize: 10, fontWeight: 600, color: 'var(--text-placeholder)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-          {t('navWorkflow', lang)}
-        </div>
-        <button
           className={`sidebar-nav-item${activeView === 'history' ? ' active' : ''}`}
           onClick={onOpenHistory}
           title={t('navLogsTitle', lang)}
@@ -344,9 +317,6 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
           <span>{t('navLogs', lang)}</span>
           {dots.unassignedLogs && <span className="nav-dot accent" />}
         </button>
-        <div style={{ paddingLeft: 18, lineHeight: 1, marginBottom: 1 }}>
-          <ChevronDown size={11} style={{ color: 'var(--accent)', opacity: 0.5 }} />
-        </div>
         <button
           className={`sidebar-nav-item${activeView === 'projects' || activeView === 'projecthome' ? ' active' : ''}`}
           onClick={onOpenProjects}
@@ -355,18 +325,60 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
           <FolderOpen size={15} />
           <span>{t('navProjects', lang)}</span>
         </button>
-        <div style={{ paddingLeft: 18, lineHeight: 1, marginBottom: 1 }}>
-          <ChevronDown size={11} style={{ color: 'var(--accent)', opacity: 0.5 }} />
-        </div>
         <button
-          className={`sidebar-nav-item${activeView === 'summarylist' || activeView === 'masternote' ? ' active' : ''}`}
-          onClick={onOpenProjectSummaryList}
-          title={t('navProjectSummaryTitle', lang)}
+          className={`sidebar-nav-item${activeView === 'todos' ? ' active' : ''}`}
+          onClick={onOpenTodos}
+          title={t('navTodoTitle', lang)}
         >
-          <BookOpen size={15} />
-          <span>{t('navProjectSummary', lang)}</span>
-          {dots.staleSummary && <span className="nav-dot warning" />}
+          <CheckSquare size={15} />
+          <span>{t('navTodo', lang)}</span>
+          {dots.overdueTodos && <span className="nav-dot warning" />}
         </button>
+
+        {/* Collapsible "More" section */}
+        <div
+          style={{ padding: '0 4px', marginTop: 4, display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+          onClick={toggleMore}
+          role="button"
+          tabIndex={0}
+          aria-label={t('more', lang)}
+          aria-expanded={moreOpen}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMore(); } }}
+        >
+          {moreOpen ? <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 4 }} /> : <ChevronRight size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 4 }} />}
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{t('more', lang)}</span>
+        </div>
+        {moreOpen && (
+          <div style={{ marginTop: 2 }}>
+            <button
+              className={`sidebar-nav-item${activeView === 'timeline' ? ' active' : ''}`}
+              onClick={onOpenTimeline}
+              title={t('navTimelineTitle', lang)}
+            >
+              <Clock size={15} />
+              <span>{t('navTimeline', lang)}</span>
+            </button>
+            {onOpenWeeklyReport && (
+              <button
+                className={`sidebar-nav-item${activeView === 'weeklyreport' ? ' active' : ''}`}
+                onClick={onOpenWeeklyReport}
+                title={t('navWeeklyReportTitle', lang)}
+              >
+                <FileBarChart size={15} />
+                <span>{t('navWeeklyReport', lang)}</span>
+              </button>
+            )}
+            <button
+              className={`sidebar-nav-item${activeView === 'summarylist' || activeView === 'masternote' ? ' active' : ''}`}
+              onClick={onOpenProjectSummaryList}
+              title={t('navProjectSummaryTitle', lang)}
+            >
+              <BookOpen size={15} />
+              <span>{t('navProjectSummary', lang)}</span>
+              {dots.staleSummary && <span className="nav-dot warning" />}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Pinned section (projects + logs combined) */}

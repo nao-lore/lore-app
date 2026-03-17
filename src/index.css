@@ -2,6 +2,20 @@
   box-sizing: border-box;
 }
 
+/* ===== Skip navigation link (WCAG AA) ===== */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  padding: 8px;
+  z-index: 10000;
+  background: var(--accent);
+  color: #fff;
+}
+.skip-link:focus {
+  top: 0;
+}
+
 /* ===== Theme tokens ===== */
 :root {
   --bg-app: #f7f7f5;
@@ -16,8 +30,8 @@
   --text-primary: #111;
   --text-secondary: #1a1a1a;
   --text-body: #374151;
-  --text-muted: #6b7280;
-  --text-subtle: #9ca3af;
+  --text-muted: #5c6370;
+  --text-subtle: #64748b;
   --text-placeholder: #808080;
   --accent: #7c5cfc;
   --accent-hover: #8b6dff;
@@ -107,8 +121,8 @@
   --text-primary: #f0f0f0;
   --text-secondary: #e0e0e0;
   --text-body: #b0b0b0;
-  --text-muted: #888;
-  --text-subtle: #999;
+  --text-muted: #a0a0a0;
+  --text-subtle: #8a8a8a;
   --text-placeholder: #808080;
   --accent: #9b8ff8;
   --accent-hover: #a99df9;
@@ -488,6 +502,8 @@ h4 {
   color: var(--accent-text);
   padding: 2px 4px;
   margin: -2px -4px;
+  min-height: 44px;
+  min-width: 44px;
   font-size: 13px;
   font-weight: 500;
   font-family: inherit;
