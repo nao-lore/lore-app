@@ -6,8 +6,8 @@
 </p>
 
 <p align="center">
-  <strong>Turn AI conversations into structured handoffs</strong><br/>
-  Stop losing context between AI sessions. Paste a chat, get a handoff.
+  <strong>Structured context for every AI session</strong><br/>
+  Your AI doesn't need to remember everything. It needs to know where you are.
 </p>
 
 <p align="center">
@@ -25,14 +25,14 @@
 
 ## What is Lore?
 
-Every time you start a new AI session, you lose context. Lore fixes that.
+Lore turns AI conversations into structured project context — so you and your AI always know exactly where things stand.
 
 Paste your ChatGPT / Claude / Gemini conversation into Lore, and it automatically generates:
 
-- **Handoff** — A structured summary so your next AI session can pick up exactly where you left off
-- **TODO list** — Action items auto-extracted with priority levels
-- **Project Summary** — A living overview built from all your handoffs
-- **AI Context** — Copy-paste-ready context for your next AI session
+- **Project Snapshot** — Current status, key decisions, risks, and blockers at a glance
+- **Next Actions** — Tasks auto-extracted and organized by priority
+- **Project Summary** — A living dashboard built from all your sessions
+- **AI Context** — Structured context your next AI session can instantly understand
 
 ## Screenshots
 

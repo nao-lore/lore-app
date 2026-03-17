@@ -1624,3 +1624,12 @@ export class ChunkEngine {
     await Promise.all(workers);
   }
 }
+
+// =============================================================================
+// Test-only exports — used by unit tests, not part of public API
+// =============================================================================
+export const _testOnly = {
+  splitIntoChunks,
+  tryRepairJson,
+  localMerge,
+};

@@ -287,7 +287,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           </div>
 
           {/* Action buttons */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div className="flex flex-wrap gap-sm">
             {savedResult.fullContext ? (
               <button
                 className="btn btn-primary"
@@ -336,7 +336,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
           {/* Subtitle explaining the buttons */}
           {savedResult.fullContext && (
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
+            <p className="text-xs-muted" style={{ marginTop: 8 }}>
               {t('copyAiContextTitle', lang)}
             </p>
           )}
@@ -413,7 +413,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         />
 
         {/* Bottom bar: char count + keyboard hint */}
-        <div style={{ padding: '0 24px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="flex-row justify-between" style={{ padding: '0 24px 6px' }}>
           <div>
             {combined.length > 0 && (
               <span className="meta" style={{ fontSize: 11, color: overLimit ? 'var(--error-text)' : overWarn || willChunk ? 'var(--error-text)' : undefined }}>
@@ -436,7 +436,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         </div>
 
         {/* Transform button — bottom right inside card */}
-        <div style={{ position: 'absolute', right: 14, bottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div className="flex-row" style={{ position: 'absolute', right: 14, bottom: 12, gap: 6 }}>
           {!loading && shouldUseBuiltinApi() && (() => {
             const { used, limit } = getBuiltinUsage();
             return (
@@ -475,8 +475,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       </div>)}
 
       {/* Toolbar: mode tabs + project + import — single row */}
-      {!savedResult && (<div style={{ maxWidth: 760, margin: '10px auto 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      {!savedResult && (<div className="flex-col" style={{ maxWidth: 760, margin: '10px auto 0', gap: 6 }}>
+        <div className="flex-row flex-wrap" style={{ gap: 10 }}>
           <div className="mode-selector" role="radiogroup" aria-label={t('ariaTransformMode', lang)}>
             {(['handoff', 'handoff_todo', 'todo_only'] as TransformAction[]).map((a) => {
               const isActive = transformAction === a;
@@ -561,7 +561,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         <div className="file-list" style={{ marginTop: 12, maxWidth: 760, margin: '12px auto 0' }}>
           {files.map((f, i) => (
             <div key={i} className="file-list-item">
-              <span style={{ color: 'var(--text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span className="text-muted flex-1 truncate">
                 {f.name}
               </span>
               {f.lastModified && (
@@ -590,7 +590,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
       {/* Warnings — compact inline pills */}
       {(overLimit || isLargeInput) && !loading && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14, justifyContent: 'center' }}>
+        <div className="flex flex-wrap gap-sm" style={{ marginTop: 14, justifyContent: 'center' }}>
           {overLimit && (
             <span className="notice-pill notice-pill-error">
               {t('overLimitBlock', lang)}
@@ -685,7 +685,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           {savedId && (
             <div className="alert-success" style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
               <span>{t('savedToLogs', lang)}</span>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className="flex gap-sm">
                 {savedHandoffId && (
                   <button
                     className="btn"
@@ -754,7 +754,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             <WorklogResultDisplay result={result as TransformResult} lang={lang} />
           )}
 
-          <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border-default)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div className="flex flex-wrap gap-sm" style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border-default)' }}>
             <button className="btn" onClick={handleCopy} style={copied ? { color: 'var(--success-text)', borderColor: 'var(--success-border)' } : undefined}>
               {copied ? <><Check size={14} /> {t('copied', lang)}</> : <><Copy size={14} /> {t('copyMarkdown', lang)}</>}
             </button>

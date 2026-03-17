@@ -2,7 +2,7 @@
   "name": "threadlog",
   "private": true,
   "version": "0.1.0",
-  "description": "Turn AI conversations into structured handoffs — paste a chat, get a handoff with status, tasks, and decisions",
+  "description": "Structured context for every AI session — paste an AI conversation, get a project snapshot with status, decisions, and next actions",
   "keywords": ["ai", "handoff", "context", "chatgpt", "claude", "gemini", "productivity", "pwa", "react", "typescript"],
   "author": "Lore",
   "homepage": "https://lore-app.vercel.app",

@@ -590,7 +590,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
             </div>
           )}
           {/* Row 1: state (left) + badge + date */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 4 : 8, marginBottom: compact ? 2 : 6 }}>
+          <div className="flex-row" style={{ gap: compact ? 4 : 8, marginBottom: compact ? 2 : 6 }}>
             {log.pinned && (
               <Pin size={compact ? 10 : 12} style={{ color: 'var(--accent)', flexShrink: 0, transform: 'rotate(45deg)' }} />
             )}
@@ -634,7 +634,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
           {preview && <div className="meta" style={{ marginTop: compact ? 2 : 5, lineHeight: compact ? 1.3 : 1.55, fontSize: compact ? 11 : 12.5 }}><Highlight text={preview} query={debouncedQuery} /></div>}
           {/* Row 3.5: nextActions progress */}
           {log.outputMode === 'handoff' && log.nextActions && log.nextActions.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5, fontSize: 12, color: 'var(--text-placeholder)' }}>
+            <div className="flex-row" style={{ gap: 8, marginTop: 5, fontSize: 12, color: 'var(--text-placeholder)' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 ☑ {log.checkedActions?.length || 0}/{log.nextActions.length}
               </span>
@@ -646,11 +646,13 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
           {/* Row 4: unassigned — inline project picker */}
           {!activeProjectId && !log.projectId && projects.length > 0 && (
             <div
-              style={{ marginTop: 6, position: 'relative', display: 'flex', alignItems: 'center', gap: 4 }}
+              className="flex-row"
+              style={{ marginTop: 6, position: 'relative', gap: 4 }}
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                style={{ fontSize: 11, color: 'var(--text-placeholder)', display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' }}
+                className="flex-row text-xs-placeholder"
+                style={{ gap: 4, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' }}
                 onClick={() => setInlinePickerLogId(inlinePickerLogId === log.id ? null : log.id)}
               >
                 <FolderOpen size={11} />
@@ -659,7 +661,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
                 </span>
               </button>
               {inlinePickerLogId === log.id && (
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginLeft: 4 }}>
+                <div className="flex flex-wrap gap-xs" style={{ marginLeft: 4 }}>
                   {projects.map((p) => (
                     <button
                       key={p.id}
@@ -818,7 +820,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
   });
 
   return (
-    <div className="workspace-content-wide" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="workspace-content-wide flex-col" style={{ height: '100%' }}>
       <div className="page-header page-header-sticky">
         <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
           ← {t('back', lang)}
@@ -834,13 +836,13 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
             </h2>
             <p className="page-subtitle">{tf('logCount', lang, sorted.length)}</p>
           </div>
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div className="flex" style={{ gap: 6 }}>
             {!selectMode && activeProjectId && onOpenMasterNote && (() => {
               const hasNote = !!getMasterNote(activeProjectId);
               return (
                 <button
-                  className="btn"
-                  style={{ fontSize: 12, padding: '4px 12px', minHeight: 26, display: 'flex', alignItems: 'center', gap: 4 }}
+                  className="btn flex-row"
+                  style={{ fontSize: 12, padding: '4px 12px', minHeight: 26, gap: 4 }}
                   onClick={() => onOpenMasterNote(activeProjectId)}
                 >
                   <BookOpen size={12} />
@@ -868,7 +870,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
       </div>
 
       {/* Toolbar: filter + search + sort + group */}
-      <div className="content-card" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div className="content-card flex-row flex-wrap" style={{ gap: 10, marginBottom: 20 }}>
         <div className="seg-control">
           {(['all', 'pinned', 'worklog', 'handoff'] as const).map((v) => (
             <button
@@ -904,9 +906,9 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
         />
         <div style={{ position: 'relative' }}>
           <button
-            className={`btn btn-sm${dateFrom || dateTo ? ' btn-active' : ''}`}
+            className={`btn btn-sm flex-row${dateFrom || dateTo ? ' btn-active' : ''}`}
             onClick={() => setDateFilterOpen(!dateFilterOpen)}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 10px', minHeight: 26 }}
+            style={{ gap: 4, fontSize: 12, padding: '4px 10px', minHeight: 26 }}
           >
             <Calendar size={12} />
             {t('dateFilterBtn', lang)}
@@ -914,7 +916,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
           </button>
           {dateFilterOpen && (
             <div className="date-filter-panel" onClick={(e) => e.stopPropagation()}>
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+              <div className="flex flex-wrap gap-xs" style={{ marginBottom: 8 }}>
                 {(['today', 'week', 'month'] as DatePreset[]).map((p) => (
                   <button
                     key={p}
@@ -934,7 +936,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
                   </button>
                 ))}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+              <div className="flex-row text-sm" style={{ gap: 6 }}>
                 <label style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t('dateFilterFrom', lang)}</label>
                 <input
                   type="date"
@@ -965,11 +967,11 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
           )}
         </div>
         <button
-          className={`btn btn-sm${compact ? ' btn-active' : ''}`}
+          className={`btn btn-sm flex-row${compact ? ' btn-active' : ''}`}
           onClick={() => setViewDensity(compact ? 'comfortable' : 'compact')}
           title={compact ? t('viewComfortable', lang) : t('viewCompact', lang)}
           aria-label={compact ? t('ariaSwitchToComfortable', lang) : t('ariaSwitchToCompact', lang)}
-          style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 10px', minHeight: 26, marginLeft: 'auto' }}
+          style={{ gap: 4, fontSize: 12, padding: '4px 10px', minHeight: 26, marginLeft: 'auto' }}
         >
           <AlignJustify size={12} />
           {compact ? t('viewCompact', lang) : t('viewComfortable', lang)}
@@ -998,7 +1000,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
 
       {/* Tag filter indicator */}
       {tagFilter && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 13, color: 'var(--text-muted)' }}>
+        <div className="flex-row mb-md" style={{ gap: 8, fontSize: 13, color: 'var(--text-muted)' }}>
           <span>{t('tagFilter', lang)}:</span>
           <span className="tag" style={{ fontWeight: 600 }}>{tagFilter}</span>
           <button
@@ -1015,8 +1017,8 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
       {!debouncedQuery.trim() && !tagFilter && modeFilter === 'all' && logs.length >= 3 && (() => {
         if (keywords.length === 0) return null;
         return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div className="flex-row flex-wrap mb-md" style={{ gap: 8 }}>
+            <span className="flex-row text-sm-muted" style={{ gap: 4 }}>
               <TrendingUp size={12} />
               {t('topKeywords', lang)}:
             </span>
@@ -1040,7 +1042,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
 
       {/* Date filter indicator */}
       {(dateFrom || dateTo) && !dateFilterOpen && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 13, color: 'var(--text-muted)' }}>
+        <div className="flex-row mb-md" style={{ gap: 8, fontSize: 13, color: 'var(--text-muted)' }}>
           <Calendar size={12} />
           <span>{dateFrom || '...'} — {dateTo || '...'}</span>
           <button
@@ -1058,8 +1060,8 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
         const unassigned = sorted.filter((l) => !l.projectId).length;
         if (unassigned === 0 || unassigned === sorted.length) return null;
         return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '8px 12px', borderRadius: 8, background: 'var(--card-bg)', border: '1px solid var(--border-subtle)', fontSize: 12, color: 'var(--text-muted)' }}>
-            <FolderOpen size={13} style={{ flexShrink: 0, color: 'var(--accent)' }} />
+          <div className="flex-row text-sm-muted" style={{ gap: 8, marginBottom: 12, padding: '8px 12px', borderRadius: 8, background: 'var(--card-bg)', border: '1px solid var(--border-subtle)' }}>
+            <FolderOpen size={13} className="shrink-0" style={{ color: 'var(--accent)' }} />
             <span>
               {tf('unassignedLogsHint', lang, unassigned)}
             </span>
@@ -1094,7 +1096,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
         groupKey === 'none' ? (
           <div role="list">{sorted.map(renderItem)}</div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div className="flex-col" style={{ gap: 24 }}>
             {groups.map((group) => (
               <div key={group.key}>
                 {group.label && (
@@ -1217,15 +1219,13 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
 
       {/* Floating bulk action bar (bottom) */}
       {selectMode && (
-        <div style={{
+        <div className="flex-row" style={{
           position: 'sticky',
           bottom: 0,
           background: 'var(--bg-primary)',
           borderTop: '1px solid var(--border-default)',
           padding: 12,
-          display: 'flex',
           gap: 8,
-          alignItems: 'center',
           zIndex: 100,
           boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
         }}>
@@ -1234,13 +1234,13 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
           </span>
           {selected.size > 0 && (
             <>
-              <button className="btn btn-danger" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, display: 'flex', alignItems: 'center', gap: 4 }} onClick={handleBulkDelete}>
+              <button className="btn btn-danger flex-row" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, gap: 4 }} onClick={handleBulkDelete}>
                 <Trash2 size={13} />
                 {t('bulkTrash', lang)}
               </button>
               {projects.length > 0 && (
                 <div style={{ position: 'relative' }}>
-                  <button className="btn" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => setProjectPickerOpen(!projectPickerOpen)}>
+                  <button className="btn flex-row" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, gap: 4 }} onClick={() => setProjectPickerOpen(!projectPickerOpen)}>
                     <FolderOpen size={13} />
                     {t('bulkAssignProject', lang)}
                   </button>

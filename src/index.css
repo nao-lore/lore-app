@@ -237,6 +237,19 @@
 .font-semibold { font-weight: 600; }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .w-full { width: 100%; }
+.flex-row { display: flex; align-items: center; }
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.section-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.text-sm-muted { font-size: 12px; color: var(--text-muted); }
+.text-xs-muted { font-size: 11px; color: var(--text-muted); }
+.text-xs-placeholder { font-size: 11px; color: var(--text-placeholder); }
+.flex-1 { flex: 1; min-width: 0; }
+.shrink-0 { flex-shrink: 0; }
+.mb-sm { margin-bottom: 8px; }
+.mb-md { margin-bottom: 12px; }
+.mb-lg { margin-bottom: 16px; }
+.mb-xl { margin-bottom: 24px; }
+.mb-2xl { margin-bottom: 32px; }
 
 /* Badge/pill */
 .badge {

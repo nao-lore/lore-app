@@ -57,7 +57,7 @@ function StatsModal({ stats, lang, onClose, onOpenHistory, onOpenProjects, onOpe
         onClick={(e) => e.stopPropagation()}
       >
         <h3 style={{ margin: '0 0 16px', fontSize: 16 }}>{t('statsTitle', lang)}</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <div className="flex-col">
           {rows.map((row) => (
             <div
               key={row.label}
@@ -268,9 +268,9 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
     <nav className="sidebar" aria-label={t('appName', lang)} style={{ width: 260, minWidth: 260, height: '100%', borderRight: '1px solid var(--border-default)', display: 'flex', flexDirection: 'column', background: 'var(--bg-sidebar)' }}>
       {/* Header */}
       <div style={{ padding: '16px 14px 12px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div className="flex-row justify-between" style={{ marginBottom: 14 }}>
           <span onClick={onNewLog} style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', letterSpacing: '-0.3px', cursor: 'pointer' }}>{t('appName', lang)}</span>
-          <div style={{ display: 'flex', gap: 4 }}>
+          <div className="flex gap-xs">
             <button className="toggle-btn" onClick={onCollapse} title={t('hideSidebar', lang)} aria-label={t('ariaHideSidebar', lang)}><Menu size={18} /></button>
           </div>
         </div>
@@ -341,7 +341,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMore(); } }}
         >
           {moreOpen ? <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 4 }} /> : <ChevronRight size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 4 }} />}
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{t('more', lang)}</span>
+          <span className="text-xs-muted font-semibold">{t('more', lang)}</span>
         </div>
         {moreOpen && (
           <div style={{ marginTop: 2 }}>
@@ -381,7 +381,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
 
       {/* Pinned section (projects + logs combined) */}
       {(pinnedProjects.length > 0 || pinnedLogs.length > 0) && (
-        <div style={{ padding: '4px 10px 0', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <div className="flex-col" style={{ padding: '4px 10px 0', flex: 1, minHeight: 0 }}>
           <div style={{ borderTop: '1px solid var(--border-default)', margin: '4px 4px 8px' }} />
           <div
             style={{ padding: '0 4px', marginBottom: 4, display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
@@ -490,7 +490,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
       )}
 
       {/* Spacer to push account to bottom when no pinned section */}
-      {!(pinnedProjects.length > 0 || pinnedLogs.length > 0) && <div style={{ flex: 1 }} />}
+      {!(pinnedProjects.length > 0 || pinnedLogs.length > 0) && <div className="flex-1" />}
 
       {/* Account area */}
       <button
@@ -590,7 +590,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
             style={{ maxWidth: 320 }}
           >
             <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>{t('ctxChangeProject', lang)}</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div className="flex-col" style={{ gap: 2 }}>
               {projects.map((p) => (
                 <button
                   key={p.id}

@@ -230,7 +230,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
   // ── Empty state ──
   if (handoffLogs.length === 0) {
     return (
-      <div className="workspace-content-wide" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div className="workspace-content-wide flex-col items-center">
         <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-secondary)', marginTop: 80, marginBottom: 32, textAlign: 'center' }}>
           {getGreeting(lang)}
         </div>
@@ -266,7 +266,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
 
         {/* ── Nudge cards (top of dashboard, prominent with left border + icons) ── */}
         {nudges.length > 0 && (
-          <div style={{ marginBottom: 32 }}>
+          <div className="mb-2xl">
             <div className="flex flex-wrap" style={{ gap: 10 }}>
               {nudges.map((n) => {
                 const IconComponent = n.icon;
@@ -287,11 +287,11 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                   }}
                   className="nudge-card"
                 >
-                  <div style={{ fontSize: 20, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div className="flex-row" style={{ fontSize: 20, marginBottom: 8, gap: 6 }}>
                     <IconComponent size={20} style={{ color: n.borderColor }} />
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>{n.label}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{n.sub}</div>
+                  <div className="text-xs-muted" style={{ marginTop: 2 }}>{n.sub}</div>
                   {/* dismiss tap target */}
                   <button
                     onClick={(e) => { e.stopPropagation(); dismissAll(n.dismissKeys); }}
@@ -317,12 +317,12 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
 
         {/* ── Quick access cards (horizontal scroll) ── */}
         {(lastActiveProject || projectSnapshots.length > 0) && (
-          <div style={{ marginBottom: 32 }}>
+          <div className="mb-2xl">
             <div className="section-header" style={{ fontSize: 13, marginBottom: 10 }}>
               <PlayCircle size={14} style={{ opacity: 0.5 }} />
               {t('dashboardRecentProjects', lang)}
             </div>
-            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', overflowY: 'hidden', paddingBottom: 8, marginBottom: -8 }}>
+            <div className="flex" style={{ gap: 12, overflowX: 'auto', overflowY: 'hidden', paddingBottom: 8, marginBottom: -8 }}>
               {projectSnapshots.slice(0, 5).map((snap) => {
                 const pct = snap.totalCount > 0 ? ((snap.totalCount - snap.pendingCount) / snap.totalCount) * 100 : 0;
                 return (
@@ -345,11 +345,11 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                       {snap.project.name}
                     </div>
                     {snap.totalCount > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                      <div className="flex-row" style={{ gap: 6, marginTop: 6 }}>
                         <div style={{ flex: 1, height: 3, background: 'var(--border-subtle)', borderRadius: 2, overflow: 'hidden' }}>
                           <div style={{ height: '100%', background: pct === 100 ? 'var(--success-text)' : 'var(--accent)', borderRadius: 2, width: `${pct}%`, transition: 'width 0.3s ease' }} />
                         </div>
-                        <span style={{ fontSize: 10, color: 'var(--text-placeholder)', flexShrink: 0 }}>{snap.totalCount - snap.pendingCount}/{snap.totalCount}</span>
+                        <span className="shrink-0" style={{ fontSize: 10, color: 'var(--text-placeholder)' }}>{snap.totalCount - snap.pendingCount}/{snap.totalCount}</span>
                       </div>
                     )}
                   </div>
@@ -379,7 +379,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
 
         {/* ── Today's Focus ── */}
         {focusTasks.length > 0 && (
-          <div style={{ marginBottom: 32 }}>
+          <div className="mb-2xl">
             <div className="section-header" style={{ fontSize: 13, marginBottom: 10 }}>
               <Square size={14} style={{ opacity: 0.5 }} />
               {t('dashboardTodayFocus', lang)}
@@ -404,18 +404,17 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                   onClick={() => onToggleAction(action.logId, action.index)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleAction(action.logId, action.index); } }}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
+                    gap: 10, padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
                     fontSize: 13, lineHeight: 1.5,
                     background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
                     userSelect: 'none', transition: 'all 0.12s ease',
                   }}
-                  className="focus-task-item"
+                  className="focus-task-item flex-row"
                 >
-                  <Square size={14} style={{ color: 'var(--text-placeholder)', flexShrink: 0 }} />
-                  <span style={{ flex: 1, color: 'var(--text-body)', overflowWrap: 'break-word', wordBreak: 'break-word', minWidth: 0 }}>{action.text}</span>
+                  <Square size={14} className="shrink-0" style={{ color: 'var(--text-placeholder)' }} />
+                  <span className="flex-1" style={{ color: 'var(--text-body)', overflowWrap: 'break-word', wordBreak: 'break-word' }}>{action.text}</span>
                   {action.projectName && (
-                    <span className="badge badge-accent" style={{ borderRadius: 4, flexShrink: 0 }}>
+                    <span className="badge badge-accent shrink-0" style={{ borderRadius: 4 }}>
                       {action.projectName}
                     </span>
                   )}
@@ -425,14 +424,15 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
             {uncheckedActions.length > 5 && (
               <button
                 onClick={() => setMoreTasksOpen(!moreTasksOpen)}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-placeholder)', background: 'none', border: 'none', padding: '8px 0 0', cursor: 'pointer', fontFamily: 'inherit' }}
+                className="flex-row text-sm-muted"
+                style={{ gap: 4, color: 'var(--text-placeholder)', background: 'none', border: 'none', padding: '8px 0 0', cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 {moreTasksOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                 <span>{tf('dashboardMoreTasks', lang, uncheckedActions.length - 5)}</span>
               </button>
             )}
             {moreTasksOpen && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 6 }}>
+              <div className="flex-col" style={{ gap: 3, marginTop: 6 }}>
                 {uncheckedActions.slice(5, 25).map((action) => (
                   <div
                     key={`${action.logId}-${action.index}`}
@@ -441,10 +441,11 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                     aria-label={action.text}
                     onClick={() => onToggleAction(action.logId, action.index)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleAction(action.logId, action.index); } }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', userSelect: 'none' }}
+                    className="flex-row text-sm-muted"
+                    style={{ gap: 8, padding: '6px 14px', borderRadius: 8, cursor: 'pointer', userSelect: 'none' }}
                   >
-                    <Square size={12} style={{ color: 'var(--text-placeholder)', flexShrink: 0 }} />
-                    <span style={{ flex: 1 }}>{action.text}</span>
+                    <Square size={12} className="shrink-0" style={{ color: 'var(--text-placeholder)' }} />
+                    <span className="flex-1">{action.text}</span>
                   </div>
                 ))}
               </div>
@@ -454,7 +455,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
 
         {/* ── Recently completed ── */}
         {recentlyDone.length > 0 && (
-          <div style={{ marginBottom: 32, padding: '14px 16px', borderRadius: 12, background: 'color-mix(in srgb, var(--success-text, #22c55e) 4%, var(--card-bg))' }}>
+          <div className="mb-2xl" style={{ padding: '14px 16px', borderRadius: 12, background: 'color-mix(in srgb, var(--success-text, #22c55e) 4%, var(--card-bg))' }}>
             <div className="section-header" style={{ fontSize: 13, marginBottom: 10 }}>
               <CheckSquare size={14} style={{ color: 'var(--success-text)' }} />
               {t('dashboardDone', lang)}
@@ -463,9 +464,10 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
               {recentlyDone.map((action) => (
                 <div
                   key={`${action.logId}-${action.index}`}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', fontSize: 12, color: 'var(--text-placeholder)' }}
+                  className="flex-row"
+                  style={{ gap: 8, padding: '6px 0', fontSize: 12, color: 'var(--text-placeholder)' }}
                 >
-                  <CheckSquare size={13} style={{ color: 'var(--success-text)', flexShrink: 0 }} />
+                  <CheckSquare size={13} className="shrink-0" style={{ color: 'var(--success-text)' }} />
                   <span style={{ textDecoration: 'line-through', opacity: 0.6 }}>{action.text}</span>
                 </div>
               ))}
@@ -475,7 +477,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
 
         {/* ── Blockers (if any, red-tinted) ── */}
         {projectSnapshots.some((s) => s.blockers.length > 0) && (
-          <div style={{ marginBottom: 32 }}>
+          <div className="mb-2xl">
             <div className="section-header" style={{ fontSize: 13, marginBottom: 10 }}>
               <AlertTriangle size={14} style={{ opacity: 0.5, color: 'var(--error-text, #ef4444)' }} />
               {t('dashboardBlockers', lang)}
@@ -561,19 +563,19 @@ function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]
   const isJa = lang === 'ja';
 
   return (
-    <div style={{ marginBottom: 32 }}>
+    <div className="mb-2xl">
       <div
         style={{
           padding: '18px 22px', borderRadius: 12,
           background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>
+        <div className="flex-row justify-between" style={{ marginBottom: 14 }}>
+          <div className="section-title" style={{ fontWeight: 700 }}>
             {isJa ? 'あなたのアクティビティ' : 'Your Activity'}
           </div>
           {streak > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'var(--warning-text, #f59e0b)' }}>
+            <div className="flex-row" style={{ gap: 4, fontSize: 13, color: 'var(--warning-text, #f59e0b)' }}>
               <span style={{ fontSize: 16 }}>🔥</span>
               <span style={{ fontSize: 20, fontWeight: 800 }}>{streak}</span>
               <span style={{ fontWeight: 600 }}>{isJa ? '日連続' : `day${streak > 1 ? 's' : ''} streak`}</span>
@@ -582,7 +584,7 @@ function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]
         </div>
 
         {/* Row 1: headline stats */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.8 }}>
+        <div className="flex flex-wrap" style={{ alignItems: 'baseline', gap: 6, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.8 }}>
           <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-secondary)' }}>{stats.totalLogs}</span>
           <span>{isJa ? 'ログ' : 'logs'}</span>
           <span style={{ color: 'var(--text-placeholder)', margin: '0 2px' }}>&middot;</span>
@@ -604,7 +606,7 @@ function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]
 
         {/* Row 3: most active project */}
         {stats.topProjectName && (
-          <div style={{ fontSize: 12, color: 'var(--text-placeholder)', marginTop: 6 }}>
+          <div className="text-xs-placeholder" style={{ marginTop: 6 }}>
             {isJa ? '最も活発:' : 'Most active:'} <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{stats.topProjectName}</span>
             <span style={{ opacity: 0.6 }}> ({stats.topCount} {isJa ? 'ログ' : 'logs'})</span>
           </div>
@@ -698,7 +700,7 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
   if (logs.length === 0) return null;
 
   return (
-    <div style={{ marginBottom: 32 }}>
+    <div className="mb-2xl">
       <div className="section-header" style={{ fontSize: 13, marginBottom: 14 }}>
         <TrendingUp size={14} style={{ opacity: 0.5 }} />
         {t('trends', lang)}
@@ -707,8 +709,8 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
       {/* Weekly activity bars */}
       <div className="flex-col gap-sm" style={{ marginBottom: 16 }}>
         {weeklyData.map((week, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 11, color: 'var(--text-placeholder)', width: 70, flexShrink: 0, textAlign: 'right' }}>
+          <div key={i} className="flex-row" style={{ gap: 10 }}>
+            <span className="text-xs-placeholder shrink-0" style={{ width: 70, textAlign: 'right' }}>
               {week.label}
             </span>
             <div style={{ flex: 1, height: 18, background: 'var(--border-subtle)', borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
@@ -723,7 +725,7 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
                 }}
               />
             </div>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', width: 50, flexShrink: 0 }}>
+            <span className="text-xs-muted shrink-0" style={{ width: 50 }}>
               {tf('logsCount', lang, week.logCount)}
             </span>
           </div>

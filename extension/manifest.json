@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Lore Capture",
   "version": "0.1.0",
-  "description": "Capture AI conversations from ChatGPT, Claude, and Gemini with one click. Instantly send threads to Lore to generate structured work logs and handoff notes — no copy-paste needed.",
+  "description": "Capture any AI conversation and send it to Lore with one click. Lore turns it into a structured project snapshot — status, decisions, and next actions — so your next session starts with full context.",
   "permissions": ["activeTab", "scripting", "tabs"],
   "action": {
     "default_popup": "popup.html",

@@ -1,21 +1,21 @@
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
-import { trashLog, restoreLog, updateLog, loadTodos, loadLogs, duplicateLog, getAiContext, getMasterNote, getFeatureEnabled, linkLogs, unlinkLogs } from './storage';
-import { updateTodo as updateTodoStorage } from './storage';
+import { trashLog, restoreLog, updateLog, loadLogs, duplicateLog, getAiContext, getMasterNote, getFeatureEnabled } from './storage';
 import { saveCorrection } from './classify';
-import { MoreVertical, Pin, CheckSquare, Square, ExternalLink, Copy, Check, Activity, X, Link, Share2 } from 'lucide-react';
+import { MoreVertical, Pin, ExternalLink, Copy, Check, Activity, Share2 } from 'lucide-react';
 import { logToMarkdown } from './markdown';
 import { playDelete } from './sounds';
-import type { LogEntry, Project, Todo, NextActionItem } from './types';
+import type { LogEntry, Project } from './types';
 import { t } from './i18n';
 import type { Lang } from './i18n';
 import ConfirmDialog from './ConfirmDialog';
 import { analyzeWorkload, WORKLOAD_CONFIG } from './workload';
 import { isNotionConfigured, isSlackConfigured } from './integrations';
-import { formatDateFull, formatDateTimeFull } from './utils/dateFormat';
+import { formatDateTimeFull } from './utils/dateFormat';
 import { formatHandoffMarkdown, formatFullAiContext } from './formatHandoff';
 import { generateProjectContext } from './generateProjectContext';
-
-const formatDateUnified = formatDateFull;
+import TodoSection from './components/TodoSection';
+import RelatedLogsSection from './components/RelatedLogsSection';
+import { CardSection, CheckableCardSection } from './components/CardSection';
 
 function downloadFile(content: string, fileName: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
@@ -264,7 +264,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
   return (
     <div className="workspace-content">
       <div className="page-header">
-        <nav style={{ display: 'flex', alignItems: 'center', fontSize: 12, marginBottom: 12, flexWrap: 'wrap', gap: 2 }}>
+        <nav className="flex-row flex-wrap" style={{ fontSize: 12, marginBottom: 12, gap: 2 }}>
           <span
             style={{ color: 'var(--text-muted)', cursor: 'pointer', textDecoration: 'none' }}
             onClick={onBack}
@@ -308,8 +308,8 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
           </span>
         </nav>
         <div className="page-header-row">
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          <div className="flex-1">
+            <div className="flex-row" style={{ gap: 10, marginBottom: 4 }}>
               {isHandoff ? <span className="badge-handoff">Handoff</span> : <span className="badge-worklog">Log</span>}
               {project && (
                 <span
@@ -324,7 +324,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                 </span>
               )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, fontSize: 12, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+            <div className="flex-row flex-wrap text-sm-muted" style={{ gap: 12, marginBottom: 8 }}>
               <span>{t('logCreatedAt', lang)}：{formatDateTimeFull(log.createdAt)}</span>
               {log.updatedAt && <span>{t('logUpdatedAt', lang)}：{formatDateTimeFull(log.updatedAt)}</span>}
               {/* Workload level */}
@@ -372,7 +372,8 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                 />
               ) : (
                 <h2
-                  style={{ flex: 1, margin: 0, cursor: 'pointer', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  className="flex-1 truncate"
+                  style={{ margin: 0, cursor: 'pointer' }}
                   onClick={() => { setTitleDraft(log.title); setEditingTitle(true); }}
                   title={log.title}
                 >
@@ -405,16 +406,16 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
           {/* AI Context copy — primary action */}
           {isHandoff && log.projectId && (
             <button
-              className="btn btn-primary"
+              className="btn btn-primary flex-row shrink-0"
               onClick={handleCopyWithContext}
-              style={{ flexShrink: 0, fontSize: 12, padding: '6px 14px', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}
+              style={{ fontSize: 12, padding: '6px 14px', gap: 6, whiteSpace: 'nowrap' }}
               title={t('copyAiContextTitle', lang)}
             >
               <Copy size={13} />
               {t('copyAiContext', lang)}
             </button>
           )}
-          <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div className="shrink-0" style={{ position: 'relative' }}>
             <button
               className="card-menu-btn"
               data-menu-trigger="detail"
@@ -504,10 +505,10 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
       {/* Handoff copy buttons + Resume Context hero */}
       {isHandoff && (
         <>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          <div className="flex gap-sm mb-md">
             <button
-              className="btn"
-              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}
+              className="btn flex-row"
+              style={{ gap: 6, fontSize: 13 }}
               onClick={async () => {
                 try {
                   const handoffMd = formatHandoffMarkdown(log);
@@ -523,8 +524,8 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
             </button>
             {log.projectId && projects.find(p => p.id === log.projectId) && (
               <button
-                className="btn btn-primary"
-                style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}
+                className="btn btn-primary flex-row"
+                style={{ gap: 6, fontSize: 13 }}
                 title={t('copyAiContextTitle', lang)}
                 onClick={async () => {
                   try {
@@ -590,11 +591,11 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
 
       {/* External integrations */}
       {(isNotionConfigured() || isSlackConfigured()) && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        <div className="flex flex-wrap gap-sm mb-md">
           {isNotionConfigured() && (
             <button
-              className="btn"
-              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '4px 12px', minHeight: 28 }}
+              className="btn flex-row"
+              style={{ gap: 6, fontSize: 12, padding: '4px 12px', minHeight: 28 }}
               onClick={handleSendNotion}
               disabled={sendingNotion}
             >
@@ -604,8 +605,8 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
           )}
           {isSlackConfigured() && (
             <button
-              className="btn"
-              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '4px 12px', minHeight: 28 }}
+              className="btn flex-row"
+              style={{ gap: 6, fontSize: 12, padding: '4px 12px', minHeight: 28 }}
               onClick={handleSendSlack}
               disabled={sendingSlack}
             >
@@ -616,7 +617,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="flex-col gap-md">
         {isHandoff ? (
           <>
             <CardSection title={t('sectionCurrentStatus', lang)} items={log.currentStatus || log.inProgress || []} isNew={(item) => isNewItem(item, prevHandoff?.currentStatus)} />
@@ -691,7 +692,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                 maxLength={10000}
                 style={{ width: '100%', resize: 'vertical', fontSize: 14, lineHeight: 1.6 }}
               />
-              <div style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
+              <div className="flex gap-sm" style={{ marginTop: 8, justifyContent: 'flex-end' }}>
                 <button className="btn" style={{ fontSize: 12 }} onClick={() => setEditingMemo(false)}>{t('cancel', lang)}</button>
                 <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={handleMemoSave}>{t('memoSave', lang)}</button>
               </div>
@@ -711,7 +712,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
       </div>
       {/* Prev/Next navigation */}
       {(prevLogId || nextLogId) && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border-default)' }}>
+        <div className="flex-row justify-between" style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border-default)' }}>
           <button
             className="btn"
             style={{ fontSize: 13, visibility: prevLogId ? 'visible' : 'hidden' }}
@@ -740,320 +741,6 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
           onCancel={() => setConfirmDelete(false)}
         />
       )}
-    </div>
-  );
-}
-
-// --- Todo Section (checkboxes for worklog detail) ---
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function TodoSection({ logId, lang, todosVersion: _todosVersion, onToggle, allTodos }: { logId: string; lang: Lang; todosVersion: number; onToggle: () => void; allTodos?: Todo[] }) {
-  const todos = (allTodos ?? loadTodos()).filter((t: Todo) => t.logId === logId);
-  if (todos.length === 0) return null;
-
-  const handleToggle = (id: string, done: boolean) => {
-    updateTodoStorage(id, { done: !done });
-    onToggle();
-  };
-
-  return (
-    <div className="content-card">
-      <div className="content-card-header">{t('sectionTodo', lang)}</div>
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {todos.map((todo: Todo) => (
-          <li
-            key={todo.id}
-            onClick={() => handleToggle(todo.id, todo.done)}
-            style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 6px', cursor: 'pointer', borderRadius: 8, transition: 'background 0.12s', margin: '0 -6px' }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--sidebar-hover)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          >
-            {todo.done
-              ? <CheckSquare size={18} style={{ color: 'var(--success-text)', flexShrink: 0, marginTop: 1 }} />
-              : <Square size={18} style={{ color: 'var(--text-placeholder)', flexShrink: 0, marginTop: 1 }} />
-            }
-            <span style={{
-              color: todo.done ? 'var(--text-placeholder)' : 'var(--text-secondary)',
-              textDecoration: todo.done ? 'line-through' : 'none',
-            }}>
-              {todo.text}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-// --- Shared ---
-
-function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; onOpenLog: (id: string) => void; lang: Lang; allLogs: LogEntry[] }) {
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [, setRefreshKey] = useState(0); // triggers re-render on link/unlink
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // Explicitly linked logs (bidirectional backlinks)
-  const currentLog = allLogs.find((l) => l.id === log.id);
-  const linkedIds = currentLog?.relatedLogIds || [];
-  const linkedLogs = linkedIds
-    .map((lid) => allLogs.find((l) => l.id === lid))
-    .filter((l): l is LogEntry => !!l);
-
-  // Same-project logs (excluding current and already-linked)
-  const linkedIdSet = new Set(linkedIds);
-  const projectLogs = log.projectId
-    ? allLogs
-        .filter((l) => l.projectId === log.projectId && l.id !== log.id && !linkedIdSet.has(l.id))
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 8)
-    : [];
-
-  // Search candidates (all logs except current and already linked)
-  const searchCandidates = searchQuery.trim()
-    ? allLogs
-        .filter((l) => l.id !== log.id && !linkedIdSet.has(l.id))
-        .filter((l) => l.title.toLowerCase().includes(searchQuery.toLowerCase()))
-        .slice(0, 10)
-    : [];
-
-  const handleLink = (targetId: string) => {
-    linkLogs(log.id, targetId);
-    setSearchQuery('');
-    setSearchOpen(false);
-    setRefreshKey((k) => k + 1);
-  };
-
-  const handleUnlink = (targetId: string) => {
-    unlinkLogs(log.id, targetId);
-    setRefreshKey((k) => k + 1);
-  };
-
-  useEffect(() => {
-    if (searchOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [searchOpen]);
-
-  // Close search dropdown on outside click
-  useEffect(() => {
-    if (!searchOpen) return;
-    const close = (e: MouseEvent) => {
-      const container = document.querySelector('[data-related-search]');
-      if (container && !container.contains(e.target as Node)) setSearchOpen(false);
-    };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
-  }, [searchOpen]);
-
-  const hasLinked = linkedLogs.length > 0;
-  const hasProject = projectLogs.length > 0;
-  const showSection = hasLinked || hasProject;
-
-  return (
-    <div className="content-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showSection ? 8 : 0 }}>
-        <div className="content-card-header" style={{ margin: 0 }}>{t('relatedLogs', lang)}</div>
-        <div style={{ position: 'relative' }} data-related-search>
-          <button
-            className="btn"
-            style={{ fontSize: 12, padding: '2px 10px', minHeight: 24, display: 'flex', alignItems: 'center', gap: 4 }}
-            onClick={() => { setSearchOpen(!searchOpen); setSearchQuery(''); }}
-          >
-            <Link size={12} />
-            {t('linkLog', lang)}
-          </button>
-          {searchOpen && (
-            <div style={{
-              position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 100,
-              background: 'var(--card-bg)', border: '1px solid var(--border-default)',
-              borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', width: 'min(320px, calc(100vw - 40px))', maxHeight: 300, overflow: 'hidden',
-            }}>
-              <div style={{ padding: 8 }}>
-                <input
-                  ref={searchInputRef}
-                  className="input"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t('searchLogs', lang)}
-                  style={{ width: '100%', fontSize: 13, padding: '6px 10px' }}
-                />
-              </div>
-              <div style={{ maxHeight: 240, overflowY: 'auto' }}>
-                {searchQuery.trim() && searchCandidates.length === 0 && (
-                  <div style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-placeholder)' }}>
-                    {t('noMatches', lang)}
-                  </div>
-                )}
-                {searchCandidates.map((c) => (
-                  <button
-                    key={c.id}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px',
-                      background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-                      fontSize: 13, color: 'var(--text-body)',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--sidebar-hover)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-                    onClick={() => handleLink(c.id)}
-                  >
-                    <span className={c.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} style={{ flexShrink: 0 }}>
-                      {c.outputMode === 'handoff' ? 'H' : 'L'}
-                    </span>
-                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Explicitly linked logs */}
-      {hasLinked && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: hasProject ? 12 : 0 }}>
-          {linkedLogs.map((r) => (
-            <span
-              key={r.id}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '4px 10px', borderRadius: 16,
-                background: 'var(--accent-bg, #f3f0ff)', fontSize: 13,
-                border: '1px solid var(--border-default)',
-              }}
-            >
-              <span className={r.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'}>
-                {r.outputMode === 'handoff' ? 'H' : 'L'}
-              </span>
-              <span
-                style={{ cursor: 'pointer', color: 'var(--accent-text)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                onClick={() => onOpenLog(r.id)}
-                title={r.title}
-              >
-                {r.title}
-              </span>
-              <button
-                onClick={() => handleUnlink(r.id)}
-                title={t('unlink', lang)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  color: 'var(--text-placeholder)', borderRadius: '50%', width: 18, height: 18,
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--danger-text, #e53e3e)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-placeholder)')}
-              >
-                <X size={12} />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Same-project logs */}
-      {hasProject && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {projectLogs.map((r) => (
-            <button
-              key={r.id}
-              className="log-link-item"
-              onClick={() => onOpenLog(r.id)}
-            >
-              <span className={r.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'}>
-                {r.outputMode === 'handoff' ? '🔁' : '📝'}
-              </span>
-              <span className="log-link-title">{r.title}</span>
-              <span className="meta" style={{ fontSize: 11, flexShrink: 0 }}>
-                {formatDateUnified(r.createdAt)}
-              </span>
-              <ExternalLink size={11} style={{ color: 'var(--text-placeholder)', flexShrink: 0 }} />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {!showSection && (
-        <p className="meta" style={{ fontSize: 13, margin: 0 }}>
-          {t('noMatches', lang)}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function CardSection({ title, items, isNew }: { title: string; items: string[]; isNew?: (item: string) => boolean }) {
-  if (items.length === 0) return null;
-  return (
-    <div className="content-card">
-      <div className="content-card-header">{title}</div>
-      <ul style={{ margin: 0, paddingLeft: 20 }}>
-        {items.map((item, i) => {
-          const fresh = isNew?.(item);
-          return (
-            <li key={i} style={{ marginBottom: 6, fontSize: 14, lineHeight: 1.7, color: 'var(--text-body)', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-              <span style={{ flex: 1 }}>{item}</span>
-              {fresh && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-bg, #f3f0ff)', padding: '1px 5px', borderRadius: 3, flexShrink: 0, marginTop: 3 }}>NEW</span>}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
-
-function CheckableCardSection({ title, items, checkedIndices, onToggle, richItems }: { title: string; items: string[]; checkedIndices: number[]; onToggle: (index: number) => void; richItems?: NextActionItem[] }) {
-  if (items.length === 0) return null;
-  const doneCount = checkedIndices.length;
-  return (
-    <div className="content-card">
-      <div className="content-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        {title}
-        {items.length > 0 && <span style={{ fontSize: 12, color: 'var(--text-placeholder)', fontWeight: 500 }}>{doneCount}/{items.length}</span>}
-      </div>
-      <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-        {items.map((item, i) => {
-          const checked = checkedIndices.includes(i);
-          const rich = richItems?.[i];
-          return (
-            <li
-              key={i}
-              onClick={() => onToggle(i)}
-              style={{ marginBottom: 4, fontSize: 14, lineHeight: 1.7, color: checked ? 'var(--text-placeholder)' : 'var(--text-body)', display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', textDecoration: checked ? 'line-through' : 'none', padding: '4px 0', userSelect: 'none' }}
-            >
-              <span style={{ flexShrink: 0, marginTop: 3 }}>
-                {checked ? <CheckSquare size={16} style={{ color: 'var(--accent)' }} /> : <Square size={16} style={{ color: 'var(--text-placeholder)' }} />}
-              </span>
-              <span>
-                {item}
-                {rich && (rich.whyImportant || rich.priorityReason || rich.dueBy || (rich.dependsOn && rich.dependsOn.length > 0)) && (
-                  <span style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 8px', marginTop: 2 }}>
-                    {rich.whyImportant && (
-                      <span style={{ fontSize: 12, color: 'var(--text-subtle)', fontStyle: 'italic' }}>
-                        Why: {rich.whyImportant}
-                      </span>
-                    )}
-                    {rich.priorityReason && (
-                      <span style={{ fontSize: 12, color: 'var(--text-subtle)', fontStyle: 'italic' }}>
-                        Priority: {rich.priorityReason}
-                      </span>
-                    )}
-                    {rich.dependsOn && rich.dependsOn.length > 0 && (
-                      <span style={{ fontSize: 11, color: 'var(--text-placeholder)', fontStyle: 'italic' }}>
-                        Depends on: {rich.dependsOn.join(', ')}
-                      </span>
-                    )}
-                    {rich.dueBy && (
-                      <span style={{ fontSize: 11, color: 'var(--accent)', background: 'var(--bg-card)', borderRadius: 4, padding: '1px 6px', fontWeight: 500 }}>
-                        {rich.dueBy}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
     </div>
   );
 }
