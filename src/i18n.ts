@@ -1750,6 +1750,14 @@ const labels = {
   tabTitleSettings: { ja: '設定', en: 'Settings', es: 'Configuración', fr: 'Paramètres', de: 'Einstellungen', zh: '设置', ko: '설정', pt: 'Configurações' },
   tabTitleHelp: { ja: 'ヘルプ', en: 'Help', es: 'Ayuda', fr: 'Aide', de: 'Hilfe', zh: '帮助', ko: '도움말', pt: 'Ajuda' },
   tabTitlePricing: { ja: '料金', en: 'Pricing', es: 'Precios', fr: 'Tarifs', de: 'Preise', zh: '定价', ko: '요금', pt: 'Preços' },
+  tabTitleInput: { ja: '新規ログ', en: 'New Log', es: 'Nuevo registro', fr: 'Nouveau log', de: 'Neuer Log', zh: '新日志', ko: '새 로그', pt: 'Novo Registro' },
+  tabTitleDetail: { ja: 'ログ詳細', en: 'Log Detail', es: 'Detalle del registro', fr: 'Détail du log', de: 'Log-Detail', zh: '日志详情', ko: '로그 상세', pt: 'Detalhe do Registro' },
+  tabTitleMasternote: { ja: 'マスターノート', en: 'Master Note', es: 'Nota maestra', fr: 'Note principale', de: 'Master-Notiz', zh: '主笔记', ko: '마스터 노트', pt: 'Nota Mestra' },
+  tabTitleProjecthome: { ja: 'プロジェクトホーム', en: 'Project Home', es: 'Inicio del proyecto', fr: 'Accueil du projet', de: 'Projekt-Startseite', zh: '项目主页', ko: '프로젝트 홈', pt: 'Início do Projeto' },
+  tabTitleWeeklyreport: { ja: '週次レポート', en: 'Weekly Report', es: 'Informe semanal', fr: 'Rapport hebdomadaire', de: 'Wochenbericht', zh: '周报', ko: '주간 리포트', pt: 'Relatório Semanal' },
+  tabTitleTrash: { ja: 'ゴミ箱', en: 'Trash', es: 'Papelera', fr: 'Corbeille', de: 'Papierkorb', zh: '回收站', ko: '휴지통', pt: 'Lixeira' },
+  tabTitleSummarylist: { ja: 'サマリー一覧', en: 'Summary List', es: 'Lista de resúmenes', fr: 'Liste des résumés', de: 'Zusammenfassungsliste', zh: '摘要列表', ko: '요약 목록', pt: 'Lista de Resumos' },
+  tabTitleKnowledgebase: { ja: 'ナレッジベース', en: 'Knowledge Base', es: 'Base de conocimientos', fr: 'Base de connaissances', de: 'Wissensdatenbank', zh: '知识库', ko: '지식 베이스', pt: 'Base de Conhecimento' },
 
   // Tagline for zero-data / first-time state
   taglineZeroState: { ja: 'AIとの会話を貼り付けるだけ。構造化された引き継ぎを数秒で。', en: 'Paste an AI conversation. Get a structured handoff in seconds.', es: 'Pega una conversación con IA. Obtén un handoff estructurado en segundos.', fr: 'Collez une conversation IA. Obtenez un handoff structuré en quelques secondes.', de: 'Fügen Sie eine KI-Konversation ein. Erhalten Sie eine strukturierte Übergabe in Sekunden.', zh: '粘贴AI对话，几秒内获得结构化交接。', ko: 'AI 대화를 붙여넣으세요. 몇 초 만에 구조화된 핸드오프를 받으세요.', pt: 'Cole uma conversa com IA. Receba um handoff estruturado em segundos.' },

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useEffect, useState, useMemo, lazy, Suspense } from 'react';
 import { Menu, ChevronUp } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Workspace from './Workspace';
@@ -43,7 +43,7 @@ function resolveEffectiveTheme(pref: ThemePref): 'light' | 'dark' {
 }
 
 export default function App() {
-  const s = useAppState();
+  const { inputDirtyRef, scrollRef, scrollPositionRef, shortcutsTrapRef, ...s } = useAppState();
 
   // Bootstrap: mount-only effects consolidated into a single hook
   useBootstrapEffects({
@@ -52,41 +52,41 @@ export default function App() {
     setShowReportReminder: s.setShowReportReminder,
     setSelectedId: s.setSelectedId,
     setInputKey: s.setInputKey,
-    inputDirtyRef: s.inputDirtyRef,
+    inputDirtyRef: inputDirtyRef,
     setView: s.setView,
     setShowOnboarding: s.setShowOnboarding,
     setOfflineStatus: s.setOfflineStatus,
     setOfflineDismissed: s.setOfflineDismissed,
     setShowScrollTop: s.setShowScrollTop,
-    scrollRef: s.scrollRef,
+    scrollRef: scrollRef,
     refreshLogs: s.refreshLogs,
     logs: s.logs,
   });
 
-  // Aria-live view transition announcements
-  const [viewAnnouncement, setViewAnnouncement] = React.useState('');
-  const isInitialMount = useRef(true);
-  useEffect(() => {
-    if (isInitialMount.current) { isInitialMount.current = false; return; }
+  // Cache isDemoMode to avoid reading localStorage every render
+  const [demoMode, setDemoModeState] = useState(() => isDemoMode());
+
+  // Aria-live view transition announcements (derived from view + lang)
+  const viewAnnouncement = useMemo(() => {
     const viewLabelMap: Partial<Record<View, string>> = {
-      input: s.lang === 'ja' ? '新規ログ' : 'New Log',
-      detail: s.lang === 'ja' ? 'ログ詳細' : 'Log Detail',
-      dashboard: s.lang === 'ja' ? 'ダッシュボード' : 'Dashboard',
-      history: s.lang === 'ja' ? '履歴' : 'History',
-      todos: s.lang === 'ja' ? 'TODO' : 'Todos',
-      timeline: s.lang === 'ja' ? 'タイムライン' : 'Timeline',
-      projects: s.lang === 'ja' ? 'プロジェクト' : 'Projects',
-      settings: s.lang === 'ja' ? '設定' : 'Settings',
-      help: s.lang === 'ja' ? 'ヘルプ' : 'Help',
-      pricing: s.lang === 'ja' ? '料金' : 'Pricing',
-      masternote: s.lang === 'ja' ? 'マスターノート' : 'Master Note',
-      projecthome: s.lang === 'ja' ? 'プロジェクトホーム' : 'Project Home',
-      weeklyreport: s.lang === 'ja' ? '週次レポート' : 'Weekly Report',
-      trash: s.lang === 'ja' ? 'ゴミ箱' : 'Trash',
-      summarylist: s.lang === 'ja' ? 'サマリー一覧' : 'Summary List',
-      knowledgebase: s.lang === 'ja' ? 'ナレッジベース' : 'Knowledge Base',
+      input: t('tabTitleInput', s.lang),
+      detail: t('tabTitleDetail', s.lang),
+      dashboard: t('tabTitleDashboard', s.lang),
+      history: t('tabTitleHistory', s.lang),
+      todos: t('tabTitleTodos', s.lang),
+      timeline: t('tabTitleTimeline', s.lang),
+      projects: t('tabTitleProjects', s.lang),
+      settings: t('tabTitleSettings', s.lang),
+      help: t('tabTitleHelp', s.lang),
+      pricing: t('tabTitlePricing', s.lang),
+      masternote: t('tabTitleMasternote', s.lang),
+      projecthome: t('tabTitleProjecthome', s.lang),
+      weeklyreport: t('tabTitleWeeklyreport', s.lang),
+      trash: t('tabTitleTrash', s.lang),
+      summarylist: t('tabTitleSummarylist', s.lang),
+      knowledgebase: t('tabTitleKnowledgebase', s.lang),
     };
-    setViewAnnouncement(viewLabelMap[s.view] || s.view);
+    return viewLabelMap[s.view] || s.view;
   }, [s.view, s.lang]);
 
   // Tab title: show pending TODO count + current view
@@ -197,18 +197,21 @@ export default function App() {
 
   // Restore scroll position when view changes
   useEffect(() => {
-    const scrollEl = s.scrollRef.current;
-    const positions = s.scrollPositionRef.current;
+    const scrollEl = scrollRef.current;
+    const positions = scrollPositionRef.current;
     requestAnimationFrame(() => {
       if (scrollEl) {
         const saved = positions[s.view];
         scrollEl.scrollTo(0, saved || 0);
       }
     });
-  }, [s.view, s.scrollRef, s.scrollPositionRef]);
+  }, [s.view, scrollRef, scrollPositionRef]);
 
   const backTo = (v: View) => () => s.goTo(s.prevView === v ? 'input' : s.prevView);
-  const activeProject = s.activeProjectId ? s.projects.find((p) => p.id === s.activeProjectId) : undefined;
+  const activeProject = useMemo(
+    () => s.activeProjectId ? s.projects.find((p) => p.id === s.activeProjectId) : undefined,
+    [s.activeProjectId, s.projects],
+  );
 
   const viewRouteMap: Partial<Record<View, () => React.ReactElement | null>> = {
     settings: () => <SettingsPanel onBack={backTo('settings')} lang={s.lang} onUiLangChange={s.handleUiLangChange} themePref={s.themePref} onThemeChange={s.handleThemeChange} fontSize={s.fontSize} onFontSizeChange={s.handleFontSizeChange} showToast={s.showToast} onShowOnboarding={() => s.setShowOnboarding(true)} onResumeOnboarding={s.onboardingPausedForSettings ? () => { s.setOnboardingPausedForSettings(false); s.setShowOnboarding(true); } : undefined} />,
@@ -317,14 +320,14 @@ export default function App() {
           masterNotes={s.masterNotes}
         /></aside>
       )}
-      <main id="main-content" tabIndex={-1} ref={s.scrollRef} data-main-scroll style={{ flex: 1, overflowY: 'auto', minHeight: 0, background: 'var(--bg-app)', outline: 'none' }}>
-        {isDemoMode() && (
+      <main id="main-content" tabIndex={-1} ref={scrollRef} data-main-scroll style={{ flex: 1, overflowY: 'auto', minHeight: 0, background: 'var(--bg-app)', outline: 'none' }}>
+        {demoMode && (
           <div style={{ background: 'var(--accent-bg, rgba(99,102,241,0.08))', borderBottom: '1px solid var(--accent)', padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, fontSize: 13 }}>
             <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{t('demoBadge', s.lang)}</span>
             <span style={{ color: 'var(--text-muted)' }}>{t('demoModeBanner', s.lang)}</span>
             <button
               className="btn"
-              onClick={() => { setDemoMode(false); s.setLogsVersion((v: number) => v + 1); }}
+              onClick={() => { setDemoMode(false); setDemoModeState(false); s.setLogsVersion((v: number) => v + 1); }}
               style={{ fontSize: 12, padding: '2px 10px', color: 'var(--accent)', minHeight: 44 }}
             >
               {t('exitDemoMode', s.lang)}
@@ -332,7 +335,7 @@ export default function App() {
           </div>
         )}
         <div style={{ height: '100%' }}>
-          <Suspense fallback={<SkeletonLoader lang={s.lang} variant="list" />}>
+          <Suspense fallback={<SkeletonLoader lang={s.lang} variant={s.view === 'dashboard' ? 'card' : s.view === 'detail' ? 'detail' : 'list'} />}>
             <div className="view-fade-in" key={s.view}>
               {renderWorkspace()}
             </div>
@@ -341,7 +344,7 @@ export default function App() {
       </main>
       <button
         className={`scroll-to-top${s.showScrollTop ? ' visible' : ''}`}
-        onClick={() => s.scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+        onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
         aria-label={t('ariaScrollToTop', s.lang)}
       >
         <ChevronUp size={18} />
@@ -468,7 +471,7 @@ export default function App() {
       )}
       {s.shortcutsOpen && (
         <div className="modal-overlay" onClick={() => s.setShortcutsOpen(false)}>
-          <div ref={s.shortcutsTrapRef} className="shortcuts-modal" role="dialog" aria-modal="true" aria-label={t('shortcutsTitle', s.lang)} onClick={(e) => e.stopPropagation()}>
+          <div ref={shortcutsTrapRef} className="shortcuts-modal" role="dialog" aria-modal="true" aria-label={t('shortcutsTitle', s.lang)} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 16px', fontSize: 16 }}>{t('shortcutsTitle', s.lang)}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {([
