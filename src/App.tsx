@@ -159,6 +159,11 @@ export default function App() {
     }
   }, [s.themePref]);
 
+  // Sync html lang attribute with current UI language
+  useEffect(() => {
+    document.documentElement.lang = s.lang;
+  }, [s.lang]);
+
   // Global keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
