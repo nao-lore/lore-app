@@ -137,6 +137,9 @@ import {
   importData,
   validateBackup,
   invalidateLogsCache,
+  invalidateProjectsCache,
+  invalidateTodosCache,
+  invalidateMasterNotesCache,
   type LoreBackup,
 } from './storage';
 
@@ -144,6 +147,9 @@ beforeEach(() => {
   store.clear();
   uuidCounter = 0;
   invalidateLogsCache();
+  invalidateProjectsCache();
+  invalidateTodosCache();
+  invalidateMasterNotesCache();
   vi.useRealTimers();
 });
 

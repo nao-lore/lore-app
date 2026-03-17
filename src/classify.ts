@@ -73,7 +73,12 @@ export async function classifyLog(
   // Check in-memory cache
   const cacheKey = makeCacheKey(log, projects.map((p) => p.id));
   const cached = classifyCache.get(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    // LRU: move to end by re-inserting
+    classifyCache.delete(cacheKey);
+    classifyCache.set(cacheKey, cached);
+    return cached;
+  }
 
   const corrections = loadCorrections();
   const examplesBlock = buildExamplesBlock(corrections, projects);
@@ -110,6 +115,7 @@ Rules:
       system,
       userMessage,
       maxTokens: 128,
+      disableThinking: false, // Allow thinking for classification accuracy
     });
 
     const jsonStr = extractJson(rawText);
@@ -123,8 +129,12 @@ Rules:
     }
 
     const result: ClassifyResult = { projectId, confidence };
-    // Store in cache; clear if full
-    if (classifyCache.size >= CACHE_MAX) classifyCache.clear();
+    // Store in cache; LRU eviction if full
+    if (classifyCache.size >= CACHE_MAX) {
+      // Delete the oldest entry (first key in Map insertion order)
+      const oldestKey = classifyCache.keys().next().value;
+      if (oldestKey !== undefined) classifyCache.delete(oldestKey);
+    }
     classifyCache.set(cacheKey, result);
     return result;
   } catch (err) {

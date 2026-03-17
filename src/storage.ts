@@ -17,15 +17,42 @@ const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 const MAX_MN_SNAPSHOTS = 50;
 
-// ─── In-memory cache for logs (avoids re-parsing localStorage on every read) ───
+// ─── In-memory caches (avoid re-parsing localStorage on every read) ───
 
 let logsCacheVersion = 0;
 let logsCache: { data: LogEntry[] | null; version: number } = { data: null, version: 0 };
+
+let projectsCacheVersion = 0;
+let projectsCache: { data: Project[] | null; version: number } = { data: null, version: 0 };
+
+let todosCacheVersion = 0;
+let todosCache: { data: Todo[] | null; version: number } = { data: null, version: 0 };
+
+let masterNotesCacheVersion = 0;
+let masterNotesCache: { data: MasterNote[] | null; version: number } = { data: null, version: 0 };
 
 /** Invalidate the logs cache — call after any direct localStorage write to LOGS_KEY */
 export function invalidateLogsCache(): void {
   logsCacheVersion++;
   logsCache.data = null;
+}
+
+/** Invalidate the projects cache — call after any direct localStorage write to PROJECTS_KEY */
+export function invalidateProjectsCache(): void {
+  projectsCacheVersion++;
+  projectsCache.data = null;
+}
+
+/** Invalidate the todos cache — call after any direct localStorage write to TODOS_KEY */
+export function invalidateTodosCache(): void {
+  todosCacheVersion++;
+  todosCache.data = null;
+}
+
+/** Invalidate the master notes cache — call after any direct localStorage write to MASTER_NOTES_KEY */
+export function invalidateMasterNotesCache(): void {
+  masterNotesCacheVersion++;
+  masterNotesCache.data = null;
 }
 
 export function safeGetItem(key: string): string | null {
@@ -78,7 +105,7 @@ export function purgeExpiredTrash(): void {
     try {
       const todos: Todo[] = JSON.parse(rawTodos);
       const kept = todos.filter((t) => !t.trashedAt || now - t.trashedAt < TRASH_RETENTION_MS);
-      if (kept.length !== todos.length) safeSetItem(TODOS_KEY, JSON.stringify(kept));
+      if (kept.length !== todos.length) { safeSetItem(TODOS_KEY, JSON.stringify(kept)); invalidateTodosCache(); }
     } catch (err) { if (import.meta.env.DEV) console.warn('[storage] purgeExpiredTrash todos', err); }
   }
 }
@@ -141,7 +168,7 @@ export function loadTrashedLogs(): LogEntry[] {
 }
 
 export function addLog(entry: LogEntry): void {
-  const logs = loadAllLogs();
+  const logs = [...loadAllLogs()];
   logs.unshift(entry);
   saveLogs(logs);
 }
@@ -235,11 +262,16 @@ export function unlinkLogs(logId1: string, logId2: string): void {
 // ─── Projects ───
 
 function loadAllProjects(): Project[] {
+  if (projectsCache.data !== null && projectsCache.version === projectsCacheVersion) {
+    return projectsCache.data;
+  }
   const raw = safeGetItem(PROJECTS_KEY);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    const data = Array.isArray(parsed) ? parsed : [];
+    projectsCache = { data, version: projectsCacheVersion };
+    return data;
   } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadAllProjects', err); return []; }
 }
 
@@ -253,11 +285,12 @@ export function loadTrashedProjects(): Project[] {
 
 export function saveProjects(projects: Project[]): void {
   safeSetItem(PROJECTS_KEY, JSON.stringify(projects));
+  invalidateProjectsCache();
 }
 
 export function addProject(name: string): Project {
   const project: Project = { id: crypto.randomUUID(), name, createdAt: Date.now() };
-  const projects = loadAllProjects();
+  const projects = [...loadAllProjects()];
   projects.push(project);
   saveProjects(projects);
   return project;
@@ -313,11 +346,16 @@ export function updateProject(id: string, patch: Partial<Project>): void {
 // ─── Master Notes ───
 
 export function loadMasterNotes(): MasterNote[] {
+  if (masterNotesCache.data !== null && masterNotesCache.version === masterNotesCacheVersion) {
+    return masterNotesCache.data;
+  }
   const raw = safeGetItem(MASTER_NOTES_KEY);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    const data = Array.isArray(parsed) ? parsed : [];
+    masterNotesCache = { data, version: masterNotesCacheVersion };
+    return data;
   } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadMasterNotes', err); return []; }
 }
 
@@ -335,11 +373,13 @@ export function saveMasterNote(note: MasterNote): void {
   const notes = loadMasterNotes().filter((n) => n.projectId !== note.projectId);
   notes.push(note);
   safeSetItem(MASTER_NOTES_KEY, JSON.stringify(notes));
+  invalidateMasterNotesCache();
 }
 
 export function deleteMasterNote(projectId: string): void {
   const notes = loadMasterNotes().filter((n) => n.projectId !== projectId);
   safeSetItem(MASTER_NOTES_KEY, JSON.stringify(notes));
+  invalidateMasterNotesCache();
 }
 
 /** Remove a deleted log ID from all MasterNote sourceLogIds and relatedLogIds */
@@ -360,7 +400,10 @@ function cleanMasterNoteSourceLogIds(logId: string): void {
     if (relatedLogIds.length !== n.relatedLogIds.length) changed = true;
     return { ...n, decisions, openIssues, nextActions, relatedLogIds };
   });
-  if (changed) safeSetItem(MASTER_NOTES_KEY, JSON.stringify(updated));
+  if (changed) {
+    safeSetItem(MASTER_NOTES_KEY, JSON.stringify(updated));
+    invalidateMasterNotesCache();
+  }
 }
 
 // ─── Master Note History ───
@@ -446,11 +489,16 @@ export function getLogSummary(logId: string): LogSummary | undefined {
 // ─── Todos ───
 
 function loadAllTodos(): Todo[] {
+  if (todosCache.data !== null && todosCache.version === todosCacheVersion) {
+    return todosCache.data;
+  }
   const raw = safeGetItem(TODOS_KEY);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    const data = Array.isArray(parsed) ? parsed : [];
+    todosCache = { data, version: todosCacheVersion };
+    return data;
   } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadAllTodos', err); return []; }
 }
 
@@ -468,6 +516,7 @@ export function loadTrashedTodos(): Todo[] {
 
 export function saveTodos(todos: Todo[]): void {
   safeSetItem(TODOS_KEY, JSON.stringify(todos));
+  invalidateTodosCache();
 }
 
 export function addTodosFromLog(logId: string, items: string[]): void {
@@ -746,8 +795,11 @@ export function importData(backup: LoreBackup, mode: 'merge' | 'overwrite'): Imp
       if (cat) result[cat] = merged.length;
     }
   }
-  // Invalidate logs cache since import may have written to LOGS_KEY
+  // Invalidate all caches since import may have written to any key
   invalidateLogsCache();
+  invalidateProjectsCache();
+  invalidateTodosCache();
+  invalidateMasterNotesCache();
   return result;
 }
 

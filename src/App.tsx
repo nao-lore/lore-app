@@ -389,6 +389,8 @@ export default function App() {
     }
     setPrevView(view);
     setView(next);
+    // Move focus to main content for screen readers / keyboard users
+    requestAnimationFrame(() => scrollRef.current?.focus());
   }, [view]);
 
   // Restore scroll position when view changes (or reset to 0 for fresh views)

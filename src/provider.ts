@@ -52,6 +52,8 @@ export interface ProviderRequest {
   system: string;
   userMessage: string;
   maxTokens: number;
+  /** When true, disable Gemini thinking (thinkingBudget: 0). Defaults to true for speed. */
+  disableThinking?: boolean;
 }
 
 export type StreamCallback = (chunk: string, accumulated: string) => void;
@@ -104,6 +106,15 @@ async function callAnthropic(req: ProviderRequest): Promise<string> {
 async function callGeminiWithModel(req: ProviderRequest, model: string): Promise<Response> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
+  const generationConfig: Record<string, unknown> = {
+    maxOutputTokens: req.maxTokens,
+    responseMimeType: 'application/json',
+  };
+  // Disable thinking by default for speed; allow callers to enable it (e.g. classification)
+  if (req.disableThinking !== false) {
+    generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  }
+
   const body = {
     system_instruction: {
       parts: [{ text: req.system }],
@@ -114,11 +125,7 @@ async function callGeminiWithModel(req: ProviderRequest, model: string): Promise
         parts: [{ text: req.userMessage }],
       },
     ],
-    generationConfig: {
-      maxOutputTokens: req.maxTokens,
-      responseMimeType: 'application/json',
-      thinkingConfig: { thinkingBudget: 0 },
-    },
+    generationConfig,
   };
 
   const controller = new AbortController();
@@ -215,6 +222,13 @@ async function callOpenAI(req: ProviderRequest): Promise<string> {
 async function callGeminiStreamWithModel(req: ProviderRequest, model: string, onChunk: StreamCallback): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
 
+  const streamGenerationConfig: Record<string, unknown> = {
+    maxOutputTokens: req.maxTokens,
+  };
+  if (req.disableThinking !== false) {
+    streamGenerationConfig.thinkingConfig = { thinkingBudget: 0 };
+  }
+
   const body = {
     system_instruction: {
       parts: [{ text: req.system }],
@@ -225,10 +239,7 @@ async function callGeminiStreamWithModel(req: ProviderRequest, model: string, on
         parts: [{ text: req.userMessage }],
       },
     ],
-    generationConfig: {
-      maxOutputTokens: req.maxTokens,
-      thinkingConfig: { thinkingBudget: 0 },
-    },
+    generationConfig: streamGenerationConfig,
   };
 
   const controller = new AbortController();
@@ -651,7 +662,10 @@ async function callProviderWithRetry<T>(fn: () => Promise<T>, maxRetries = 3): P
         err.message.includes('429') || err.message.includes('503') || err.message.includes('overloaded') || err.message.includes('[Overloaded]') || err.message.includes('[Rate Limit]')
       );
       if (!isRetryable) throw err;
-      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+      // Use server-provided delay from [Rate Limit:N] if available, otherwise exponential backoff
+      const delayMatch = err instanceof Error ? err.message.match(/\[Rate Limit:(\d+)\]/) : null;
+      const delay = delayMatch ? parseInt(delayMatch[1], 10) * 1000 : 1000 * Math.pow(2, attempt);
+      await new Promise(r => setTimeout(r, delay));
     }
   }
   throw new Error('Unreachable');
@@ -693,7 +707,8 @@ export async function callProviderStream(req: ProviderRequest, onChunk: StreamCa
       return callGeminiStream(req, onChunk);
     }
     // OpenAI fallback: non-streaming call, fire onChunk once with full result
-    return callProvider(req).then((result) => {
+    // Call callOpenAI directly to avoid double-retry (callProviderStream already has retry wrapper)
+    return callOpenAI(req).then((result) => {
       onChunk(result, result);
       return result;
     });
