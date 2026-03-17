@@ -1,38 +1,32 @@
-import { useState, useCallback, useRef, useMemo, startTransition } from 'react';
+import { useState, useCallback } from 'react';
 import { useToast } from '../useToast';
 import { useFocusTrap } from '../useFocusTrap';
-import { loadLogs, loadProjects, loadTodos, loadMasterNotes, getUiLang, setUiLang, getTheme, setTheme as saveTheme, updateLog, getLog, safeGetItem, safeSetItem } from '../storage';
+import { getUiLang, setUiLang, getTheme, setTheme as saveTheme, updateLog, getLog, safeGetItem, safeSetItem } from '../storage';
 import type { ThemePref } from '../storage';
 import type { FontSize } from '../types';
 import { t } from '../i18n';
 import type { Lang } from '../i18n';
+import { useNavigation } from './useNavigation';
+import type { View } from './useNavigation';
+import { useDataStore } from './useDataStore';
+import { useSidebarState } from './useSidebarState';
 
-export type View = 'input' | 'detail' | 'settings' | 'history' | 'masternote' | 'projects' | 'todos' | 'trash' | 'summarylist' | 'projecthome' | 'timeline' | 'help' | 'weeklyreport' | 'knowledgebase' | 'dashboard' | 'pricing';
+export type { View };
 
 const FONT_SIZE_KEY = 'threadlog_font_size';
-const LAST_VIEW_KEY = 'threadlog_last_view';
 const LAST_PROJECT_KEY = 'threadlog_last_project';
-const SIDEBAR_KEY = 'threadlog_sidebar';
 
 function resolveUiLang(): Lang {
   return getUiLang();
 }
 
 export function useAppState() {
-  const [view, setView] = useState<View>(() => {
-    const saved = safeGetItem(LAST_VIEW_KEY);
-    if (saved && saved !== 'detail' && saved !== 'masternote' && saved !== 'projecthome' && saved !== 'knowledgebase') return saved as View;
-    return 'input';
-  });
-  const [prevView, setPrevView] = useState<View>('input');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    const saved = safeGetItem(SIDEBAR_KEY);
-    return saved !== 'hidden' && saved !== 'collapsed';
-  });
-  const [sidebarHidden, setSidebarHidden] = useState(() => safeGetItem(SIDEBAR_KEY) === 'hidden');
-  const [logsVersion, setLogsVersion] = useState(0);
-  const [inputKey, setInputKey] = useState(0);
+  // ── Domain hooks ──────────────────────────────────────────────
+  const nav = useNavigation();
+  const data = useDataStore();
+  const sidebar = useSidebarState();
+
+  // ── Remaining app-level state ─────────────────────────────────
   const [lang, setLangState] = useState<Lang>(resolveUiLang);
   const [themePref, setThemePref] = useState<ThemePref>(getTheme);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(() => safeGetItem(LAST_PROJECT_KEY) || null);
@@ -43,12 +37,6 @@ export function useAppState() {
   });
   const [paletteOpen, setPaletteOpen] = useState(false);
   const { toast, showToast } = useToast();
-  const inputDirtyRef = useRef(false);
-  const [pendingNav, setPendingNav] = useState<(() => void) | null>(null);
-  const scrollRef = useRef<HTMLElement>(null);
-  const scrollPositionRef = useRef<Record<string, number>>({});
-  const goToRawRef = useRef<(next: View) => void>(null!);
-  const goToRef = useRef<(next: View) => void>(null!);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingPausedForSettings, setOnboardingPausedForSettings] = useState(false);
   const [helpFeedbackOpen, setHelpFeedbackOpen] = useState(false);
@@ -62,110 +50,83 @@ export function useAppState() {
   const [offlineDismissed, setOfflineDismissed] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // Computed data
-  const logs = useMemo(() => { void logsVersion; return loadLogs(); }, [logsVersion]);
-  const projects = useMemo(() => { void logsVersion; return loadProjects(); }, [logsVersion]);
-  const todos = useMemo(() => { void logsVersion; return loadTodos(); }, [logsVersion]);
-  const masterNotes = useMemo(() => { void logsVersion; return loadMasterNotes(); }, [logsVersion]);
-  const pendingTodosCount = useMemo(() => todos.filter((td) => !td.done && !td.archivedAt).length, [todos]);
-  const lastLogCreatedAt = useMemo(() => logs.length > 0 ? logs[logs.length - 1].createdAt : null, [logs]);
-
-  // Tab title pending count
-  const pendingCount = useMemo(() => todos.filter((td) => !td.done).length, [todos]);
-
-  // Overdue TODO
-  const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const overdueTodos = useMemo(() => {
-    return todos.filter((td) => !td.done && td.dueDate && td.dueDate < todayKey);
-  }, [todos, todayKey]);
+  // Overdue banner
   const [bannerDismissed, setBannerDismissed] = useState(() =>
-    safeGetItem('threadlog_overdue_dismissed') === todayKey
+    safeGetItem('threadlog_overdue_dismissed') === data.todayKey
   );
-  const showOverdueBanner = overdueTodos.length > 0 && !bannerDismissed;
+  const showOverdueBanner = data.overdueTodos.length > 0 && !bannerDismissed;
 
-  // Font size
+  // ── Handlers (font size / theme / lang) ───────────────────────
   const handleFontSizeChange = (size: FontSize) => {
     setFontSizeState(size);
     safeSetItem(FONT_SIZE_KEY, size);
   };
 
-  // Theme
   const handleThemeChange = (v: ThemePref) => {
     setThemePref(v);
     saveTheme(v);
   };
 
-  // RefreshLogs
-  const refreshLogs = useCallback(() => setLogsVersion((v) => v + 1), []);
-
-  // Navigation core
-  const goToRaw = useCallback((next: View) => {
-    // Save current scroll position before navigating away
-    if (scrollRef.current) {
-      scrollPositionRef.current[view] = scrollRef.current.scrollTop;
-    }
-    startTransition(() => {
-      setPrevView(view);
-      setView(next);
-    });
-    // Move focus to main content for screen readers / keyboard users
-    requestAnimationFrame(() => scrollRef.current?.focus());
-  }, [view]);
-
-  // Navigation with dirty-input guard
-  const goTo = useCallback((next: View) => {
-    if (view === 'input' && inputDirtyRef.current && next !== 'input') {
-      setPendingNav(() => () => goToRaw(next));
-      return;
-    }
-    goToRaw(next);
-  }, [view, goToRaw]);
-
-  // Keep refs in sync so stable callbacks always see the latest version
-  goToRawRef.current = goToRaw;
-  goToRef.current = goTo;
-
-  const handleSelect = useCallback((id: string) => {
-    const doNav = () => { setSelectedId(id); goToRawRef.current('detail'); setPaletteOpen(false); };
-    if (view === 'input' && inputDirtyRef.current) {
-      setPendingNav(() => doNav);
-      return;
-    }
-    doNav();
-  }, [view]);
-
-  const handleNewLog = useCallback(() => { setSelectedId(null); setInputKey((k) => k + 1); goToRawRef.current('input'); inputDirtyRef.current = false; }, []);
-  const handleSaved = useCallback((id: string) => { setSelectedId(id); refreshLogs(); inputDirtyRef.current = false; }, [refreshLogs]);
-  const handleDeleted = useCallback(() => { setSelectedId(null); setInputKey((k) => k + 1); goToRawRef.current('input'); refreshLogs(); showToast(t('deleted', lang), 'success'); inputDirtyRef.current = false; }, [refreshLogs, showToast, lang]);
-  const handleBack = useCallback(() => { goToRef.current(prevView === 'detail' ? (activeProjectId ? 'projecthome' : 'history') : prevView); }, [prevView, activeProjectId]);
-
-  // Lang
   const handleUiLangChange = (v: Lang) => {
     setUiLang(v);
     setLangState(v);
   };
 
-  // Tag filter
+  // ── Cross-domain handlers (bridge nav + data + local state) ───
+
+  // Wrap nav.handleSelect to also close palette
+  const handleSelect = useCallback((id: string) => {
+    nav.handleSelect(id);
+    setPaletteOpen(false);
+  }, [nav.handleSelect]);
+
+  const handleNewLog = useCallback(() => {
+    nav.handleNewLog();
+  }, [nav.handleNewLog]);
+
+  const handleSaved = useCallback((id: string) => {
+    nav.setSelectedId(id);
+    data.refreshLogs();
+    nav.inputDirtyRef.current = false;
+  }, [data.refreshLogs, nav.setSelectedId, nav.inputDirtyRef]);
+
+  const handleDeleted = useCallback(() => {
+    nav.setSelectedId(null);
+    nav.setInputKey((k) => k + 1);
+    nav.goToRawRef.current('input');
+    data.refreshLogs();
+    showToast(t('deleted', lang), 'success');
+    nav.inputDirtyRef.current = false;
+  }, [data.refreshLogs, showToast, lang, nav.setSelectedId, nav.setInputKey, nav.goToRawRef, nav.inputDirtyRef]);
+
+  // Wrap nav.handleBack to pass activeProjectId
+  const handleBack = useCallback(() => {
+    nav.handleBack(activeProjectId);
+  }, [nav.handleBack, activeProjectId]);
+
+  const goHome = useCallback(() => {
+    nav.goHome();
+  }, [nav.goHome]);
+
   const handleTagFilter = (tag: string) => {
     setTagFilter(tag);
     setActiveProjectId(null);
-    goToRawRef.current('history');
+    nav.goToRawRef.current('history');
   };
 
-  // Project navigation
   const handleOpenMasterNote = (projectId: string) => {
     setActiveProjectId(projectId);
-    goToRef.current('masternote');
+    nav.goToRef.current('masternote');
   };
 
   const handleOpenKnowledgeBase = (projectId: string) => {
     setActiveProjectId(projectId);
-    goToRef.current('knowledgebase');
+    nav.goToRef.current('knowledgebase');
   };
 
   const handleOpenProjectLogs = (projectId: string) => {
     setActiveProjectId(projectId);
-    goToRef.current('projecthome');
+    nav.goToRef.current('projecthome');
     setPaletteOpen(false);
   };
 
@@ -173,70 +134,83 @@ export function useAppState() {
     handleOpenProjectLogs(projectId);
   };
 
-  const clearInputDirty = useCallback(() => { inputDirtyRef.current = false; }, []);
-  const setInputDirty = useCallback((dirty: boolean) => { inputDirtyRef.current = dirty; }, []);
-  const goHome = useCallback(() => { setSelectedId(null); setInputKey((k) => k + 1); inputDirtyRef.current = false; goToRawRef.current('input'); }, []);
-
-  // Onboarding
+  // ── Onboarding ────────────────────────────────────────────────
   const handleOnboardingClose = useCallback(async () => {
     const isFirstLaunch = safeGetItem('threadlog_sample_seeded') !== '1';
     if (isFirstLaunch) {
       const { seedSampleData } = await import('../sampleData');
       seedSampleData(lang);
-      setLogsVersion((v) => v + 1);
+      data.setLogsVersion((v) => v + 1);
     }
     setShowOnboarding(false);
     if (isFirstLaunch) {
-      goToRawRef.current('dashboard');
+      nav.goToRawRef.current('dashboard');
     }
-  }, [lang]);
+  }, [lang, data.setLogsVersion, nav.goToRawRef]);
 
-  // Stable callbacks for memo'd child components
-  const handleGoToSettings = useCallback(() => goToRef.current('settings' as View), []);
-  const handleGoToHistory = useCallback(() => { setActiveProjectId(null); setView('history'); }, []);
-  const handleGoToProjects = useCallback(() => goToRef.current('projects'), []);
-  const handleGoToTodos = useCallback(() => goToRef.current('todos'), []);
-  const handleGoToSummaryList = useCallback(() => goToRef.current('summarylist'), []);
-  const handleGoToDashboard = useCallback(() => goToRef.current('dashboard'), []);
-  const handleGoToTimeline = useCallback(() => goToRef.current('timeline'), []);
-  const handleGoToWeeklyReport = useCallback(() => goToRef.current('weeklyreport'), []);
-  const handleGoToTrash = useCallback(() => goToRef.current('trash'), []);
-  const handleGoToHelp = useCallback(() => goToRef.current('help'), []);
-  const handleGoToPricing = useCallback(() => goToRef.current('pricing'), []);
-  const handleGoToInput = useCallback(() => goToRef.current('input'), []);
-  const handleCollapseSidebar = useCallback(() => { setSidebarOpen(false); safeSetItem(SIDEBAR_KEY, 'collapsed'); }, []);
-  const handleHideSidebar = useCallback(() => { setSidebarOpen(false); setSidebarHidden(true); safeSetItem(SIDEBAR_KEY, 'hidden'); }, []);
+  // ── Stable "go-to" callbacks for memo'd child components ──────
+  const handleGoToSettings = useCallback(() => nav.goToRef.current('settings'), [nav.goToRef]);
+  const handleGoToHistory = useCallback(() => { setActiveProjectId(null); nav.setView('history'); }, [nav.setView]);
+  const handleGoToProjects = useCallback(() => nav.goToRef.current('projects'), [nav.goToRef]);
+  const handleGoToTodos = useCallback(() => nav.goToRef.current('todos'), [nav.goToRef]);
+  const handleGoToSummaryList = useCallback(() => nav.goToRef.current('summarylist'), [nav.goToRef]);
+  const handleGoToDashboard = useCallback(() => nav.goToRef.current('dashboard'), [nav.goToRef]);
+  const handleGoToTimeline = useCallback(() => nav.goToRef.current('timeline'), [nav.goToRef]);
+  const handleGoToWeeklyReport = useCallback(() => nav.goToRef.current('weeklyreport'), [nav.goToRef]);
+  const handleGoToTrash = useCallback(() => nav.goToRef.current('trash'), [nav.goToRef]);
+  const handleGoToHelp = useCallback(() => nav.goToRef.current('help'), [nav.goToRef]);
+  const handleGoToPricing = useCallback(() => nav.goToRef.current('pricing'), [nav.goToRef]);
+  const handleGoToInput = useCallback(() => nav.goToRef.current('input'), [nav.goToRef]);
+  const handleCollapseSidebar = sidebar.handleCollapseSidebar;
+  const handleHideSidebar = sidebar.handleHideSidebar;
+
   const handleBottomNav = useCallback((v: View) => {
     if (v === 'input') { handleNewLog(); }
-    else if (v === 'settings') { goToRef.current('settings'); }
-    else { goToRef.current(v); }
-  }, [handleNewLog]);
+    else if (v === 'settings') { nav.goToRef.current('settings'); }
+    else { nav.goToRef.current(v); }
+  }, [handleNewLog, nav.goToRef]);
+
   const handleDashboardToggleAction = useCallback((logId: string, actionIndex: number) => {
     const log = getLog(logId);
     if (!log) return;
     const current = log.checkedActions || [];
     const next = current.includes(actionIndex) ? current.filter((i: number) => i !== actionIndex) : [...current, actionIndex];
     updateLog(logId, { checkedActions: next });
-    refreshLogs();
-  }, [refreshLogs]);
+    data.refreshLogs();
+  }, [data.refreshLogs]);
 
   return {
-    // View state
-    view, setView, prevView, setPrevView,
-    selectedId, setSelectedId,
-    sidebarOpen, setSidebarOpen,
-    sidebarHidden, setSidebarHidden,
-    logsVersion, setLogsVersion,
-    inputKey, setInputKey,
+    // View state (from useNavigation)
+    view: nav.view, setView: nav.setView, prevView: nav.prevView, setPrevView: nav.setPrevView,
+    selectedId: nav.selectedId, setSelectedId: nav.setSelectedId,
+    inputKey: nav.inputKey, setInputKey: nav.setInputKey,
+    scrollRef: nav.scrollRef, scrollPositionRef: nav.scrollPositionRef,
+    inputDirtyRef: nav.inputDirtyRef,
+    pendingNav: nav.pendingNav, setPendingNav: nav.setPendingNav,
+    goToRaw: nav.goToRaw, goTo: nav.goTo,
+    goToRawRef: nav.goToRawRef, goToRef: nav.goToRef,
+    navDirection: nav.navDirection,
+    clearInputDirty: nav.clearInputDirty, setInputDirty: nav.setInputDirty,
+
+    // Sidebar (from useSidebarState)
+    sidebarOpen: sidebar.sidebarOpen, setSidebarOpen: sidebar.setSidebarOpen,
+    sidebarHidden: sidebar.sidebarHidden, setSidebarHidden: sidebar.setSidebarHidden,
+
+    // Data (from useDataStore)
+    logsVersion: data.logsVersion, setLogsVersion: data.setLogsVersion,
+    logs: data.logs, projects: data.projects, todos: data.todos, masterNotes: data.masterNotes,
+    pendingTodosCount: data.pendingTodosCount, lastLogCreatedAt: data.lastLogCreatedAt,
+    pendingCount: data.pendingCount,
+    todayKey: data.todayKey, overdueTodos: data.overdueTodos,
+    refreshLogs: data.refreshLogs,
+
+    // App-level state
     lang, setLangState,
     themePref, setThemePref,
     activeProjectId, setActiveProjectId,
     fontSize, setFontSizeState,
     paletteOpen, setPaletteOpen,
     toast, showToast,
-    inputDirtyRef,
-    pendingNav, setPendingNav,
-    scrollRef, scrollPositionRef,
     showOnboarding, setShowOnboarding,
     onboardingPausedForSettings, setOnboardingPausedForSettings,
     helpFeedbackOpen, setHelpFeedbackOpen,
@@ -246,26 +220,18 @@ export function useAppState() {
     showReportReminder, setShowReportReminder,
     offlineStatus, setOfflineStatus, offlineDismissed, setOfflineDismissed,
     showScrollTop, setShowScrollTop,
-
-    // Computed data
-    logs, projects, todos, masterNotes,
-    pendingTodosCount, lastLogCreatedAt,
-    pendingCount,
-    todayKey, overdueTodos,
     bannerDismissed, setBannerDismissed,
     showOverdueBanner,
 
     // Handlers
     handleFontSizeChange,
     handleThemeChange,
-    refreshLogs,
-    goToRaw, goTo,
-    handleSelect, handleNewLog, handleSaved, handleDeleted, handleBack,
     handleUiLangChange,
+    handleSelect, handleNewLog, handleSaved, handleDeleted, handleBack,
+    goHome,
     handleTagFilter,
     handleOpenMasterNote, handleOpenKnowledgeBase, handleOpenProjectLogs,
     handlePaletteSelectProject,
-    goHome, clearInputDirty, setInputDirty,
     handleOnboardingClose,
     handleGoToSettings, handleGoToHistory, handleGoToProjects, handleGoToTodos,
     handleGoToSummaryList, handleGoToDashboard, handleGoToTimeline,
@@ -276,8 +242,8 @@ export function useAppState() {
     handleDashboardToggleAction,
 
     // Constants needed by effects
-    SIDEBAR_KEY,
-    LAST_VIEW_KEY,
+    SIDEBAR_KEY: sidebar.SIDEBAR_KEY,
+    LAST_VIEW_KEY: nav.LAST_VIEW_KEY,
     LAST_PROJECT_KEY,
     FONT_SIZE_KEY,
   };
