@@ -4,7 +4,7 @@ import { computeSourceHash, loadSession, saveSession, deleteSession } from './ch
 import { getLang } from './storage';
 import { callProvider, callProviderStream, getActiveProvider } from './provider';
 import type { StreamCallback } from './provider';
-import { filterResolvedBlockers, normalizeNextActions, normalizeResumeChecklist, normalizeHandoffMeta, normalizeActionBacklog, detectLanguage, extractJson } from './transform';
+import { filterResolvedBlockers, normalizeNextActions, normalizeResumeChecklist, normalizeHandoffMeta, normalizeActionBacklog, normalizeHandoffFields, detectLanguage, extractJson } from './transform';
 import { dedupStrings, dedupDecisions } from './utils/decisions';
 import {
   CHUNK_WORKLOG_EXTRACT_PROMPT as WORKLOG_EXTRACT_PROMPT,
@@ -236,32 +236,7 @@ function toWorklog(raw: PartialResult): TransformResult {
 
 function toHandoff(raw: PartialResult): HandoffResult {
   const completed = (raw.completed as string[]) || [];
-  const decisions = (raw.decisions as string[]) || [];
-  const decisionRationales = Array.isArray(raw.decisionRationales)
-    ? (raw.decisionRationales as DecisionWithRationale[])
-    : undefined;
-  const rawNextActions = (raw.nextActions as unknown[]) || [];
-  let { nextActions, nextActionItems } = normalizeNextActions(rawNextActions);
-  const resumeChecklist = normalizeResumeChecklist(raw.resumeChecklist);
-  let actionBacklog = normalizeActionBacklog(raw.actionBacklog);
-  const handoffMeta = normalizeHandoffMeta(raw.handoffMeta);
-  if (import.meta.env.DEV) {
-    console.log('[Chunk toHandoff] raw resumeChecklist:', JSON.stringify(raw.resumeChecklist));
-    console.log('[Chunk toHandoff] normalized resumeChecklist:', JSON.stringify(resumeChecklist));
-    console.log('[Chunk toHandoff] raw handoffMeta:', JSON.stringify(raw.handoffMeta));
-    console.log('[Chunk toHandoff] normalized handoffMeta:', JSON.stringify(handoffMeta));
-    console.log('[Chunk toHandoff] nextActionItems count:', nextActionItems.length, 'actionBacklog count:', actionBacklog.length);
-  }
-  // Enforce max 4 nextActions — overflow goes to actionBacklog
-  if (nextActionItems.length > 4) {
-    const overflow = nextActionItems.slice(4);
-    nextActionItems = nextActionItems.slice(0, 4);
-    nextActions = nextActionItems.map(i => i.action);
-    actionBacklog = [...overflow, ...actionBacklog].slice(0, 7);
-  }
-  if (import.meta.env.DEV) {
-    console.log('[Chunk toHandoff] AFTER cap: nextActionItems:', nextActionItems.length, 'actionBacklog:', actionBacklog.length);
-  }
+  const { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta } = normalizeHandoffFields(raw as unknown as Record<string, unknown>);
   // resumeContext: derived from resumeChecklist, fallback to raw
   let resumeContext: string[];
   if (resumeChecklist.length > 0) {

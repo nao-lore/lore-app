@@ -293,6 +293,7 @@ export async function transformText(sourceText: string, opts?: { onStream?: Stre
     const raw = await extractAndParse(rawText) as Record<string, unknown>;
     const parsed = safeParse(WorklogResultSchema, raw, 'worklog');
     validateWorklogResult(parsed, sourceText);
+    warnOutputLanguageMismatch(parsed as unknown as Record<string, unknown>, lang);
     return {
       title: parsed.title || 'Untitled',
       today: parsed.today || [],
@@ -403,6 +404,19 @@ export function normalizeResumeChecklist(raw: unknown): ResumeChecklistItem[] {
   return items.slice(0, 3);
 }
 
+/**
+ * Warn in DEV if the output language doesn't match the expected language.
+ */
+function warnOutputLanguageMismatch(result: Record<string, unknown>, expectedLang: string): void {
+  if (!import.meta.env.DEV) return;
+  const title = (result.title as string) || '';
+  if (!title) return;
+  const actualLang = detectLanguage(title);
+  if (actualLang !== expectedLang && title.length > 10) {
+    console.warn(`[Transform] Output language mismatch: expected=${expectedLang}, detected=${actualLang}, title="${title.slice(0, 40)}"`);
+  }
+}
+
 /** Normalize handoffMeta from AI response. */
 export function normalizeHandoffMeta(raw: unknown): HandoffMeta {
   const defaults: HandoffMeta = { sessionFocus: null, whyThisSession: null, timePressure: null };
@@ -420,6 +434,37 @@ export function normalizeActionBacklog(raw: unknown): NextActionItem[] {
   if (!Array.isArray(raw) || raw.length === 0) return [];
   const { nextActionItems } = normalizeNextActions(raw);
   return nextActionItems.slice(0, 7);
+}
+
+/**
+ * Normalize all handoff-specific fields from a parsed AI response.
+ * Centralizes the repeated pattern of normalizing decisions, nextActions,
+ * resumeChecklist, actionBacklog, and handoffMeta with overflow enforcement.
+ */
+export function normalizeHandoffFields(parsed: Record<string, unknown>): {
+  decisions: string[];
+  decisionRationales: DecisionWithRationale[];
+  nextActions: string[];
+  nextActionItems: NextActionItem[];
+  resumeChecklist: ResumeChecklistItem[];
+  actionBacklog: NextActionItem[];
+  handoffMeta: HandoffMeta;
+} {
+  const rawDecisions = (parsed.decisions || []) as unknown[];
+  const { decisions, decisionRationales } = normalizeDecisions(rawDecisions);
+  const rawNextActions = (parsed.nextActions || []) as unknown[];
+  let { nextActions, nextActionItems } = normalizeNextActions(rawNextActions);
+  const resumeChecklist = normalizeResumeChecklist(parsed.resumeChecklist);
+  let actionBacklog = normalizeActionBacklog(parsed.actionBacklog);
+  const handoffMeta = normalizeHandoffMeta(parsed.handoffMeta);
+  // Enforce max 4 nextActions — overflow goes to actionBacklog
+  if (nextActionItems.length > 4) {
+    const overflow = nextActionItems.slice(4);
+    nextActionItems = nextActionItems.slice(0, 4);
+    nextActions = nextActionItems.map(i => i.action);
+    actionBacklog = [...overflow, ...actionBacklog].slice(0, 7);
+  }
+  return { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta };
 }
 
 /**
@@ -482,28 +527,9 @@ export async function transformHandoff(sourceText: string, opts?: { onStream?: S
     const parsed = safeParse(HandoffResultSchema, raw, 'handoff') as Record<string, unknown>;
     // Validate handoff fields (title, currentStatus, resumeChecklist, nextActions, completed, tags)
     validateHandoffResult(parsed, sourceText);
+    warnOutputLanguageMismatch(parsed, lang);
     const completed = (parsed.completed || []) as string[];
-    const rawDecisions = (parsed.decisions || []) as unknown[];
-    const { decisions, decisionRationales } = normalizeDecisions(rawDecisions);
-    const rawNextActions = (parsed.nextActions || []) as unknown[];
-    let { nextActions, nextActionItems } = normalizeNextActions(rawNextActions);
-    const resumeChecklist = normalizeResumeChecklist(parsed.resumeChecklist);
-    let actionBacklog = normalizeActionBacklog(parsed.actionBacklog);
-    const handoffMeta = normalizeHandoffMeta(parsed.handoffMeta);
-    if (import.meta.env.DEV) {
-      console.log('[Handoff Debug] raw resumeChecklist:', JSON.stringify(parsed.resumeChecklist));
-      console.log('[Handoff Debug] normalized resumeChecklist:', JSON.stringify(resumeChecklist));
-      console.log('[Handoff Debug] raw handoffMeta:', JSON.stringify(parsed.handoffMeta));
-      console.log('[Handoff Debug] normalized handoffMeta:', JSON.stringify(handoffMeta));
-      console.log('[Handoff Debug] nextActionItems count:', nextActionItems.length, 'actionBacklog count:', actionBacklog.length);
-    }
-    // Enforce max 4 nextActions — overflow goes to actionBacklog
-    if (nextActionItems.length > 4) {
-      const overflow = nextActionItems.slice(4);
-      nextActionItems = nextActionItems.slice(0, 4);
-      nextActions = nextActionItems.map(i => i.action);
-      actionBacklog = [...overflow, ...actionBacklog].slice(0, 7);
-    }
+    const { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta } = normalizeHandoffFields(parsed);
     return {
       title: (parsed.title as string) || 'Untitled',
       handoffMeta,
@@ -626,6 +652,7 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
 
     // Validate worklog part
     validateWorklogResult(w, sourceText);
+    warnOutputLanguageMismatch(w, lang);
 
     const c = parsed.classification;
     const result: BothResult = {
@@ -640,45 +667,26 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
       handoff: (() => {
         // Validate handoff fields (title, currentStatus, resumeChecklist, nextActions, completed, tags)
         validateHandoffResult(h, sourceText);
+        warnOutputLanguageMismatch(h, lang);
         const hCompleted = (h.completed || []) as string[];
-        const rawHDecisions = (h.decisions || []) as unknown[];
-        const { decisions: hDecisions, decisionRationales: hDecisionRationales } = normalizeDecisions(rawHDecisions);
-        const rawHNextActions = (h.nextActions || []) as unknown[];
-        let { nextActions: hNextActions, nextActionItems: hNextActionItems } = normalizeNextActions(rawHNextActions);
-        const hResumeChecklist = normalizeResumeChecklist(h.resumeChecklist);
-        let hActionBacklog = normalizeActionBacklog(h.actionBacklog);
-        const hHandoffMeta = normalizeHandoffMeta(h.handoffMeta);
-        if (import.meta.env.DEV) {
-          console.log('[Both Handoff Debug] raw resumeChecklist:', JSON.stringify(h.resumeChecklist));
-          console.log('[Both Handoff Debug] normalized resumeChecklist:', JSON.stringify(hResumeChecklist));
-          console.log('[Both Handoff Debug] raw handoffMeta:', JSON.stringify(h.handoffMeta));
-          console.log('[Both Handoff Debug] normalized handoffMeta:', JSON.stringify(hHandoffMeta));
-          console.log('[Both Handoff Debug] nextActionItems count:', hNextActionItems.length, 'actionBacklog count:', hActionBacklog.length);
-        }
-        // Enforce max 4 nextActions — overflow goes to actionBacklog
-        if (hNextActionItems.length > 4) {
-          const overflow = hNextActionItems.slice(4);
-          hNextActionItems = hNextActionItems.slice(0, 4);
-          hNextActions = hNextActionItems.map(i => i.action);
-          hActionBacklog = [...overflow, ...hActionBacklog].slice(0, 7);
-        }
+        const hFields = normalizeHandoffFields(h);
         return {
           title: (h.title as string) || (w.title as string) || 'Untitled',
-          handoffMeta: hHandoffMeta,
+          handoffMeta: hFields.handoffMeta,
           currentStatus: (h.currentStatus || []) as string[],
-          resumeChecklist: hResumeChecklist,
-          resumeContext: hResumeChecklist.length > 0
-            ? hResumeChecklist.map(r => r.action)
+          resumeChecklist: hFields.resumeChecklist,
+          resumeContext: hFields.resumeChecklist.length > 0
+            ? hFields.resumeChecklist.map(r => r.action)
             : (typeof h.resumeContext === 'string'
               ? (h.resumeContext.trim() ? [h.resumeContext.trim()] : [])
               : ((h.resumeContext || []) as string[])),
-          nextActions: hNextActions,
-          nextActionItems: hNextActionItems,
-          actionBacklog: hActionBacklog.length > 0 ? hActionBacklog : undefined,
+          nextActions: hFields.nextActions,
+          nextActionItems: hFields.nextActionItems,
+          actionBacklog: hFields.actionBacklog.length > 0 ? hFields.actionBacklog : undefined,
           completed: hCompleted,
-          blockers: filterResolvedBlockers((h.blockers || []) as string[], hCompleted, hDecisions),
-          decisions: hDecisions,
-          decisionRationales: hDecisionRationales,
+          blockers: filterResolvedBlockers((h.blockers || []) as string[], hCompleted, hFields.decisions),
+          decisions: hFields.decisions,
+          decisionRationales: hFields.decisionRationales,
           constraints: (h.constraints || []) as string[],
           tags: ((h.tags || w.tags || []) as string[]),
         };

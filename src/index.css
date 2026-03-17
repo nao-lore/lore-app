@@ -3620,23 +3620,23 @@ button:focus-visible,
 }
 
 /* Directional slide transitions */
-@keyframes slide-forward {
-  from { opacity: 0; transform: translateX(20px); }
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(30px); }
   to { opacity: 1; transform: translateX(0); }
 }
-@keyframes slide-back {
-  from { opacity: 0; transform: translateX(-20px); }
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
   to { opacity: 1; transform: translateX(0); }
 }
 .view-slide-forward {
-  animation: slide-forward 0.2s ease-out;
+  animation: slideInRight 0.2s ease-out;
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 .view-slide-back {
-  animation: slide-back 0.2s ease-out;
+  animation: slideInLeft 0.2s ease-out;
   width: 100%;
   height: 100%;
   display: flex;
@@ -3912,6 +3912,17 @@ button:focus-visible,
   right: 0;
 }
 
+/* ===== Pull-to-refresh indicator ===== */
+.pull-refresh-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  transition: height 0.2s;
+}
+
 /* ===== Swipe-back visual indicator ===== */
 .swipe-indicator {
   position: fixed;
@@ -3919,6 +3930,9 @@ button:focus-visible,
   left: 0;
   width: 12px;
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   pointer-events: none;
   z-index: 9000;
   opacity: 0;
@@ -3927,6 +3941,17 @@ button:focus-visible,
 }
 .swipe-indicator.active {
   opacity: 1;
+}
+.swipe-chevron {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-muted);
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.1s ease, transform 0.1s ease;
+  pointer-events: none;
+  line-height: 1;
+  padding-left: 2px;
 }
 
 /* ===== Windows High Contrast Mode (forced-colors) ===== */

@@ -231,6 +231,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           </p>
         ) : null;
       })()}
+      {/* TODO: Extract to PostGenerationPreview component */}
       {/* Post-generation preview panel */}
       {savedResult && (
         <div style={{ maxWidth: 760, margin: '0 auto', padding: 20 }}>
@@ -331,6 +332,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         </div>
       )}
 
+      {/* TODO: Extract to InputCard component (textarea + clear button + char count + transform button) */}
       {/* Input Card — hidden when preview panel is shown */}
       {!savedResult && (<div
         className="input-card-hero relative"
@@ -472,6 +474,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         </div>
       </div>)}
 
+      {/* TODO: Extract to InputToolbar component (mode tabs, project selector, file import) */}
       {/* Toolbar: mode tabs + project + import — single row */}
       {!savedResult && (<div className="flex-col" style={{ maxWidth: 760, margin: '10px auto 0', gap: 6 }}>
         <div className="flex-row flex-wrap" style={{ gap: 10 }}>
@@ -611,6 +614,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         </div>
       )}
 
+      {/* TODO: Extract to ProgressDisplay component (single + chunked progress cards) */}
       {/* Progress card — single transform (simulated steps) */}
       {loading && !progress && (
         <div aria-live="polite">

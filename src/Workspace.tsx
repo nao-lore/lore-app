@@ -1,7 +1,9 @@
+import { lazy } from 'react';
 import type { LogEntry, Project } from './types';
 import type { Lang } from './i18n';
-import InputView from './InputView';
-import DetailView from './DetailView';
+
+const InputView = lazy(() => import('./InputView'));
+const DetailView = lazy(() => import('./DetailView'));
 
 type WorkspaceMode = 'input' | 'detail';
 

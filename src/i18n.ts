@@ -1,5 +1,5 @@
 /**
- * i18n — all 8 languages are bundled in a single object (~269KB raw, ~92KB gzip).
+ * i18n — all 8 languages are bundled in a single object (~259KB raw, ~88KB gzip).
  *
  * Performance note (Perf #33): Splitting by language would require async loading
  * which breaks the synchronous t() / tf() API used throughout the app.
@@ -26,12 +26,10 @@ const labels = {
   // Sidebar
   createHandoff: { ja: '+ スナップショット作成', en: '+ New Snapshot', es: '+ Nuevo Snapshot', fr: '+ Nouveau Snapshot', de: '+ Neuer Snapshot', zh: '+ 新建快照', ko: '+ 새 스냅샷', pt: '+ Novo Snapshot' },
   searchLogs: { ja: 'ログを検索...', en: 'Search logs...', es: 'Buscar registros...', fr: 'Rechercher des logs...', de: 'Logs durchsuchen...', zh: '搜索日志...', ko: '로그 검색...', pt: 'Pesquisar registros...' },
-  goToLogs: { ja: 'ログを見る', en: 'View Logs', es: 'Ver registros', fr: 'Voir les logs', de: 'Logs anzeigen', zh: '查看日志', ko: '로그 보기', pt: 'Ver Registros' },
   navLogs: { ja: 'ログ', en: 'Logs', es: 'Registros', fr: 'Logs', de: 'Logs', zh: '日志', ko: '로그', pt: 'Registros' },
   navProjects: { ja: 'プロジェクト', en: 'Projects', es: 'Proyectos', fr: 'Projets', de: 'Projekte', zh: '项目', ko: '프로젝트', pt: 'Projetos' },
   navTodo: { ja: 'TODO', en: 'TODO', es: 'TODO', fr: 'TODO', de: 'TODO', zh: 'TODO', ko: 'TODO', pt: 'TODO' },
   navTimeline: { ja: 'タイムライン', en: 'Timeline', es: 'Línea de tiempo', fr: 'Chronologie', de: 'Zeitleiste', zh: '时间线', ko: '타임라인', pt: 'Linha do tempo' },
-  recentLogs: { ja: '最近のログ', en: 'Recent Logs', es: 'Registros recientes', fr: 'Logs récents', de: 'Neueste Logs', zh: '最近的日志', ko: '최근 로그', pt: 'Registros Recentes' },
   settings: { ja: '設定', en: 'Settings', es: 'Configuración', fr: 'Paramètres', de: 'Einstellungen', zh: '设置', ko: '설정', pt: 'Configurações' },
   noMatches: { ja: '該当なし', en: 'No matches', es: 'Sin resultados', fr: 'Aucun résultat', de: 'Keine Treffer', zh: '无匹配结果', ko: '일치 항목 없음', pt: 'Sem resultados' },
   noLogsYet: { ja: 'ログがありません', en: 'No logs yet', es: 'Aún no hay registros', fr: 'Aucun log pour le moment', de: 'Noch keine Logs', zh: '暂无日志', ko: '아직 로그가 없습니다', pt: 'Nenhum registro ainda' },
@@ -45,20 +43,15 @@ const labels = {
   navTodoTitle: { ja: '会話から抽出されたTODOの管理', en: 'Manage TODOs extracted from conversations', es: 'Gestionar TODOs extraídos de las conversaciones', fr: 'Gérer les TODOs extraits des conversations', de: 'Aus Konversationen extrahierte TODOs verwalten', zh: '管理从对话中提取的TODO', ko: '대화에서 추출된 TODO 관리', pt: 'Gerenciar TODOs extraídos de conversas' },
   navTimelineTitle: { ja: 'ログ・TODO・サマリーを時系列で俯瞰', en: "Bird's-eye view of logs, TODOs, and summaries over time", es: 'Vista general de registros, TODOs y resúmenes a lo largo del tiempo', fr: 'Vue d\'ensemble des logs, TODOs et résumés au fil du temps', de: 'Logs, TODOs und Zusammenfassungen im Zeitverlauf überblicken', zh: '按时间线纵览日志、TODO和摘要', ko: '로그, TODO, 요약을 시간순으로 조감', pt: 'Visão geral de registros, TODOs e resumos ao longo do tempo' },
   navWeeklyReportTitle: { ja: 'その週の活動をAIが自動でまとめる', en: 'AI-generated weekly activity summary', es: 'Resumen semanal de actividad generado por IA', fr: 'Résumé hebdomadaire d\'activité généré par l\'IA', de: 'KI-generierte wöchentliche Aktivitätszusammenfassung', zh: 'AI自动生成的每周活动摘要', ko: 'AI가 자동으로 생성하는 주간 활동 요약', pt: 'Resumo semanal de atividades gerado por IA' },
-  navWorkflow: { ja: 'ワークフロー', en: 'Workflow', es: 'Flujo de trabajo', fr: 'Flux de travail', de: 'Workflow', zh: '工作流', ko: '워크플로', pt: 'Workflow' },
   navLogsTitle: { ja: '全てのログを時系列で表示', en: 'View all logs in chronological order', es: 'Ver todos los registros en orden cronológico', fr: 'Voir tous les logs par ordre chronologique', de: 'Alle Logs in chronologischer Reihenfolge anzeigen', zh: '按时间顺序查看所有日志', ko: '모든 로그를 시간순으로 보기', pt: 'Ver todos os registros em ordem cronológica' },
   navProjectsTitle: { ja: 'ログをプロジェクトに整理', en: 'Organize logs into projects', es: 'Organizar registros en proyectos', fr: 'Organiser les logs en projets', de: 'Logs in Projekte organisieren', zh: '将日志整理到项目中', ko: '로그를 프로젝트별로 정리', pt: 'Organizar registros em projetos' },
   navProjectSummaryTitle: { ja: 'AIがログからプロジェクトの全体像を自動生成', en: 'AI generates project overviews from your logs', es: 'IA genera resúmenes de proyectos a partir de sus registros', fr: 'L\'IA génère des aperçus de projets à partir de vos logs', de: 'KI generiert Projektübersichten aus Ihren Logs', zh: 'AI从日志中自动生成项目概览', ko: 'AI가 로그에서 프로젝트 개요를 자동 생성', pt: 'IA gera visões gerais de projetos a partir dos seus registros' },
-  ctxChangeProjectPrompt: { ja: '番号を入力:', en: 'Enter number:', es: 'Ingrese número:', fr: 'Entrez le numéro :', de: 'Nummer eingeben:', zh: '请输入编号:', ko: '번호를 입력하세요:', pt: 'Digite o número:' },
 
   // Command palette
   searchPlaceholder: { ja: 'ログ・プロジェクト・TODOを検索... ⌘K', en: 'Search logs, projects, todos... ⌘K', es: 'Buscar registros, proyectos, TODOs... ⌘K', fr: 'Rechercher logs, projets, TODOs... ⌘K', de: 'Logs, Projekte, TODOs durchsuchen... ⌘K', zh: '搜索日志、项目、TODO... ⌘K', ko: '로그, 프로젝트, TODO 검색... ⌘K', pt: 'Pesquisar registros, projetos, TODOs... ⌘K' },
   searchNoResults: { ja: '結果なし', en: 'No results', es: 'Sin resultados', fr: 'Aucun résultat', de: 'Keine Ergebnisse', zh: '无结果', ko: '결과 없음', pt: 'Sem resultados' },
-  searchHint: { ja: '⌘K で検索', en: '⌘K to search', es: '⌘K para buscar', fr: '⌘K pour rechercher', de: '⌘K zum Suchen', zh: '⌘K 搜索', ko: '⌘K 검색', pt: '⌘K para pesquisar' },
 
   // Input view
-  createHandoffTitle: { ja: 'スナップショット作成', en: 'Create Snapshot', es: 'Crear Snapshot', fr: 'Créer un Snapshot', de: 'Snapshot erstellen', zh: '创建快照', ko: '스냅샷 생성', pt: 'Criar Snapshot' },
-  inputDesc: { ja: 'テキスト貼り付け、ファイルインポート、またはドラッグ&ドロップで作業ログを抽出します。', en: 'Paste text, import files, or drag & drop to extract your work log.', es: 'Pegue texto, importe archivos o arrastre y suelte para extraer su registro de trabajo.', fr: 'Collez du texte, importez des fichiers ou glissez-déposez pour extraire votre journal de travail.', de: 'Text einfügen, Dateien importieren oder per Drag & Drop Arbeitsprotokoll extrahieren.', zh: '粘贴文本、导入文件或拖放以提取工作日志。', ko: '텍스트 붙여넣기, 파일 가져오기 또는 드래그 앤 드롭으로 작업 로그를 추출합니다.', pt: 'Cole texto, importe arquivos ou arraste e solte para extrair seu registro de trabalho.' },
   inputPlaceholder: { ja: 'AIとの会話を貼り付け、またはファイルをドロップ', en: 'Paste an AI conversation, or drop a file', es: 'Pegue una conversación con IA, o suelte un archivo', fr: 'Collez une conversation IA, ou déposez un fichier', de: 'KI-Konversation einfügen oder Datei ablegen', zh: '粘贴AI对话，或拖放文件', ko: 'AI 대화를 붙여넣거나 파일을 드롭하세요', pt: 'Cole uma conversa com IA ou solte um arquivo' },
   importFiles: { ja: 'ファイルをインポート', en: 'Import File', es: 'Importar archivo', fr: 'Importer un fichier', de: 'Datei importieren', zh: '导入文件', ko: '파일 가져오기', pt: 'Importar Arquivo' },
   addMoreFiles: { ja: '+ ファイルを追加', en: '+ Add More Files', es: '+ Agregar más archivos', fr: '+ Ajouter des fichiers', de: '+ Weitere Dateien hinzufügen', zh: '+ 添加更多文件', ko: '+ 파일 추가', pt: '+ Adicionar Mais Arquivos' },
@@ -113,10 +106,7 @@ const labels = {
   overLimitBlock: { ja: '入力がサポート上限（500,000文字）を超えています。ログを分割してください。', en: 'Input exceeds the maximum supported size (500,000 characters). Please split the log into smaller parts.', es: 'La entrada supera el tamaño máximo admitido (500.000 caracteres). Por favor, divida el registro.', fr: 'L\'entrée dépasse la taille maximale prise en charge (500 000 caractères). Veuillez diviser le log.', de: 'Eingabe überschreitet die maximale Größe (500.000 Zeichen). Bitte teilen Sie den Log auf.', zh: '输入超过支持上限（500,000字符）。请拆分日志。', ko: '입력이 최대 지원 크기(500,000자)를 초과합니다. 로그를 분할해 주세요.', pt: 'A entrada excede o tamanho máximo suportado (500.000 caracteres). Por favor, divida o registro em partes menores.' },
 
   // Transform buttons
-  transformWorklog: { ja: 'ワークログに変換', en: 'Transform to Worklog', es: 'Transformar a Worklog', fr: 'Transformer en Worklog', de: 'In Worklog umwandeln', zh: '转换为Worklog', ko: 'Worklog으로 변환', pt: 'Transformar em Worklog' },
   transformHandoff: { ja: 'スナップショットに変換', en: 'Transform to Snapshot', es: 'Transformar a Snapshot', fr: 'Transformer en Snapshot', de: 'In Snapshot umwandeln', zh: '转换为快照', ko: '스냅샷으로 변환', pt: 'Transformar em Snapshot' },
-  transformLongWorklog: { ja: 'ワークログに変換 (長文)', en: 'Transform to Worklog (long text)', es: 'Transformar a Worklog (texto largo)', fr: 'Transformer en Worklog (texte long)', de: 'In Worklog umwandeln (Langtext)', zh: '转换为Worklog（长文）', ko: 'Worklog으로 변환 (긴 텍스트)', pt: 'Transformar em Worklog (texto longo)' },
-  transformLongHandoff: { ja: 'スナップショットに変換 (長文)', en: 'Transform to Snapshot (long text)', es: 'Transformar a Snapshot (texto largo)', fr: 'Transformer en Snapshot (texte long)', de: 'In Snapshot umwandeln (Langtext)', zh: '转换为快照（长文）', ko: '스냅샷으로 변환 (긴 텍스트)', pt: 'Transformar em Snapshot (texto longo)' },
   transformMulti: (n: number) => ({
     ja: `ワークログに変換 (${n}ファイル)`,
     en: `Transform to Worklog (${n} files)`,
@@ -140,32 +130,14 @@ const labels = {
   transforming: { ja: '変換中...', en: 'Transforming...', es: 'Transformando...', fr: 'Transformation en cours...', de: 'Wird umgewandelt...', zh: '转换中...', ko: '변환 중...', pt: 'Transformando...' },
 
   // Output mode
-  outputModeWorklog: { ja: 'ログ', en: 'Log', es: 'Registro', fr: 'Log', de: 'Log', zh: '日志', ko: '로그', pt: 'Registro' },
-  outputModeHandoff: { ja: 'スナップショット', en: 'Snapshot', es: 'Snapshot', fr: 'Snapshot', de: 'Snapshot', zh: '快照', ko: '스냅샷', pt: 'Snapshot' },
-  createBoth: { ja: 'ログ + スナップショットを作成', en: 'Create Log + Snapshot', es: 'Crear Registro + Snapshot', fr: 'Créer Log + Snapshot', de: 'Log + Snapshot erstellen', zh: '创建日志 + 快照', ko: '로그 + 스냅샷 생성', pt: 'Criar Registro + Snapshot' },
-  createHandoffOnly: { ja: 'スナップショットのみ作成', en: 'Create Snapshot Only', es: 'Crear solo Snapshot', fr: 'Créer Snapshot uniquement', de: 'Nur Snapshot erstellen', zh: '仅创建快照', ko: '스냅샷만 생성', pt: 'Criar Apenas Snapshot' },
-  createWorklogOnly: { ja: 'ログのみ作成', en: 'Create Log Only', es: 'Crear solo Registro', fr: 'Créer Log uniquement', de: 'Nur Log erstellen', zh: '仅创建日志', ko: '로그만 생성', pt: 'Criar Apenas Registro' },
-  createBtnBoth: { ja: '両方を作成', en: 'Create Both', es: 'Crear ambos', fr: 'Créer les deux', de: 'Beides erstellen', zh: '创建两者', ko: '모두 생성', pt: 'Criar Ambos' },
   createBtnHandoff: { ja: 'スナップショット作成', en: 'Create Snapshot', es: 'Crear Snapshot', fr: 'Créer Snapshot', de: 'Snapshot erstellen', zh: '创建快照', ko: '스냅샷 생성', pt: 'Criar Snapshot' },
-  createBtnWorklog: { ja: 'Worklogを作成', en: 'Create Worklog', es: 'Crear Worklog', fr: 'Créer Worklog', de: 'Worklog erstellen', zh: '创建Worklog', ko: 'Worklog 생성', pt: 'Criar Worklog' },
-  modeIndicator: { ja: '生成モード', en: 'Mode', es: 'Modo', fr: 'Mode', de: 'Modus', zh: '生成模式', ko: '생성 모드', pt: 'Modo' },
-  modeLabelBoth: { ja: 'Worklog＋Snapshot', en: 'Worklog + Snapshot', es: 'Worklog + Snapshot', fr: 'Worklog + Snapshot', de: 'Worklog + Snapshot', zh: 'Worklog＋快照', ko: 'Worklog＋스냅샷', pt: 'Worklog + Snapshot' },
-  modeLabelWorklog: { ja: 'Worklog', en: 'Worklog', es: 'Worklog', fr: 'Worklog', de: 'Worklog', zh: 'Worklog', ko: 'Worklog', pt: 'Worklog' },
   modeLabelHandoff: { ja: 'コンテキストスナップショット', en: 'Context Snapshot', es: 'Snapshot de Contexto', fr: 'Snapshot de Contexte', de: 'Kontext-Snapshot', zh: '上下文快照', ko: '컨텍스트 스냅샷', pt: 'Snapshot de Contexto' },
-  worklogDesc: { ja: '作業履歴を保存し、TODOを自動抽出します', en: 'Saves work history and auto-extracts TODOs', es: 'Guarda el historial de trabajo y extrae TODOs automáticamente', fr: 'Sauvegarde l\'historique de travail et extrait les TODOs automatiquement', de: 'Speichert den Arbeitsverlauf und extrahiert automatisch TODOs', zh: '保存工作记录并自动提取TODO', ko: '작업 이력을 저장하고 TODO를 자동 추출합니다', pt: 'Salva o histórico de trabalho e extrai TODOs automaticamente' },
-  handoffDesc: { ja: '次のAIがすぐ作業を再開できる要約', en: 'A summary so the next AI can resume immediately', es: 'Un resumen para que la próxima IA pueda retomar inmediatamente', fr: 'Un résumé pour que la prochaine IA puisse reprendre immédiatement', de: 'Eine Zusammenfassung, damit die nächste KI sofort weiterarbeiten kann', zh: '让下一个AI可以立即继续工作的摘要', ko: '다음 AI가 바로 작업을 재개할 수 있는 요약', pt: 'Um resumo para que a próxima IA possa retomar imediatamente' },
   modeLabelTodoOnly: { ja: 'TODO抽出', en: 'TODO Only', es: 'Solo TODO', fr: 'TODO uniquement', de: 'Nur TODO', zh: 'TODO提取', ko: 'TODO 추출', pt: 'Apenas TODO' },
   modeLabelHandoffTodo: { ja: 'スナップショット＋TODO', en: 'Snapshot + TODO', es: 'Snapshot + TODO', fr: 'Snapshot + TODO', de: 'Snapshot + TODO', zh: '快照＋TODO', ko: '스냅샷＋TODO', pt: 'Snapshot + TODO' },
-  modeLabelWorklogHandoff: { ja: 'Worklog＋Snapshot', en: 'Worklog + Snapshot', es: 'Worklog + Snapshot', fr: 'Worklog + Snapshot', de: 'Worklog + Snapshot', zh: 'Worklog＋快照', ko: 'Worklog＋스냅샷', pt: 'Worklog + Snapshot' },
   createBtnTodoOnly: { ja: 'TODOを抽出', en: 'Extract TODOs', es: 'Extraer TODOs', fr: 'Extraire les TODOs', de: 'TODOs extrahieren', zh: '提取TODO', ko: 'TODO 추출', pt: 'Extrair TODOs' },
   createBtnHandoffTodo: { ja: 'スナップショット＋TODO作成', en: 'Create Snapshot + TODO', es: 'Crear Snapshot + TODO', fr: 'Créer Snapshot + TODO', de: 'Snapshot + TODO erstellen', zh: '创建快照＋TODO', ko: '스냅샷＋TODO 생성', pt: 'Criar Snapshot + TODO' },
-  createBtnWorklogHandoff: { ja: '両方を作成', en: 'Create Both', es: 'Crear ambos', fr: 'Créer les deux', de: 'Beides erstellen', zh: '创建两者', ko: '모두 생성', pt: 'Criar Ambos' },
-  advancedModes: { ja: '▼ 詳細設定', en: '▼ Advanced', es: '▼ Avanzado', fr: '▼ Avancé', de: '▼ Erweitert', zh: '▼ 高级设置', ko: '▼ 고급 설정', pt: '▼ Avançado' },
-  advancedModesClose: { ja: '▲ 詳細設定', en: '▲ Advanced', es: '▲ Avanzado', fr: '▲ Avancé', de: '▲ Erweitert', zh: '▲ 高级设置', ko: '▲ 고급 설정', pt: '▲ Avançado' },
 
   // Both-mode phase labels
-  bothPhaseHandoff: { ja: 'Step 1/2 — スナップショットを生成中', en: 'Step 1/2 — Generating Snapshot', es: 'Paso 1/2 — Generando Snapshot', fr: 'Étape 1/2 — Génération du Snapshot', de: 'Schritt 1/2 — Snapshot wird generiert', zh: '步骤 1/2 — 正在生成快照', ko: '단계 1/2 — 스냅샷 생성 중', pt: 'Etapa 1/2 — Gerando Snapshot' },
-  bothPhaseWorklog: { ja: 'Step 2/2 — ログを生成中', en: 'Step 2/2 — Generating Log', es: 'Paso 2/2 — Generando Registro', fr: 'Étape 2/2 — Génération du Log', de: 'Schritt 2/2 — Log wird generiert', zh: '步骤 2/2 — 正在生成日志', ko: '단계 2/2 — 로그 생성 중', pt: 'Etapa 2/2 — Gerando Registro' },
 
   // Progress
   preparing: { ja: '準備中...', en: 'Preparing...', es: 'Preparando...', fr: 'Préparation...', de: 'Vorbereitung...', zh: '准备中...', ko: '준비 중...', pt: 'Preparando...' },
@@ -213,8 +185,6 @@ const labels = {
   paused: { ja: '一時停止中', en: 'Paused', es: 'En pausa', fr: 'En pause', de: 'Pausiert', zh: '已暂停', ko: '일시 중지됨', pt: 'Pausado' },
   autoPaused: { ja: '処理を一時停止しました', en: 'Processing paused', es: 'Procesamiento en pausa', fr: 'Traitement en pause', de: 'Verarbeitung pausiert', zh: '处理已暂停', ko: '처리가 일시 중지되었습니다', pt: 'Processamento pausado' },
   autoPausedDesc: { ja: '途中まで処理済みです。時間をおいて再開してください。', en: 'Progress has been saved. Please wait a moment and resume.', es: 'El progreso se ha guardado. Por favor, espere un momento y reanude.', fr: 'La progression a été sauvegardée. Veuillez patienter un moment et reprendre.', de: 'Fortschritt wurde gespeichert. Bitte warten Sie einen Moment und fahren Sie fort.', zh: '已处理部分内容。请稍后再继续。', ko: '일부 처리가 완료되었습니다. 잠시 후 재개해 주세요.', pt: 'O progresso foi salvo. Por favor, aguarde um momento e retome.' },
-  sendingToApi: { ja: 'AIに送信中...', en: 'Sending to AI...', es: 'Enviando a la IA...', fr: 'Envoi à l\'IA...', de: 'Wird an KI gesendet...', zh: '正在发送给AI...', ko: 'AI에 전송 중...', pt: 'Enviando para IA...' },
-  restoringProgress: { ja: '保存された途中結果を復元中...', en: 'Restoring saved progress...', es: 'Restaurando progreso guardado...', fr: 'Restauration de la progression sauvegardée...', de: 'Gespeicherten Fortschritt wiederherstellen...', zh: '正在恢复已保存的进度...', ko: '저장된 진행 상황을 복원하는 중...', pt: 'Restaurando progresso salvo...' },
   itemsSaved: (n: number) => ({
     ja: `${n}件 完了`,
     en: `${n} completed`,
@@ -288,7 +258,6 @@ const labels = {
 
   // Detail view
   back: { ja: '戻る', en: 'Back', es: 'Volver', fr: 'Retour', de: 'Zurück', zh: '返回', ko: '뒤로', pt: 'Voltar' },
-  backToLogs: { ja: 'ログに戻る', en: 'Back to Logs', es: 'Volver a registros', fr: 'Retour aux logs', de: 'Zurück zu Logs', zh: '返回日志', ko: '로그로 돌아가기', pt: 'Voltar aos Registros' },
   delete: { ja: '削除', en: 'Delete', es: 'Eliminar', fr: 'Supprimer', de: 'Löschen', zh: '删除', ko: '삭제', pt: 'Excluir' },
   deleteConfirm: { ja: 'このログを削除しますか？', en: 'Delete this log?', es: '¿Eliminar este registro?', fr: 'Supprimer ce log ?', de: 'Dieses Log löschen?', zh: '确定删除此日志？', ko: '이 로그를 삭제하시겠습니까?', pt: 'Excluir este registro?' },
   deleteConfirmDesc: { ja: 'ゴミ箱に移動されます。', en: 'It will be moved to trash.', es: 'Se moverá a la papelera.', fr: 'Il sera déplacé vers la corbeille.', de: 'Wird in den Papierkorb verschoben.', zh: '将移至回收站。', ko: '휴지통으로 이동됩니다.', pt: 'Será movido para a lixeira.' },
@@ -300,8 +269,6 @@ const labels = {
   tooltipHandoff: { ja: 'AI会話からコンテキストスナップショットを生成', en: 'Generate context snapshot from AI conversation', es: 'Generar snapshot de contexto desde conversación IA', fr: 'Générer un snapshot de contexte à partir de la conversation IA', de: 'Kontext-Snapshot aus KI-Gespräch erstellen', zh: '从AI对话生成上下文快照', ko: 'AI 대화에서 컨텍스트 스냅샷 생성', pt: 'Gerar snapshot de contexto a partir de conversa com IA' },
   tooltipHandoffTodo: { ja: 'スナップショットとTODOを同時に生成', en: 'Generate snapshot and TODOs together', es: 'Generar snapshot y TODOs juntos', fr: 'Générer snapshot et TODOs ensemble', de: 'Snapshot und TODOs zusammen erstellen', zh: '同时生成快照和待办事项', ko: '스냅샷과 TODO를 함께 생성', pt: 'Gerar snapshot e TODOs juntos' },
   tooltipTodoOnly: { ja: 'TODOリストだけを抽出', en: 'Extract only the TODO list', es: 'Extraer solo la lista de TODO', fr: 'Extraire uniquement la liste TODO', de: 'Nur die TODO-Liste extrahieren', zh: '仅提取待办事项列表', ko: 'TODO 목록만 추출', pt: 'Extrair apenas a lista de TODO' },
-  tooltipWorklog: { ja: 'AI会話からワークログを生成', en: 'Generate work log from AI conversation', es: 'Generar registro de trabajo desde conversación IA', fr: 'Générer un journal de travail à partir de la conversation IA', de: 'Arbeitsprotokoll aus KI-Gespräch erstellen', zh: '从AI对话生成工作日志', ko: 'AI 대화에서 작업 로그 생성', pt: 'Gerar registro de trabalho a partir de conversa com IA' },
-  tooltipBoth: { ja: 'ワークログとスナップショットの両方を生成', en: 'Generate both work log and context snapshot', es: 'Generar registro de trabajo y snapshot de contexto', fr: 'Générer le journal de travail et le snapshot de contexte', de: 'Arbeitsprotokoll und Kontext-Snapshot erstellen', zh: '同时生成工作日志和上下文快照', ko: '작업 로그와 컨텍스트 스냅샷 모두 생성', pt: 'Gerar registro de trabalho e snapshot de contexto' },
   cancel: { ja: 'キャンセル', en: 'Cancel', es: 'Cancelar', fr: 'Annuler', de: 'Abbrechen', zh: '取消', ko: '취소', pt: 'Cancelar' },
   logNotFound: { ja: 'ログが見つかりません。', en: 'Log not found.', es: 'Registro no encontrado.', fr: 'Log introuvable.', de: 'Log nicht gefunden.', zh: '未找到日志。', ko: '로그를 찾을 수 없습니다.', pt: 'Registro não encontrado.' },
   sourceText: { ja: 'ソーステキスト', en: 'Source Text', es: 'Texto fuente', fr: 'Texte source', de: 'Quelltext', zh: '源文本', ko: '소스 텍스트', pt: 'Texto Fonte' },
@@ -322,7 +289,6 @@ const labels = {
   sectionConstraints: { ja: '前提・制約', en: 'Constraints & Scope', es: 'Restricciones y alcance', fr: 'Contraintes et périmètre', de: 'Einschränkungen & Umfang', zh: '前提与约束', ko: '전제 및 제약', pt: 'Restrições & Escopo' },
   sectionResumeContext: { ja: '再開入力', en: 'Resume Checklist', es: 'Lista de verificación para reanudar', fr: 'Checklist de reprise', de: 'Checkliste zur Wiederaufnahme', zh: '恢复清单', ko: '재개 체크리스트', pt: 'Checklist de Retomada' },
   // Legacy (for old logs that still have inProgress/resumePoint)
-  sectionInProgress: { ja: '進行中', en: 'In Progress', es: 'En progreso', fr: 'En cours', de: 'In Bearbeitung', zh: '进行中', ko: '진행 중', pt: 'Em Andamento' },
 
   // Log list view
   logs: { ja: 'ログ', en: 'Logs', es: 'Registros', fr: 'Logs', de: 'Logs', zh: '日志', ko: '로그', pt: 'Registros' },
@@ -344,30 +310,14 @@ const labels = {
 
   // Settings
   settingsTitle: { ja: '設定', en: 'Settings', es: 'Configuración', fr: 'Paramètres', de: 'Einstellungen', zh: '设置', ko: '설정', pt: 'Configurações' },
-  providerLabel: { ja: 'AI プロバイダ', en: 'AI Provider', es: 'Proveedor de IA', fr: 'Fournisseur d\'IA', de: 'KI-Anbieter', zh: 'AI 提供商', ko: 'AI 제공자', pt: 'Provedor de IA' },
-  providerDesc: { ja: '使用するAIサービスを選択してください。', en: 'Choose which AI service to use.', es: 'Elija qué servicio de IA usar.', fr: 'Choisissez le service d\'IA à utiliser.', de: 'Wählen Sie den KI-Dienst, den Sie verwenden möchten.', zh: '选择要使用的AI服务。', ko: '사용할 AI 서비스를 선택하세요.', pt: 'Escolha qual serviço de IA usar.' },
   apiKeyLabel: { ja: 'API キー', en: 'API Key', es: 'Clave API', fr: 'Clé API', de: 'API-Schlüssel', zh: 'API 密钥', ko: 'API 키', pt: 'Chave de API' },
   apiKeyDesc: { ja: 'キーはこのブラウザのlocalStorageにのみ保存されます。', en: 'Your key is stored only in this browser.', es: 'Su clave se almacena solo en este navegador.', fr: 'Votre clé est stockée uniquement dans ce navigateur.', de: 'Ihr Schlüssel wird nur in diesem Browser gespeichert.', zh: '密钥仅存储在此浏览器中。', ko: '키는 이 브라우저에만 저장됩니다.', pt: 'Sua chave é armazenada apenas neste navegador.' },
-  apiKeyPlaceholder: { ja: 'sk-ant-...', en: 'sk-ant-...', es: 'sk-ant-...', fr: 'sk-ant-...', de: 'sk-ant-...', zh: 'sk-ant-...', ko: 'sk-ant-...', pt: 'sk-ant-...' },
   saveKey: { ja: 'キーを保存', en: 'Save Key', es: 'Guardar clave', fr: 'Enregistrer la clé', de: 'Schlüssel speichern', zh: '保存密钥', ko: '키 저장', pt: 'Salvar Chave' },
   saved: { ja: '保存しました!', en: 'Saved!', es: '¡Guardado!', fr: 'Enregistré !', de: 'Gespeichert!', zh: '已保存！', ko: '저장됨!', pt: 'Salvo!' },
-  providerKeyConfigured: { ja: '設定済み', en: 'Configured', es: 'Configurado', fr: 'Configuré', de: 'Konfiguriert', zh: '已配置', ko: '설정 완료', pt: 'Configurado' },
-  providerKeyNotSet: { ja: '未設定', en: 'Not set', es: 'No configurado', fr: 'Non configuré', de: 'Nicht festgelegt', zh: '未设置', ko: '미설정', pt: 'Não configurado' },
-  providerRecommended: { ja: '推奨・安定', en: 'Recommended & Stable', es: 'Recomendado y estable', fr: 'Recommandé et stable', de: 'Empfohlen & Stabil', zh: '推荐且稳定', ko: '추천 및 안정적', pt: 'Recomendado & Estável' },
-  providerDescGemini: { ja: '現在唯一の安定動作プロバイダ', en: 'Most stable and reliable option', es: 'Opción más estable y fiable', fr: 'Option la plus stable et fiable', de: 'Stabilste und zuverlässigste Option', zh: '目前唯一稳定运行的提供商', ko: '현재 가장 안정적이고 신뢰할 수 있는 옵션', pt: 'Opção mais estável e confiável' },
-  providerDescAnthropic: { ja: '高品質だがレート制限あり', en: 'High quality but rate-limited', es: 'Alta calidad pero con límite de tasa', fr: 'Haute qualité mais avec limite de débit', de: 'Hohe Qualität, aber ratenbegrenzt', zh: '高质量但有速率限制', ko: '고품질이지만 속도 제한 있음', pt: 'Alta qualidade, mas com limite de taxa' },
-  providerDescOpenai: { ja: '安定・中速', en: 'Stable & moderate speed', es: 'Estable y velocidad moderada', fr: 'Stable et vitesse modérée', de: 'Stabil & mittlere Geschwindigkeit', zh: '稳定、中速', ko: '안정적, 중간 속도', pt: 'Estável & velocidade moderada' },
-  providerClaudeWarning: { ja: '429エラー（レート制限超過）が頻発する場合があります', en: 'May frequently encounter 429 errors (rate limit exceeded)', es: 'Puede encontrar frecuentemente errores 429 (límite de tasa excedido)', fr: 'Peut fréquemment rencontrer des erreurs 429 (limite de débit dépassée)', de: 'Es können häufig 429-Fehler (Ratenlimit überschritten) auftreten', zh: '可能频繁出现429错误（超出速率限制）', ko: '429 오류(속도 제한 초과)가 자주 발생할 수 있습니다', pt: 'Pode encontrar frequentemente erros 429 (limite de taxa excedido)' },
-  providerOtherProviders: { ja: 'その他のプロバイダ', en: 'Other Providers', es: 'Otros proveedores', fr: 'Autres fournisseurs', de: 'Andere Anbieter', zh: '其他提供商', ko: '기타 제공자', pt: 'Outros Provedores' },
-  providerGetKeyAt: { ja: 'APIキーの取得先', en: 'Get your API key at', es: 'Obtenga su clave API en', fr: 'Obtenez votre clé API sur', de: 'API-Schlüssel erhalten unter', zh: '在此获取API密钥', ko: 'API 키 발급처', pt: 'Obtenha sua chave de API em' },
   uiLanguageLabel: { ja: 'UI言語', en: 'UI Language', es: 'Idioma de la interfaz', fr: 'Langue de l\'interface', de: 'UI-Sprache', zh: '界面语言', ko: 'UI 언어', pt: 'Idioma da Interface' },
   uiLanguageDesc: { ja: 'ナビゲーション・ボタン・ラベルなどの表示言語を変更します。', en: 'Change the display language for navigation, buttons, and labels.', es: 'Cambie el idioma de la navegación, botones y etiquetas.', fr: 'Changez la langue d\'affichage de la navigation, des boutons et des libellés.', de: 'Anzeigesprache für Navigation, Schaltflächen und Beschriftungen ändern.', zh: '更改导航、按钮和标签的显示语言。', ko: '내비게이션, 버튼, 라벨의 표시 언어를 변경합니다.', pt: 'Altere o idioma de exibição para navegação, botões e rótulos.' },
   outputLanguageLabel: { ja: '出力言語', en: 'Output Language', es: 'Idioma de salida', fr: 'Langue de sortie', de: 'Ausgabesprache', zh: '输出语言', ko: '출력 언어', pt: 'Idioma de Saída' },
   outputLanguageDesc: { ja: 'AIが生成するログ・Worklog・スナップショットの文章言語を設定します。UIには影響しません。', en: 'Set the language for AI-generated logs, worklogs, and snapshots. Does not affect UI.', es: 'Configure el idioma para los registros, worklogs y snapshots generados por IA. No afecta la interfaz.', fr: 'Définissez la langue des logs, worklogs et snapshots générés par l\'IA. N\'affecte pas l\'interface.', de: 'Sprache für KI-generierte Logs, Worklogs und Snapshots festlegen. Hat keinen Einfluss auf die Benutzeroberfläche.', zh: '设置AI生成的日志、Worklog和快照的语言。不影响界面。', ko: 'AI가 생성하는 로그, Worklog, 스냅샷의 언어를 설정합니다. UI에는 영향을 주지 않습니다.', pt: 'Defina o idioma para registros, worklogs e snapshots gerados por IA. Não afeta a interface.' },
-  languageLabel: { ja: '出力言語', en: 'Output Language', es: 'Idioma de salida', fr: 'Langue de sortie', de: 'Ausgabesprache', zh: '输出语言', ko: '출력 언어', pt: 'Idioma de Saída' },
-  languageDesc: { ja: 'ログ抽出の出力言語を設定します。', en: 'Set the output language for log extraction.', es: 'Configure el idioma de salida para la extracción de registros.', fr: 'Définissez la langue de sortie pour l\'extraction des logs.', de: 'Ausgabesprache für die Log-Extraktion festlegen.', zh: '设置日志提取的输出语言。', ko: '로그 추출의 출력 언어를 설정합니다.', pt: 'Defina o idioma de saída para extração de registros.' },
-  langJa: { ja: '日本語', en: 'Japanese', es: 'Japonés', fr: 'Japonais', de: 'Japanisch', zh: '日语', ko: '일본어', pt: 'Japonês' },
-  langEn: { ja: '英語', en: 'English', es: 'Inglés', fr: 'Anglais', de: 'Englisch', zh: '英语', ko: '영어', pt: 'Inglês' },
   langAuto: { ja: '自動検出', en: 'Auto-detect', es: 'Detección automática', fr: 'Détection automatique', de: 'Automatische Erkennung', zh: '自动检测', ko: '자동 감지', pt: 'Detecção automática' },
 
   // Theme
@@ -382,7 +332,6 @@ const labels = {
   newProject: { ja: 'プロジェクト追加', en: 'Add Project', es: 'Agregar proyecto', fr: 'Ajouter un projet', de: 'Projekt hinzufügen', zh: '添加项目', ko: '프로젝트 추가', pt: 'Adicionar Projeto' },
   projectNamePlaceholder: { ja: 'プロジェクト名', en: 'Project name', es: 'Nombre del proyecto', fr: 'Nom du projet', de: 'Projektname', zh: '项目名称', ko: '프로젝트 이름', pt: 'Nome do projeto' },
   allLogs: { ja: 'すべてのログ', en: 'All Logs', es: 'Todos los registros', fr: 'Tous les logs', de: 'Alle Logs', zh: '所有日志', ko: '모든 로그', pt: 'Todos os Registros' },
-  projectLabel: { ja: 'プロジェクト', en: 'Project', es: 'Proyecto', fr: 'Projet', de: 'Projekt', zh: '项目', ko: '프로젝트', pt: 'Projeto' },
   noProject: { ja: 'プロジェクトなし', en: 'No project', es: 'Sin proyecto', fr: 'Aucun projet', de: 'Kein Projekt', zh: '无项目', ko: '프로젝트 없음', pt: 'Sem projeto' },
   renameProject: { ja: '名前を変更', en: 'Rename', es: 'Renombrar', fr: 'Renommer', de: 'Umbenennen', zh: '重命名', ko: '이름 변경', pt: 'Renomear' },
   pinnedProjects: { ja: 'ピン留めプロジェクト', en: 'Pinned Projects', es: 'Proyectos fijados', fr: 'Projets épinglés', de: 'Angeheftete Projekte', zh: '已固定项目', ko: '고정된 프로젝트', pt: 'Projetos Fixados' },
@@ -416,23 +365,19 @@ const labels = {
   projectSummaryListTitle: { ja: 'Project Summary', en: 'Project Summary', es: 'Project Summary', fr: 'Project Summary', de: 'Project Summary', zh: 'Project Summary', ko: 'Project Summary', pt: 'Project Summary' },
   projectSummaryListDesc: { ja: 'プロジェクトごとの要約を確認・生成できます。', en: 'View and generate summaries for each project.', es: 'Consulte y genere resúmenes para cada proyecto.', fr: 'Consultez et générez des résumés pour chaque projet.', de: 'Zusammenfassungen für jedes Projekt anzeigen und erstellen.', zh: '查看和生成每个项目的摘要。', ko: '각 프로젝트의 요약을 확인하고 생성할 수 있습니다.', pt: 'Visualize e gere resumos para cada projeto.' },
   projectSummaryExists: { ja: '作成済み', en: 'Created', es: 'Creado', fr: 'Créé', de: 'Erstellt', zh: '已创建', ko: '생성됨', pt: 'Criado' },
-  projectSummaryNotYet: { ja: '未作成', en: 'Not created', es: 'No creado', fr: 'Non créé', de: 'Noch nicht erstellt', zh: '未创建', ko: '미생성', pt: 'Não criado' },
   projectSummaryCreate: { ja: 'Summary を作成', en: 'Create Summary', es: 'Crear resumen', fr: 'Créer un résumé', de: 'Summary erstellen', zh: '创建 Summary', ko: 'Summary 생성', pt: 'Criar Summary' },
   projectSummaryNew: { ja: '+ Create Summary', en: '+ Create Summary', es: '+ Create Summary', fr: '+ Create Summary', de: '+ Create Summary', zh: '+ Create Summary', ko: '+ Create Summary', pt: '+ Create Summary' },
   projectSummarySelectProject: { ja: 'プロジェクトを選択', en: 'Select a project', es: 'Seleccionar un proyecto', fr: 'Sélectionner un projet', de: 'Projekt auswählen', zh: '选择项目', ko: '프로젝트 선택', pt: 'Selecionar um projeto' },
   projectSummaryNoSummaries: { ja: '作成済みの Summary はまだありません。', en: 'No summaries created yet', es: 'Aún no se han creado resúmenes.', fr: 'Aucun résumé créé pour le moment.', de: 'Noch keine Zusammenfassungen erstellt', zh: '尚未创建任何Summary。', ko: '아직 생성된 Summary가 없습니다.', pt: 'Nenhum resumo criado ainda' },
   projectSummaryNoSummariesDesc: { ja: '「+ Create Summary」からプロジェクトを選んで生成しましょう。', en: 'Choose a project and generate one with "+ Create Summary".', es: 'Elija un proyecto y genere uno con "+ Create Summary".', fr: 'Choisissez un projet et générez-en un avec « + Create Summary ».', de: 'Wählen Sie ein Projekt und erstellen Sie eine mit \'+ Create Summary\'.', zh: '点击「+ Create Summary」选择项目并生成。', ko: '"+ Create Summary"에서 프로젝트를 선택하여 생성하세요.', pt: 'Escolha um projeto e gere um com \'+ Create Summary\'.' },
   projectSummaryOpen: { ja: 'Summary を開く', en: 'Open Summary', es: 'Abrir resumen', fr: 'Ouvrir le résumé', de: 'Summary öffnen', zh: '打开 Summary', ko: 'Summary 열기', pt: 'Abrir Summary' },
-  projectSummaryUpdate: { ja: 'Summary を更新', en: 'Update Summary', es: 'Actualizar resumen', fr: 'Mettre à jour le résumé', de: 'Summary aktualisieren', zh: '更新 Summary', ko: 'Summary 업데이트', pt: 'Atualizar Summary' },
   mnOverview: { ja: '概要', en: 'Overview', es: 'Resumen general', fr: 'Vue d\'ensemble', de: 'Übersicht', zh: '概览', ko: '개요', pt: 'Visão Geral' },
-  mnCurrentStatus: { ja: '現在の状態', en: 'Current Status', es: 'Estado actual', fr: 'État actuel', de: 'Aktueller Status', zh: '当前状态', ko: '현재 상태', pt: 'Status Atual' },
   mnDecisions: { ja: '決定事項', en: 'Decisions', es: 'Decisiones', fr: 'Décisions', de: 'Entscheidungen', zh: '决策事项', ko: '결정 사항', pt: 'Decisões' },
   mnOpenIssues: { ja: '未解決の課題', en: 'Open Issues', es: 'Problemas abiertos', fr: 'Problèmes en cours', de: 'Offene Probleme', zh: '未解决问题', ko: '미해결 이슈', pt: 'Questões Abertas' },
   mnNextActions: { ja: '次のアクション', en: 'Next Actions', es: 'Próximas acciones', fr: 'Prochaines actions', de: 'Nächste Schritte', zh: '下一步行动', ko: '다음 작업', pt: 'Próximas Ações' },
   mnRelatedLogs: { ja: '関連ログ', en: 'Related Logs', es: 'Registros relacionados', fr: 'Logs associés', de: 'Verwandte Logs', zh: '相关日志', ko: '관련 로그', pt: 'Registros Relacionados' },
   mnGenerate: { ja: 'Project Summary を生成', en: 'Generate Project Summary', es: 'Generar Project Summary', fr: 'Générer le Project Summary', de: 'Project Summary generieren', zh: '生成 Project Summary', ko: 'Project Summary 생성', pt: 'Gerar Project Summary' },
   mnRegenerate: { ja: 'Project Summary を再生成', en: 'Regenerate Project Summary', es: 'Regenerar Project Summary', fr: 'Régénérer le Project Summary', de: 'Project Summary neu generieren', zh: '重新生成 Project Summary', ko: 'Project Summary 재생성', pt: 'Regenerar Project Summary' },
-  mnGenerating: { ja: '生成中...', en: 'Generating...', es: 'Generando...', fr: 'Génération en cours...', de: 'Wird generiert...', zh: '生成中...', ko: '생성 중...', pt: 'Gerando...' },
   mnExtracting: (cur: number, total: number) => ({
     ja: `ログを分析中 (${cur}/${total})`,
     en: `Analyzing logs (${cur}/${total})`,
@@ -456,19 +401,16 @@ const labels = {
   }),
   mnPreviewTitle: { ja: 'AI生成サマリー', en: 'AI-Generated Summary', es: 'Resumen generado por IA', fr: 'Résumé généré par l\'IA', de: 'KI-generierte Zusammenfassung', zh: 'AI生成摘要', ko: 'AI 생성 요약', pt: 'Resumo Gerado por IA' },
   mnAccept: { ja: '保存', en: 'Save', es: 'Guardar', fr: 'Enregistrer', de: 'Speichern', zh: '保存', ko: '저장', pt: 'Salvar' },
-  mnDiscard: { ja: '破棄', en: 'Discard', es: 'Descartar', fr: 'Abandonner', de: 'Verwerfen', zh: '丢弃', ko: '폐기', pt: 'Descartar' },
   mnRefine: { ja: 'AIに修正依頼', en: 'Refine with AI', es: 'Mejorar con IA', fr: 'Affiner avec l\'IA', de: 'Mit KI verfeinern', zh: '请求AI修改', ko: 'AI에 수정 요청', pt: 'Refinar com IA' },
   mnRefineInstruction: { ja: '修正内容を入力...', en: 'Describe what to change...', es: 'Describa qué cambiar...', fr: 'Décrivez ce qu\'il faut changer...', de: 'Beschreiben Sie die gewünschten Änderungen...', zh: '输入修改内容...', ko: '수정 내용을 입력하세요...', pt: 'Descreva o que deseja alterar...' },
   mnRefineSend: { ja: '送信', en: 'Send', es: 'Enviar', fr: 'Envoyer', de: 'Senden', zh: '发送', ko: '전송', pt: 'Enviar' },
   mnRefineCancel: { ja: 'キャンセル', en: 'Cancel', es: 'Cancelar', fr: 'Annuler', de: 'Abbrechen', zh: '取消', ko: '취소', pt: 'Cancelar' },
   mnRefining: { ja: 'AIが修正中...', en: 'AI is refining...', es: 'La IA está refinando...', fr: 'L\'IA affine...', de: 'KI verfeinert...', zh: 'AI修改中...', ko: 'AI 수정 중...', pt: 'IA está refinando...' },
-  mnEdited: { ja: '編集済み', en: 'Edited', es: 'Editado', fr: 'Modifié', de: 'Bearbeitet', zh: '已编辑', ko: '편집됨', pt: 'Editado' },
   mnEdit: { ja: '編集', en: 'Edit', es: 'Editar', fr: 'Modifier', de: 'Bearbeiten', zh: '编辑', ko: '편집', pt: 'Editar' },
   mnEditMode: { ja: '編集中', en: 'Editing', es: 'Editando', fr: 'En cours de modification', de: 'Bearbeitungsmodus', zh: '编辑中', ko: '편집 중', pt: 'Editando' },
   mnEditCancel: { ja: 'キャンセル', en: 'Cancel', es: 'Cancelar', fr: 'Annuler', de: 'Abbrechen', zh: '取消', ko: '취소', pt: 'Cancelar' },
   mnAddItem: { ja: '+ 項目を追加', en: '+ Add item', es: '+ Agregar elemento', fr: '+ Ajouter un élément', de: '+ Element hinzufügen', zh: '+ 添加项目', ko: '+ 항목 추가', pt: '+ Adicionar item' },
   mnRemoveItem: { ja: '削除', en: 'Remove', es: 'Eliminar', fr: 'Supprimer', de: 'Entfernen', zh: '删除', ko: '삭제', pt: 'Remover' },
-  mnExport: { ja: 'エクスポート', en: 'Export', es: 'Exportar', fr: 'Exporter', de: 'Exportieren', zh: '导出', ko: '내보내기', pt: 'Exportar' },
   mnCopy: { ja: 'コピー', en: 'Copy', es: 'Copiar', fr: 'Copier', de: 'Kopieren', zh: '复制', ko: '복사', pt: 'Copiar' },
   mnCopied: { ja: 'コピーしました', en: 'Copied!', es: '¡Copiado!', fr: 'Copié !', de: 'Kopiert!', zh: '已复制', ko: '복사됨!', pt: 'Copiado!' },
   mnDownloadMd: { ja: '.md をダウンロード', en: 'Download .md', es: 'Descargar .md', fr: 'Télécharger .md', de: '.md herunterladen', zh: '下载 .md', ko: '.md 다운로드', pt: 'Baixar .md' },
@@ -499,11 +441,6 @@ const labels = {
   // AI Context
   aiContextTitle: { ja: 'AI Context', en: 'AI Context', es: 'AI Context', fr: 'AI Context', de: 'AI Context', zh: 'AI Context', ko: 'AI Context', pt: 'AI Context' },
   aiContextEmpty: { ja: 'AI Context が未生成です。Project Summary を保存すると自動生成されます。', en: 'AI Context not generated yet. It will be auto-generated when you save a Project Summary.', es: 'AI Context aún no generado. Se generará automáticamente al guardar un Project Summary.', fr: 'AI Context pas encore généré. Il sera généré automatiquement lors de l\'enregistrement d\'un Project Summary.', de: 'AI Context noch nicht generiert. Wird automatisch erstellt, wenn Sie ein Project Summary speichern.', zh: 'AI Context 尚未生成。保存 Project Summary 后将自动生成。', ko: 'AI Context가 아직 생성되지 않았습니다. Project Summary를 저장하면 자동 생성됩니다.', pt: 'AI Context ainda não gerado. Será gerado automaticamente quando você salvar um Project Summary.' },
-  aiContextSave: { ja: '保存', en: 'Save', es: 'Guardar', fr: 'Enregistrer', de: 'Speichern', zh: '保存', ko: '저장', pt: 'Salvar' },
-  aiContextSaved: { ja: 'AI Context を保存しました', en: 'AI Context saved', es: 'AI Context guardado', fr: 'AI Context enregistré', de: 'AI Context gespeichert', zh: 'AI Context 已保存', ko: 'AI Context 저장됨', pt: 'AI Context salvo' },
-  aiContextRegenerate: { ja: '再生成', en: 'Regenerate', es: 'Regenerar', fr: 'Régénérer', de: 'Neu generieren', zh: '重新生成', ko: '재생성', pt: 'Regenerar' },
-  aiContextRegenerating: { ja: 'AI Context を生成中...', en: 'Generating AI Context...', es: 'Generando AI Context...', fr: 'Génération de l\'AI Context...', de: 'AI Context wird generiert...', zh: '正在生成 AI Context...', ko: 'AI Context 생성 중...', pt: 'Gerando AI Context...' },
-  aiContextGenerated: { ja: 'AI Context を生成しました', en: 'AI Context generated', es: 'AI Context generado', fr: 'AI Context généré', de: 'AI Context generiert', zh: 'AI Context 已生成', ko: 'AI Context 생성됨', pt: 'AI Context gerado' },
   aiContextNeeded: { ja: 'Project Summary から AI Context を生成してください', en: 'Please generate AI Context from Project Summary', es: 'Por favor, genere el AI Context desde el Project Summary', fr: 'Veuillez générer l\'AI Context à partir du Project Summary', de: 'Bitte generieren Sie AI Context aus dem Project Summary', zh: '请从 Project Summary 生成 AI Context', ko: 'Project Summary에서 AI Context를 생성해 주세요', pt: 'Por favor, gere o AI Context a partir do Project Summary' },
   addToProjectFirst: { ja: '先にプロジェクトに追加してください', en: 'Add to a project first', es: 'Primero agregue a un proyecto', fr: 'Ajoutez d\'abord à un projet', de: 'Bitte zuerst einem Projekt hinzufügen', zh: '请先添加到项目', ko: '먼저 프로젝트에 추가해 주세요', pt: 'Adicione a um projeto primeiro' },
   updateSummaryPrompt: { ja: 'Project Summary を更新しますか？', en: 'Update Project Summary?', es: '¿Actualizar el Project Summary?', fr: 'Mettre à jour le Project Summary ?', de: 'Project Summary aktualisieren?', zh: '是否更新 Project Summary？', ko: 'Project Summary를 업데이트하시겠습니까?', pt: 'Atualizar Project Summary?' },
@@ -528,7 +465,6 @@ const labels = {
   classifyPickOther: { ja: '別のプロジェクトを選ぶ', en: 'Choose other', es: 'Elegir otro', fr: 'Choisir un autre', de: 'Anderes wählen', zh: '选择其他', ko: '다른 프로젝트 선택', pt: 'Escolher outro' },
   classifyDismiss: { ja: 'スキップ', en: 'Skip', es: 'Omitir', fr: 'Ignorer', de: 'Überspringen', zh: '跳过', ko: '건너뛰기', pt: 'Pular' },
   classifying: { ja: 'プロジェクトを推定中...', en: 'Classifying project...', es: 'Clasificando proyecto...', fr: 'Classification du projet...', de: 'Projekt wird klassifiziert...', zh: '正在推断项目...', ko: '프로젝트 분류 중...', pt: 'Classificando projeto...' },
-  autoAssigned: { ja: 'プロジェクトに自動割り当てしました', en: 'Auto-assigned to project', es: 'Asignado automáticamente al proyecto', fr: 'Assigné automatiquement au projet', de: 'Automatisch dem Projekt zugewiesen', zh: '已自动分配到项目', ko: '프로젝트에 자동 할당됨', pt: 'Atribuído automaticamente ao projeto' },
 
   // Todos
   todos: { ja: 'TODO', en: 'TODO', es: 'TODO', fr: 'TODO', de: 'TODO', zh: 'TODO', ko: 'TODO', pt: 'TODO' },
@@ -556,7 +492,6 @@ const labels = {
   todoPriorityMedium: { ja: '中', en: 'Medium', es: 'Media', fr: 'Moyenne', de: 'Mittel', zh: '中', ko: '중간', pt: 'Média' },
   todoPriorityLow: { ja: '低', en: 'Low', es: 'Baja', fr: 'Basse', de: 'Niedrig', zh: '低', ko: '낮음', pt: 'Baixa' },
   todoPriorityNone: { ja: '未設定', en: 'None', es: 'Sin definir', fr: 'Non définie', de: 'Keine', zh: '未设置', ko: '미설정', pt: 'Nenhuma' },
-  todoDeleteConfirm: { ja: 'このTODOを削除しますか？', en: 'Delete this TODO?', es: '¿Eliminar este TODO?', fr: 'Supprimer ce TODO ?', de: 'Dieses TODO löschen?', zh: '确定删除此TODO？', ko: '이 TODO를 삭제하시겠습니까?', pt: 'Excluir este TODO?' },
   todoDueDate: { ja: '期限', en: 'Due', es: 'Vence', fr: 'Échéance', de: 'Fällig', zh: '截止日期', ko: '마감일', pt: 'Vencimento' },
   todoDueSet: { ja: '設定', en: 'Set', es: 'Definir', fr: 'Définir', de: 'Festlegen', zh: '设置', ko: '설정', pt: 'Definir' },
   todoDueRemove: { ja: '期限を削除', en: 'Remove due date', es: 'Eliminar fecha límite', fr: 'Supprimer la date d\'échéance', de: 'Fälligkeitsdatum entfernen', zh: '移除截止日期', ko: '마감일 삭제', pt: 'Remover data de vencimento' },
@@ -566,7 +501,6 @@ const labels = {
   todoOverdue: { ja: '期限切れ', en: 'Overdue', es: 'Vencido', fr: 'En retard', de: 'Überfällig', zh: '已逾期', ko: '기한 초과', pt: 'Atrasado' },
   todoOverdueBadge: { ja: '期限切れ', en: 'Overdue', es: 'Vencido', fr: 'En retard', de: 'Überfällig', zh: '已过期', ko: '기한 초과', pt: 'Atrasado' },
   todoEdit: { ja: '編集', en: 'Edit', es: 'Editar', fr: 'Modifier', de: 'Bearbeiten', zh: '编辑', ko: '편집', pt: 'Editar' },
-  todoEditPrompt: { ja: '内容を編集', en: 'Edit text', es: 'Editar texto', fr: 'Modifier le texte', de: 'Text bearbeiten', zh: '编辑内容', ko: '내용 편집', pt: 'Editar texto' },
   todoPin: { ja: 'ピン留め', en: 'Pin', es: 'Fijar', fr: 'Épingler', de: 'Anheften', zh: '固定', ko: '고정', pt: 'Fixar' },
   todoUnpin: { ja: 'ピン解除', en: 'Unpin', es: 'Desfijar', fr: 'Désépingler', de: 'Loslösen', zh: '取消固定', ko: '고정 해제', pt: 'Desafixar' },
   todoChangePriority: { ja: '優先度を変更', en: 'Change Priority', es: 'Cambiar prioridad', fr: 'Changer la priorité', de: 'Priorität ändern', zh: '更改优先级', ko: '우선순위 변경', pt: 'Alterar Prioridade' },
@@ -605,15 +539,11 @@ const labels = {
   addLogsEmptyHint: { ja: '既存のログをこのプロジェクトに追加しましょう', en: 'Add existing logs to this project', es: 'Agregue registros existentes a este proyecto', fr: 'Ajoutez des logs existants à ce projet', de: 'Vorhandene Logs zu diesem Projekt hinzufügen', zh: '将现有日志添加到此项目', ko: '기존 로그를 이 프로젝트에 추가하세요', pt: 'Adicione registros existentes a este projeto' },
 
   // Context menu
-  ctxStar: { ja: 'スター', en: 'Star', es: 'Estrella', fr: 'Étoile', de: 'Stern', zh: '加星', ko: '별표', pt: 'Favoritar' },
-  ctxUnstar: { ja: 'スター解除', en: 'Unstar', es: 'Quitar estrella', fr: 'Retirer l\'étoile', de: 'Stern entfernen', zh: '取消加星', ko: '별표 해제', pt: 'Desfavoritar' },
   ctxPin: { ja: 'ピン留め', en: 'Pin', es: 'Fijar', fr: 'Épingler', de: 'Anheften', zh: '固定', ko: '고정', pt: 'Fixar' },
   ctxUnpin: { ja: 'ピン解除', en: 'Unpin', es: 'Desfijar', fr: 'Désépingler', de: 'Loslösen', zh: '取消固定', ko: '고정 해제', pt: 'Desafixar' },
   ctxRename: { ja: '名前を変更', en: 'Rename', es: 'Renombrar', fr: 'Renommer', de: 'Umbenennen', zh: '重命名', ko: '이름 변경', pt: 'Renomear' },
   ctxChangeProject: { ja: 'プロジェクトを変更', en: 'Change Project', es: 'Cambiar proyecto', fr: 'Changer de projet', de: 'Projekt ändern', zh: '更改项目', ko: '프로젝트 변경', pt: 'Alterar Projeto' },
   ctxRemoveFromProject: { ja: 'プロジェクトから削除', en: 'Remove from Project', es: 'Quitar del proyecto', fr: 'Retirer du projet', de: 'Aus Projekt entfernen', zh: '从项目移除', ko: '프로젝트에서 제거', pt: 'Remover do Projeto' },
-  ctxDelete: { ja: '削除', en: 'Delete', es: 'Eliminar', fr: 'Supprimer', de: 'Löschen', zh: '删除', ko: '삭제', pt: 'Excluir' },
-  ctxRenamePrompt: { ja: '新しい名前を入力してください', en: 'Enter a new name', es: 'Ingrese un nuevo nombre', fr: 'Entrez un nouveau nom', de: 'Neuen Namen eingeben', zh: '请输入新名称', ko: '새 이름을 입력하세요', pt: 'Digite um novo nome' },
 
   // List toolbar shared
   sortLabel: { ja: '並べ替え', en: 'Sort', es: 'Ordenar', fr: 'Trier', de: 'Sortieren', zh: '排序', ko: '정렬', pt: 'Ordenar' },
@@ -644,10 +574,8 @@ const labels = {
   logDownloadJson: { ja: '.json をダウンロード', en: 'Download .json', es: 'Descargar .json', fr: 'Télécharger .json', de: '.json herunterladen', zh: '下载 .json', ko: '.json 다운로드', pt: 'Baixar .json' },
 
   // Source reference
-  sourceRefTitle: { ja: '元ソース', en: 'Source', es: 'Fuente', fr: 'Source', de: 'Quelle', zh: '来源', ko: '소스', pt: 'Fonte' },
 
   // Trash
-  navTrash: { ja: 'ゴミ箱', en: 'Trash', es: 'Papelera', fr: 'Corbeille', de: 'Papierkorb', zh: '回收站', ko: '휴지통', pt: 'Lixeira' },
   trashTitle: { ja: 'ゴミ箱', en: 'Trash', es: 'Papelera', fr: 'Corbeille', de: 'Papierkorb', zh: '回收站', ko: '휴지통', pt: 'Lixeira' },
   trashEmpty: { ja: 'ゴミ箱は空です', en: 'Trash is empty.', es: 'La papelera está vacía.', fr: 'La corbeille est vide.', de: 'Papierkorb ist leer.', zh: '回收站为空', ko: '휴지통이 비어 있습니다.', pt: 'A lixeira está vazia.' },
   trashEmptyDesc: { ja: '削除したアイテムはここに30日間保持されます。', en: 'Deleted items are kept here for 30 days.', es: 'Los elementos eliminados se conservan aquí durante 30 días.', fr: 'Les éléments supprimés sont conservés ici pendant 30 jours.', de: 'Gelöschte Elemente werden hier 30 Tage lang aufbewahrt.', zh: '已删除的项目将在此保留30天。', ko: '삭제된 항목은 30일 동안 보관됩니다.', pt: 'Itens excluídos são mantidos aqui por 30 dias.' },
@@ -664,7 +592,6 @@ const labels = {
     ko: `${n}일 남음`,
     pt: `${n} dias restantes`,
   }),
-  trashMoveConfirm: { ja: 'ゴミ箱に移動しますか？', en: 'Move to trash?', es: '¿Mover a la papelera?', fr: 'Déplacer vers la corbeille ?', de: 'In den Papierkorb verschieben?', zh: '移至回收站？', ko: '휴지통으로 이동하시겠습니까?', pt: 'Mover para a lixeira?' },
   trashEmptyAll: { ja: 'ゴミ箱を空にする', en: 'Empty Trash', es: 'Vaciar papelera', fr: 'Vider la corbeille', de: 'Papierkorb leeren', zh: '清空回收站', ko: '휴지통 비우기', pt: 'Esvaziar Lixeira' },
   trashEmptyAllConfirm: { ja: 'ゴミ箱を空にしますか？この操作は取り消せません。', en: 'Empty trash? This cannot be undone.', es: '¿Vaciar la papelera? Esta acción no se puede deshacer.', fr: 'Vider la corbeille ? Cette action est irréversible.', de: 'Papierkorb leeren? Dies kann nicht rückgängig gemacht werden.', zh: '清空回收站？此操作无法撤消。', ko: '휴지통을 비우시겠습니까? 이 작업은 되돌릴 수 없습니다.', pt: 'Esvaziar lixeira? Esta ação não pode ser desfeita.' },
   trashFilterAll: { ja: 'すべて', en: 'All', es: 'Todos', fr: 'Tous', de: 'Alle', zh: '全部', ko: '전체', pt: 'Todos' },
@@ -680,12 +607,10 @@ const labels = {
   accountMenuSettings: { ja: '設定', en: 'Settings', es: 'Configuración', fr: 'Paramètres', de: 'Einstellungen', zh: '设置', ko: '설정', pt: 'Configurações' },
   accountMenuTrash: { ja: 'ゴミ箱', en: 'Trash', es: 'Papelera', fr: 'Corbeille', de: 'Papierkorb', zh: '回收站', ko: '휴지통', pt: 'Lixeira' },
   accountMenuHelp: { ja: 'ヘルプ', en: 'Help', es: 'Ayuda', fr: 'Aide', de: 'Hilfe', zh: '帮助', ko: '도움말', pt: 'Ajuda' },
-  accountMenuLogout: { ja: 'ログアウト', en: 'Log out', es: 'Cerrar sesión', fr: 'Déconnexion', de: 'Abmelden', zh: '退出登录', ko: '로그아웃', pt: 'Sair' },
   accountMenuUser: { ja: 'ユーザー', en: 'User', es: 'Usuario', fr: 'Utilisateur', de: 'Benutzer', zh: '用户', ko: '사용자', pt: 'Usuário' },
   accountMenuPlan: { ja: 'Free', en: 'Free', es: 'Free', fr: 'Free', de: 'Free', zh: 'Free', ko: 'Free', pt: 'Free' },
 
   // File dates
-  fileModified: { ja: '更新日', en: 'Modified', es: 'Modificado', fr: 'Modifié', de: 'Geändert', zh: '修改日期', ko: '수정일', pt: 'Modificado' },
 
   // Related logs
   relatedLogs: { ja: '関連ログ', en: 'Related Logs', es: 'Registros relacionados', fr: 'Logs associés', de: 'Verwandte Logs', zh: '相关日志', ko: '관련 로그', pt: 'Registros Relacionados' },
@@ -698,7 +623,6 @@ const labels = {
   mnHistoryRestoreConfirm: { ja: 'このバージョンを復元しますか？現在の内容は履歴に保存されます。', en: 'Restore this version? Current content will be saved to history.', es: '¿Restaurar esta versión? El contenido actual se guardará en el historial.', fr: 'Restaurer cette version ? Le contenu actuel sera sauvegardé dans l\'historique.', de: 'Diese Version wiederherstellen? Der aktuelle Inhalt wird im Verlauf gespeichert.', zh: '恢复此版本？当前内容将保存到历史记录。', ko: '이 버전을 복원하시겠습니까? 현재 내용은 히스토리에 저장됩니다.', pt: 'Restaurar esta versão? O conteúdo atual será salvo no histórico.' },
   mnHistoryCurrent: { ja: '現在のバージョン', en: 'Current version', es: 'Versión actual', fr: 'Version actuelle', de: 'Aktuelle Version', zh: '当前版本', ko: '현재 버전', pt: 'Versão atual' },
   mnHistoryRestored: { ja: '復元しました', en: 'Restored', es: 'Restaurado', fr: 'Restauré', de: 'Wiederhergestellt', zh: '已恢复', ko: '복원됨', pt: 'Restaurado' },
-  mnRefineComplete: { ja: '修正完了', en: 'Refinement complete', es: 'Refinamiento completado', fr: 'Affinement terminé', de: 'Verfeinerung abgeschlossen', zh: '修改完成', ko: '수정 완료', pt: 'Refinamento concluído' },
   mnSaved: { ja: '保存しました', en: 'Saved', es: 'Guardado', fr: 'Enregistré', de: 'Gespeichert', zh: '已保存', ko: '저장됨', pt: 'Salvo' },
   mnLastUpdated: { ja: '最終更新', en: 'Last updated', es: 'Última actualización', fr: 'Dernière mise à jour', de: 'Zuletzt aktualisiert', zh: '最后更新', ko: '마지막 업데이트', pt: 'Última atualização' },
 
@@ -738,12 +662,10 @@ const labels = {
   timelineNextDay: { ja: '次の日', en: 'Next day', es: 'Día siguiente', fr: 'Jour suivant', de: 'Nächster Tag', zh: '后一天', ko: '다음 날', pt: 'Próximo dia' },
 
   // Log detail
-  titleUpdated: { ja: 'タイトルを更新しました', en: 'Title updated', es: 'Título actualizado', fr: 'Titre mis à jour', de: 'Titel aktualisiert', zh: '标题已更新', ko: '제목이 업데이트되었습니다', pt: 'Título atualizado' },
   memoSection: { ja: 'メモ', en: 'Notes', es: 'Notas', fr: 'Notes', de: 'Notizen', zh: '备注', ko: '메모', pt: 'Notas' },
   memoPlaceholder: { ja: 'メモを追加...', en: 'Add a note...', es: 'Agregar una nota...', fr: 'Ajouter une note...', de: 'Notiz hinzufügen...', zh: '添加备注...', ko: '메모 추가...', pt: 'Adicionar uma nota...' },
   memoSave: { ja: '保存', en: 'Save', es: 'Guardar', fr: 'Enregistrer', de: 'Speichern', zh: '保存', ko: '저장', pt: 'Salvar' },
   memoEdit: { ja: '編集', en: 'Edit', es: 'Editar', fr: 'Modifier', de: 'Bearbeiten', zh: '编辑', ko: '편집', pt: 'Editar' },
-  memoSaved: { ja: 'メモを保存しました', en: 'Note saved', es: 'Nota guardada', fr: 'Note enregistrée', de: 'Notiz gespeichert', zh: '备注已保存', ko: '메모 저장됨', pt: 'Nota salva' },
   tagFilter: { ja: 'タグで絞り込み中', en: 'Filtering by tag', es: 'Filtrando por etiqueta', fr: 'Filtrage par étiquette', de: 'Filtern nach Tag', zh: '按标签筛选中', ko: '태그로 필터링 중', pt: 'Filtrando por tag' },
   logCreatedAt: { ja: '作成', en: 'Created', es: 'Creado', fr: 'Créé', de: 'Erstellt', zh: '创建', ko: '생성', pt: 'Criado' },
   logUpdatedAt: { ja: '更新', en: 'Updated', es: 'Actualizado', fr: 'Mis à jour', de: 'Aktualisiert', zh: '更新', ko: '업데이트', pt: 'Atualizado' },
@@ -792,7 +714,6 @@ const labels = {
   dateFilterToday: { ja: '今日', en: 'Today', es: 'Hoy', fr: 'Aujourd\'hui', de: 'Heute', zh: '今天', ko: '오늘', pt: 'Hoje' },
   dateFilterThisWeek: { ja: '今週', en: 'This week', es: 'Esta semana', fr: 'Cette semaine', de: 'Diese Woche', zh: '本周', ko: '이번 주', pt: 'Esta semana' },
   dateFilterThisMonth: { ja: '今月', en: 'This month', es: 'Este mes', fr: 'Ce mois', de: 'Dieser Monat', zh: '本月', ko: '이번 달', pt: 'Este mês' },
-  dateFilterCustom: { ja: 'カスタム', en: 'Custom', es: 'Personalizado', fr: 'Personnalisé', de: 'Benutzerdefiniert', zh: '自定义', ko: '사용자 지정', pt: 'Personalizado' },
   dateFilterClear: { ja: 'クリア', en: 'Clear', es: 'Borrar', fr: 'Effacer', de: 'Löschen', zh: '清除', ko: '지우기', pt: 'Limpar' },
 
   // Duplicate
@@ -883,7 +804,6 @@ const labels = {
 
   // Handoff copy
   copyHandoff: { ja: 'スナップショットをコピー', en: 'Copy Snapshot', es: 'Copiar Snapshot', fr: 'Copier le Snapshot', de: 'Snapshot kopieren', zh: '复制快照', ko: '스냅샷 복사', pt: 'Copiar Snapshot' },
-  copyHandoffDone: { ja: 'コピーしました ✓', en: 'Copied ✓', es: 'Copiado ✓', fr: 'Copié ✓', de: 'Kopiert ✓', zh: '已复制 ✓', ko: '복사됨 ✓', pt: 'Copiado ✓' },
 
   // Stale TODO
   staleTodoBanner: (n: number) => ({
@@ -1008,14 +928,8 @@ const labels = {
   }),
 
   // Project activity chart
-  projectChartTitle: { ja: 'プロジェクト別活動量', en: 'Project Activity', es: 'Actividad por proyecto', fr: 'Activité par projet', de: 'Projektaktivität', zh: '项目活动量', ko: '프로젝트별 활동량', pt: 'Atividade por Projeto' },
-  projectChartPeriodWeek: { ja: '今週', en: 'This Week', es: 'Esta semana', fr: 'Cette semaine', de: 'Diese Woche', zh: '本周', ko: '이번 주', pt: 'Esta Semana' },
-  projectChartPeriodMonth: { ja: '今月', en: 'This Month', es: 'Este mes', fr: 'Ce mois', de: 'Dieser Monat', zh: '本月', ko: '이번 달', pt: 'Este Mês' },
-  projectChartPeriodAll: { ja: '全期間', en: 'All Time', es: 'Todo el tiempo', fr: 'Depuis le début', de: 'Gesamtzeitraum', zh: '全部时间', ko: '전체 기간', pt: 'Todo o Período' },
-  projectChartLogs: { ja: 'ログ数', en: 'Logs', es: 'Registros', fr: 'Logs', de: 'Logs', zh: '日志数', ko: '로그 수', pt: 'Registros' },
 
   // Todo completion trend
-  todoTrendTitle: { ja: 'TODO完了率トレンド', en: 'TODO Completion Trend', es: 'Tendencia de completitud de TODO', fr: 'Tendance d\'achèvement des TODOs', de: 'TODO-Abschlussrate', zh: 'TODO完成率趋势', ko: 'TODO 완료율 트렌드', pt: 'Tendência de Conclusão de TODO' },
   todoTrendWeek: (n: number) => ({
     ja: `${n}週前`,
     en: `${n}w ago`,
@@ -1026,8 +940,6 @@ const labels = {
     ko: `${n}주 전`,
     pt: `${n} sem. atrás`,
   }),
-  todoTrendThisWeek: { ja: '今週', en: 'This week', es: 'Esta semana', fr: 'Cette semaine', de: 'Diese Woche', zh: '本周', ko: '이번 주', pt: 'Esta semana' },
-  todoTrendRate: { ja: '完了率', en: 'Completion Rate', es: 'Tasa de completitud', fr: 'Taux d\'achèvement', de: 'Abschlussrate', zh: '完成率', ko: '완료율', pt: 'Taxa de Conclusão' },
   todoTrendImproved: (pct: number) => ({
     ja: `先週より+${pct}%改善しています`,
     en: `+${pct}% improvement over last week`,
@@ -1131,7 +1043,6 @@ const labels = {
   // Streaming / transform progress
   streamReceiving: { ja: 'AIが応答中', en: 'Receiving', es: 'Recibiendo', fr: 'Réception en cours', de: 'Empfange', zh: 'AI响应中', ko: '수신 중', pt: 'Recebendo' },
   todoExtractionTitle: { ja: 'TODO抽出', en: 'TODO Extraction', es: 'Extracción de TODO', fr: 'Extraction de TODOs', de: 'TODO-Extraktion', zh: 'TODO提取', ko: 'TODO 추출', pt: 'Extração de TODO' },
-  toastHandoffSaved: { ja: '🔁 スナップショットを保存しました', en: '🔁 Snapshot saved', es: '🔁 Snapshot guardado', fr: '🔁 Snapshot enregistré', de: '🔁 Snapshot gespeichert', zh: '🔁 快照已保存', ko: '🔁 스냅샷 저장됨', pt: '🔁 Snapshot salvo' },
   toastTodosExtracted: (n: number) => ({
     ja: `✔ ${n}件のTODOを抽出しました`,
     en: `✔ ${n} TODOs extracted`,
@@ -1202,7 +1113,6 @@ const labels = {
     pt: `Capturado de ${source}`,
   }),
   captureTransformHint: { ja: 'ボタンを押して変換してください', en: 'Press the button to transform', es: 'Pulse el botón para transformar', fr: 'Appuyez sur le bouton pour transformer', de: 'Drücken Sie die Schaltfläche zum Umwandeln', zh: '按下按钮进行转换', ko: '버튼을 눌러 변환하세요', pt: 'Pressione o botão para transformar' },
-  retryBtn: { ja: '再試行', en: 'Retry', es: 'Reintentar', fr: 'Réessayer', de: 'Erneut versuchen', zh: '重试', ko: '재시도', pt: 'Tentar novamente' },
 
   // Result view buttons
   viewHandoff: { ja: 'スナップショットを見る', en: 'View Snapshot', es: 'Ver Snapshot', fr: 'Voir le Snapshot', de: 'Snapshot anzeigen', zh: '查看快照', ko: '스냅샷 보기', pt: 'Ver Snapshot' },
@@ -1264,7 +1174,6 @@ const labels = {
     ko: `${n}건의 로그를 휴지통으로 이동하시겠습니까?`,
     pt: `Mover ${n} registros para a lixeira?`,
   }),
-  selectBtn: { ja: '選択', en: 'Select', es: 'Seleccionar', fr: 'Sélectionner', de: 'Auswählen', zh: '选择', ko: '선택', pt: 'Selecionar' },
   selectedCount: (n: number) => ({
     ja: `${n}件選択中`,
     en: `${n} selected`,
@@ -1287,8 +1196,6 @@ const labels = {
     pt: `${n} registros não estão atribuídos a um projeto. Organize-os para gerar resumos.`,
   }),
   organizeBtn: { ja: '整理する', en: 'Organize', es: 'Organizar', fr: 'Organiser', de: 'Organisieren', zh: '整理', ko: '정리하기', pt: 'Organizar' },
-  paginationPrev: { ja: '← 前へ', en: '← Prev', es: '← Anterior', fr: '← Précédent', de: '← Zurück', zh: '← 上一页', ko: '← 이전', pt: '← Anterior' },
-  paginationNext: { ja: '次へ →', en: 'Next →', es: 'Siguiente →', fr: 'Suivant →', de: 'Weiter →', zh: '下一页 →', ko: '다음 →', pt: 'Próximo →' },
   paginationPage: (cur: number, total: number) => ({
     ja: `${cur} / ${total}ページ`,
     en: `${cur} / ${total}`,
@@ -1337,8 +1244,6 @@ const labels = {
   updateBtn: { ja: '更新する', en: 'Update', es: 'Actualizar', fr: 'Mettre à jour', de: 'Aktualisieren', zh: '更新', ko: '업데이트', pt: 'Atualizar' },
 
   // SettingsPanel
-  providerUnstableWarning: { ja: '⚠️ 現在、Claude・OpenAIは動作が不安定です。Geminiの使用を強く推奨します。', en: '⚠️ Claude and OpenAI are currently unstable. We strongly recommend using Gemini.', es: '⚠️ Claude y OpenAI están actualmente inestables. Recomendamos encarecidamente usar Gemini.', fr: '⚠️ Claude et OpenAI sont actuellement instables. Nous recommandons fortement d\'utiliser Gemini.', de: '⚠️ Claude und OpenAI sind derzeit instabil. Wir empfehlen dringend die Verwendung von Gemini.', zh: '⚠️ Claude和OpenAI目前不稳定。强烈建议使用Gemini。', ko: '⚠️ 현재 Claude와 OpenAI가 불안정합니다. Gemini 사용을 강력히 권장합니다.', pt: '⚠️ Claude e OpenAI estão atualmente instáveis. Recomendamos fortemente o uso do Gemini.' },
-  providerActive: { ja: '使用中', en: 'Active', es: 'Activo', fr: 'Actif', de: 'Aktiv', zh: '使用中', ko: '사용 중', pt: 'Ativo' },
   apiKeyErrorGemini: { ja: 'Gemini APIキーの形式が正しくありません（AIzaで始まる必要があります）', en: 'Invalid Gemini API key format (must start with AIza)', es: 'Formato de clave API de Gemini no válido (debe comenzar con AIza)', fr: 'Format de clé API Gemini invalide (doit commencer par AIza)', de: 'Ungültiges Gemini API-Schlüssel-Format (muss mit AIza beginnen)', zh: 'Gemini API密钥格式无效（必须以AIza开头）', ko: 'Gemini API 키 형식이 올바르지 않습니다 (AIza로 시작해야 합니다)', pt: 'Formato de chave de API Gemini inválido (deve começar com AIza)' },
   apiKeyErrorAnthropic: { ja: 'Claude APIキーの形式が正しくありません', en: 'Invalid Claude API key format', es: 'Formato de clave API de Claude no válido', fr: 'Format de clé API Claude invalide', de: 'Ungültiges Claude API-Schlüssel-Format', zh: 'Claude API密钥格式无效', ko: 'Claude API 키 형식이 올바르지 않습니다', pt: 'Formato de chave de API Claude inválido' },
   apiKeyErrorOpenai: { ja: 'OpenAI APIキーの形式が正しくありません', en: 'Invalid OpenAI API key format', es: 'Formato de clave API de OpenAI no válido', fr: 'Format de clé API OpenAI invalide', de: 'Ungültiges OpenAI API-Schlüssel-Format', zh: 'OpenAI API密钥格式无效', ko: 'OpenAI API 키 형식이 올바르지 않습니다', pt: 'Formato de chave de API OpenAI inválido' },
@@ -1396,7 +1301,6 @@ const labels = {
   // Dashboard extras
   dashboardWelcome: { ja: 'Loreへようこそ', en: 'Welcome to Lore', es: 'Bienvenido a Lore', fr: 'Bienvenue sur Lore', de: 'Willkommen bei Lore', zh: '欢迎使用Lore', ko: 'Lore에 오신 것을 환영합니다', pt: 'Bem-vindo ao Lore' },
   dashboardWelcomeDesc: { ja: 'AIとの会話を貼り付けてスナップショットを作成しましょう', en: 'Paste an AI conversation and create a Snapshot', es: 'Pegue una conversación con IA y cree un Snapshot', fr: 'Collez une conversation IA et créez un Snapshot', de: 'Fügen Sie eine KI-Konversation ein und erstellen Sie ein Snapshot', zh: '粘贴AI对话并创建快照', ko: 'AI 대화를 붙여넣고 스냅샷을 만들어 보세요', pt: 'Cole uma conversa com IA e crie um Snapshot' },
-  dashboardCreateFirstHandoff: { ja: '最初のスナップショットを作成', en: 'Create your first Snapshot', es: 'Crear su primer Snapshot', fr: 'Créer votre premier Snapshot', de: 'Erstes Snapshot erstellen', zh: '创建第一个快照', ko: '첫 번째 스냅샷 만들기', pt: 'Criar seu primeiro Snapshot' },
   dashboardCreateFirstLog: { ja: '最初のログを作成', en: 'Create Your First Log', es: 'Crear su primer registro', fr: 'Créer votre premier log', de: 'Ersten Log erstellen', zh: '创建第一条日志', ko: '첫 번째 로그 만들기', pt: 'Crie Seu Primeiro Registro' },
   dashboardRecentProjects: { ja: '最近のプロジェクト', en: 'Recent projects', es: 'Proyectos recientes', fr: 'Projets récents', de: 'Neueste Projekte', zh: '最近的项目', ko: '최근 프로젝트', pt: 'Projetos recentes' },
   ariaCreateNewLog: { ja: '新しいログを作成', en: 'Create new log', es: 'Crear nuevo registro', fr: 'Créer un nouveau log', de: 'Neues Log erstellen', zh: '创建新日志', ko: '새 로그 생성', pt: 'Criar novo registro' },
@@ -1463,11 +1367,7 @@ const labels = {
   }),
 
   // ErrorBoundary
-  errorTitle: { ja: 'エラーが発生しました', en: 'Something went wrong', es: 'Algo salió mal', fr: 'Une erreur s\'est produite', de: 'Ein Fehler ist aufgetreten', zh: '发生了错误', ko: '오류가 발생했습니다', pt: 'Algo deu errado' },
   errorDesc: { ja: 'このビューでエラーが発生しました。リロードするか、サイドバーから別のビューに移動してください。', en: 'An error occurred in this view. Try reloading the page or navigating to a different view from the sidebar.', es: 'Ocurrió un error en esta vista. Intente recargar la página o navegue a una vista diferente desde la barra lateral.', fr: 'Une erreur s\'est produite dans cette vue. Essayez de recharger la page ou de naviguer vers une autre vue depuis la barre latérale.', de: 'In dieser Ansicht ist ein Fehler aufgetreten. Versuchen Sie, die Seite neu zu laden oder über die Seitenleiste zu einer anderen Ansicht zu navigieren.', zh: '此视图发生错误。请刷新页面或从侧边栏导航到其他视图。', ko: '이 뷰에서 오류가 발생했습니다. 페이지를 새로고침하거나 사이드바에서 다른 뷰로 이동해 주세요.', pt: 'Ocorreu um erro nesta visualização. Tente recarregar a página ou navegar para outra visualização pela barra lateral.' },
-  errorReload: { ja: 'リロード', en: 'Reload', es: 'Recargar', fr: 'Recharger', de: 'Neu laden', zh: '刷新', ko: '새로고침', pt: 'Recarregar' },
-  errorShowDetails: { ja: '詳細を表示', en: 'Show details', es: 'Mostrar detalles', fr: 'Afficher les détails', de: 'Details anzeigen', zh: '显示详情', ko: '자세히 보기', pt: 'Mostrar detalhes' },
-  errorHideDetails: { ja: '詳細を隠す', en: 'Hide details', es: 'Ocultar detalles', fr: 'Masquer les détails', de: 'Details ausblenden', zh: '隐藏详情', ko: '자세히 숨기기', pt: 'Ocultar detalhes' },
 
   // HelpView
   helpTitle: { ja: 'ヘルプ', en: 'Help', es: 'Ayuda', fr: 'Aide', de: 'Hilfe', zh: '帮助', ko: '도움말', pt: 'Ajuda' },
@@ -1534,16 +1434,10 @@ const labels = {
   onboardingApiKeyTitle: { ja: 'もっと使いたい場合は', en: 'Want unlimited use?', es: '¿Quiere uso ilimitado?', fr: 'Utilisation illimitée ?', de: 'Unbegrenzt nutzen?', zh: '想要无限使用？', ko: '무제한으로 사용하고 싶다면?', pt: 'Quer uso ilimitado?' },
   onboardingApiKeyDesc: { ja: '無料のGemini APIキーを設定すると\n回数制限なしで使えます。\n\n→ aistudio.google.com で無料取得\n\nスキップしても1日20回まで使えます。', en: "Set up a free Gemini API key\nfor unlimited use.\n\n→ aistudio.google.com to get a free key\n\nYou can skip this — 20 free uses per day.", es: 'Configure una clave API de Gemini gratuita\npara uso ilimitado.\n\n→ aistudio.google.com para obtener una clave gratis\n\nPuede omitir esto — 20 usos gratuitos por día.', fr: 'Configurez une clé API Gemini gratuite\npour une utilisation illimitée.\n\n→ aistudio.google.com pour obtenir une clé gratuite\n\nVous pouvez passer — 20 utilisations gratuites par jour.', de: 'Richten Sie einen kostenlosen Gemini API-Schlüssel ein\nfür unbegrenzte Nutzung.\n\n→ aistudio.google.com für den kostenlosen Schlüssel\n\nSie können dies überspringen — 20 kostenlose Nutzungen pro Tag.', zh: '设置免费的Gemini API密钥\n即可无限使用。\n\n→ 在aistudio.google.com免费获取\n\n跳过也没关系 — 每天可免费使用20次。', ko: '무료 Gemini API 키를 설정하면\n무제한으로 사용할 수 있습니다.\n\n→ aistudio.google.com에서 무료 발급\n\n건너뛰어도 하루 20회 무료 사용 가능.', pt: 'Configure uma chave de API Gemini gratuita\npara uso ilimitado.\n\n→ aistudio.google.com para obter a chave grátis\n\nVocê pode pular — 20 usos gratuitos por dia.' },
   onboardingApiKeyAction: { ja: '設定画面を開く', en: 'Open Settings', es: 'Abrir configuración', fr: 'Ouvrir les paramètres', de: 'Einstellungen öffnen', zh: '打开设置', ko: '설정 열기', pt: 'Abrir Configurações' },
-  onboardingPasteTitle: { ja: 'AIとの会話を貼り付けてみましょう', en: 'Paste an AI conversation', es: 'Pegue una conversación con IA', fr: 'Collez une conversation IA', de: 'KI-Konversation einfügen', zh: '试试粘贴AI对话吧', ko: 'AI 대화를 붙여넣어 보세요', pt: 'Cole uma conversa com IA' },
-  onboardingPasteDesc: { ja: 'ChatGPTやClaudeとの会話をコピーして貼り付けるだけでOKです。ファイルのドロップにも対応しています。', en: 'Just copy and paste a conversation from ChatGPT or Claude. You can also drop files.', es: 'Solo copie y pegue una conversación de ChatGPT o Claude. También puede soltar archivos.', fr: 'Copiez et collez simplement une conversation de ChatGPT ou Claude. Vous pouvez aussi déposer des fichiers.', de: 'Kopieren und fügen Sie einfach eine Konversation von ChatGPT oder Claude ein. Sie können auch Dateien ablegen.', zh: '只需复制粘贴ChatGPT或Claude的对话即可。也支持文件拖放。', ko: 'ChatGPT이나 Claude와의 대화를 복사해서 붙여넣기만 하면 됩니다. 파일 드롭도 지원합니다.', pt: 'Basta copiar e colar uma conversa do ChatGPT ou Claude. Você também pode soltar arquivos.' },
-  onboardingPasteAction: { ja: 'やってみる', en: 'Try it now', es: 'Intentar ahora', fr: 'Essayer maintenant', de: 'Jetzt ausprobieren', zh: '立即体验', ko: '해보기', pt: 'Experimente agora' },
   onboardingExtensionTitle: { ja: 'Chrome拡張でもっと便利に', en: 'Even easier with the Chrome extension', es: 'Más fácil con la extensión de Chrome', fr: 'Encore plus simple avec l\'extension Chrome', de: 'Noch einfacher mit der Chrome-Erweiterung', zh: 'Chrome扩展让使用更便捷', ko: 'Chrome 확장 프로그램으로 더 편리하게', pt: 'Ainda mais fácil com a extensão do Chrome' },
   onboardingExtensionDesc: { ja: 'ChatGPTやClaudeのページに\n「Loreに送る」ボタンが追加されます。\n\n会話が終わったらワンクリックで\nLoreに送れます。', en: 'Adds a "Send to Lore" button\non ChatGPT and Claude pages.\n\nSend conversations to Lore\nwith one click.', es: 'Agrega un botón "Enviar a Lore"\nen las páginas de ChatGPT y Claude.\n\nEnvíe conversaciones a Lore\ncon un solo clic.', fr: 'Ajoute un bouton « Envoyer à Lore »\nsur les pages ChatGPT et Claude.\n\nEnvoyez des conversations à Lore\nen un seul clic.', de: 'Fügt eine Schaltfläche \'An Lore senden\'\nauf ChatGPT- und Claude-Seiten hinzu.\n\nKonversationen mit einem Klick\nan Lore senden.', zh: '在ChatGPT和Claude的页面上\n添加「发送到Lore」按钮。\n\n对话结束后一键\n发送到Lore。', ko: 'ChatGPT과 Claude 페이지에\n"Lore로 보내기" 버튼이 추가됩니다.\n\n대화가 끝나면 원클릭으로\nLore에 보낼 수 있습니다.', pt: 'Adiciona um botão \'Enviar para Lore\'\nnas páginas do ChatGPT e Claude.\n\nEnvie conversas para o Lore\ncom um clique.' },
-  onboardingExtensionAction: { ja: 'スキップ', en: 'Skip for now', es: 'Omitir por ahora', fr: 'Passer pour l\'instant', de: 'Jetzt überspringen', zh: '跳过', ko: '건너뛰기', pt: 'Pular por enquanto' },
   onboardingAssetTitle: { ja: 'プロジェクトの現在地を常に把握', en: 'Always know where your project stands', es: 'Siempre sepa dónde está su proyecto', fr: 'Sachez toujours où en est votre projet', de: 'Wissen Sie immer, wo Ihr Projekt steht', zh: '随时掌握项目进展', ko: '프로젝트 현황을 항상 파악', pt: 'Sempre saiba onde seu projeto está' },
   onboardingAssetDesc: { ja: '1. AIで仕事する\n2. チャット履歴をLoreに貼る\n3. 状況・決定事項・次のアクションに自動構造化\n4. プロジェクトに追加 → ダッシュボードで現在地を把握\n5. 次のAIセッションに構造化コンテキストを渡す', en: '1. Work with AI\n2. Paste the chat into Lore\n3. Auto-structured into status, decisions, and next actions\n4. Add to a project → see where things stand on your dashboard\n5. Pass structured context to your next AI session', es: '1. Trabaje con IA\n2. Pegue el chat en Lore\n3. Se estructura automáticamente en estado, decisiones y próximas acciones\n4. Agregue a un proyecto → vea el estado en su panel\n5. Pase el contexto estructurado a su próxima sesión de IA', fr: '1. Travaillez avec l\'IA\n2. Collez le chat dans Lore\n3. Structuré automatiquement en statut, décisions et prochaines actions\n4. Ajoutez à un projet → voyez où en sont les choses sur votre tableau de bord\n5. Transmettez le contexte structuré à votre prochaine session IA', de: '1. Mit KI arbeiten\n2. Chat in Lore einfügen\n3. Automatisch in Status, Entscheidungen und nächste Schritte strukturiert\n4. Zum Projekt hinzufügen → Projektstand im Dashboard sehen\n5. Strukturierten Kontext an die nächste KI-Sitzung übergeben', zh: '1. 使用AI工作\n2. 将聊天记录粘贴到Lore\n3. 自动结构化为状态、决策和下一步行动\n4. 添加到项目 → 在仪表板上查看进展\n5. 将结构化上下文传递给下一个AI会话', ko: '1. AI로 작업하기\n2. 채팅 기록을 Lore에 붙여넣기\n3. 상태, 결정 사항, 다음 액션으로 자동 구조화\n4. 프로젝트에 추가 → 대시보드에서 현황 파악\n5. 다음 AI 세션에 구조화된 컨텍스트 전달', pt: '1. Trabalhe com IA\n2. Cole o chat no Lore\n3. Estruturado automaticamente em status, decisões e próximas ações\n4. Adicione a um projeto → veja a situação no seu painel\n5. Passe o contexto estruturado para sua próxima sessão de IA' },
-  onboardingSampleTitle: { ja: 'サンプルデータを用意しました', en: 'We prepared sample data', es: 'Hemos preparado datos de ejemplo', fr: 'Nous avons préparé des données d\'exemple', de: 'Wir haben Beispieldaten vorbereitet', zh: '我们准备了示例数据', ko: '샘플 데이터를 준비했습니다', pt: 'Preparamos dados de exemplo' },
-  onboardingSampleDesc: { ja: 'サンプルプロジェクトとHandoffログを追加しました。\nまずはそちらを見て、Loreの使い方を確認してみてください。', en: "We've added a sample project with Handoff logs.\nTake a look to see how Lore works in practice.", es: 'Hemos agregado un proyecto de ejemplo con registros de Handoff.\nÉchele un vistazo para ver cómo funciona Lore en la práctica.', fr: 'Nous avons ajouté un projet d\'exemple avec des logs de Handoff.\nJetez-y un coup d\'œil pour voir comment Lore fonctionne en pratique.', de: 'Wir haben ein Beispielprojekt mit Handoff-Logs hinzugefügt.\nSchauen Sie es sich an, um zu sehen, wie Lore in der Praxis funktioniert.', zh: '已添加示例项目和Handoff日志。\n先看看这些，了解Lore的使用方法吧。', ko: '샘플 프로젝트와 Handoff 로그를 추가했습니다.\n먼저 살펴보며 Lore의 사용법을 확인해 보세요.', pt: 'Adicionamos um projeto de exemplo com registros de Handoff.\nDê uma olhada para ver como o Lore funciona na prática.' },
   onboardingReadyTitle: { ja: '準備完了です', en: "You're all set!", es: '¡Todo listo!', fr: 'Vous êtes prêt !', de: 'Alles bereit!', zh: '准备就绪', ko: '준비 완료', pt: 'Tudo pronto!' },
   onboardingReadyDesc: { ja: '困ったときはサイドバーのヘルプをご確認ください。', en: 'If you need help, check the Help section in the sidebar.', es: 'Si necesita ayuda, consulte la sección de Ayuda en la barra lateral.', fr: 'Si vous avez besoin d\'aide, consultez la section Aide dans la barre latérale.', de: 'Wenn Sie Hilfe benötigen, schauen Sie in den Hilfebereich in der Seitenleiste.', zh: '遇到问题时请查看侧边栏的帮助。', ko: '도움이 필요하면 사이드바의 도움말을 확인해 주세요.', pt: 'Se precisar de ajuda, consulte a seção Ajuda na barra lateral.' },
   onboardingBack: { ja: '戻る', en: 'Back', es: 'Atrás', fr: 'Retour', de: 'Zurück', zh: '返回', ko: '뒤로', pt: 'Voltar' },
@@ -1571,7 +1465,6 @@ const labels = {
   bulkTrash: { ja: 'まとめてゴミ箱へ', en: 'Trash selected', es: 'Enviar selección a la papelera', fr: 'Mettre la sélection à la corbeille', de: 'Ausgewählte in den Papierkorb', zh: '批量移至回收站', ko: '선택 항목 휴지통으로', pt: 'Mover selecionados para lixeira' },
   bulkAssignProject: { ja: 'プロジェクトに割当', en: 'Assign to project', es: 'Asignar a proyecto', fr: 'Assigner à un projet', de: 'Projekt zuweisen', zh: '分配到项目', ko: '프로젝트에 할당', pt: 'Atribuir ao projeto' },
 
-  switchProject: { ja: 'プロジェクト切替', en: 'Switch project', es: 'Cambiar de proyecto', fr: 'Changer de projet', de: 'Projekt wechseln', zh: '切换项目', ko: '프로젝트 전환', pt: 'Trocar projeto' },
 
   featuresLabel: { ja: '機能設定', en: 'Features', es: 'Funciones', fr: 'Fonctionnalités', de: 'Funktionen', zh: '功能设置', ko: '기능 설정', pt: 'Funcionalidades' },
   featuresDesc: { ja: '各機能のオン/オフを切り替えられます', en: 'Toggle features on or off', es: 'Active o desactive las funciones', fr: 'Activez ou désactivez les fonctionnalités', de: 'Funktionen ein- oder ausschalten', zh: '开关各项功能', ko: '기능을 켜거나 끌 수 있습니다', pt: 'Ative ou desative funcionalidades' },
@@ -1594,28 +1487,8 @@ const labels = {
   builtinApiUsage: { ja: '内蔵API使用状況', en: 'Built-in API usage', es: 'Uso de API integrada', fr: 'Utilisation de l\'API intégrée', de: 'Integrierte API-Nutzung', zh: '内置API使用情况', ko: '내장 API 사용량', pt: 'Uso da API integrada' },
   builtinApiUsingOwn: { ja: '自分のAPIキーを使用中（無制限）', en: 'Using your own API key (unlimited)', es: 'Usando su propia clave API (ilimitado)', fr: 'Utilisation de votre propre clé API (illimité)', de: 'Eigener API-Schlüssel wird verwendet (unbegrenzt)', zh: '正在使用您自己的API密钥（无限制）', ko: '자신의 API 키 사용 중 (무제한)', pt: 'Usando sua própria chave API (ilimitado)' },
   pricingTitle: { ja: '料金プラン', en: 'Pricing', es: 'Precios', fr: 'Tarifs', de: 'Preise', zh: '定价', ko: '요금제', pt: 'Preços' },
-  pricingDesc: { ja: 'あなたに合ったプランを選択', en: 'Choose the plan that works for you', es: 'Elige el plan que mejor se adapte a ti', fr: 'Choisissez le plan qui vous convient', de: 'Wählen Sie den Plan, der zu Ihnen passt', zh: '选择适合您的方案', ko: '나에게 맞는 플랜을 선택하세요', pt: 'Escolha o plano ideal para você' },
-  planFree: { ja: 'Free', en: 'Free', es: 'Free', fr: 'Free', de: 'Free', zh: 'Free', ko: 'Free', pt: 'Free' },
-  planPro: { ja: 'Pro', en: 'Pro', es: 'Pro', fr: 'Pro', de: 'Pro', zh: 'Pro', ko: 'Pro', pt: 'Pro' },
-  planFreePrice: { ja: '¥0', en: '$0', es: '$0', fr: '$0', de: '$0', zh: '$0', ko: '$0', pt: '$0' },
-  planProPrice: { ja: '¥1,500', en: '$9.99', es: '$9.99', fr: '$9.99', de: '$9.99', zh: '$9.99', ko: '$9.99', pt: '$9.99' },
-  planProPriceUnit: { ja: '/月', en: '/month', es: '/mes', fr: '/mois', de: '/Monat', zh: '/月', ko: '/월', pt: '/mês' },
-  planCurrent: { ja: '現在のプラン', en: 'Current plan', es: 'Plan actual', fr: 'Plan actuel', de: 'Aktueller Plan', zh: '当前方案', ko: '현재 플랜', pt: 'Plano atual' },
-  planUpgrade: { ja: 'アップグレード', en: 'Upgrade', es: 'Actualizar', fr: 'Mettre à niveau', de: 'Upgraden', zh: '升级', ko: '업그레이드', pt: 'Atualizar' },
   planComingSoon: { ja: '近日公開', en: 'Coming soon', es: 'Próximamente', fr: 'Bientôt disponible', de: 'Demnächst verfügbar', zh: '即将推出', ko: '곧 출시', pt: 'Em breve' },
-  pricingFreeFeature1: { ja: '1日20回のAI変換', en: '20 AI transforms per day', es: '20 transformaciones IA por día', fr: '20 transformations IA par jour', de: '20 KI-Transformationen pro Tag', zh: '每天20次AI转换', ko: '하루 20회 AI 변환', pt: '20 transformações IA por dia' },
-  pricingFreeFeature2: { ja: '全コア機能', en: 'All core features', es: 'Todas las funciones principales', fr: 'Toutes les fonctionnalités principales', de: 'Alle Kernfunktionen', zh: '所有核心功能', ko: '모든 핵심 기능', pt: 'Todos os recursos principais' },
-  pricingFreeFeature3: { ja: '8言語対応', en: '8 languages', es: '8 idiomas', fr: '8 langues', de: '8 Sprachen', zh: '8种语言', ko: '8개 언어', pt: '8 idiomas' },
-  pricingFreeFeature4: { ja: 'Chrome拡張', en: 'Chrome extension', es: 'Extensión de Chrome', fr: 'Extension Chrome', de: 'Chrome-Erweiterung', zh: 'Chrome扩展', ko: 'Chrome 확장 프로그램', pt: 'Extensão Chrome' },
-  pricingFreeFeature5: { ja: 'データエクスポート', en: 'Data export/import', es: 'Exportar/importar datos', fr: 'Export/import de données', de: 'Datenexport/-import', zh: '数据导出/导入', ko: '데이터 내보내기/가져오기', pt: 'Exportar/importar dados' },
-  pricingProFeature1: { ja: '無制限のAI変換', en: 'Unlimited AI transforms', es: 'Transformaciones IA ilimitadas', fr: 'Transformations IA illimitées', de: 'Unbegrenzte KI-Transformationen', zh: '无限AI转换', ko: '무제한 AI 변환', pt: 'Transformações IA ilimitadas' },
-  pricingProFeature2: { ja: 'AI処理の優先実行', en: 'Priority AI processing', es: 'Procesamiento IA prioritario', fr: 'Traitement IA prioritaire', de: 'Priorisierte KI-Verarbeitung', zh: 'AI优先处理', ko: 'AI 우선 처리', pt: 'Processamento IA prioritário' },
-  pricingProFeature3: { ja: 'クラウド同期', en: 'Cloud sync', es: 'Sincronización en la nube', fr: 'Synchronisation cloud', de: 'Cloud-Synchronisierung', zh: '云同步', ko: '클라우드 동기화', pt: 'Sincronização na nuvem' },
-  pricingProFeature4: { ja: 'マルチデバイス対応', en: 'Multi-device support', es: 'Soporte multidispositivo', fr: 'Support multi-appareils', de: 'Multi-Geräte-Unterstützung', zh: '多设备支持', ko: '멀티 디바이스 지원', pt: 'Suporte a múltiplos dispositivos' },
-  pricingProFeature5: { ja: '優先サポート', en: 'Priority support', es: 'Soporte prioritario', fr: 'Support prioritaire', de: 'Priorisierter Support', zh: '优先支持', ko: '우선 지원', pt: 'Suporte prioritário' },
-  pricingProFeature6: { ja: '新機能への早期アクセス', en: 'Early access to new features', es: 'Acceso anticipado a nuevas funciones', fr: 'Accès anticipé aux nouvelles fonctionnalités', de: 'Früher Zugang zu neuen Funktionen', zh: '新功能抢先体验', ko: '새 기능 조기 액세스', pt: 'Acesso antecipado a novos recursos' },
   navPricing: { ja: '料金プラン', en: 'Pricing', es: 'Precios', fr: 'Tarifs', de: 'Preise', zh: '定价', ko: '요금제', pt: 'Preços' },
-  navPricingTitle: { ja: '料金プランを見る', en: 'View pricing', es: 'Ver precios', fr: 'Voir les tarifs', de: 'Preise ansehen', zh: '查看定价', ko: '요금제 보기', pt: 'Ver preços' },
   pricingSubtitle: { ja: 'あなたに合ったプランを選択', en: 'Choose the plan that works for you', es: 'Elige el plan que mejor se adapte', fr: 'Choisissez le plan qui vous convient', de: 'Wählen Sie den passenden Plan', zh: '选择适合您的方案', ko: '나에게 맞는 플랜 선택', pt: 'Escolha o plano ideal' },
   pricingCurrentPlan: { ja: '現在のプラン', en: 'Current plan', es: 'Plan actual', fr: 'Plan actuel', de: 'Aktueller Plan', zh: '当前方案', ko: '현재 플랜', pt: 'Plano atual' },
   pricingFreeTitle: { ja: 'Free', en: 'Free', es: 'Free', fr: 'Free', de: 'Free', zh: 'Free', ko: 'Free', pt: 'Free' },
@@ -1679,8 +1552,6 @@ const labels = {
   backOnline: { ja: 'オンラインに復帰しました', en: 'Back online', es: 'De vuelta en línea', fr: 'De retour en ligne', de: 'Wieder online', zh: '已恢复在线', ko: '온라인 복귀', pt: 'De volta online' },
 
   // Post-generation preview panel
-  copyFullContext: { ja: 'プロジェクトコンテキストをコピー', en: 'Copy Full Context', es: 'Copiar contexto completo del proyecto', fr: 'Copier le contexte complet du projet', de: 'Vollständigen Projektkontext kopieren', zh: '复制项目上下文', ko: '프로젝트 컨텍스트 복사', pt: 'Copiar Contexto Completo' },
-  copyFullContextDesc: { ja: 'プロジェクト全体像と最新セッションを合成したAI向けコンテキスト', en: 'Combined project overview and latest session context for AI', es: 'Contexto combinado de resumen del proyecto y última sesión para IA', fr: 'Contexte combiné de l\'aperçu du projet et de la dernière session pour l\'IA', de: 'Kombinierten Projektüberblick und neuesten Sitzungskontext für KI', zh: '合并项目概览和最新会话的AI上下文', ko: '프로젝트 개요와 최신 세션을 합친 AI용 컨텍스트', pt: 'Visão geral combinada do projeto e contexto da sessão mais recente para IA' },
   logSaved: { ja: 'ログを保存しました', en: 'Log saved', es: 'Registro guardado', fr: 'Log enregistré', de: 'Log gespeichert', zh: '日志已保存', ko: '로그 저장됨', pt: 'Registro salvo' },
   startNewLog: { ja: '新しいスナップショット', en: 'New Snapshot', es: 'Nuevo Snapshot', fr: 'Nouveau Snapshot', de: 'Neues Snapshot', zh: '新快照', ko: '새 스냅샷', pt: 'Novo Snapshot' },
 
@@ -1701,11 +1572,7 @@ const labels = {
   offlineAiUnavailable: { ja: 'オフラインです。AI機能にはインターネット接続が必要です。', en: "You're offline. AI features require an internet connection.", es: 'Está sin conexión. Las funciones de IA requieren conexión a internet.', fr: 'Vous êtes hors ligne. Les fonctionnalités IA nécessitent une connexion internet.', de: 'Sie sind offline. KI-Funktionen erfordern eine Internetverbindung.', zh: '您处于离线状态。AI功能需要网络连接。', ko: '오프라인 상태입니다. AI 기능을 사용하려면 인터넷 연결이 필요합니다.', pt: 'Você está offline. As funcionalidades de IA requerem conexão com a internet.' },
   demoModeBanner: { ja: 'デモモード — 結果は事前生成されたサンプルです。実際のAI分析にはSettings でAPIキーを設定してください。', en: 'Demo Mode — results are pre-generated samples. Add an API key in Settings for real AI analysis.', es: 'Modo Demo — los resultados son muestras pregeneradas. Añada una clave API en Configuración para análisis AI real.', fr: 'Mode Démo — les résultats sont des échantillons prégénérés. Ajoutez une clé API dans les Paramètres pour une analyse IA réelle.', de: 'Demo-Modus — Ergebnisse sind vorgenerierte Beispiele. Fügen Sie einen API-Schlüssel in den Einstellungen hinzu für echte KI-Analyse.', zh: '演示模式 — 结果为预生成的示例。请在设置中添加API密钥以使用真正的AI分析。', ko: '데모 모드 — 결과는 사전 생성된 샘플입니다. 실제 AI 분석을 위해 설정에서 API 키를 추가하세요.', pt: 'Modo Demo — resultados são amostras pré-geradas. Adicione uma chave API nas Configurações para análise AI real.' },
   demoBadge: { ja: 'デモ', en: 'Demo', es: 'Demo', fr: 'Démo', de: 'Demo', zh: '演示', ko: '데모', pt: 'Demo' },
-  tryDemo: { ja: 'APIキーなしで試す', en: 'Try without API key', es: 'Probar sin clave API', fr: 'Essayer sans clé API', de: 'Ohne API-Schlüssel testen', zh: '无需API密钥试用', ko: 'API 키 없이 체험', pt: 'Experimentar sem chave API' },
   exitDemoMode: { ja: 'デモモードを終了', en: 'Exit Demo Mode', es: 'Salir del modo demo', fr: 'Quitter le mode démo', de: 'Demo-Modus beenden', zh: '退出演示模式', ko: '데모 모드 종료', pt: 'Sair do modo demo' },
-  demoModeLabel: { ja: 'デモモード', en: 'Demo Mode', es: 'Modo Demo', fr: 'Mode Démo', de: 'Demo-Modus', zh: '演示模式', ko: '데모 모드', pt: 'Modo Demo' },
-  demoModeDesc: { ja: 'APIキーなしで事前生成されたサンプル結果を使って体験できます', en: 'Experience the app with pre-generated sample results, no API key needed', es: 'Experimente la app con resultados de muestra pregenerados, sin necesidad de clave API', fr: "Découvrez l'app avec des résultats d'échantillons prégénérés, sans clé API", de: 'Erleben Sie die App mit vorgenerierten Beispielergebnissen, kein API-Schlüssel nötig', zh: '无需API密钥，使用预生成的示例结果体验应用', ko: 'API 키 없이 사전 생성된 샘플 결과로 앱을 체험하세요', pt: 'Experimente o app com resultados de amostra pré-gerados, sem necessidade de chave API' },
-  demoResultNote: { ja: '※ デモモード：この結果は事前生成されたサンプルです', en: 'Note: Demo mode — this result is a pre-generated sample', es: 'Nota: Modo demo — este resultado es una muestra pregenerada', fr: 'Note : Mode démo — ce résultat est un échantillon prégénéré', de: 'Hinweis: Demo-Modus — dieses Ergebnis ist ein vorgeneriertes Beispiel', zh: '注意：演示模式 — 此结果为预生成的示例', ko: '참고: 데모 모드 — 이 결과는 사전 생성된 샘플입니다', pt: 'Nota: Modo demo — este resultado é uma amostra pré-gerada' },
   feedbackTitle: { ja: 'フィードバック', en: 'Feedback', es: 'Comentarios', fr: 'Commentaires', de: 'Feedback', zh: '反馈', ko: '피드백', pt: 'Feedback' },
   feedbackCategory: { ja: 'カテゴリ', en: 'Category', es: 'Categoría', fr: 'Catégorie', de: 'Kategorie', zh: '类别', ko: '카테고리', pt: 'Categoria' },
   feedbackBody: { ja: '内容', en: 'Details', es: 'Detalles', fr: 'Détails', de: 'Details', zh: '详细内容', ko: '내용', pt: 'Detalhes' },
@@ -1716,7 +1583,6 @@ const labels = {
   feedbackThanksDesc: { ja: 'フィードバックは製品改善に活用させていただきます。', en: 'Your feedback helps us improve Lore.', es: 'Sus comentarios nos ayudan a mejorar Lore.', fr: 'Vos commentaires nous aident à améliorer Lore.', de: 'Ihr Feedback hilft uns, Lore zu verbessern.', zh: '您的反馈帮助我们改进Lore。', ko: '피드백은 Lore 개선에 활용됩니다.', pt: 'Seu feedback nos ajuda a melhorar o Lore.' },
   feedbackNote: { ja: 'GitHubアカウントが必要です。お持ちでない場合は「コピー」でメールやDMでお送りください。', en: 'Requires a GitHub account. If you don\'t have one, use "Copy" and send via email or DM.', es: 'Requiere cuenta de GitHub. Si no tiene una, use "Copiar" y envíe por email o DM.', fr: 'Nécessite un compte GitHub. Sinon, utilisez « Copier » et envoyez par email ou DM.', de: 'Erfordert ein GitHub-Konto. Ohne Konto nutzen Sie „Kopieren" und senden per E-Mail oder DM.', zh: '需要GitHub账户。如果没有，请使用"复制"通过邮件或私信发送。', ko: 'GitHub 계정이 필요합니다. 계정이 없으면 "복사"로 이메일이나 DM으로 보내주세요.', pt: 'Requer conta GitHub. Se não tiver, use "Copiar" e envie por email ou DM.' },
   accountMenuFeedback: { ja: 'フィードバック', en: 'Feedback', es: 'Comentarios', fr: 'Commentaires', de: 'Feedback', zh: '反馈', ko: '피드백', pt: 'Feedback' },
-  networkError: { ja: 'ネットワークエラーが発生しました', en: 'A network error occurred', es: 'Se produjo un error de red', fr: 'Une erreur réseau s\'est produite', de: 'Ein Netzwerkfehler ist aufgetreten', zh: '发生网络错误', ko: '네트워크 오류가 발생했습니다', pt: 'Ocorreu um erro de rede' },
 
   // PWA update
   updateAvailable: { ja: '新しいバージョンがあります', en: 'A new version is available', es: 'Una nueva versión está disponible', fr: 'Une nouvelle version est disponible', de: 'Eine neue Version ist verfügbar', zh: '有新版本可用', ko: '새 버전을 사용할 수 있습니다', pt: 'Uma nova versão está disponível' },
@@ -1770,7 +1636,6 @@ const labels = {
   tabTitleKnowledgebase: { ja: 'ナレッジベース', en: 'Knowledge Base', es: 'Base de conocimientos', fr: 'Base de connaissances', de: 'Wissensdatenbank', zh: '知识库', ko: '지식 베이스', pt: 'Base de Conhecimento' },
 
   // Tagline for zero-data / first-time state
-  taglineZeroState: { ja: 'AIとの会話を貼り付けるだけ。構造化されたスナップショットを数秒で。', en: 'Paste an AI conversation. Get a structured context snapshot in seconds.', es: 'Pega una conversación con IA. Obtén un snapshot de contexto en segundos.', fr: 'Collez une conversation IA. Obtenez un snapshot de contexte en quelques secondes.', de: 'Fügen Sie eine KI-Konversation ein. Erhalten Sie einen Kontext-Snapshot in Sekunden.', zh: '粘贴AI对话，几秒内获得结构化上下文快照。', ko: 'AI 대화를 붙여넣으세요. 몇 초 만에 구조화된 컨텍스트 스냅샷을 받으세요.', pt: 'Cole uma conversa com IA. Receba um snapshot de contexto em segundos.' },
 
   // A11y — BottomNav & Onboarding
   ariaBottomNav: { ja: 'ナビゲーション', en: 'Bottom navigation', es: 'Navegación inferior', fr: 'Navigation inférieure', de: 'Untere Navigation', zh: '底部导航', ko: '하단 탐색', pt: 'Navegação inferior' },

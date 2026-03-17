@@ -54,6 +54,354 @@ function setCachedResult(text: string, action: string, result: unknown): void {
   aiResultCache.set(key, result);
 }
 
+// ---------------------------------------------------------------------------
+// Shared context passed to per-action strategy functions
+// ---------------------------------------------------------------------------
+
+type StreamCallback = (chunk: string, accumulated: string) => void;
+
+interface TransformContext {
+  combined: string;
+  apiKey: string;
+  willChunk: boolean;
+  selectedProjectId?: string;
+  lang: Lang;
+  text: string;
+  files: { name: string; content: string; lastModified?: number }[];
+  buildSourceReference: (pastedText: string, files: { name: string; content: string; lastModified?: number }[], charCount: number) => SourceReference;
+  initSingleTransform: () => void;
+  createStreamCallback: () => { onStream?: StreamCallback };
+  setProgress: (p: EngineProgress | null) => void;
+  setResult: (r: TransformResult | HandoffResult | null) => void;
+  setOutputMode: (m: OutputMode) => void;
+  setStreamDetail: (s: string | null) => void;
+  setSimStep: (n: number) => void;
+  projects: Project[];
+  engineRef: React.MutableRefObject<ChunkEngine | null>;
+  _t0: number;
+  triggerClassification: (entry: LogEntry) => void;
+}
+
+interface ActionResult {
+  lastEntryId: string | null;
+  savedHandoffLog: LogEntry | null;
+  todoCount: number;
+}
+
+// ---------------------------------------------------------------------------
+// Per-action strategy functions (real API path)
+// ---------------------------------------------------------------------------
+
+async function executeBoth(ctx: TransformContext): Promise<ActionResult> {
+  const { combined, apiKey, willChunk, selectedProjectId, text, files, buildSourceReference, initSingleTransform, createStreamCallback, setProgress, setResult, setOutputMode, setStreamDetail, setSimStep, projects, engineRef, _t0 } = ctx;
+  let bothResult: BothResult;
+  let todoCount = 0;
+
+  if (willChunk) {
+    const engine = new ChunkEngine();
+    engineRef.current = engine;
+    bothResult = await engine.processBoth(combined, apiKey, (p) => setProgress(p));
+    if (import.meta.env.DEV && _t0) console.log(`[Perf] API response (chunked): ${(performance.now() - _t0).toFixed(0)}ms`);
+    engineRef.current = null;
+  } else {
+    initSingleTransform();
+    const bothOpts: TransformBothOptions = {
+      ...createStreamCallback(),
+      projects: !selectedProjectId && projects.length > 0
+        ? projects.map(p => ({ id: p.id, name: p.name }))
+        : undefined,
+    };
+    const cachedBoth = getCachedResult<BothResult>(combined, 'both');
+    if (cachedBoth) {
+      bothResult = cachedBoth;
+    } else {
+      bothResult = await transformBoth(combined, bothOpts);
+      setCachedResult(combined, 'both', bothResult);
+    }
+    if (import.meta.env.DEV && _t0) console.log(`[Perf] API response${cachedBoth ? ' (cached)' : ''}: ${(performance.now() - _t0).toFixed(0)}ms`);
+    setStreamDetail(null);
+    setSimStep(4);
+  }
+
+  // Save handoff entry
+  const handoffEntry = buildHandoffLogEntry(bothResult.handoff, {
+    projectId: selectedProjectId,
+    sourceReference: buildSourceReference(text, files, combined.length),
+  });
+  addLog(handoffEntry);
+  const savedHandoffLog = handoffEntry;
+
+  // Save worklog entry
+  const r = bothResult.worklog;
+  setResult(r);
+  setOutputMode('worklog');
+  const worklogEntry: LogEntry = {
+    id: crypto.randomUUID(), createdAt: new Date().toISOString(),
+    importedAt: new Date().toISOString(),
+    title: r.title,
+    projectId: selectedProjectId,
+    sourceReference: buildSourceReference(text, files, combined.length),
+    outputMode: 'worklog',
+    today: r.today, decisions: r.decisions, todo: r.todo,
+    relatedProjects: r.relatedProjects, tags: r.tags,
+  };
+  addLog(worklogEntry);
+  if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(worklogEntry.id, r.todo); todoCount = r.todo.length; }
+
+  // Use inline classification from the combined response (no extra API call)
+  if (!selectedProjectId && projects.length > 0 && bothResult.classification?.projectId) {
+    const cl = bothResult.classification;
+    const matchedProject = projects.find(p => p.id === cl.projectId);
+    if (matchedProject && cl.confidence > 0.7) {
+      updateLog(handoffEntry.id, { projectId: cl.projectId ?? undefined, classificationConfidence: cl.confidence });
+      updateLog(worklogEntry.id, { projectId: cl.projectId ?? undefined, classificationConfidence: cl.confidence });
+    } else if (matchedProject && cl.confidence > 0) {
+      // Suggestion is handled by the caller via returned savedHandoffLog
+      updateLog(worklogEntry.id, { suggestedProjectId: cl.projectId ?? undefined, classificationConfidence: cl.confidence });
+    }
+  }
+
+  return {
+    lastEntryId: worklogEntry.id,
+    savedHandoffLog,
+    todoCount,
+    // Expose extra data needed by the caller for suggestion handling
+    ...({ _handoffEntry: handoffEntry, _worklogEntry: worklogEntry, _bothResult: bothResult } as Record<string, unknown>),
+  };
+}
+
+async function executeHandoff(ctx: TransformContext): Promise<ActionResult> {
+  const { combined, apiKey, willChunk, selectedProjectId, text, files, buildSourceReference, initSingleTransform, createStreamCallback, setResult, setProgress, setStreamDetail, setSimStep, projects, engineRef, _t0, triggerClassification } = ctx;
+
+  let r: HandoffResult;
+  if (willChunk) {
+    const engine = new ChunkEngine();
+    engineRef.current = engine;
+    r = await engine.processHandoff(combined, apiKey, (p) => setProgress(p));
+    if (import.meta.env.DEV && _t0) console.log(`[Perf] API response (chunked): ${(performance.now() - _t0).toFixed(0)}ms`);
+    engineRef.current = null;
+  } else {
+    initSingleTransform();
+    const cachedHandoff = getCachedResult<HandoffResult>(combined, 'handoff');
+    if (cachedHandoff) {
+      r = cachedHandoff;
+    } else {
+      r = await transformHandoff(combined, createStreamCallback());
+      setCachedResult(combined, 'handoff', r);
+    }
+    if (import.meta.env.DEV && _t0) console.log(`[Perf] API response${cachedHandoff ? ' (cached)' : ''}: ${(performance.now() - _t0).toFixed(0)}ms`);
+    setStreamDetail(null);
+    setSimStep(4);
+  }
+  setResult(r);
+  const entry = buildHandoffLogEntry(r, {
+    projectId: selectedProjectId,
+    sourceReference: buildSourceReference(text, files, combined.length),
+  });
+  addLog(entry);
+  if (!selectedProjectId && projects.length > 0) {
+    triggerClassification(entry);
+  }
+
+  return { lastEntryId: entry.id, savedHandoffLog: entry, todoCount: 0 };
+}
+
+async function executeWorklog(ctx: TransformContext): Promise<ActionResult> {
+  const { combined, apiKey, willChunk, selectedProjectId, text, files, buildSourceReference, initSingleTransform, createStreamCallback, setResult, setProgress, setStreamDetail, setSimStep, projects, engineRef, triggerClassification } = ctx;
+  let todoCount = 0;
+
+  let r: TransformResult;
+  if (willChunk) {
+    const engine = new ChunkEngine();
+    engineRef.current = engine;
+    r = await engine.process(combined, apiKey, (p) => setProgress(p));
+    engineRef.current = null;
+  } else {
+    initSingleTransform();
+    const cachedWorklog = getCachedResult<TransformResult>(combined, 'worklog');
+    if (cachedWorklog) {
+      r = cachedWorklog;
+    } else {
+      r = await transformText(combined, createStreamCallback());
+      setCachedResult(combined, 'worklog', r);
+    }
+    setStreamDetail(null);
+    setSimStep(4);
+  }
+
+  setResult(r);
+  const entry: LogEntry = {
+    id: crypto.randomUUID(), createdAt: new Date().toISOString(),
+    importedAt: new Date().toISOString(),
+    title: r.title,
+    projectId: selectedProjectId,
+    sourceReference: buildSourceReference(text, files, combined.length),
+    outputMode: 'worklog',
+    today: r.today, decisions: r.decisions, todo: r.todo,
+    relatedProjects: r.relatedProjects, tags: r.tags,
+  };
+  addLog(entry);
+  if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(entry.id, r.todo); todoCount = r.todo.length; }
+  if (!selectedProjectId && projects.length > 0) {
+    triggerClassification(entry);
+  }
+
+  return { lastEntryId: entry.id, savedHandoffLog: null, todoCount };
+}
+
+async function executeHandoffTodo(ctx: TransformContext): Promise<ActionResult> {
+  const { combined, selectedProjectId, text, files, buildSourceReference, initSingleTransform, createStreamCallback, setResult, setStreamDetail, setSimStep, projects, triggerClassification } = ctx;
+  let todoCount = 0;
+
+  initSingleTransform();
+  let htResult: HandoffTodoResult;
+  const cachedHT = getCachedResult<HandoffTodoResult>(combined, 'handoff_todo');
+  if (cachedHT) {
+    htResult = cachedHT;
+  } else {
+    htResult = await transformHandoffTodo(combined, createStreamCallback());
+    setCachedResult(combined, 'handoff_todo', htResult);
+  }
+  setStreamDetail(null);
+  setSimStep(4);
+
+  const r = htResult.handoff;
+  setResult(r);
+  const entry = buildHandoffLogEntry(r, {
+    projectId: selectedProjectId,
+    sourceReference: buildSourceReference(text, files, combined.length),
+  });
+  entry.todo = htResult.todos.map(td => td.title);
+  addLog(entry);
+  if (getFeatureEnabled('todo_extract', true)) { addTodosFromLogWithMeta(entry.id, htResult.todos); todoCount = htResult.todos.length; }
+  if (!selectedProjectId && projects.length > 0) {
+    triggerClassification(entry);
+  }
+
+  return { lastEntryId: entry.id, savedHandoffLog: entry, todoCount };
+}
+
+async function executeTodoOnly(ctx: TransformContext): Promise<ActionResult> {
+  const { combined, lang, selectedProjectId, text, files, buildSourceReference, initSingleTransform, createStreamCallback, setResult, setOutputMode, setStreamDetail, setSimStep, projects, triggerClassification } = ctx;
+  let todoCount = 0;
+
+  initSingleTransform();
+  let todoResult: TodoOnlyResult;
+  const cachedTodo = getCachedResult<TodoOnlyResult>(combined, 'todo_only');
+  if (cachedTodo) {
+    todoResult = cachedTodo;
+  } else {
+    todoResult = await transformTodoOnly(combined, createStreamCallback());
+    setCachedResult(combined, 'todo_only', todoResult);
+  }
+  setStreamDetail(null);
+  setSimStep(4);
+
+  // Save as a minimal log entry (handoff body empty, worklog fields empty)
+  const entry: LogEntry = {
+    id: crypto.randomUUID(), createdAt: new Date().toISOString(),
+    importedAt: new Date().toISOString(),
+    title: t('todoExtractionTitle', lang),
+    projectId: selectedProjectId,
+    sourceReference: buildSourceReference(text, files, combined.length),
+    outputMode: 'worklog',
+    today: [], decisions: [], todo: todoResult.todos.map(t => t.title),
+    relatedProjects: [], tags: [],
+  };
+  addLog(entry);
+  if (getFeatureEnabled('todo_extract', true)) { addTodosFromLogWithMeta(entry.id, todoResult.todos); todoCount = todoResult.todos.length; }
+  setResult({ title: entry.title, today: [], decisions: [], todo: todoResult.todos.map(t => t.title), relatedProjects: [], tags: [] });
+  setOutputMode('worklog');
+  if (!selectedProjectId && projects.length > 0) {
+    triggerClassification(entry);
+  }
+
+  return { lastEntryId: entry.id, savedHandoffLog: null, todoCount };
+}
+
+// ---------------------------------------------------------------------------
+// Per-action strategy functions (demo mode)
+// ---------------------------------------------------------------------------
+
+async function executeDemoBoth(ctx: TransformContext): Promise<ActionResult> {
+  const { lang, selectedProjectId, text, files, combined, buildSourceReference, setResult, setOutputMode, setSimStep } = ctx;
+  let todoCount = 0;
+
+  const { demoTransformBoth } = await loadDemoData();
+  const bothResult = await demoTransformBoth(lang);
+  setSimStep(4);
+  const handoffEntry = buildHandoffLogEntry(bothResult.handoff, { projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length) });
+  addLog(handoffEntry);
+  const savedHandoffLog = handoffEntry;
+  const r = bothResult.worklog;
+  setResult(r); setOutputMode('worklog');
+  const worklogEntry: LogEntry = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), importedAt: new Date().toISOString(), title: r.title, projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length), outputMode: 'worklog', today: r.today, decisions: r.decisions, todo: r.todo, relatedProjects: r.relatedProjects, tags: r.tags };
+  addLog(worklogEntry); if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(worklogEntry.id, r.todo); todoCount = r.todo.length; }
+
+  return { lastEntryId: worklogEntry.id, savedHandoffLog, todoCount };
+}
+
+async function executeDemoHandoffTodo(ctx: TransformContext): Promise<ActionResult> {
+  const { lang, selectedProjectId, text, files, combined, buildSourceReference, setResult, setOutputMode, setSimStep } = ctx;
+  let todoCount = 0;
+
+  const { demoTransformHandoffTodo } = await loadDemoData();
+  const htr = await demoTransformHandoffTodo(lang);
+  setSimStep(4);
+  const handoffEntry = buildHandoffLogEntry(htr.handoff, { projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length) });
+  addLog(handoffEntry);
+  const savedHandoffLog = handoffEntry;
+  setResult(htr.handoff); setOutputMode('handoff');
+  if (htr.todos.length > 0 && getFeatureEnabled('todo_extract', true)) {
+    addTodosFromLogWithMeta(handoffEntry.id, htr.todos.map(td => ({ title: td.title, priority: td.priority, dueDate: td.dueDate })));
+    todoCount = htr.todos.length;
+  }
+
+  return { lastEntryId: handoffEntry.id, savedHandoffLog, todoCount };
+}
+
+async function executeDemoHandoff(ctx: TransformContext): Promise<ActionResult> {
+  const { lang, selectedProjectId, text, files, combined, buildSourceReference, setResult, setOutputMode, setSimStep } = ctx;
+
+  const { demoTransformHandoff } = await loadDemoData();
+  const r = await demoTransformHandoff(lang);
+  setSimStep(4);
+  const handoffEntry = buildHandoffLogEntry(r, { projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length) });
+  addLog(handoffEntry);
+  setResult(r); setOutputMode('handoff');
+
+  return { lastEntryId: handoffEntry.id, savedHandoffLog: handoffEntry, todoCount: 0 };
+}
+
+async function executeDemoTodoOnly(ctx: TransformContext): Promise<ActionResult> {
+  const { lang, setSimStep } = ctx;
+
+  const { demoTransformTodoOnly } = await loadDemoData();
+  const r = await demoTransformTodoOnly(lang);
+  setSimStep(4);
+  const todoCount = r.todos.length > 0 ? r.todos.length : 0;
+
+  return { lastEntryId: null, savedHandoffLog: null, todoCount };
+}
+
+async function executeDemoWorklog(ctx: TransformContext): Promise<ActionResult> {
+  const { lang, selectedProjectId, text, files, combined, buildSourceReference, setResult, setOutputMode, setSimStep } = ctx;
+  let todoCount = 0;
+
+  const { demoTransformText } = await loadDemoData();
+  const r = await demoTransformText(lang);
+  setSimStep(4);
+  setResult(r); setOutputMode('worklog');
+  const worklogEntry: LogEntry = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), importedAt: new Date().toISOString(), title: r.title, projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length), outputMode: 'worklog', today: r.today, decisions: r.decisions, todo: r.todo, relatedProjects: r.relatedProjects, tags: r.tags };
+  addLog(worklogEntry); if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(worklogEntry.id, r.todo); todoCount = r.todo.length; }
+
+  return { lastEntryId: worklogEntry.id, savedHandoffLog: null, todoCount };
+}
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
+
 interface UseTransformParams {
   lang: Lang;
   selectedProjectId: string | undefined;
@@ -129,7 +477,7 @@ export function useTransform(params: UseTransformParams) {
     const apiKey = getApiKey();
     if (!demo && !apiKey && !shouldUseBuiltinApi()) { setError(t('errorApiKeyMissing', lang)); return; }
 
-    // --- Shared streaming helpers (deduplicated from 5 action blocks) ---
+    // --- Shared streaming helpers ---
     function initSingleTransform() {
       setSimStep(0);
       setTimeout(() => setSimStep(1), 800);
@@ -163,288 +511,88 @@ export function useTransform(params: UseTransformParams) {
     const isBoth = doHandoff && doWorklog;
     const isTodoOnly = effectiveAction === 'todo_only';
     const isHandoffTodo = effectiveAction === 'handoff_todo';
-    let todoCount = 0;
     // Set outputMode for progress display
     setOutputMode((doHandoff || isHandoffTodo) ? 'handoff' : 'worklog');
 
+    // Build shared context for strategy functions
+    const ctx: TransformContext = {
+      combined, apiKey, willChunk, selectedProjectId, lang, text, files,
+      buildSourceReference, initSingleTransform, createStreamCallback,
+      setProgress, setResult, setOutputMode, setStreamDetail, setSimStep,
+      projects, engineRef, _t0, triggerClassification,
+    };
+
     try {
-      let lastEntryId: string | null = null;
-      let savedHandoffLog: LogEntry | null = null;
+      let actionResult: ActionResult;
 
       // --- Demo mode — return pre-generated results (lazy-loaded) ---
       if (demo) {
         setSimStep(1);
-        const { demoTransformBoth, demoTransformHandoff, demoTransformText, demoTransformTodoOnly, demoTransformHandoffTodo } = await loadDemoData();
         if (isBoth) {
-          const bothResult = await demoTransformBoth(lang);
-          setSimStep(4);
-          const handoffEntry = buildHandoffLogEntry(bothResult.handoff, { projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length) });
-          addLog(handoffEntry);
-          savedHandoffLog = handoffEntry;
-          onSaved(handoffEntry.id);
-          setSavedHandoffId(handoffEntry.id);
-          const r = bothResult.worklog;
-          setResult(r); setOutputMode('worklog');
-          const worklogEntry: LogEntry = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), importedAt: new Date().toISOString(), title: r.title, projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length), outputMode: 'worklog', today: r.today, decisions: r.decisions, todo: r.todo, relatedProjects: r.relatedProjects, tags: r.tags };
-          addLog(worklogEntry); if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(worklogEntry.id, r.todo); todoCount = r.todo.length; }
-          lastEntryId = worklogEntry.id; onSaved(worklogEntry.id);
+          actionResult = await executeDemoBoth(ctx);
+          onSaved(actionResult.savedHandoffLog!.id);
+          setSavedHandoffId(actionResult.savedHandoffLog!.id);
+          onSaved(actionResult.lastEntryId!);
         } else if (isHandoffTodo) {
-          const htr = await demoTransformHandoffTodo(lang);
-          setSimStep(4);
-          const handoffEntry = buildHandoffLogEntry(htr.handoff, { projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length) });
-          addLog(handoffEntry);
-          savedHandoffLog = handoffEntry;
-          onSaved(handoffEntry.id);
-          setSavedHandoffId(handoffEntry.id);
-          setResult(htr.handoff); setOutputMode('handoff');
-          if (htr.todos.length > 0 && getFeatureEnabled('todo_extract', true)) {
-            addTodosFromLogWithMeta(handoffEntry.id, htr.todos.map(td => ({ title: td.title, priority: td.priority, dueDate: td.dueDate })));
-            todoCount = htr.todos.length;
-          }
-          lastEntryId = handoffEntry.id;
+          actionResult = await executeDemoHandoffTodo(ctx);
+          onSaved(actionResult.savedHandoffLog!.id);
+          setSavedHandoffId(actionResult.savedHandoffLog!.id);
         } else if (doHandoff) {
-          const r = await demoTransformHandoff(lang);
-          setSimStep(4);
-          const handoffEntry = buildHandoffLogEntry(r, { projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length) });
-          addLog(handoffEntry);
-          savedHandoffLog = handoffEntry;
-          onSaved(handoffEntry.id); lastEntryId = handoffEntry.id;
-          setResult(r); setOutputMode('handoff');
+          actionResult = await executeDemoHandoff(ctx);
+          onSaved(actionResult.lastEntryId!);
         } else if (isTodoOnly) {
-          const r = await demoTransformTodoOnly(lang);
-          setSimStep(4);
-          if (r.todos.length > 0) { todoCount = r.todos.length; }
+          actionResult = await executeDemoTodoOnly(ctx);
         } else {
-          const r = await demoTransformText(lang);
-          setSimStep(4);
-          setResult(r); setOutputMode('worklog');
-          const worklogEntry: LogEntry = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), importedAt: new Date().toISOString(), title: r.title, projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length), outputMode: 'worklog', today: r.today, decisions: r.decisions, todo: r.todo, relatedProjects: r.relatedProjects, tags: r.tags };
-          addLog(worklogEntry); if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(worklogEntry.id, r.todo); todoCount = r.todo.length; }
-          lastEntryId = worklogEntry.id; onSaved(worklogEntry.id);
+          actionResult = await executeDemoWorklog(ctx);
+          onSaved(actionResult.lastEntryId!);
         }
+
         // Post-save: generate savedResult for markdown/context buttons
-        if (savedHandoffLog) {
-          const md = formatHandoffMarkdown(savedHandoffLog);
-          setSavedResult({ log: savedHandoffLog, markdown: md, fullContext: null });
+        if (actionResult.savedHandoffLog) {
+          const md = formatHandoffMarkdown(actionResult.savedHandoffLog);
+          setSavedResult({ log: actionResult.savedHandoffLog, markdown: md, fullContext: null });
           setWasFirstTransform(isFirstTransform);
         }
-        setSavedId(lastEntryId);
-        if (todoCount > 0) showToast?.(tf('toastTodosExtracted', lang, todoCount), 'success');
+        setSavedId(actionResult.lastEntryId);
+        if (actionResult.todoCount > 0) showToast?.(tf('toastTodosExtracted', lang, actionResult.todoCount), 'success');
         setLoading(false);
         return;
       }
 
-      // --- Combined "both" mode — single API call ---
+      // --- Real API path: dispatch to per-action strategy ---
       if (isBoth) {
-        let bothResult: BothResult;
-        if (willChunk) {
-          const engine = new ChunkEngine();
-          engineRef.current = engine;
-          bothResult = await engine.processBoth(combined, apiKey, (p) => setProgress(p));
-          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response (chunked): ${(performance.now() - _t0).toFixed(0)}ms`);
-          engineRef.current = null;
-        } else {
-          initSingleTransform();
-          const bothOpts: TransformBothOptions = {
-            ...createStreamCallback(),
-            projects: !selectedProjectId && projects.length > 0
-              ? projects.map(p => ({ id: p.id, name: p.name }))
-              : undefined,
-          };
-          const cachedBoth = getCachedResult<BothResult>(combined, 'both');
-          if (cachedBoth) {
-            bothResult = cachedBoth;
-          } else {
-            bothResult = await transformBoth(combined, bothOpts);
-            setCachedResult(combined, 'both', bothResult);
-          }
-          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response${cachedBoth ? ' (cached)' : ''}: ${(performance.now() - _t0).toFixed(0)}ms`);
-          setStreamDetail(null);
-          setSimStep(4);
-        }
+        actionResult = await executeBoth(ctx);
+        onSaved(actionResult.savedHandoffLog!.id);
+        setSavedHandoffId(actionResult.savedHandoffLog!.id);
+        onSaved(actionResult.lastEntryId!);
 
-        // Save handoff entry
-        const handoffEntry = buildHandoffLogEntry(bothResult.handoff, {
-          projectId: selectedProjectId,
-          sourceReference: buildSourceReference(text, files, combined.length),
-        });
-        addLog(handoffEntry);
-        savedHandoffLog = handoffEntry;
-        onSaved(handoffEntry.id);
-        setSavedHandoffId(handoffEntry.id);
-
-        // Save worklog entry
-        const r = bothResult.worklog;
-        setResult(r);
-        setOutputMode('worklog'); // display worklog result (not handoff)
-        const worklogEntry: LogEntry = {
-          id: crypto.randomUUID(), createdAt: new Date().toISOString(),
-          importedAt: new Date().toISOString(),
-          title: r.title,
-          projectId: selectedProjectId,
-          sourceReference: buildSourceReference(text, files, combined.length),
-          outputMode: 'worklog',
-          today: r.today, decisions: r.decisions, todo: r.todo,
-          relatedProjects: r.relatedProjects, tags: r.tags,
-        };
-        addLog(worklogEntry);
-        if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(worklogEntry.id, r.todo); todoCount = r.todo.length; }
-        lastEntryId = worklogEntry.id; onSaved(worklogEntry.id);
-
-        // Use inline classification from the combined response (no extra API call)
-        if (!selectedProjectId && projects.length > 0 && bothResult.classification?.projectId) {
-          const cl = bothResult.classification;
+        // Handle inline classification suggestion from combined response
+        const extra = actionResult as ActionResult & { _bothResult?: BothResult; _worklogEntry?: LogEntry };
+        if (!selectedProjectId && projects.length > 0 && extra._bothResult?.classification?.projectId) {
+          const cl = extra._bothResult.classification;
           const matchedProject = projects.find(p => p.id === cl.projectId);
-          if (matchedProject && cl.confidence > 0.7) {
-            updateLog(handoffEntry.id, { projectId: cl.projectId ?? undefined, classificationConfidence: cl.confidence });
-            updateLog(worklogEntry.id, { projectId: cl.projectId ?? undefined, classificationConfidence: cl.confidence });
-            onSaved(worklogEntry.id);
-          } else if (matchedProject && cl.confidence > 0) {
-            setSuggestion({ logId: worklogEntry.id, projectId: cl.projectId!, projectName: matchedProject.name, confidence: cl.confidence });
-            updateLog(worklogEntry.id, { suggestedProjectId: cl.projectId ?? undefined, classificationConfidence: cl.confidence });
+          if (matchedProject && cl.confidence > 0 && cl.confidence <= 0.7) {
+            setSuggestion({ logId: actionResult.lastEntryId!, projectId: cl.projectId!, projectName: matchedProject.name, confidence: cl.confidence });
           }
         }
+      } else if (doHandoff && !isBoth) {
+        actionResult = await executeHandoff(ctx);
+        onSaved(actionResult.lastEntryId!);
+      } else if (doWorklog && !isBoth) {
+        actionResult = await executeWorklog(ctx);
+        onSaved(actionResult.lastEntryId!);
+      } else if (isHandoffTodo) {
+        actionResult = await executeHandoffTodo(ctx);
+        onSaved(actionResult.lastEntryId!);
+      } else if (isTodoOnly) {
+        actionResult = await executeTodoOnly(ctx);
+        onSaved(actionResult.lastEntryId!);
+      } else {
+        // Fallback — should not happen
+        actionResult = { lastEntryId: null, savedHandoffLog: null, todoCount: 0 };
       }
 
-      // --- Handoff only ---
-      if (doHandoff && !isBoth) {
-        let r: HandoffResult;
-        if (willChunk) {
-          const engine = new ChunkEngine();
-          engineRef.current = engine;
-          r = await engine.processHandoff(combined, apiKey, (p) => setProgress(p));
-          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response (chunked): ${(performance.now() - _t0).toFixed(0)}ms`);
-          engineRef.current = null;
-        } else {
-          initSingleTransform();
-          const cachedHandoff = getCachedResult<HandoffResult>(combined, 'handoff');
-          if (cachedHandoff) {
-            r = cachedHandoff;
-          } else {
-            r = await transformHandoff(combined, createStreamCallback());
-            setCachedResult(combined, 'handoff', r);
-          }
-          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response${cachedHandoff ? ' (cached)' : ''}: ${(performance.now() - _t0).toFixed(0)}ms`);
-          setStreamDetail(null);
-          setSimStep(4);
-        }
-        setResult(r);
-        const entry = buildHandoffLogEntry(r, {
-          projectId: selectedProjectId,
-          sourceReference: buildSourceReference(text, files, combined.length),
-        });
-        addLog(entry); savedHandoffLog = entry; lastEntryId = entry.id; onSaved(entry.id);
-        if (!selectedProjectId && projects.length > 0) {
-          triggerClassification(entry);
-        }
-      }
-
-      // --- Worklog only ---
-      if (doWorklog && !isBoth) {
-        let r: TransformResult;
-        if (willChunk) {
-          const engine = new ChunkEngine();
-          engineRef.current = engine;
-          r = await engine.process(combined, apiKey, (p) => setProgress(p));
-          engineRef.current = null;
-        } else {
-          initSingleTransform();
-          const cachedWorklog = getCachedResult<TransformResult>(combined, 'worklog');
-          if (cachedWorklog) {
-            r = cachedWorklog;
-          } else {
-            r = await transformText(combined, createStreamCallback());
-            setCachedResult(combined, 'worklog', r);
-          }
-          setStreamDetail(null);
-          setSimStep(4);
-        }
-
-        setResult(r);
-        const entry: LogEntry = {
-          id: crypto.randomUUID(), createdAt: new Date().toISOString(),
-          importedAt: new Date().toISOString(),
-          title: r.title,
-          projectId: selectedProjectId,
-          sourceReference: buildSourceReference(text, files, combined.length),
-          outputMode: 'worklog',
-          today: r.today, decisions: r.decisions, todo: r.todo,
-          relatedProjects: r.relatedProjects, tags: r.tags,
-        };
-        addLog(entry);
-        if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(entry.id, r.todo); todoCount = r.todo.length; }
-        lastEntryId = entry.id; onSaved(entry.id);
-        if (!selectedProjectId && projects.length > 0) {
-          triggerClassification(entry);
-        }
-      }
-
-      // --- Handoff + TODO ---
-      if (isHandoffTodo) {
-        initSingleTransform();
-        let htResult: HandoffTodoResult;
-        const cachedHT = getCachedResult<HandoffTodoResult>(combined, 'handoff_todo');
-        if (cachedHT) {
-          htResult = cachedHT;
-        } else {
-          htResult = await transformHandoffTodo(combined, createStreamCallback());
-          setCachedResult(combined, 'handoff_todo', htResult);
-        }
-        setStreamDetail(null);
-        setSimStep(4);
-
-        const r = htResult.handoff;
-        setResult(r);
-        const entry = buildHandoffLogEntry(r, {
-          projectId: selectedProjectId,
-          sourceReference: buildSourceReference(text, files, combined.length),
-        });
-        entry.todo = htResult.todos.map(td => td.title);
-        addLog(entry);
-        savedHandoffLog = entry;
-        if (getFeatureEnabled('todo_extract', true)) { addTodosFromLogWithMeta(entry.id, htResult.todos); todoCount = htResult.todos.length; }
-        lastEntryId = entry.id; onSaved(entry.id);
-        if (!selectedProjectId && projects.length > 0) {
-          triggerClassification(entry);
-        }
-      }
-
-      // --- TODO only ---
-      if (isTodoOnly) {
-        initSingleTransform();
-        let todoResult: TodoOnlyResult;
-        const cachedTodo = getCachedResult<TodoOnlyResult>(combined, 'todo_only');
-        if (cachedTodo) {
-          todoResult = cachedTodo;
-        } else {
-          todoResult = await transformTodoOnly(combined, createStreamCallback());
-          setCachedResult(combined, 'todo_only', todoResult);
-        }
-        setStreamDetail(null);
-        setSimStep(4);
-
-        // Save as a minimal log entry (handoff body empty, worklog fields empty)
-        const entry: LogEntry = {
-          id: crypto.randomUUID(), createdAt: new Date().toISOString(),
-          importedAt: new Date().toISOString(),
-          title: t('todoExtractionTitle', lang),
-          projectId: selectedProjectId,
-          sourceReference: buildSourceReference(text, files, combined.length),
-          outputMode: 'worklog',
-          today: [], decisions: [], todo: todoResult.todos.map(t => t.title),
-          relatedProjects: [], tags: [],
-        };
-        addLog(entry);
-        if (getFeatureEnabled('todo_extract', true)) { addTodosFromLogWithMeta(entry.id, todoResult.todos); todoCount = todoResult.todos.length; }
-        setResult({ title: entry.title, today: [], decisions: [], todo: todoResult.todos.map(t => t.title), relatedProjects: [], tags: [] });
-        setOutputMode('worklog');
-        lastEntryId = entry.id; onSaved(entry.id);
-        if (!selectedProjectId && projects.length > 0) {
-          triggerClassification(entry);
-        }
-      }
-
-      if (lastEntryId) setSavedId(lastEntryId);
+      if (actionResult.lastEntryId) setSavedId(actionResult.lastEntryId);
 
       // Record AI quality metric
       const _duration = performance.now() - _t0;
@@ -457,47 +605,47 @@ export function useTransform(params: UseTransformParams) {
         timestamp: Date.now(),
         action: effectiveAction,
         inputLength: combined.length,
-        outputValid: !!lastEntryId,
-        decisionsCount: (savedHandoffLog?.decisions?.length ?? 0),
-        todosCount: todoCount,
+        outputValid: !!actionResult.lastEntryId,
+        decisionsCount: (actionResult.savedHandoffLog?.decisions?.length ?? 0),
+        todosCount: actionResult.todoCount,
         durationMs: Math.round(_duration),
         cached: _cachedHit,
       });
 
       // Show preview panel for handoff/both modes; toast for worklog-only/todo-only
-      if (savedHandoffLog) {
-        const handoffMd = formatHandoffMarkdown(savedHandoffLog);
+      if (actionResult.savedHandoffLog) {
+        const handoffMd = formatHandoffMarkdown(actionResult.savedHandoffLog);
         let fullContextMd: string | null = null;
-        if (savedHandoffLog.projectId) {
-          const project = projects.find(p => p.id === savedHandoffLog!.projectId);
-          const masterNote = getMasterNote(savedHandoffLog.projectId);
+        if (actionResult.savedHandoffLog.projectId) {
+          const project = projects.find(p => p.id === actionResult.savedHandoffLog!.projectId);
+          const masterNote = getMasterNote(actionResult.savedHandoffLog.projectId);
           if (masterNote && project) {
             const allLogs = loadLogs();
-            const ctx = generateProjectContext(masterNote, allLogs, project.name);
-            fullContextMd = formatFullAiContext(ctx, savedHandoffLog);
+            const ctxData = generateProjectContext(masterNote, allLogs, project.name);
+            fullContextMd = formatFullAiContext(ctxData, actionResult.savedHandoffLog);
           }
         }
-        setSavedResult({ log: savedHandoffLog, markdown: handoffMd, fullContext: fullContextMd });
+        setSavedResult({ log: actionResult.savedHandoffLog, markdown: handoffMd, fullContext: fullContextMd });
         setWasFirstTransform(isFirstTransform);
         // Still show todo count toast for handoff_todo mode
-        if (isHandoffTodo && todoCount > 0) {
-          const todoMsg = tf('toastTodosExtracted', lang, todoCount);
+        if (isHandoffTodo && actionResult.todoCount > 0) {
+          const todoMsg = tf('toastTodosExtracted', lang, actionResult.todoCount);
           showToast?.(isFirstTransform ? `🎉 ${todoMsg}` : todoMsg, 'success');
         }
       } else {
         // Worklog-only or todo-only — just toast
         const lines: string[] = [];
         if (isTodoOnly) {
-          if (todoCount > 0) {
-            lines.push(tf('toastTodosExtracted', lang, todoCount));
+          if (actionResult.todoCount > 0) {
+            lines.push(tf('toastTodosExtracted', lang, actionResult.todoCount));
           } else {
             lines.push(t('toastNoTodosFound', lang));
           }
         }
         if (doWorklog) {
           lines.push(t('toastLogSaved', lang));
-          if (todoCount > 0) {
-            lines.push(tf('toastTodosAdded', lang, todoCount));
+          if (actionResult.todoCount > 0) {
+            lines.push(tf('toastTodosAdded', lang, actionResult.todoCount));
           }
         }
         const toastMsg = lines.join('\n');
