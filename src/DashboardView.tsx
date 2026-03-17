@@ -6,6 +6,7 @@ import type { Lang } from './i18n';
 import { getGreeting } from './greeting';
 import { getStreak, safeGetItem, safeSetItem } from './storage';
 import FirstUseTooltip from './FirstUseTooltip';
+import { EmptyDashboard } from './EmptyIllustrations';
 
 interface DashboardViewProps {
   logs: LogEntry[];
@@ -231,11 +232,11 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
   if (handoffLogs.length === 0) {
     return (
       <div className="workspace-content-wide flex-col items-center">
-        <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-secondary)', marginTop: 80, marginBottom: 32, textAlign: 'center' }}>
+        <div className="text-center" style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-secondary)', marginTop: 80, marginBottom: 32 }}>
           {getGreeting(lang)}
         </div>
         <div className="empty-state">
-          <div className="empty-state-icon">&#10024;</div>
+          <div className="empty-state-icon"><EmptyDashboard /></div>
           <p style={{ fontWeight: 600 }}>
             {t('dashboardWelcome', lang)}
           </p>
@@ -258,7 +259,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
     <div className="workspace-content-wide">
 
         {/* ── Greeting (centered, Notion-style) ── */}
-        <div style={{ textAlign: 'center', marginTop: 24, marginBottom: 36 }}>
+        <div className="text-center" style={{ marginTop: 24, marginBottom: 36 }}>
           <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text-secondary)', lineHeight: 1.2 }}>
             {getGreeting(lang)}
           </div>
@@ -318,7 +319,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
         {/* ── Quick access cards (horizontal scroll) ── */}
         {(lastActiveProject || projectSnapshots.length > 0) && (
           <div className="mb-2xl">
-            <div className="section-header" style={{ fontSize: 13, marginBottom: 10 }}>
+            <div className="section-header">
               <PlayCircle size={14} style={{ opacity: 0.5 }} />
               {t('dashboardRecentProjects', lang)}
             </div>
@@ -380,7 +381,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
         {/* ── Today's Focus ── */}
         {focusTasks.length > 0 && (
           <div className="mb-2xl">
-            <div className="section-header" style={{ fontSize: 13, marginBottom: 10 }}>
+            <div className="section-header">
               <Square size={14} style={{ opacity: 0.5 }} />
               {t('dashboardTodayFocus', lang)}
               {uncheckedActions.length > 0 && (
@@ -456,7 +457,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
         {/* ── Recently completed ── */}
         {recentlyDone.length > 0 && (
           <div className="mb-2xl" style={{ padding: '14px 16px', borderRadius: 12, background: 'color-mix(in srgb, var(--success-text, #22c55e) 4%, var(--card-bg))' }}>
-            <div className="section-header" style={{ fontSize: 13, marginBottom: 10 }}>
+            <div className="section-header">
               <CheckSquare size={14} style={{ color: 'var(--success-text)' }} />
               {t('dashboardDone', lang)}
             </div>
@@ -464,8 +465,8 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
               {recentlyDone.map((action) => (
                 <div
                   key={`${action.logId}-${action.index}`}
-                  className="flex-row"
-                  style={{ gap: 8, padding: '6px 0', fontSize: 12, color: 'var(--text-placeholder)' }}
+                  className="flex-row text-placeholder"
+                  style={{ gap: 8, padding: '6px 0', fontSize: 12 }}
                 >
                   <CheckSquare size={13} className="shrink-0" style={{ color: 'var(--success-text)' }} />
                   <span style={{ textDecoration: 'line-through', opacity: 0.6 }}>{action.text}</span>
@@ -478,7 +479,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
         {/* ── Blockers (if any, red-tinted) ── */}
         {projectSnapshots.some((s) => s.blockers.length > 0) && (
           <div className="mb-2xl">
-            <div className="section-header" style={{ fontSize: 13, marginBottom: 10 }}>
+            <div className="section-header">
               <AlertTriangle size={14} style={{ opacity: 0.5, color: 'var(--error-text, #ef4444)' }} />
               {t('dashboardBlockers', lang)}
             </div>
@@ -570,8 +571,8 @@ function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]
           background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
         }}
       >
-        <div className="flex-row justify-between" style={{ marginBottom: 14 }}>
-          <div className="section-title" style={{ fontWeight: 700 }}>
+        <div className="flex-row justify-between mb-md">
+          <div className="section-title font-semibold" style={{ fontWeight: 700 }}>
             {isJa ? 'あなたのアクティビティ' : 'Your Activity'}
           </div>
           {streak > 0 && (
@@ -596,7 +597,7 @@ function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]
         </div>
 
         {/* Row 2: this week comparison */}
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
+        <div className="mt-sm" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
           {isJa ? '今週' : 'This week'}: <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>{stats.thisWeekLogs}</span> {isJa ? 'ログ' : 'logs'}
           {' '}
           <span style={{ color: diffColor, fontWeight: 600 }}>
@@ -701,13 +702,13 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
 
   return (
     <div className="mb-2xl">
-      <div className="section-header" style={{ fontSize: 13, marginBottom: 14 }}>
+      <div className="section-header" style={{ marginBottom: 14 }}>
         <TrendingUp size={14} style={{ opacity: 0.5 }} />
         {t('trends', lang)}
       </div>
 
       {/* Weekly activity bars */}
-      <div className="flex-col gap-sm" style={{ marginBottom: 16 }}>
+      <div className="flex-col gap-sm mb-lg">
         {weeklyData.map((week, i) => (
           <div key={i} className="flex-row" style={{ gap: 10 }}>
             <span className="text-xs-placeholder shrink-0" style={{ width: 70, textAlign: 'right' }}>
@@ -735,7 +736,7 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
       {/* Key metrics row */}
       <div className="flex flex-wrap" style={{ gap: 12 }}>
         {/* This week vs last week */}
-        <div className="stat-card" style={{ flex: '1 1 200px', padding: '14px 20px', borderRadius: 12, borderColor: 'var(--border-subtle)' }}>
+        <div className="stat-card p-card" style={{ flex: '1 1 200px', borderRadius: 12, borderColor: 'var(--border-subtle)' }}>
           <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
             {t('vsLastWeek', lang)}
           </div>
@@ -745,7 +746,7 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
         </div>
 
         {/* Average logs per week */}
-        <div className="stat-card" style={{ flex: '1 1 200px', padding: '14px 20px', borderRadius: 12, borderColor: 'var(--border-subtle)' }}>
+        <div className="stat-card p-card" style={{ flex: '1 1 200px', borderRadius: 12, borderColor: 'var(--border-subtle)' }}>
           <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
             {t('avgPerWeek', lang)}
           </div>
@@ -755,7 +756,7 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
         </div>
 
         {/* TODO completion rate */}
-        <div className="stat-card" style={{ flex: '1 1 200px', padding: '14px 20px', borderRadius: 12, borderColor: 'var(--border-subtle)' }}>
+        <div className="stat-card p-card" style={{ flex: '1 1 200px', borderRadius: 12, borderColor: 'var(--border-subtle)' }}>
           <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
             {t('completionRate', lang)}
           </div>

@@ -54,6 +54,23 @@ export function EmptyProjects() {
   );
 }
 
+export function EmptyDashboard() {
+  return (
+    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* grid/dashboard layout */}
+      <rect x="10" y="14" width="26" height="22" rx="4" stroke="var(--text-muted)" strokeWidth="2" opacity="0.25" />
+      <rect x="44" y="14" width="26" height="22" rx="4" stroke="var(--text-muted)" strokeWidth="2" opacity="0.2" />
+      <rect x="10" y="44" width="26" height="22" rx="4" stroke="var(--text-muted)" strokeWidth="2" opacity="0.2" />
+      <rect x="44" y="44" width="26" height="22" rx="4" stroke="var(--text-muted)" strokeWidth="2" opacity="0.15" />
+      {/* sparkle accents */}
+      <circle cx="23" cy="25" r="4" fill="var(--accent)" opacity="0.5" />
+      <circle cx="57" cy="25" r="3" fill="var(--accent)" opacity="0.3" />
+      <circle cx="23" cy="55" r="3" fill="var(--accent)" opacity="0.25" />
+      <circle cx="57" cy="55" r="2" fill="var(--accent)" opacity="0.15" />
+    </svg>
+  );
+}
+
 export function EmptyTimeline() {
   return (
     <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">

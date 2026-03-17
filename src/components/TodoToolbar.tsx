@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { CheckSquare, Square, MoreVertical, Trash2, Check, CheckCheck, AlertTriangle, Copy, Calendar, Clock } from 'lucide-react';
-import type { Todo, LogEntry } from '../types';
+import { CheckSquare, Square, MoreVertical, Trash2, Check, CheckCheck, AlertTriangle, Copy, Calendar } from 'lucide-react';
+import type { Todo } from '../types';
 import { t, tf } from '../i18n';
 import type { Lang } from '../i18n';
 import DropdownMenu from '../DropdownMenu';
-import { isOverdue, isDueToday, isStaleTodo } from './TodoItem';
+import { isOverdue, isDueToday } from './TodoItem';
 
 export type SortKey = 'created' | 'title' | 'priority' | 'due';
 export type GroupKey = 'none' | 'date' | 'priority' | 'source';

@@ -263,6 +263,17 @@
 .mb-lg { margin-bottom: 16px; }
 .mb-xl { margin-bottom: 24px; }
 .mb-2xl { margin-bottom: 32px; }
+.mt-sm { margin-top: 8px; }
+.mt-md { margin-top: 12px; }
+.text-body { color: var(--text-body); font-size: 14px; }
+.text-secondary { color: var(--text-secondary); }
+.text-placeholder { color: var(--text-placeholder); }
+.p-card { padding: 14px 20px; }
+.border-bottom { border-bottom: 1px solid var(--border-default); }
+.border-top { border-top: 1px solid var(--border-default); }
+.text-center { text-align: center; }
+.relative { position: relative; }
+.cursor-pointer { cursor: pointer; }
 
 /* Badge/pill */
 .badge {

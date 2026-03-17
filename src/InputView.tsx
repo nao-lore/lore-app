@@ -239,7 +239,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       onDragLeave={fileImport.handleDragLeave}
     >
       {/* Greeting + Project Switcher */}
-      <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', margin: '0 0 8px', color: 'var(--text-primary)', textAlign: 'center' }}>
+      <h1 className="text-center" style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', margin: '0 0 8px', color: 'var(--text-primary)' }}>
         {getGreeting(lang)}{(() => { const streak = getStreak(); return streak > 1 ? ` 🔥 ${streak}` : ''; })()}
       </h1>
       {/* Quick stats */}
@@ -248,7 +248,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         if (pendingTodosCount > 0) parts.push(lang === 'ja' ? `未完了TODO ${pendingTodosCount}件` : `${pendingTodosCount} pending TODO${pendingTodosCount !== 1 ? 's' : ''}`);
         if (lastLogCreatedAt) parts.push((lang === 'ja' ? '最終変換: ' : 'Last: ') + formatRelativeTime(lastLogCreatedAt, lang as 'en' | 'ja'));
         return parts.length > 0 ? (
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', margin: '0 0 12px', fontWeight: 400 }}>
+          <p className="text-center" style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 12px', fontWeight: 400 }}>
             {parts.join(' · ')}
           </p>
         ) : null;
@@ -256,10 +256,10 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       {/* Post-generation preview panel */}
       {savedResult && (
         <div style={{ maxWidth: 760, margin: '0 auto', padding: 20 }}>
-          <h3 style={{ marginBottom: 12, fontSize: 18, fontWeight: 700 }}>{wasFirstTransform ? `🎉 ${t('logSaved', lang)}` : t('logSaved', lang)}</h3>
+          <h3 className="mb-md" style={{ fontSize: 18, fontWeight: 700 }}>{wasFirstTransform ? `🎉 ${t('logSaved', lang)}` : t('logSaved', lang)}</h3>
 
           {/* Rich formatted preview */}
-          <div style={{
+          <div className="mb-lg" style={{
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-default)',
             borderRadius: 8,
@@ -268,7 +268,6 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             overflow: 'auto',
             fontSize: 13,
             lineHeight: 1.6,
-            marginBottom: 16,
           }}>
             <HandoffResultDisplay result={{
               title: savedResult.log.title,
@@ -356,14 +355,13 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
       {/* Input Card — hidden when preview panel is shown */}
       {!savedResult && (<div
-        className="input-card-hero"
-        style={fileImport.dragging ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 3px var(--accent-focus)', position: 'relative' as const } : { position: 'relative' as const }}
+        className="input-card-hero relative"
+        style={fileImport.dragging ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 3px var(--accent-focus)' } : undefined}
       >
         {/* Drag & drop overlay */}
         {fileImport.dragging && (
-          <div style={{
+          <div className="flex-center" style={{
             position: 'absolute', inset: 0, zIndex: 10,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'var(--accent-bg, rgba(99,102,241,0.08))',
             borderRadius: 'inherit',
             pointerEvents: 'none',
@@ -458,7 +456,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         </div>
 
         {/* Transform button — bottom right inside card */}
-        <div className="flex-row" style={{ position: 'absolute', right: 14, bottom: 12, gap: 6 }}>
+        <div className="flex-row gap-xs" style={{ position: 'absolute', right: 14, bottom: 12 }}>
           {!loading && shouldUseBuiltinApi() && (() => {
             const { used, limit } = getBuiltinUsage();
             return (
@@ -714,7 +712,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       {result && (
         <div className="result-panel" aria-live="polite" style={{ marginTop: 28 }}>
           {savedId && (
-            <div className="alert-success" style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <div className="alert-success flex-row flex-wrap justify-between mb-xl" style={{ gap: 8 }}>
               <span>{t('savedToLogs', lang)}</span>
               <div className="flex gap-sm">
                 {savedHandoffId && (
@@ -737,12 +735,12 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             </div>
           )}
           {classifying && (
-            <div style={{ marginBottom: 16, padding: '10px 14px', fontSize: 13, color: 'var(--text-secondary)', background: 'var(--bg-surface-secondary)', borderRadius: 8 }}>
+            <div className="mb-lg" style={{ padding: '10px 14px', fontSize: 13, color: 'var(--text-secondary)', background: 'var(--bg-surface-secondary)', borderRadius: 8 }}>
               {t('classifying', lang)}
             </div>
           )}
           {suggestion && (
-            <div style={{ marginBottom: 16, padding: '10px 14px', fontSize: 13, background: 'var(--accent-bg)', border: '1px solid var(--accent-muted)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <div className="flex-row flex-wrap mb-lg" style={{ padding: '10px 14px', fontSize: 13, background: 'var(--accent-bg)', border: '1px solid var(--accent-muted)', borderRadius: 8, gap: 10 }}>
               <span>{t('suggestedProject', lang)}: <strong>{suggestion.projectName}</strong></span>
               <button className="btn btn-primary" onClick={handleAcceptSuggestion} style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }}>
                 {t('classifyAccept', lang)}
@@ -757,10 +755,10 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           )}
           {/* Post-save project picker — only when unassigned and no suggestion */}
           {savedId && !selectedProjectId && !suggestion && !classifying && projects.length > 0 && (
-            <div style={{ marginBottom: 16, padding: '10px 14px', fontSize: 13, background: 'var(--bg-surface-secondary)', border: '1px solid var(--border-default)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <div className="flex-row flex-wrap mb-lg" style={{ padding: '10px 14px', fontSize: 13, background: 'var(--bg-surface-secondary)', border: '1px solid var(--border-default)', borderRadius: 8, gap: 10 }}>
               <span>{t('addToProject', lang)}</span>
               {postSavePickerOpen ? (
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <div className="flex flex-wrap" style={{ gap: 6 }}>
                   {projects.map((p) => (
                     <button key={p.id} className="btn" onClick={() => handlePostSaveAssign(p.id)} style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }}>
                       {p.name}
@@ -777,7 +775,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
               )}
             </div>
           )}
-          <h3 style={{ fontSize: 18, marginBottom: 4 }}>{result.title}</h3>
+          <h3 style={{ fontSize: 18 }}>{result.title}</h3>
 
           {outputMode === 'handoff' ? (
             <HandoffResultDisplay result={result as HandoffResult} lang={lang} />
@@ -785,7 +783,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             <WorklogResultDisplay result={result as TransformResult} lang={lang} />
           )}
 
-          <div className="flex flex-wrap gap-sm" style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border-default)' }}>
+          <div className="flex flex-wrap gap-sm border-top" style={{ marginTop: 20, paddingTop: 16 }}>
             <button className="btn" onClick={handleCopy} style={copied ? { color: 'var(--success-text)', borderColor: 'var(--success-border)' } : undefined}>
               {copied ? <><Check size={14} /> {t('copied', lang)}</> : <><Copy size={14} /> {t('copyMarkdown', lang)}</>}
             </button>

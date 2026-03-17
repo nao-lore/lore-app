@@ -56,14 +56,15 @@ function StatsModal({ stats, lang, onClose, onOpenHistory, onOpenProjects, onOpe
         aria-label={t('statsTitle', lang)}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 style={{ margin: '0 0 16px', fontSize: 16 }}>{t('statsTitle', lang)}</h3>
+        <h3 className="mb-lg" style={{ margin: 0, fontSize: 16 }}>{t('statsTitle', lang)}</h3>
         <div className="flex-col">
           {rows.map((row) => (
             <div
               key={row.label}
               style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '8px 0', borderBottom: '1px solid var(--border-divider)',
+                padding: '8px 0',
+                borderBottom: '1px solid var(--border-divider)',
                 cursor: row.onClick ? 'pointer' : undefined,
               }}
               onClick={row.onClick ? () => { onClose(); row.onClick!(); } : undefined}
@@ -73,7 +74,7 @@ function StatsModal({ stats, lang, onClose, onOpenHistory, onOpenProjects, onOpe
             </div>
           ))}
         </div>
-        <div style={{ marginTop: 16, textAlign: 'right' }}>
+        <div className="text-center" style={{ marginTop: 16, textAlign: 'right' }}>
           <button className="btn" onClick={onClose} style={{ fontSize: 13 }}>
             {t('close', lang)}
           </button>
@@ -265,23 +266,23 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
   const menuLog = menuState ? logs.find((l) => l.id === menuState.logId) : null;
 
   return (
-    <nav className="sidebar" aria-label={t('appName', lang)} style={{ width: 260, minWidth: 260, height: '100%', borderRight: '1px solid var(--border-default)', display: 'flex', flexDirection: 'column', background: 'var(--bg-sidebar)' }}>
+    <nav className="sidebar flex-col" aria-label={t('appName', lang)} style={{ width: 260, minWidth: 260, height: '100%', borderRight: '1px solid var(--border-default)', background: 'var(--bg-sidebar)' }}>
       {/* Header */}
       <div style={{ padding: '16px 14px 12px' }}>
-        <div className="flex-row justify-between" style={{ marginBottom: 14 }}>
-          <span onClick={onNewLog} style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', letterSpacing: '-0.3px', cursor: 'pointer' }}>{t('appName', lang)}</span>
+        <div className="flex-row justify-between mb-md">
+          <span className="cursor-pointer" onClick={onNewLog} style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>{t('appName', lang)}</span>
           <div className="flex gap-xs">
             <button className="toggle-btn" onClick={onCollapse} title={t('hideSidebar', lang)} aria-label={t('ariaHideSidebar', lang)}><Menu size={18} /></button>
           </div>
         </div>
-        <button className="btn btn-primary" onClick={onNewLog} style={{ width: '100%', marginBottom: 0 }}>
+        <button className="btn btn-primary w-full" onClick={onNewLog} style={{ marginBottom: 0 }}>
           {t('createHandoff', lang)}
         </button>
       </div>
 
       {/* Navigation — Primary */}
       <div style={{ padding: '4px 10px 0' }}>
-        <div style={{ borderTop: '1px solid var(--border-default)', margin: '0 4px 4px', paddingTop: 8 }} />
+        <div className="border-top" style={{ margin: '0 4px 4px', paddingTop: 8 }} />
         <button
           className={`sidebar-nav-item${activeView === 'input' ? ' active' : ''}`}
           onClick={onNewLog}
@@ -332,7 +333,8 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
 
         {/* Collapsible "More" section */}
         <div
-          style={{ padding: '0 4px', marginTop: 4, display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+          className="flex-row cursor-pointer"
+          style={{ padding: '0 4px', marginTop: 4, userSelect: 'none' }}
           onClick={toggleMore}
           role="button"
           tabIndex={0}
@@ -382,9 +384,10 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
       {/* Pinned section (projects + logs combined) */}
       {(pinnedProjects.length > 0 || pinnedLogs.length > 0) && (
         <div className="flex-col" style={{ padding: '4px 10px 0', flex: 1, minHeight: 0 }}>
-          <div style={{ borderTop: '1px solid var(--border-default)', margin: '4px 4px 8px' }} />
+          <div className="border-top" style={{ margin: '4px 4px 8px' }} />
           <div
-            style={{ padding: '0 4px', marginBottom: 4, display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+            className="flex-row cursor-pointer"
+            style={{ padding: '0 4px', marginBottom: 4, userSelect: 'none' }}
             onClick={togglePinned}
             role="button"
             tabIndex={0}
@@ -589,8 +592,8 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: 320 }}
           >
-            <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>{t('ctxChangeProject', lang)}</h3>
-            <div className="flex-col" style={{ gap: 2 }}>
+            <h3 className="mb-md" style={{ margin: 0, fontSize: 15 }}>{t('ctxChangeProject', lang)}</h3>
+            <div className="flex-col gap-xs" style={{ gap: 2 }}>
               {projects.map((p) => (
                 <button
                   key={p.id}
@@ -607,7 +610,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
                 </button>
               ))}
             </div>
-            <div style={{ marginTop: 12, textAlign: 'right' }}>
+            <div className="mt-md" style={{ textAlign: 'right' }}>
               <button className="btn" onClick={() => setChangingProjectLogId(null)} style={{ fontSize: 13 }}>
                 {t('cancel', lang)}
               </button>

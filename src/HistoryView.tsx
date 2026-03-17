@@ -1,281 +1,24 @@
 import { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { usePersistedState } from './usePersistedState';
-import { MoreHorizontal, Pin, Pencil, Trash2, FolderOpen, Copy, Download, ExternalLink, BookOpen, Calendar, CopyPlus, LayoutGrid, List, TrendingUp, AlignJustify } from 'lucide-react';
-import type { LogEntry, OutputMode, Project } from './types';
+import { FolderOpen, BookOpen, Trash2, Calendar } from 'lucide-react';
+import type { LogEntry, Project } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { trashLog, updateLog, loadLogs, getMasterNote, duplicateLog } from './storage';
 import { logToMarkdown } from './markdown';
 import { EmptyLogs } from './EmptyIllustrations';
-import { getProjectColor } from './projectColors';
 import LogPickerModal from './LogPickerModal';
-import DropdownMenu from './DropdownMenu';
 import ConfirmDialog from './ConfirmDialog';
-
-// ─── Keyword extraction ───
-const STOP_WORDS = new Set([
-  // English
-  'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
-  'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
-  'should', 'may', 'might', 'shall', 'can', 'to', 'of', 'in', 'for',
-  'on', 'with', 'at', 'by', 'from', 'as', 'into', 'through', 'during',
-  'before', 'after', 'and', 'but', 'or', 'nor', 'not', 'so', 'yet',
-  'both', 'either', 'neither', 'each', 'every', 'all', 'any', 'few',
-  'more', 'most', 'other', 'some', 'such', 'no', 'only', 'own', 'same',
-  'than', 'too', 'very', 'just', 'because', 'it', 'its', 'this', 'that',
-  'these', 'those', 'i', 'me', 'my', 'we', 'our', 'you', 'your', 'he',
-  'she', 'they', 'them', 'their', 'what', 'which', 'who', 'when', 'where',
-  'how', 'if', 'then', 'also', 'about', 'up', 'out', 'one', 'two',
-  'new', 'now', 'way', 'use', 'used', 'using',
-  // Japanese particles/common words
-  'の', 'に', 'は', 'を', 'た', 'が', 'で', 'て', 'と', 'し', 'れ',
-  'さ', 'ある', 'いる', 'する', 'も', 'な', 'よう', 'こと', 'これ',
-  'それ', 'もの', 'ため', 'から', 'まで', 'など', 'です', 'ます',
-]);
-
-function extractKeywords(logs: LogEntry[]): { word: string; count: number }[] {
-  const freq = new Map<string, number>();
-
-  for (const log of logs) {
-    // Collect text from tags (high signal)
-    for (const tag of log.tags) {
-      const lower = tag.toLowerCase().trim();
-      if (lower.length >= 2) {
-        freq.set(lower, (freq.get(lower) || 0) + 3); // tags get 3x weight
-      }
-    }
-
-    // Collect from title and content fields
-    const texts = [log.title];
-    if (log.outputMode === 'handoff') {
-      if (log.currentStatus) texts.push(...log.currentStatus);
-      if (log.nextActions) texts.push(...log.nextActions);
-      if (log.completed) texts.push(...log.completed);
-    } else {
-      texts.push(...log.today, ...log.decisions);
-    }
-
-    for (const text of texts) {
-      // Split on non-alphanumeric, keeping CJK characters and alphabetical words
-      const words = text.split(/[\s、。,.:;!?()（）「」[\]{}/\-—=+*#@<>]+/);
-      for (const raw of words) {
-        const w = raw.toLowerCase().trim();
-        if (w.length < 2 || STOP_WORDS.has(w) || /^\d+$/.test(w)) continue;
-        freq.set(w, (freq.get(w) || 0) + 1);
-      }
-    }
-  }
-
-  return Array.from(freq.entries())
-    .map(([word, count]) => ({ word, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
-}
-
-// ─── Highlight component ───
-const Highlight = memo(function Highlight({ text, query }: { text: string; query: string }) {
-  if (!query.trim()) return <>{text}</>;
-  const q = query.trim().toLowerCase();
-  const parts: { text: string; match: boolean }[] = [];
-  let remaining = text;
-  while (remaining.length > 0) {
-    const idx = remaining.toLowerCase().indexOf(q);
-    if (idx === -1) {
-      parts.push({ text: remaining, match: false });
-      break;
-    }
-    if (idx > 0) parts.push({ text: remaining.slice(0, idx), match: false });
-    parts.push({ text: remaining.slice(idx, idx + q.length), match: true });
-    remaining = remaining.slice(idx + q.length);
-  }
-  return (
-    <>
-      {parts.map((p, i) =>
-        p.match ? <mark key={i} className="search-highlight">{p.text}</mark> : <span key={i}>{p.text}</span>
-      )}
-    </>
-  );
-});
-
-// ─── Date filter helpers ───
-type DatePreset = 'today' | 'week' | 'month' | 'custom';
-
-function getDateRange(preset: DatePreset): { from: string; to: string } {
-  const now = new Date();
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
-  const today = fmt(now);
-  switch (preset) {
-    case 'today':
-      return { from: today, to: today };
-    case 'week': {
-      const start = new Date(now);
-      start.setDate(start.getDate() - start.getDay());
-      return { from: fmt(start), to: today };
-    }
-    case 'month': {
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      return { from: fmt(start), to: today };
-    }
-    default:
-      return { from: '', to: '' };
-  }
-}
-
-function matchesDateRange(log: LogEntry, from: string, to: string): boolean {
-  const d = log.createdAt.slice(0, 10);
-  if (from && d < from) return false;
-  if (to && d > to) return false;
-  return true;
-}
-
-function truncate(text: string, max: number): string {
-  return text.length > max ? text.slice(0, max) + '…' : text;
-}
-
-function buildPreview(log: LogEntry): string {
-  const parts: string[] = [];
-  if (log.outputMode === 'handoff') {
-    const status = log.currentStatus || log.inProgress;
-    if (status && status.length > 0) parts.push(status[0]);
-    if (log.nextActions && log.nextActions.length > 0) parts.push('Next: ' + log.nextActions[0]);
-  } else {
-    if (log.today.length > 0) parts.push(log.today[0]);
-    if (log.decisions.length > 0) parts.push(log.decisions[0]);
-    if (log.todo.length > 0) parts.push('TODO: ' + log.todo[0]);
-  }
-  return truncate(parts.join(' / '), 140);
-}
-
 import { matchesLogQuery } from './search';
-import { formatDateGroup, formatRelativeTime } from './utils/dateFormat';
+import { formatDateGroup } from './utils/dateFormat';
 
-function matchesQuery(log: LogEntry, query: string): boolean {
-  return matchesLogQuery(log, query);
-}
-
-function isToday(iso: string): boolean {
-  const d = new Date(iso);
-  const now = new Date();
-  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
-}
-
-function downloadFile(content: string, fileName: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-type ModeFilter = 'all' | 'pinned' | OutputMode;
-type SortKey = 'created' | 'title' | 'type';
-type GroupKey = 'none' | 'date' | 'type' | 'project' | 'pinned';
-
-// ─── Log Context Menu (inline dropdown) ───
-function LogContextMenu({ log, lang, projects, onClose, onAction }: {
-  log: LogEntry;
-  lang: Lang;
-  projects: Project[];
-  onClose: () => void;
-  onAction: (action: string, value?: string) => void;
-}) {
-  const [subMenu, setSubMenu] = useState<'project' | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onMouseDown = (e: MouseEvent) => {
-      if (menuRef.current && menuRef.current.contains(e.target as Node)) return;
-      const trigger = (e.target as HTMLElement).closest('.action-menu-btn');
-      if (trigger) return;
-      onClose();
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (subMenu) setSubMenu(null);
-        else onClose();
-      }
-    };
-    document.addEventListener('mousedown', onMouseDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', onMouseDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [onClose, subMenu]);
-
-  if (subMenu === 'project') {
-    return (
-      <div ref={menuRef} className="dropdown-menu" style={{ top: '100%', right: 0, minWidth: 200 }} onMouseDown={(e) => e.stopPropagation()}>
-        <div style={{ padding: '6px 12px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{t('ctxChangeProject', lang)}</div>
-        {projects.map((p) => (
-          <button key={p.id} className="mn-export-item" onClick={() => { onAction('assignProject', p.id); onClose(); }}>
-            <FolderOpen size={14} />
-            <span>{p.name}</span>
-            {log.projectId === p.id && <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--accent-text)' }}>✓</span>}
-          </button>
-        ))}
-        {log.projectId && (
-          <>
-            <div className="mn-export-divider" />
-            <button className="mn-export-item" onClick={() => { onAction('removeProject'); onClose(); }}>
-              <span style={{ color: 'var(--text-placeholder)', width: 14, textAlign: 'center' }}>—</span>
-              <span>{t('ctxRemoveFromProject', lang)}</span>
-            </button>
-          </>
-        )}
-        <div className="mn-export-divider" />
-        <button className="mn-export-item" onClick={() => setSubMenu(null)}>
-          <span>← {t('back', lang)}</span>
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div ref={menuRef} className="dropdown-menu" style={{ top: '100%', right: 0, minWidth: 200 }}>
-      <button className="mn-export-item" onClick={() => { onAction('pin'); onClose(); }}>
-        <Pin size={14} style={{ transform: 'rotate(45deg)' }} />
-        <span>{log.pinned ? t('ctxUnpin', lang) : t('ctxPin', lang)}</span>
-      </button>
-      <button className="mn-export-item" onClick={() => { onAction('rename'); onClose(); }}>
-        <Pencil size={14} />
-        <span>{t('ctxRename', lang)}</span>
-      </button>
-      <div className="mn-export-divider" />
-      {projects.length > 0 && (
-        <button className="mn-export-item" onClick={() => setSubMenu('project')}>
-          <FolderOpen size={14} />
-          <span>{t('ctxChangeProject', lang)}</span>
-          <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>→</span>
-        </button>
-      )}
-      <button className="mn-export-item" onClick={() => { onAction('copyMd'); onClose(); }}>
-        <Copy size={14} />
-        <span>{t('logCopyMarkdown', lang)}</span>
-      </button>
-      <button className="mn-export-item" onClick={() => { onAction('downloadMd'); onClose(); }}>
-        <Download size={14} />
-        <span>{t('logDownloadMd', lang)}</span>
-      </button>
-      <button className="mn-export-item" onClick={() => { onAction('downloadJson'); onClose(); }}>
-        <ExternalLink size={14} />
-        <span>{t('logDownloadJson', lang)}</span>
-      </button>
-      <button className="mn-export-item" onClick={() => { onAction('duplicate'); onClose(); }}>
-        <CopyPlus size={14} />
-        <span>{t('duplicateLog', lang)}</span>
-      </button>
-      <div className="mn-export-divider" />
-      <button className="mn-export-item" onClick={() => { onAction('delete'); onClose(); }} style={{ color: 'var(--error-text)' }}>
-        <Trash2 size={14} />
-        <span>{t('moveToTrash', lang)}</span>
-      </button>
-    </div>
-  );
-}
+// Extracted components
+import { HistoryCardItem, HistoryListItem, downloadFile, type LogRenderContext } from './components/HistoryCard';
+import {
+  HistoryFiltersToolbar, KeywordsBar, matchesDateRange,
+  type ModeFilter, type SortKey, type GroupKey, type DatePreset,
+} from './components/HistoryFilters';
 
 // ─── Main HistoryView ───
 interface HistoryViewProps {
@@ -351,13 +94,11 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
     scrollContainerRef.current?.scrollTo(0, 0);
   }, [debouncedQuery, modeFilter, sortKey, groupKey, dateFrom, dateTo, tagFilter]);
 
-  const keywords = useMemo(() => extractKeywords(logs), [logs]);
-
   // Filter (memoised)
   const filtered = useMemo(() => logs.filter((log) => {
     if (modeFilter === 'pinned' && !log.pinned) return false;
     if (modeFilter !== 'all' && modeFilter !== 'pinned' && (log.outputMode ?? 'worklog') !== modeFilter) return false;
-    if (debouncedQuery.trim() && !matchesQuery(log, debouncedQuery.trim())) return false;
+    if (debouncedQuery.trim() && !matchesLogQuery(log, debouncedQuery.trim())) return false;
     if (tagFilter && !log.tags.includes(tagFilter)) return false;
     if ((dateFrom || dateTo) && !matchesDateRange(log, dateFrom, dateTo)) return false;
     return true;
@@ -434,7 +175,6 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
       map.get(key)!.items.push(log);
     }
 
-    // Pinned group: enforce pinned first
     if (groupKey === 'pinned') {
       return ['pinned', 'unpinned']
         .filter((k) => map.has(k))
@@ -542,223 +282,22 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
     else onSelect(id);
   };
 
-  const sortOptions = [
-    { key: 'created', label: t('sortCreated', lang) },
-    { key: 'title', label: t('sortTitle', lang) },
-    { key: 'type', label: t('sortType', lang) },
-  ];
-  const groupOptions = [
-    { key: 'none', label: t('groupNone', lang) },
-    { key: 'date', label: t('groupDate', lang) },
-    { key: 'type', label: t('groupType', lang) },
-    { key: 'project', label: t('groupProject', lang) },
-    { key: 'pinned', label: t('groupPinned', lang) },
-  ];
-
-  const renderLogCard = (log: LogEntry) => {
-    const preview = buildPreview(log);
-    const modeLabel = log.outputMode === 'handoff' ? 'Handoff' : 'Log';
-    const today = isToday(log.createdAt);
-    const isSelected = selected.has(log.id);
-    const projectColor = log.projectId ? getProjectColor(projects.find((p) => p.id === log.projectId)?.color) : undefined;
-    return (
-      <div key={log.id} className={`card${isSelected ? ' card-selected' : ''}`} role="button" tabIndex={0} onClick={() => handleCardClick(log.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick(log.id); } }} style={{ position: 'relative', display: 'flex', gap: selectMode ? 12 : 0, ...(projectColor ? { borderLeft: `3px solid ${projectColor}` } : {}), ...(compact ? { padding: '4px 8px', fontSize: 12, lineHeight: 1.3 } : {}) }}>
-        {selectMode && (
-          <div style={{ paddingTop: 2, flexShrink: 0 }}>
-            <input type="checkbox" className="bulk-checkbox" checked={isSelected} onChange={() => toggleSelect(log.id)} onClick={(e) => e.stopPropagation()} aria-label={t('ariaBulkCheckbox', lang)} />
-          </div>
-        )}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Three-dot menu — right side, fixed */}
-          {!selectMode && (
-            <div style={{ position: 'absolute', top: 12, right: 12 }} onClick={(e) => e.stopPropagation()}>
-              <button className="action-menu-btn" aria-label={t('ariaMenu', lang)} onClick={() => setActionSheetLog(actionSheetLog?.id === log.id ? null : log)}>
-                <MoreHorizontal size={16} />
-              </button>
-              {actionSheetLog?.id === log.id && (
-                <LogContextMenu
-                  log={log}
-                  lang={lang}
-                  projects={projects}
-                  onClose={() => setActionSheetLog(null)}
-                  onAction={(action, value) => handleLogAction(log, action, value)}
-                />
-              )}
-            </div>
-          )}
-          {/* Row 1: state (left) + badge + date */}
-          <div className="flex-row" style={{ gap: compact ? 4 : 8, marginBottom: compact ? 2 : 6 }}>
-            {log.pinned && (
-              <Pin size={compact ? 10 : 12} style={{ color: 'var(--accent)', flexShrink: 0, transform: 'rotate(45deg)' }} />
-            )}
-            <span className={log.outputMode === 'handoff' ? 'badge-handoff' : 'badge-worklog'}>{modeLabel}</span>
-            <span className="meta" style={{ fontSize: 11, color: today ? 'var(--accent-text)' : undefined, fontWeight: today ? 500 : undefined }}>
-              {formatRelativeTime(log.createdAt, lang === 'ja' ? 'ja' : 'en')}
-            </span>
-            {!activeProjectId && log.projectId && (() => {
-              const proj = projects.find((p) => p.id === log.projectId);
-              return proj ? (
-                <span
-                  className="tag"
-                  style={{ fontSize: 10, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3 }}
-                  onClick={(e) => { e.stopPropagation(); onOpenProject?.(proj.id); }}
-                >
-                  {proj.icon && <span style={{ fontSize: 11 }}>{proj.icon}</span>}
-                  {proj.name}
-                </span>
-              ) : null;
-            })()}
-          </div>
-          {/* Row 2: title */}
-          <div className="card-title-clamp" style={{ fontWeight: 600, fontSize: compact ? 13 : 15, color: 'var(--text-secondary)', lineHeight: compact ? 1.2 : 1.4, paddingRight: 48 }}>
-            {editingLogId === log.id ? (
-              <input
-                className="input"
-                style={{ fontSize: 'inherit', fontWeight: 'inherit', width: '100%' }}
-                value={editDraft}
-                onChange={(e) => setEditDraft(e.target.value)}
-                onBlur={() => { if (editDraft.trim() && editDraft.trim() !== log.title) { updateLog(log.id, { title: editDraft.trim() }); onRefresh(); } setEditingLogId(null); }}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } if (e.key === 'Escape') { setEditingLogId(null); } }}
-                onClick={(e) => e.stopPropagation()}
-                autoFocus
-                maxLength={200}
-              />
-            ) : (
-              <Highlight text={log.title} query={debouncedQuery} />
-            )}
-          </div>
-          {/* Row 3: preview */}
-          {preview && <div className="meta" style={{ marginTop: compact ? 2 : 5, lineHeight: compact ? 1.3 : 1.55, fontSize: compact ? 11 : 12.5 }}><Highlight text={preview} query={debouncedQuery} /></div>}
-          {/* Row 3.5: nextActions progress */}
-          {log.outputMode === 'handoff' && log.nextActions && log.nextActions.length > 0 && (
-            <div className="flex-row" style={{ gap: 8, marginTop: 5, fontSize: 12, color: 'var(--text-placeholder)' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                ☑ {log.checkedActions?.length || 0}/{log.nextActions.length}
-              </span>
-              <div style={{ flex: 1, height: 3, background: 'var(--border-subtle)', borderRadius: 2, overflow: 'hidden', maxWidth: 80 }}>
-                <div style={{ height: '100%', background: 'var(--accent)', borderRadius: 2, width: `${((log.checkedActions?.length || 0) / log.nextActions.length) * 100}%` }} />
-              </div>
-            </div>
-          )}
-          {/* Row 4: unassigned — inline project picker */}
-          {!activeProjectId && !log.projectId && projects.length > 0 && (
-            <div
-              className="flex-row"
-              style={{ marginTop: 6, position: 'relative', gap: 4 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                className="flex-row text-xs-placeholder"
-                style={{ gap: 4, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' }}
-                onClick={() => setInlinePickerLogId(inlinePickerLogId === log.id ? null : log.id)}
-              >
-                <FolderOpen size={11} />
-                <span style={{ borderBottom: '1px dashed var(--border-subtle)' }}>
-                  {t('addToProject', lang)}
-                </span>
-              </button>
-              {inlinePickerLogId === log.id && (
-                <div className="flex flex-wrap gap-xs" style={{ marginLeft: 4 }}>
-                  {projects.map((p) => (
-                    <button
-                      key={p.id}
-                      className="tag"
-                      style={{ cursor: 'pointer', fontSize: 10, padding: '1px 8px', border: '1px solid var(--border-subtle)', background: 'var(--card-bg)' }}
-                      onClick={() => {
-                        updateLog(log.id, { projectId: p.id });
-                        setInlinePickerLogId(null);
-                        onRefresh();
-                        showToast?.(tf('addedToProject', lang, p.name), 'success');
-                      }}
-                    >
-                      {p.icon && <span style={{ marginRight: 3 }}>{p.icon}</span>}
-                      {p.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          {/* Row 5: tags */}
-          {log.tags.length > 0 && (
-            <div style={{ marginTop: compact ? 3 : 8, display: 'flex', flexWrap: 'wrap', gap: compact ? 2 : 4 }}>
-              {log.tags.slice(0, 5).map((tg, i) => (
-                <span
-                  key={i}
-                  className="tag"
-                  style={{ cursor: 'pointer', ...(compact ? { fontSize: 10, padding: '0px 6px' } : {}) }}
-                  onClick={(e) => { e.stopPropagation(); onTagFilter?.(tg); }}
-                >
-                  <Highlight text={tg} query={debouncedQuery} />
-                </span>
-              ))}
-              {log.tags.length > 5 && <span className="meta" style={{ fontSize: 11, alignSelf: 'center' }}>+{log.tags.length - 5}</span>}
-            </div>
-          )}
-        </div>
-      </div>
-    );
+  // Shared render context for card/list items
+  const renderCtx: LogRenderContext = {
+    lang, projects, activeProjectId, compact, selectMode, selected, debouncedQuery,
+    editingLogId, editDraft, actionSheetLog, inlinePickerLogId,
+    onCardClick: handleCardClick,
+    onToggleSelect: toggleSelect,
+    onSetActionSheetLog: setActionSheetLog,
+    onLogAction: handleLogAction,
+    onSetEditDraft: setEditDraft,
+    onSetEditingLogId: setEditingLogId,
+    onSetInlinePickerLogId: setInlinePickerLogId,
+    onRefresh, onOpenProject, onTagFilter, showToast,
   };
 
-  const renderLogListItem = (log: LogEntry) => {
-    const modeLabel = log.outputMode === 'handoff' ? 'H' : 'W';
-    const isSelected = selected.has(log.id);
-    const projectColor = log.projectId ? getProjectColor(projects.find((p) => p.id === log.projectId)?.color) : undefined;
-    return (
-      <div
-        key={log.id}
-        className={`list-row${isSelected ? ' list-row-selected' : ''}`}
-        role="button"
-        tabIndex={0}
-        style={{ ...(projectColor ? { borderLeft: `3px solid ${projectColor}` } : {}), ...(compact ? { padding: '2px 8px', fontSize: 12, lineHeight: 1.3, minHeight: 28 } : {}) }}
-        onClick={() => handleCardClick(log.id)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick(log.id); } }}
-      >
-        {selectMode && (
-          <input type="checkbox" className="bulk-checkbox" checked={isSelected} onChange={() => toggleSelect(log.id)} onClick={(e) => e.stopPropagation()} style={{ flexShrink: 0 }} />
-        )}
-        {log.pinned && <Pin size={compact ? 8 : 10} style={{ color: 'var(--accent)', flexShrink: 0, transform: 'rotate(45deg)' }} />}
-        <span className={log.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} style={{ flexShrink: 0, ...(compact ? { fontSize: 10 } : {}) }}>
-          {modeLabel}
-        </span>
-        <span className="list-row-title" style={compact ? { fontSize: 12 } : undefined}>
-          {editingLogId === log.id ? (
-            <input
-              className="input"
-              style={{ fontSize: 'inherit', fontWeight: 'inherit', width: '100%' }}
-              value={editDraft}
-              onChange={(e) => setEditDraft(e.target.value)}
-              onBlur={() => { if (editDraft.trim() && editDraft.trim() !== log.title) { updateLog(log.id, { title: editDraft.trim() }); onRefresh(); } setEditingLogId(null); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } if (e.key === 'Escape') { setEditingLogId(null); } }}
-              onClick={(e) => e.stopPropagation()}
-              autoFocus
-              maxLength={200}
-            />
-          ) : (
-            <Highlight text={log.title} query={debouncedQuery} />
-          )}
-        </span>
-        <span className="meta" style={{ fontSize: compact ? 10 : 11, flexShrink: 0, whiteSpace: 'nowrap' }}>{formatRelativeTime(log.createdAt, lang === 'ja' ? 'ja' : 'en')}</span>
-        {!selectMode && (
-          <div style={{ position: 'relative', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-            <button className="action-menu-btn" aria-label={t('ariaMenu', lang)} style={{ opacity: 0 }} onClick={() => setActionSheetLog(actionSheetLog?.id === log.id ? null : log)}>
-              <MoreHorizontal size={14} />
-            </button>
-            {actionSheetLog?.id === log.id && (
-              <LogContextMenu
-                log={log}
-                lang={lang}
-                projects={projects}
-                onClose={() => setActionSheetLog(null)}
-                onAction={(action, value) => handleLogAction(log, action, value)}
-              />
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
-
+  const renderLogCard = (log: LogEntry) => <HistoryCardItem key={log.id} log={log} ctx={renderCtx} />;
+  const renderLogListItem = (log: LogEntry) => <HistoryListItem key={log.id} log={log} ctx={renderCtx} />;
   const renderItem = viewMode === 'list' ? renderLogListItem : renderLogCard;
 
   // Build flat list for grouped view virtualization
@@ -802,7 +341,6 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
         }
       }
       if (viewMode === 'list') return listH;
-      // Non-grouped: use sorted array
       const log = sorted[index];
       if (log) {
         let h = baseH;
@@ -867,133 +405,29 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
       </div>
 
       {/* Toolbar: filter + search + sort + group */}
-      <div className="content-card flex-row flex-wrap" style={{ gap: 10, marginBottom: 20 }}>
-        <div className="seg-control">
-          {(['all', 'pinned', 'worklog', 'handoff'] as const).map((v) => (
-            <button
-              key={v}
-              className={`seg-control-btn${modeFilter === v ? ' active-worklog' : ''}`}
-              onClick={() => setModeFilter(v)}
-            >
-              {v === 'all' ? t('filterAll', lang) : v === 'pinned' ? t('filterPinned', lang) : v === 'worklog' ? t('filterWorklog', lang) : t('filterHandoff', lang)}
-            </button>
-          ))}
-        </div>
-        <input
-          className="input input-sm"
-          type="text"
-          value={rawQuery}
-          onChange={(e) => setRawQuery(e.target.value)}
-          aria-label={t('ariaSearchLogs', lang)}
-          placeholder={t('searchLogs', lang)}
-          maxLength={200}
-          style={{ flex: 1, minWidth: 120 }}
-        />
-        <DropdownMenu
-          label={t('sortLabel', lang)}
-          value={sortKey}
-          options={sortOptions}
-          onChange={(k) => setSortKey(k as SortKey)}
-        />
-        <DropdownMenu
-          label={t('groupLabel', lang)}
-          value={groupKey}
-          options={groupOptions}
-          onChange={(k) => setGroupKey(k as GroupKey)}
-        />
-        <div style={{ position: 'relative' }}>
-          <button
-            className={`btn btn-sm flex-row${dateFrom || dateTo ? ' btn-active' : ''}`}
-            onClick={() => setDateFilterOpen(!dateFilterOpen)}
-            style={{ gap: 4, fontSize: 12, padding: '4px 10px', minHeight: 26 }}
-          >
-            <Calendar size={12} />
-            {t('dateFilterBtn', lang)}
-            {(dateFrom || dateTo) && <span style={{ marginLeft: 2, fontWeight: 600 }}>·</span>}
-          </button>
-          {dateFilterOpen && (
-            <div className="date-filter-panel" onClick={(e) => e.stopPropagation()}>
-              <div className="flex flex-wrap gap-xs" style={{ marginBottom: 8 }}>
-                {(['today', 'week', 'month'] as DatePreset[]).map((p) => (
-                  <button
-                    key={p}
-                    className={`btn btn-sm${datePreset === p ? ' btn-active' : ''}`}
-                    style={{ fontSize: 11, padding: '2px 8px', minHeight: 22 }}
-                    onClick={() => {
-                      if (datePreset === p) {
-                        setDatePreset(null); setDateFrom(''); setDateTo('');
-                      } else {
-                        setDatePreset(p);
-                        const range = getDateRange(p);
-                        setDateFrom(range.from); setDateTo(range.to);
-                      }
-                    }}
-                  >
-                    {p === 'today' ? t('dateFilterToday', lang) : p === 'week' ? t('dateFilterThisWeek', lang) : t('dateFilterThisMonth', lang)}
-                  </button>
-                ))}
-              </div>
-              <div className="flex-row text-sm" style={{ gap: 6 }}>
-                <label style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t('dateFilterFrom', lang)}</label>
-                <input
-                  type="date"
-                  className="input input-sm"
-                  value={dateFrom}
-                  onChange={(e) => { setDateFrom(e.target.value); setDatePreset('custom'); }}
-                  style={{ fontSize: 12, padding: '2px 4px', minHeight: 24, width: 130 }}
-                />
-                <label style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t('dateFilterTo', lang)}</label>
-                <input
-                  type="date"
-                  className="input input-sm"
-                  value={dateTo}
-                  onChange={(e) => { setDateTo(e.target.value); setDatePreset('custom'); }}
-                  style={{ fontSize: 12, padding: '2px 4px', minHeight: 24, width: 130 }}
-                />
-              </div>
-              {(dateFrom || dateTo) && (
-                <button
-                  className="btn btn-sm"
-                  style={{ fontSize: 11, marginTop: 6, padding: '2px 8px', minHeight: 22 }}
-                  onClick={() => { setDateFrom(''); setDateTo(''); setDatePreset(null); }}
-                >
-                  {t('dateFilterClear', lang)}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-        <button
-          className={`btn btn-sm flex-row${compact ? ' btn-active' : ''}`}
-          onClick={() => setViewDensity(compact ? 'comfortable' : 'compact')}
-          title={compact ? t('viewComfortable', lang) : t('viewCompact', lang)}
-          aria-label={compact ? t('ariaSwitchToComfortable', lang) : t('ariaSwitchToCompact', lang)}
-          style={{ gap: 4, fontSize: 12, padding: '4px 10px', minHeight: 26, marginLeft: 'auto' }}
-        >
-          <AlignJustify size={12} />
-          {compact ? t('viewCompact', lang) : t('viewComfortable', lang)}
-        </button>
-        <div className="seg-control">
-          <button
-            className={`seg-control-btn${viewMode === 'card' ? ' active-worklog' : ''}`}
-            onClick={() => setViewMode('card')}
-            title={t('viewCard', lang)}
-            aria-label={t('ariaCardView', lang)}
-            style={{ padding: '4px 8px' }}
-          >
-            <LayoutGrid size={14} />
-          </button>
-          <button
-            className={`seg-control-btn${viewMode === 'list' ? ' active-worklog' : ''}`}
-            onClick={() => setViewMode('list')}
-            title={t('viewList', lang)}
-            aria-label={t('ariaListView', lang)}
-            style={{ padding: '4px 8px' }}
-          >
-            <List size={14} />
-          </button>
-        </div>
-      </div>
+      <HistoryFiltersToolbar
+        lang={lang}
+        modeFilter={modeFilter}
+        onModeFilterChange={setModeFilter}
+        rawQuery={rawQuery}
+        onRawQueryChange={setRawQuery}
+        sortKey={sortKey}
+        onSortKeyChange={setSortKey}
+        groupKey={groupKey}
+        onGroupKeyChange={setGroupKey}
+        compact={compact}
+        onToggleDensity={() => setViewDensity(compact ? 'comfortable' : 'compact')}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        dateFilterOpen={dateFilterOpen}
+        onDateFilterOpenChange={setDateFilterOpen}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        datePreset={datePreset}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        onDatePresetChange={setDatePreset}
+      />
 
       {/* Tag filter indicator */}
       {tagFilter && (
@@ -1011,31 +445,14 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
       )}
 
       {/* Top Keywords */}
-      {!debouncedQuery.trim() && !tagFilter && modeFilter === 'all' && logs.length >= 3 && (() => {
-        if (keywords.length === 0) return null;
-        return (
-          <div className="flex-row flex-wrap mb-md" style={{ gap: 8 }}>
-            <span className="flex-row text-sm-muted" style={{ gap: 4 }}>
-              <TrendingUp size={12} />
-              {t('topKeywords', lang)}:
-            </span>
-            {keywords.map((kw) => (
-              <span
-                key={kw.word}
-                className="tag"
-                role="button"
-                tabIndex={0}
-                style={{ cursor: 'pointer', fontSize: 12 }}
-                onClick={() => setRawQuery(kw.word)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setRawQuery(kw.word); } }}
-              >
-                {kw.word}
-                <span style={{ marginLeft: 4, fontSize: 10, opacity: 0.6 }}>{kw.count}</span>
-              </span>
-            ))}
-          </div>
-        );
-      })()}
+      <KeywordsBar
+        logs={logs}
+        lang={lang}
+        debouncedQuery={debouncedQuery}
+        tagFilter={tagFilter}
+        modeFilter={modeFilter}
+        onSetQuery={setRawQuery}
+      />
 
       {/* Date filter indicator */}
       {(dateFrom || dateTo) && !dateFilterOpen && (
@@ -1089,7 +506,6 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
           )}
         </div>
       ) : selectMode ? (
-        /* Select mode: render all items without virtualization (needed for bulk selection UX) */
         groupKey === 'none' ? (
           <div role="list">{sorted.map((log) => <div key={log.id} role="listitem">{renderItem(log)}</div>)}</div>
         ) : (
@@ -1115,7 +531,6 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
           </div>
         )
       ) : (
-        /* Normal mode: virtualized rendering */
         <div
           ref={scrollContainerRef}
           style={{ flex: 1, minHeight: 0, overflow: 'auto', maxHeight: 'calc(100vh - 200px)' }}

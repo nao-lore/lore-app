@@ -262,9 +262,10 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
   return (
     <div className="workspace-content">
       <div className="page-header">
-        <nav className="flex-row flex-wrap" style={{ fontSize: 12, marginBottom: 12, gap: 2 }}>
+        <nav className="flex-row flex-wrap mb-md" style={{ fontSize: 12, gap: 2 }}>
           <span
-            style={{ color: 'var(--text-muted)', cursor: 'pointer', textDecoration: 'none' }}
+            className="text-muted cursor-pointer"
+            style={{ textDecoration: 'none' }}
             onClick={onBack}
             role="button"
             tabIndex={0}
@@ -307,7 +308,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
         </nav>
         <div className="page-header-row">
           <div className="flex-1">
-            <div className="flex-row" style={{ gap: 10, marginBottom: 4 }}>
+            <div className="flex-row" style={{ gap: 10 }}>
               {isHandoff ? <span className="badge-handoff">Handoff</span> : <span className="badge-worklog">Log</span>}
               {project && (
                 <span
@@ -322,7 +323,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                 </span>
               )}
             </div>
-            <div className="flex-row flex-wrap text-sm-muted" style={{ gap: 12, marginBottom: 8 }}>
+            <div className="flex-row flex-wrap text-sm-muted mb-sm" style={{ gap: 12 }}>
               <span>{t('logCreatedAt', lang)}：{formatDateTimeFull(log.createdAt)}</span>
               {log.updatedAt && <span>{t('logUpdatedAt', lang)}：{formatDateTimeFull(log.updatedAt)}</span>}
               {/* Workload level */}
@@ -353,7 +354,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                 </button>
               )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <div className="flex" style={{ alignItems: 'flex-start', gap: 8 }}>
               {editingTitle ? (
                 <input
                   className="input"
@@ -413,7 +414,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
               {t('copyAiContext', lang)}
             </button>
           )}
-          <div className="shrink-0" style={{ position: 'relative' }}>
+          <div className="shrink-0 relative">
             <button
               className="card-menu-btn"
               data-menu-trigger="detail"
@@ -486,7 +487,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
       </div>
 
       {log.tags.length > 0 && (
-        <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        <div className="flex flex-wrap mb-lg" style={{ gap: 4 }}>
           {log.tags.map((tag, i) => (
             <span
               key={i}
@@ -649,14 +650,14 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
         )}
 
         {log.sourceReference && (
-          <div className="content-card" style={{ fontSize: 12, color: 'var(--text-subtle)', display: 'flex', flexWrap: 'wrap', gap: '4px 16px' }}>
+          <div className="content-card flex flex-wrap" style={{ fontSize: 12, color: 'var(--text-subtle)', gap: '4px 16px' }}>
             {log.sourceReference.fileName && <span>{log.sourceReference.fileName}</span>}
             {log.sourceReference.charCount != null && <span>{log.sourceReference.charCount.toLocaleString()} {t('chars', lang)}</span>}
             {log.sourceReference.originalDate && <span>{log.sourceReference.originalDate}</span>}
           </div>
         )}
         {!log.sourceReference && log.sourceText && (
-          <details className="source-details" style={{ marginTop: 8 }}>
+          <details className="source-details mt-sm">
             <summary>{t('sourceText', lang)}</summary>
             <pre>{log.sourceText}</pre>
           </details>
@@ -666,7 +667,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
 
         {/* Memo section */}
         <div className="content-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: editingMemo || log.memo ? 8 : 0 }}>
+          <div className="flex-row justify-between" style={{ marginBottom: editingMemo || log.memo ? 8 : 0 }}>
             <div className="content-card-header" style={{ margin: 0 }}>{t('memoSection', lang)}</div>
             {!editingMemo && (
               <button
@@ -690,13 +691,13 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                 maxLength={10000}
                 style={{ width: '100%', resize: 'vertical', fontSize: 14, lineHeight: 1.6 }}
               />
-              <div className="flex gap-sm" style={{ marginTop: 8, justifyContent: 'flex-end' }}>
+              <div className="flex gap-sm mt-sm" style={{ justifyContent: 'flex-end' }}>
                 <button className="btn" style={{ fontSize: 12 }} onClick={() => setEditingMemo(false)}>{t('cancel', lang)}</button>
                 <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={handleMemoSave}>{t('memoSave', lang)}</button>
               </div>
             </div>
           ) : log.memo ? (
-            <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-body)', margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word' }}>{log.memo}</p>
+            <p className="text-body" style={{ lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word' }}>{log.memo}</p>
           ) : (
             <p
               className="meta"
@@ -710,7 +711,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
       </div>
       {/* Prev/Next navigation */}
       {(prevLogId || nextLogId) && (
-        <div className="flex-row justify-between" style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border-default)' }}>
+        <div className="flex-row justify-between border-top" style={{ marginTop: 20, paddingTop: 16 }}>
           <button
             className="btn"
             style={{ fontSize: 13, visibility: prevLogId ? 'visible' : 'hidden' }}
