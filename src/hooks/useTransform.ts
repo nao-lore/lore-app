@@ -13,6 +13,7 @@ import { t, tf } from '../i18n';
 import type { Lang } from '../i18n';
 import { formatHandoffMarkdown, formatFullAiContext } from '../formatHandoff';
 import { generateProjectContext } from '../generateProjectContext';
+import { recordMetric } from '../aiMetrics';
 
 export type TransformAction = 'both' | 'handoff' | 'worklog' | 'todo_only' | 'worklog_handoff' | 'handoff_todo';
 
@@ -133,7 +134,7 @@ export function useTransform(params: UseTransformParams) {
     setError(''); setLoading(true); setResult(null); setSavedId(null); setSavedHandoffId(null); setSavedResult(null); setProgress(null); setSimStep(0); setStreamDetail(null);
 
     const isFirstTransform = loadLogs().length === 0;
-    const _t0 = import.meta.env.DEV ? performance.now() : 0;
+    const _t0 = performance.now();
 
     // Normalize worklog_handoff → both internally
     const effectiveAction = action === 'worklog_handoff' ? 'both' as const : action;
@@ -304,15 +305,23 @@ export function useTransform(params: UseTransformParams) {
         } else {
           setSimStep(0);
           setTimeout(() => setSimStep(1), 800);
-          setTimeout(() => setSimStep(2), 2500);
+          let streamCharCount = 0;
+          const streamingEnabled = getFeatureEnabled('streaming', true);
           const cachedHandoff = getCachedResult<HandoffResult>(combined, 'handoff');
           if (cachedHandoff) {
             r = cachedHandoff;
           } else {
-            r = await transformHandoff(combined);
+            r = await transformHandoff(combined, {
+              onStream: streamingEnabled ? (_chunk: string, accumulated: string) => {
+                if (streamCharCount === 0) setSimStep(2);
+                streamCharCount = accumulated.length;
+                setStreamDetail(`${t('streamReceiving', lang)}... ${streamCharCount.toLocaleString()} chars`);
+              } : undefined,
+            });
             setCachedResult(combined, 'handoff', r);
           }
           if (import.meta.env.DEV && _t0) console.log(`[Perf] API response${cachedHandoff ? ' (cached)' : ''}: ${(performance.now() - _t0).toFixed(0)}ms`);
+          setStreamDetail(null);
           setSimStep(4);
         }
         setResult(r);
@@ -337,14 +346,22 @@ export function useTransform(params: UseTransformParams) {
         } else {
           setSimStep(0);
           setTimeout(() => setSimStep(1), 800);
-          setTimeout(() => setSimStep(2), 2500);
+          let streamCharCount = 0;
+          const streamingEnabled = getFeatureEnabled('streaming', true);
           const cachedWorklog = getCachedResult<TransformResult>(combined, 'worklog');
           if (cachedWorklog) {
             r = cachedWorklog;
           } else {
-            r = await transformText(combined);
+            r = await transformText(combined, {
+              onStream: streamingEnabled ? (_chunk: string, accumulated: string) => {
+                if (streamCharCount === 0) setSimStep(2);
+                streamCharCount = accumulated.length;
+                setStreamDetail(`${t('streamReceiving', lang)}... ${streamCharCount.toLocaleString()} chars`);
+              } : undefined,
+            });
             setCachedResult(combined, 'worklog', r);
           }
+          setStreamDetail(null);
           setSimStep(4);
         }
 
@@ -371,14 +388,23 @@ export function useTransform(params: UseTransformParams) {
       if (isHandoffTodo) {
         setSimStep(0);
         setTimeout(() => setSimStep(1), 800);
+        let streamCharCount = 0;
+        const streamingEnabled = getFeatureEnabled('streaming', true);
         let htResult: HandoffTodoResult;
         const cachedHT = getCachedResult<HandoffTodoResult>(combined, 'handoff_todo');
         if (cachedHT) {
           htResult = cachedHT;
         } else {
-          htResult = await transformHandoffTodo(combined);
+          htResult = await transformHandoffTodo(combined, {
+            onStream: streamingEnabled ? (_chunk: string, accumulated: string) => {
+              if (streamCharCount === 0) setSimStep(2);
+              streamCharCount = accumulated.length;
+              setStreamDetail(`${t('streamReceiving', lang)}... ${streamCharCount.toLocaleString()} chars`);
+            } : undefined,
+          });
           setCachedResult(combined, 'handoff_todo', htResult);
         }
+        setStreamDetail(null);
         setSimStep(4);
 
         const r = htResult.handoff;
@@ -401,15 +427,23 @@ export function useTransform(params: UseTransformParams) {
       if (isTodoOnly) {
         setSimStep(0);
         setTimeout(() => setSimStep(1), 800);
-        setTimeout(() => setSimStep(2), 2500);
+        let streamCharCount = 0;
+        const streamingEnabled = getFeatureEnabled('streaming', true);
         let todoResult: TodoOnlyResult;
         const cachedTodo = getCachedResult<TodoOnlyResult>(combined, 'todo_only');
         if (cachedTodo) {
           todoResult = cachedTodo;
         } else {
-          todoResult = await transformTodoOnly(combined);
+          todoResult = await transformTodoOnly(combined, {
+            onStream: streamingEnabled ? (_chunk: string, accumulated: string) => {
+              if (streamCharCount === 0) setSimStep(2);
+              streamCharCount = accumulated.length;
+              setStreamDetail(`${t('streamReceiving', lang)}... ${streamCharCount.toLocaleString()} chars`);
+            } : undefined,
+          });
           setCachedResult(combined, 'todo_only', todoResult);
         }
+        setStreamDetail(null);
         setSimStep(4);
 
         // Save as a minimal log entry (handoff body empty, worklog fields empty)
@@ -434,6 +468,24 @@ export function useTransform(params: UseTransformParams) {
       }
 
       if (lastEntryId) setSavedId(lastEntryId);
+
+      // Record AI quality metric
+      const _duration = performance.now() - _t0;
+      const _cachedHit = (effectiveAction === 'both' && !!getCachedResult<unknown>(combined, 'both'))
+        || (effectiveAction === 'handoff' && !!getCachedResult<unknown>(combined, 'handoff'))
+        || (effectiveAction === 'worklog' && !!getCachedResult<unknown>(combined, 'worklog'))
+        || (effectiveAction === 'todo_only' && !!getCachedResult<unknown>(combined, 'todo_only'))
+        || (effectiveAction === 'handoff_todo' && !!getCachedResult<unknown>(combined, 'handoff_todo'));
+      recordMetric({
+        timestamp: Date.now(),
+        action: effectiveAction,
+        inputLength: combined.length,
+        outputValid: !!lastEntryId,
+        decisionsCount: (savedHandoffLog?.decisions?.length ?? 0),
+        todosCount: todoCount,
+        durationMs: Math.round(_duration),
+        cached: _cachedHit,
+      });
 
       // Show preview panel for handoff/both modes; toast for worklog-only/todo-only
       if (savedHandoffLog) {

@@ -16,6 +16,7 @@ import type { FontSize } from './types';
 import { t, tf } from './i18n';
 import { useAppState } from './hooks/useAppState';
 import { useBootstrapEffects } from './hooks/useBootstrapEffects';
+import { useSwipeNavigation } from './hooks/useSwipeNavigation';
 import type { View } from './hooks/useAppState';
 
 export type { View };
@@ -57,8 +58,8 @@ const PricingView = lazy(() => import('./PricingView'));
 
 const FONT_SIZE_SCALE: Record<FontSize, number> = { small: 0.87, medium: 1, large: 1.13 };
 
-function resolveEffectiveTheme(pref: ThemePref): 'light' | 'dark' {
-  if (pref === 'light' || pref === 'dark') return pref;
+function resolveEffectiveTheme(pref: ThemePref): 'light' | 'dark' | 'high-contrast' {
+  if (pref === 'light' || pref === 'dark' || pref === 'high-contrast') return pref;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
@@ -83,6 +84,9 @@ export default function App() {
     refreshLogs: s.refreshLogs,
     logs: s.logs,
   });
+
+  // Mobile swipe-back gesture
+  useSwipeNavigation(s.handleBack);
 
   // Cache isDemoMode to avoid reading localStorage every render
   const [demoMode, setDemoModeState] = useState(() => isDemoMode());

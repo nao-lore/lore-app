@@ -212,6 +212,63 @@
   --bg-card: #1a1a1a;
 }
 
+[data-theme="high-contrast"] {
+  --bg-app: #fff;
+  --bg-sidebar: #fff;
+  --bg-surface: #fff;
+  --bg-surface-secondary: #f5f5f5;
+  --bg-surface-tertiary: #eee;
+  --border-default: #000;
+  --border-subtle: #000;
+  --border-hover: #000;
+  --border-divider: #000;
+  --text-primary: #000;
+  --text-secondary: #000;
+  --text-body: #000;
+  --text-muted: #333;
+  --text-subtle: #333;
+  --text-placeholder: #555;
+  --accent: #0000cc;
+  --accent-hover: #0000ff;
+  --accent-active: #000099;
+  --accent-text: #0000cc;
+  --accent-bg: #e6e6ff;
+  --accent-border: #0000cc;
+  --accent-focus: rgba(0, 0, 204, 0.2);
+  --accent-muted: #0000aa;
+  --accent-glow: rgba(0, 0, 204, 0.15);
+  --accent-glow-hover: rgba(0, 0, 204, 0.25);
+  --sidebar-hover: #e6e6ff;
+  --sidebar-active: #ccccff;
+  --seg-bg: #eee;
+  --seg-active-bg: #fff;
+  --seg-active-shadow: 0 0 0 2px #000;
+  --success-text: #006600;
+  --success-bg: #e6ffe6;
+  --success-border: #006600;
+  --error-text: #cc0000;
+  --error-bg: #ffe6e6;
+  --error-border: #cc0000;
+  --error-border-hover: #990000;
+  --warning-text: #886600;
+  --warning-bg: #fff5cc;
+  --warning-dot: #886600;
+  --info-text: #0000cc;
+  --info-bg: #e6e6ff;
+  --info-border: #0000cc;
+  --shadow-sm: 0 0 0 1px #000;
+  --shadow-card: 0 0 0 1px #000;
+  --shadow-md: 0 0 0 2px #000;
+  --shadow-hover: 0 0 0 2px #000;
+  --shadow-btn-hover: 0 0 0 1px #000;
+  --focus-ring: #0000cc;
+  --scrollbar: #666;
+  --scrollbar-hover: #333;
+  --card-bg: #fff;
+  --bg-primary: #fff;
+  --bg-card: #fff;
+}
+
 /* ─── Design tokens ─── */
 :root {
   --space-xs: 4px;
@@ -3804,4 +3861,37 @@ button:focus-visible,
 .scroll-to-top:hover {
   background: var(--interactive-hover);
   color: var(--text-secondary);
+}
+
+/* ===== RTL language support ===== */
+[dir="rtl"] .sidebar {
+  left: auto;
+  right: 0;
+}
+[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+[dir="rtl"] .sidebar-item {
+  text-align: right;
+}
+[dir="rtl"] .skip-link {
+  left: auto;
+  right: 0;
+}
+
+/* ===== Swipe-back visual indicator ===== */
+.swipe-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 12px;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9000;
+  opacity: 0;
+  background: linear-gradient(to right, rgba(0,0,0,0.08), transparent);
+  transition: opacity 0.15s ease;
+}
+.swipe-indicator.active {
+  opacity: 1;
 }

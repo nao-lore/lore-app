@@ -5,9 +5,13 @@ import { callProvider, callProviderStream } from './provider';
 import type { StreamCallback } from './provider';
 import { normalizeDecisions as normalizeDecisionsUtil } from './utils/decisions';
 import { SYSTEM_PROMPT, HANDOFF_PROMPT, BOTH_PROMPT, TODO_ONLY_PROMPT } from './prompts';
+import { parseJsonInWorker } from './workers/parseHelper';
 
 // Prompts (SYSTEM_PROMPT, HANDOFF_PROMPT, BOTH_PROMPT, TODO_ONLY_PROMPT) are
 // defined in ./prompts.ts with PROMPT_VERSION for tracking.
+
+// Threshold for offloading JSON parsing to a Web Worker (10 KB)
+const WORKER_PARSE_THRESHOLD = 10_000;
 
 // =============================================================================
 // Blocker dedup — remove blockers that overlap with completed/decisions
@@ -152,6 +156,20 @@ export function extractJson(raw: string): string {
   throw new Error('[Truncated] レスポンスが長すぎて途中で切れました。入力を短くして再試行してください。 / Response was truncated. Try shorter input.');
 }
 
+/**
+ * Extract and parse JSON from raw AI text.
+ * For large responses (>10 KB), offloads to a Web Worker to avoid blocking the main thread.
+ * Falls back to synchronous parsing for small responses.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function extractAndParse(rawText: string): Promise<any> {
+  if (rawText.length > WORKER_PARSE_THRESHOLD) {
+    return parseJsonInWorker(rawText);
+  }
+  const jsonText = extractJson(rawText);
+  return JSON.parse(jsonText);
+}
+
 // =============================================================================
 // Size policy — configurable limits
 // =============================================================================
@@ -195,7 +213,7 @@ function getLangInstruction(lang: string): string {
 }
 
 // Single-call transform for texts ≤ CHUNK_THRESHOLD
-export async function transformText(sourceText: string): Promise<TransformResult> {
+export async function transformText(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<TransformResult> {
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) {
     throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
@@ -206,24 +224,21 @@ export async function transformText(sourceText: string): Promise<TransformResult
 
   const userMessage = `${langInstruction}\n\nExtract a work log from the following conversation. Only include what is explicitly stated.\n\nCHAT:\n${sourceText}`;
 
-  const rawText = await callProvider({
-    apiKey,
-    system: SYSTEM_PROMPT,
-    userMessage,
-    maxTokens: 8192,
-  });
+  const req = { apiKey, system: SYSTEM_PROMPT, userMessage, maxTokens: 8192 };
+  const rawText = opts?.onStream
+    ? await callProviderStream(req, opts.onStream)
+    : await callProvider(req);
 
   try {
-    const jsonText = extractJson(rawText);
-    const parsed = JSON.parse(jsonText);
+    const parsed = await extractAndParse(rawText) as Record<string, unknown>;
     validateWorklogResult(parsed, sourceText);
     return {
-      title: parsed.title || 'Untitled',
-      today: parsed.today || [],
-      decisions: parsed.decisions || [],
-      todo: parsed.todo || [],
-      relatedProjects: parsed.relatedProjects || [],
-      tags: parsed.tags || [],
+      title: (parsed.title as string) || 'Untitled',
+      today: (parsed.today as string[]) || [],
+      decisions: (parsed.decisions as string[]) || [],
+      todo: (parsed.todo as string[]) || [],
+      relatedProjects: (parsed.relatedProjects as string[]) || [],
+      tags: (parsed.tags as string[]) || [],
     };
   } catch (error) {
     if (import.meta.env.DEV) console.warn('[Transform] Parse error:', error);
@@ -385,7 +400,7 @@ export function buildHandoffLogEntry(
   };
 }
 
-export async function transformHandoff(sourceText: string): Promise<HandoffResult> {
+export async function transformHandoff(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<HandoffResult> {
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) {
     throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
@@ -396,22 +411,19 @@ export async function transformHandoff(sourceText: string): Promise<HandoffResul
 
   const userMessage = `${langInstruction}\n\nExtract a restart memo from the following conversation. Focus on where to resume, what's done, next actions, and unresolved issues.\n\nCHAT:\n${sourceText}`;
 
-  const rawText = await callProvider({
-    apiKey,
-    system: HANDOFF_PROMPT,
-    userMessage,
-    maxTokens: 8192,
-  });
+  const req = { apiKey, system: HANDOFF_PROMPT, userMessage, maxTokens: 8192 };
+  const rawText = opts?.onStream
+    ? await callProviderStream(req, opts.onStream)
+    : await callProvider(req);
 
   try {
-    const jsonText = extractJson(rawText);
-    const parsed = JSON.parse(jsonText);
+    const parsed = await extractAndParse(rawText) as Record<string, unknown>;
     // Validate handoff title (reuse generic-title check)
     validateWorklogResult(parsed, sourceText);
-    const completed = parsed.completed || [];
-    const rawDecisions = parsed.decisions || [];
+    const completed = (parsed.completed || []) as string[];
+    const rawDecisions = (parsed.decisions || []) as unknown[];
     const { decisions, decisionRationales } = normalizeDecisions(rawDecisions);
-    const rawNextActions = parsed.nextActions || [];
+    const rawNextActions = (parsed.nextActions || []) as unknown[];
     let { nextActions, nextActionItems } = normalizeNextActions(rawNextActions);
     const resumeChecklist = normalizeResumeChecklist(parsed.resumeChecklist);
     let actionBacklog = normalizeActionBacklog(parsed.actionBacklog);
@@ -431,24 +443,24 @@ export async function transformHandoff(sourceText: string): Promise<HandoffResul
       actionBacklog = [...overflow, ...actionBacklog].slice(0, 7);
     }
     return {
-      title: parsed.title || 'Untitled',
+      title: (parsed.title as string) || 'Untitled',
       handoffMeta,
-      currentStatus: parsed.currentStatus || [],
+      currentStatus: (parsed.currentStatus || []) as string[],
       resumeChecklist,
       resumeContext: resumeChecklist.length > 0
         ? resumeChecklist.map(r => r.action)
         : (typeof parsed.resumeContext === 'string'
           ? (parsed.resumeContext.trim() ? [parsed.resumeContext.trim()] : [])
-          : (parsed.resumeContext || [])),
+          : ((parsed.resumeContext || []) as string[])),
       nextActions,
       nextActionItems,
       actionBacklog: actionBacklog.length > 0 ? actionBacklog : undefined,
       completed,
-      blockers: filterResolvedBlockers(parsed.blockers || [], completed, decisions),
+      blockers: filterResolvedBlockers((parsed.blockers || []) as string[], completed, decisions),
       decisions,
       decisionRationales,
-      constraints: parsed.constraints || [],
-      tags: parsed.tags || [],
+      constraints: (parsed.constraints || []) as string[],
+      tags: (parsed.tags || []) as string[],
     };
   } catch (error) {
     if (import.meta.env.DEV) console.warn('[Transform] Parse error:', error);
@@ -472,7 +484,7 @@ export interface TodoOnlyResult {
 }
 
 
-export async function transformTodoOnly(sourceText: string): Promise<TodoOnlyResult> {
+export async function transformTodoOnly(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<TodoOnlyResult> {
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) {
     throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
@@ -483,17 +495,14 @@ export async function transformTodoOnly(sourceText: string): Promise<TodoOnlyRes
 
   const userMessage = `${langInstruction}\n\nExtract a TODO list from the following conversation. Only include actions the user explicitly committed to.\n\nCHAT:\n${sourceText}`;
 
-  const rawText = await callProvider({
-    apiKey,
-    system: TODO_ONLY_PROMPT,
-    userMessage,
-    maxTokens: 8192,
-  });
+  const req = { apiKey, system: TODO_ONLY_PROMPT, userMessage, maxTokens: 8192 };
+  const rawText = opts?.onStream
+    ? await callProviderStream(req, opts.onStream)
+    : await callProvider(req);
 
   try {
-    const jsonText = extractJson(rawText);
-    const parsed = JSON.parse(jsonText);
-    const todos: TodoOnlyItem[] = (parsed.todos || []).map((t: Record<string, unknown>) => ({
+    const parsed = await extractAndParse(rawText) as Record<string, unknown>;
+    const todos: TodoOnlyItem[] = ((parsed.todos as Record<string, unknown>[]) || []).map((t: Record<string, unknown>) => ({
       title: String(t.title || ''),
       priority: (['high', 'medium', 'low'].includes(t.priority as string) ? t.priority : 'medium') as 'high' | 'medium' | 'low',
       dueDate: typeof t.dueDate === 'string' && t.dueDate ? t.dueDate : undefined,
@@ -512,10 +521,10 @@ export interface HandoffTodoResult {
   todos: TodoOnlyItem[];
 }
 
-export async function transformHandoffTodo(sourceText: string): Promise<HandoffTodoResult> {
-  // Step 1: Generate handoff
-  const handoff = await transformHandoff(sourceText);
-  // Step 2: Extract TODOs
+export async function transformHandoffTodo(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<HandoffTodoResult> {
+  // Step 1: Generate handoff (with streaming for the main call)
+  const handoff = await transformHandoff(sourceText, opts);
+  // Step 2: Extract TODOs (no streaming — secondary call)
   const todoResult = await transformTodoOnly(sourceText);
   return { handoff, todos: todoResult.todos };
 }
@@ -547,11 +556,10 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
     : await callProvider({ apiKey, system: BOTH_PROMPT, userMessage, maxTokens: 8192 });
 
   try {
-    const jsonText = extractJson(rawText);
-    const parsed = JSON.parse(jsonText);
+    const parsed = await extractAndParse(rawText) as Record<string, unknown>;
 
-    const w = parsed.worklog || parsed;
-    const h = parsed.handoff || parsed;
+    const w = (parsed.worklog || parsed) as Record<string, unknown>;
+    const h = (parsed.handoff || parsed) as Record<string, unknown>;
 
     // Validate worklog part
     validateWorklogResult(w, sourceText);
@@ -559,20 +567,20 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
     const c = parsed.classification;
     const result: BothResult = {
       worklog: {
-        title: w.title || 'Untitled',
-        today: w.today || [],
-        decisions: w.decisions || [],
-        todo: w.todo || [],
-        relatedProjects: w.relatedProjects || [],
-        tags: w.tags || [],
+        title: (w.title as string) || 'Untitled',
+        today: (w.today || []) as string[],
+        decisions: (w.decisions || []) as string[],
+        todo: (w.todo || []) as string[],
+        relatedProjects: (w.relatedProjects || []) as string[],
+        tags: (w.tags || []) as string[],
       },
       handoff: (() => {
         // Validate handoff title
         validateWorklogResult(h, sourceText);
-        const hCompleted = h.completed || [];
-        const rawHDecisions = h.decisions || [];
+        const hCompleted = (h.completed || []) as string[];
+        const rawHDecisions = (h.decisions || []) as unknown[];
         const { decisions: hDecisions, decisionRationales: hDecisionRationales } = normalizeDecisions(rawHDecisions);
-        const rawHNextActions = h.nextActions || [];
+        const rawHNextActions = (h.nextActions || []) as unknown[];
         let { nextActions: hNextActions, nextActionItems: hNextActionItems } = normalizeNextActions(rawHNextActions);
         const hResumeChecklist = normalizeResumeChecklist(h.resumeChecklist);
         let hActionBacklog = normalizeActionBacklog(h.actionBacklog);
@@ -592,29 +600,29 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
           hActionBacklog = [...overflow, ...hActionBacklog].slice(0, 7);
         }
         return {
-          title: h.title || w.title || 'Untitled',
+          title: (h.title as string) || (w.title as string) || 'Untitled',
           handoffMeta: hHandoffMeta,
-          currentStatus: h.currentStatus || [],
+          currentStatus: (h.currentStatus || []) as string[],
           resumeChecklist: hResumeChecklist,
           resumeContext: hResumeChecklist.length > 0
             ? hResumeChecklist.map(r => r.action)
             : (typeof h.resumeContext === 'string'
               ? (h.resumeContext.trim() ? [h.resumeContext.trim()] : [])
-              : (h.resumeContext || [])),
+              : ((h.resumeContext || []) as string[])),
           nextActions: hNextActions,
           nextActionItems: hNextActionItems,
           actionBacklog: hActionBacklog.length > 0 ? hActionBacklog : undefined,
           completed: hCompleted,
-          blockers: filterResolvedBlockers(h.blockers || [], hCompleted, hDecisions),
+          blockers: filterResolvedBlockers((h.blockers || []) as string[], hCompleted, hDecisions),
           decisions: hDecisions,
           decisionRationales: hDecisionRationales,
-          constraints: h.constraints || [],
-          tags: h.tags || w.tags || [],
+          constraints: (h.constraints || []) as string[],
+          tags: ((h.tags || w.tags || []) as string[]),
         };
       })(),
       classification: c ? {
-        projectId: c.projectId || null,
-        confidence: typeof c.confidence === 'number' ? Math.max(0, Math.min(1, c.confidence)) : 0,
+        projectId: (c as Record<string, unknown>).projectId as string || null,
+        confidence: typeof (c as Record<string, unknown>).confidence === 'number' ? Math.max(0, Math.min(1, (c as Record<string, unknown>).confidence as number)) : 0,
       } : undefined,
     };
     return result;

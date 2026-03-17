@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import type { Project, LogEntry, MasterNote, MasterNoteSnapshot } from './types';
+import type { Project, LogEntry, MasterNote, MasterNoteSnapshot, SourcedItem } from './types';
 import type { Lang } from './i18n';
 import { t, tf } from './i18n';
 import { getMasterNote, saveMasterNote, getMasterNoteHistory, restoreMasterNoteSnapshot, saveAiContext } from './storage';
@@ -9,13 +9,221 @@ import { formatFullAiContext } from './formatHandoff';
 import type { GenerateProgress } from './masterNote';
 import ProgressPanel from './ProgressPanel';
 import type { ProgressStep } from './ProgressPanel';
-import { Pencil, Copy } from 'lucide-react';
-import {
-  normalizeItems,
-  ReadOnlyText, ReadOnlyList, EditableText, EditableList, RelatedLogs,
-  OverflowMenu, renderSimpleMarkdown,
-} from './components/MasterNoteEditor';
+import { Pencil, Copy, ExternalLink } from 'lucide-react';
+
+// Extracted components
+import { OverflowMenu, PendingNotePreview, normalizeItems, renderSimpleMarkdown } from './components/MasterNoteGenerate';
 import { MasterNoteHistoryPanel } from './components/MasterNoteHistory';
+
+// ---- Read-only display ----
+
+function ReadOnlyText({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="content-card">
+      <div className="content-card-header">{label}</div>
+      <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0, color: 'var(--text-body)' }}>
+        {value || '\u00a0'}
+      </p>
+    </div>
+  );
+}
+
+function ReadOnlyList({
+  label,
+  items,
+  logs,
+  onOpenLog,
+}: {
+  label: string;
+  items: SourcedItem[];
+  logs: LogEntry[];
+  onOpenLog: (id: string) => void;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="content-card">
+      <div className="content-card-header">{label}</div>
+      <ul style={{ margin: 0, paddingLeft: 20 }}>
+        {items.map((item, i) => {
+          const validSources = item.sourceLogIds
+            .map((id) => ({ id, log: logs.find((l) => l.id === id) }))
+            .filter((s): s is { id: string; log: LogEntry } => !!s.log);
+          return (
+            <li key={i} style={{ fontSize: 14, lineHeight: 1.7, marginBottom: 4 }}>
+              {item.text}
+              {validSources.length > 0 && (
+                <span className="mn-source-links">
+                  {validSources.map((s) => (
+                    <button
+                      key={s.id}
+                      className="log-link-icon"
+                      onClick={() => onOpenLog(s.id)}
+                      title={s.log.title}
+                    >
+                      <ExternalLink size={14} />
+                    </button>
+                  ))}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+// ---- Editable components (edit mode only) ----
+
+function EditableText({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="content-card">
+      <div className="content-card-header">{label}</div>
+      <textarea
+        className="mn-edit-textarea"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={4}
+        maxLength={10000}
+      />
+    </div>
+  );
+}
+
+function EditableList({
+  label,
+  items,
+  onChange,
+  logs,
+  onOpenLog,
+  lang,
+}: {
+  label: string;
+  items: SourcedItem[];
+  onChange: (items: SourcedItem[]) => void;
+  logs: LogEntry[];
+  onOpenLog: (id: string) => void;
+  lang: Lang;
+}) {
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+
+  const updateItem = (i: number, text: string) => {
+    const next = [...items];
+    next[i] = { ...next[i], text };
+    onChange(next);
+  };
+
+  const removeItem = (i: number) => {
+    onChange(items.filter((_, idx) => idx !== i));
+  };
+
+  const addItem = () => {
+    onChange([...items, { text: '', sourceLogIds: [] }]);
+    setEditingIdx(items.length);
+  };
+
+  return (
+    <div className="content-card">
+      <div className="content-card-header">{label}</div>
+      <ul className="mn-editable-list">
+        {items.map((item, i) => {
+          const validSources = item.sourceLogIds
+            .map((id) => ({ id, log: logs.find((l) => l.id === id) }))
+            .filter((s): s is { id: string; log: LogEntry } => !!s.log);
+
+          return (
+            <li key={i} className="mn-editable-list-item">
+              {editingIdx === i ? (
+                <input
+                  className="mn-edit-input"
+                  value={item.text}
+                  onChange={(e) => updateItem(i, e.target.value)}
+                  onBlur={() => setEditingIdx(null)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') setEditingIdx(null);
+                    if (e.key === 'Escape') setEditingIdx(null);
+                  }}
+                  autoFocus
+                  maxLength={200}
+                />
+              ) : (
+                <span
+                  className="mn-editable-item-text"
+                  onClick={() => setEditingIdx(i)}
+                >
+                  {item.text || '\u00a0'}
+                </span>
+              )}
+              {editingIdx !== i && validSources.length > 0 && (
+                <span className="mn-source-links">
+                  {validSources.map((s) => (
+                    <button
+                      key={s.id}
+                      className="log-link-icon"
+                      onClick={() => onOpenLog(s.id)}
+                      title={s.log.title}
+                    >
+                      <ExternalLink size={14} />
+                    </button>
+                  ))}
+                </span>
+              )}
+              {editingIdx !== i && (
+                <button
+                  className="mn-item-remove"
+                  onClick={() => removeItem(i)}
+                  title={t('mnRemoveItem', lang)}
+                >
+                  ×
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <button className="btn-link mn-add-item" onClick={addItem}>
+        {t('mnAddItem', lang)}
+      </button>
+    </div>
+  );
+}
+
+// ---- Related Logs (read-only always) ----
+
+function RelatedLogs({ logIds, logs, onOpenLog, lang }: { logIds: string[]; logs: LogEntry[]; onOpenLog: (id: string) => void; lang: Lang }) {
+  if (logIds.length === 0) return null;
+  return (
+    <div className="content-card">
+      <div className="content-card-header">{t('mnRelatedLogs', lang)}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {logIds.map((logId) => {
+          const log = logs.find((l) => l.id === logId);
+          if (!log) return null;
+          return (
+            <button
+              key={logId}
+              className="btn-link"
+              onClick={() => onOpenLog(logId)}
+              style={{ fontSize: 13, textAlign: 'left' }}
+            >
+              {log.title}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ---- Main Component ----
 
 interface MasterNoteViewProps {
   project: Project;
@@ -46,14 +254,13 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
 
   const projectLogs = logs.filter((l) => l.projectId === project.id);
 
-  // AI Context: pure function, auto-computed from saved MasterNote + latestHandoff
+  // AI Context
   const aiContext = useMemo(() => {
     if (!saved) return '';
     const ctx = generateProjectContext(saved, logs, project.name);
     return formatFullAiContext(ctx, latestHandoff);
   }, [saved, latestHandoff, logs, project.name]);
 
-  // Persist to storage so other views (detail view copy) can use getAiContext
   useEffect(() => {
     if (aiContext) {
       saveAiContext(project.id, aiContext);
@@ -81,6 +288,7 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
     setDraft({ ...current, ...updates });
   };
 
+  // --- Generate ---
   const generatingRef = useRef(false);
   const handleGenerate = async () => {
     if (generatingRef.current) {
@@ -124,6 +332,7 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
     }
   };
 
+  // --- Refine ---
   const handleRefine = async () => {
     if (!current || !refineText.trim()) return;
     setRefining(true);
@@ -143,6 +352,7 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
     }
   };
 
+  // --- Save ---
   const handleSave = () => {
     if (!current) return;
     const toSave = { ...current, updatedAt: Date.now() };
@@ -158,6 +368,7 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
     setEditing(false);
   };
 
+  // --- Accept pending ---
   const handleAccept = () => {
     if (!pendingNote) return;
     const toSave = { ...pendingNote, updatedAt: Date.now() };
@@ -170,41 +381,12 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
     setHistorySnapshots(getMasterNoteHistory(project.id));
   };
 
-  function renderDiffSections(currentNote: MasterNote | null | undefined, pending: MasterNote) {
-    const sections = [
-      { label: t('mnDecisions', lang), current: currentNote?.decisions?.map((d) => d.text) || [], pending: pending.decisions?.map((d) => d.text) || [] },
-      { label: t('mnOpenIssues', lang), current: currentNote?.openIssues?.map((d) => d.text) || [], pending: pending.openIssues?.map((d) => d.text) || [] },
-      { label: t('mnNextActions', lang), current: currentNote?.nextActions?.map((d) => d.text) || [], pending: pending.nextActions?.map((d) => d.text) || [] },
-    ];
-
-    return sections.map((sec) => {
-      const added = sec.pending.filter((txt) => !sec.current.includes(txt));
-      const removed = sec.current.filter((txt) => !sec.pending.includes(txt));
-      if (added.length === 0 && removed.length === 0) return null;
-
-      return (
-        <div key={sec.label} style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>{sec.label}</div>
-          {added.map((item, i) => (
-            <div key={`a${i}`} style={{ fontSize: 12, color: 'var(--success-text, #22c55e)', paddingLeft: 8 }}>+ {item}</div>
-          ))}
-          {removed.map((item, i) => (
-            <div key={`r${i}`} style={{ fontSize: 12, color: 'var(--error-text)', textDecoration: 'line-through', paddingLeft: 8 }}>- {item}</div>
-          ))}
-        </div>
-      );
-    });
-  }
-
+  // --- History ---
   const openHistory = () => {
     const snaps = getMasterNoteHistory(project.id);
     setHistorySnapshots(snaps);
     setHistoryOpen(true);
     setPreviewSnap(null);
-  };
-
-  const handleRestore = (version: number) => {
-    setConfirmRestoreVersion(version);
   };
 
   const executeRestore = () => {
@@ -385,37 +567,13 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
 
           {/* Pending MasterNote update preview */}
           {pendingNote && !loading && !refining && (
-            <div className="content-card" style={{ marginBottom: 20, border: '2px solid var(--accent)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <h3 style={{ margin: 0, fontSize: 15 }}>{t('pendingUpdate', lang)}</h3>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-primary" onClick={handleAccept}>
-                    {t('accept', lang)}
-                  </button>
-                  <button className="btn" onClick={() => setPendingNote(null)}>
-                    {t('reject', lang)}
-                  </button>
-                </div>
-              </div>
-
-              {/* Diff preview showing what changed */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{t('current', lang)}</div>
-                  <div style={{ background: 'var(--bg-surface)', padding: 12, borderRadius: 8, fontSize: 12, maxHeight: 300, overflow: 'auto', whiteSpace: 'pre-wrap' }}>
-                    {saved?.overview || t('empty', lang)}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: 'var(--accent)', marginBottom: 4 }}>{t('proposed', lang)}</div>
-                  <div style={{ background: 'var(--bg-surface)', padding: 12, borderRadius: 8, fontSize: 12, maxHeight: 300, overflow: 'auto', whiteSpace: 'pre-wrap', borderLeft: '3px solid var(--accent)' }}>
-                    {pendingNote.overview || t('empty', lang)}
-                  </div>
-                </div>
-              </div>
-
-              {renderDiffSections(saved, pendingNote)}
-            </div>
+            <PendingNotePreview
+              lang={lang}
+              saved={saved}
+              pendingNote={pendingNote}
+              onAccept={handleAccept}
+              onReject={() => setPendingNote(null)}
+            />
           )}
 
           {/* Read-only view (default) */}
@@ -513,7 +671,7 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
           confirmRestoreVersion={confirmRestoreVersion}
           onClose={() => setHistoryOpen(false)}
           onPreviewSnap={setPreviewSnap}
-          onRestore={handleRestore}
+          onRestore={(version) => setConfirmRestoreVersion(version)}
           onConfirmRestore={executeRestore}
           onCancelRestore={() => setConfirmRestoreVersion(null)}
         />

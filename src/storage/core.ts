@@ -1,4 +1,5 @@
 import type { LogEntry, Project, MasterNote, Todo } from '../types';
+import { saveToIdb, loadFromIdb } from './indexedDb';
 
 // ─── Storage Keys ───
 
@@ -27,13 +28,33 @@ export function safeRemoveItem(key: string): void {
   try { localStorage.removeItem(key); } catch { if (import.meta.env.DEV) console.error(`Failed to remove localStorage key: ${key}`); }
 }
 
-/** Safely write to localStorage, dispatching event on quota exceeded */
+/** Safely write to localStorage, dispatching event on quota exceeded.
+ *  Falls back to IndexedDB when quota is exceeded. */
 export function safeSetItem(key: string, value: string): void {
   try { localStorage.setItem(key, value); } catch (e) {
     if (import.meta.env.DEV) console.error(`Failed to write localStorage key: ${key}`);
     if (e instanceof DOMException && e.name === 'QuotaExceededError') {
       if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('lore-storage-full'));
+      // Fallback: persist to IndexedDB so data is not lost
+      try {
+        saveToIdb(key, value).catch((err) => {
+          if (import.meta.env.DEV) console.error(`IDB fallback write failed for key: ${key}`, err);
+        });
+      } catch { /* saveToIdb import may fail in non-browser env */ }
     }
+  }
+}
+
+/** Try localStorage first, then fall back to IndexedDB.
+ *  Returns a Promise because IDB reads are async. */
+export async function loadWithIdbFallback(key: string): Promise<string | null> {
+  const local = safeGetItem(key);
+  if (local !== null) return local;
+  try {
+    const idbVal = await loadFromIdb(key);
+    return typeof idbVal === 'string' ? idbVal : null;
+  } catch {
+    return null;
   }
 }
 

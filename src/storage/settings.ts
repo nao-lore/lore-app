@@ -47,11 +47,11 @@ export function setUiLang(lang: Lang): void {
   safeSetItem(UI_LANG_KEY, lang);
 }
 
-export type ThemePref = 'light' | 'dark' | 'system';
+export type ThemePref = 'light' | 'dark' | 'system' | 'high-contrast';
 
 export function getTheme(): ThemePref {
   const v = safeGetItem(THEME_KEY);
-  if (v === 'light' || v === 'dark' || v === 'system') return v;
+  if (v === 'light' || v === 'dark' || v === 'system' || v === 'high-contrast') return v;
   return 'system';
 }
 

@@ -236,13 +236,13 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
             {t('themeDesc', lang)}
           </p>
           <div className="seg-control">
-            {(['light', 'dark', 'system'] as const).map((v) => (
+            {(['light', 'dark', 'system', 'high-contrast'] as const).map((v) => (
               <button
                 key={v}
                 className={`seg-control-btn${themePref === v ? ' active-worklog' : ''}`}
                 onClick={() => onThemeChange(v)}
               >
-                {v === 'light' ? t('themeLight', lang) : v === 'dark' ? t('themeDark', lang) : t('themeSystem', lang)}
+                {v === 'light' ? t('themeLight', lang) : v === 'dark' ? t('themeDark', lang) : v === 'system' ? t('themeSystem', lang) : 'High Contrast'}
               </button>
             ))}
           </div>
