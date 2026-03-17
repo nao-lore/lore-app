@@ -429,7 +429,7 @@ function AddLogsModal({ projectId, logs, lang, onClose, onAdded }: {
 
   if (candidates.length === 0) {
     return (
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay" role="presentation" onClick={onClose}>
         <div className="modal-card" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">{t('addLogsTitle', lang)}</div>
           <div className="empty-state"><p>{t('addLogsNoUnassigned', lang)}</p></div>
@@ -442,7 +442,7 @@ function AddLogsModal({ projectId, logs, lang, onClose, onAdded }: {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" role="presentation" onClick={onClose}>
       <div className="modal-card modal-card-lg" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">{t('addLogsTitle', lang)}</div>
         <input

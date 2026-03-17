@@ -69,7 +69,7 @@ export default function LogPickerModal({ allLogs, targetProjectId, projects, lan
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" role="presentation" onClick={onClose}>
       <div ref={trapRef} className="modal-content log-picker-modal" role="dialog" aria-modal="true" aria-labelledby="log-picker-title" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="log-picker-header">

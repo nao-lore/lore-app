@@ -34,7 +34,7 @@ export default function ConfirmDialog({ title, description, confirmLabel, cancel
   }, [onCancel]);
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
+    <div className="modal-overlay" role="presentation" onClick={onCancel}>
       <div ref={trapRef} className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" onClick={(e) => e.stopPropagation()}>
         <div className="confirm-dialog-title" id="confirm-dialog-title">{title}</div>
         {description && <div className="confirm-dialog-desc">{description}</div>}

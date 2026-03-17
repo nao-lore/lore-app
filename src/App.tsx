@@ -212,6 +212,17 @@ export default function App() {
 
       if (e.key === '?' && !mod && !inInput) { e.preventDefault(); s.setShortcutsOpen((v: boolean) => !v); return; }
 
+      // Number key navigation (1-5 for tab switching)
+      if (!inInput && !mod && e.key >= '1' && e.key <= '5') {
+        const views: View[] = ['input', 'dashboard', 'history', 'projects', 'todos'];
+        const idx = parseInt(e.key) - 1;
+        if (idx < views.length) {
+          e.preventDefault();
+          s.goTo(views[idx]);
+        }
+        return;
+      }
+
       if (e.key === 'Escape') {
         if (s.shortcutsOpen) { s.setShortcutsOpen(false); return; }
         if (s.paletteOpen) { s.setPaletteOpen(false); return; }
@@ -232,7 +243,7 @@ export default function App() {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [s.paletteOpen, s.shortcutsOpen, s.view, s.prevView, s.activeProjectId, s.handleNewLog, s.goToRaw, s.setPaletteOpen, s.setShortcutsOpen, s.setActiveProjectId]);
+  }, [s.paletteOpen, s.shortcutsOpen, s.view, s.prevView, s.activeProjectId, s.handleNewLog, s.goTo, s.goToRaw, s.setPaletteOpen, s.setShortcutsOpen, s.setActiveProjectId]);
 
   // Restore scroll position when view changes
   useEffect(() => {
@@ -506,7 +517,7 @@ export default function App() {
         />
       )}
       {s.shortcutsOpen && (
-        <div className="modal-overlay" onClick={() => s.setShortcutsOpen(false)}>
+        <div className="modal-overlay" role="presentation" onClick={() => s.setShortcutsOpen(false)}>
           <div ref={shortcutsTrapRef} className="shortcuts-modal" role="dialog" aria-modal="true" aria-label={t('shortcutsTitle', s.lang)} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 16px', fontSize: 16 }}>{t('shortcutsTitle', s.lang)}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

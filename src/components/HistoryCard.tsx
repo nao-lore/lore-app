@@ -57,15 +57,7 @@ export function isToday(iso: string): boolean {
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
 }
 
-export function downloadFile(content: string, fileName: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+export { downloadFile } from '../utils/downloadFile';
 
 // ─── Log Context Menu (inline dropdown) ───
 export function LogContextMenu({ log, lang, projects, onClose, onAction }: {

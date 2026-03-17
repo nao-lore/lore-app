@@ -16,6 +16,8 @@ import type { Lang } from './i18n';
 import ErrorRetryBanner from './ErrorRetryBanner';
 import FirstUseTooltip from './FirstUseTooltip';
 import { formatRelativeTime } from './utils/dateFormat';
+import { copyToClipboard } from './utils/clipboard';
+import { downloadFile } from './utils/downloadFile';
 import { HandoffResultDisplay, WorklogResultDisplay } from './ResultDisplay';
 import { useTransform } from './hooks/useTransform';
 import type { TransformAction } from './hooks/useTransform';
@@ -65,31 +67,6 @@ function formatFileDate(ts: number): string {
   const hours = String(d.getHours()).padStart(2, '0');
   const mins = String(d.getMinutes()).padStart(2, '0');
   return `${month}/${day} ${hours}:${mins}`;
-}
-
-async function copyToClipboard(text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-  }
-}
-
-function downloadFile(content: string, fileName: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  a.click();
-  URL.revokeObjectURL(url);
 }
 
 function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, pendingTodosCount, lastLogCreatedAt }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onDirtyChange?: (dirty: boolean) => void; pendingTodosCount: number; lastLogCreatedAt: string | null }) {

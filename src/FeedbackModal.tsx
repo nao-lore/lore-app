@@ -70,7 +70,7 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
   const categories: FeedbackCategory[] = ['bug', 'feature', 'ux', 'other'];
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" role="presentation" onClick={onClose}>
       <div
         ref={trapRef}
         className="onboarding-card"

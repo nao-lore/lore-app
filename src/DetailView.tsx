@@ -15,16 +15,8 @@ import { generateProjectContext } from './generateProjectContext';
 import TodoSection from './components/TodoSection';
 import RelatedLogsSection from './components/RelatedLogsSection';
 import { CardSection, CheckableCardSection } from './components/CardSection';
-
-function downloadFile(content: string, fileName: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+import { downloadFile } from './utils/downloadFile';
+import { isStaleMasterNote } from './utils/staleness';
 
 function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lang, projects, onRefresh, showToast, onTagFilter, allLogs, onOpenMasterNote }: { id: string; onDeleted: () => void; onOpenLog: (id: string) => void; onBack: () => void; prevView: string; lang: Lang; projects: Project[]; onRefresh: () => void; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onTagFilter?: (tag: string) => void; allLogs: LogEntry[]; onOpenMasterNote?: (projectId: string) => void }) {
   const log = allLogs.find((l) => l.id === id);
@@ -169,8 +161,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
     // Prompt to update Project Summary when a log is assigned
     if (newProjectId) {
       const mn = getMasterNote(newProjectId);
-      const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-      const isStale = mn && (Date.now() - mn.updatedAt > SEVEN_DAYS);
+      const isStale = mn && isStaleMasterNote(mn.updatedAt);
       const msg = isStale ? t('updateSummaryStale', lang) : t('updateSummaryPrompt', lang);
       showToast?.(msg, 'default', onOpenMasterNote ? {
         label: t('updateSummaryAction', lang),

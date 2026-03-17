@@ -589,7 +589,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
 
       {/* Import confirmation dialog */}
       {pendingImport && (
-        <div className="modal-overlay" onClick={() => setPendingImport(null)}>
+        <div className="modal-overlay" role="presentation" onClick={() => setPendingImport(null)}>
           <div className="modal-card" role="dialog" aria-modal="true" aria-label={t('dataImport', lang)} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
             <h3 style={{ marginBottom: 12 }}>{t('dataImport', lang)}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>

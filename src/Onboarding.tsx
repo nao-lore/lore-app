@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { t } from './i18n';
+import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { useFocusTrap } from './useFocusTrap';
 import { markOnboardingDone } from './onboardingState';
@@ -119,7 +119,7 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
 
         {/* Step counter */}
         <div className="meta" style={{ textAlign: 'center', fontSize: 12, marginBottom: 8 }}>
-          Step {step + 1} / {totalSteps}
+          {tf('onboardingStepCounter', lang, step + 1, totalSteps)}
         </div>
 
         {/* Content */}

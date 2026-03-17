@@ -4,7 +4,7 @@ import { computeSourceHash, loadSession, saveSession, deleteSession } from './ch
 import { getLang } from './storage';
 import { callProvider, callProviderStream, getActiveProvider } from './provider';
 import type { StreamCallback } from './provider';
-import { filterResolvedBlockers, normalizeNextActions, normalizeResumeChecklist, normalizeHandoffMeta, normalizeActionBacklog } from './transform';
+import { filterResolvedBlockers, normalizeNextActions, normalizeResumeChecklist, normalizeHandoffMeta, normalizeActionBacklog, detectLanguage, extractJson } from './transform';
 import { dedupStrings, dedupDecisions } from './utils/decisions';
 
 // =============================================================================
@@ -218,48 +218,7 @@ function groupSegments(segments: string[], target: number): string[] {
   return chunks;
 }
 
-// =============================================================================
-// Language detection
-// =============================================================================
-
-function detectLanguage(text: string): 'ja' | 'en' {
-  const jaPattern = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g;
-  const jaMatches = text.match(jaPattern);
-  const jaRatio = (jaMatches?.length ?? 0) / text.length;
-  return jaRatio > 0.1 ? 'ja' : 'en';
-}
-
-// =============================================================================
-// JSON extraction
-// =============================================================================
-
-function extractJson(raw: string): string {
-  // 1. Strip markdown code fences (handle ```json ... ``` wrapping)
-  let stripped = raw;
-  stripped = stripped.replace(/^[\s\S]*?```json\s*/i, '');
-  stripped = stripped.replace(/```\s*/g, '');
-  stripped = stripped.trim();
-
-  // 2. Find first '{' and its matching '}'  via bracket counting
-  const start = stripped.indexOf('{');
-  if (start === -1) throw new Error('[Parse Error] No JSON found');
-
-  let depth = 0;
-  let inString = false;
-  let escape = false;
-  for (let i = start; i < stripped.length; i++) {
-    const ch = stripped[i];
-    if (escape) { escape = false; continue; }
-    if (ch === '\\' && inString) { escape = true; continue; }
-    if (ch === '"') { inString = !inString; continue; }
-    if (inString) continue;
-    if (ch === '{') depth++;
-    if (ch === '}') { depth--; if (depth === 0) return stripped.slice(start, i + 1); }
-  }
-
-  // Bracket matching failed — truncated JSON
-  throw new Error('[Truncated] レスポンスが長すぎて途中で切れました。入力を短くして再試行してください。 / Response was truncated. Try shorter input.');
-}
+// detectLanguage and extractJson are imported from ./transform
 
 // =============================================================================
 // Fallback reformatter — sends prose back to model to get JSON
@@ -488,11 +447,6 @@ export function getSizeMode(sourceLength: number): SizeMode {
 // Local merge — combine partial results in JS, no API call
 // =============================================================================
 
-/** @deprecated Use dedupStrings from utils/decisions instead — kept as alias */
-function dedup(arr: string[]): string[] {
-  // Filter non-strings first (AI may return objects), then deduplicate
-  return dedupStrings(arr.filter((s): s is string => typeof s === 'string'));
-}
 
 function collectStrings(partials: PartialResult[], key: string): string[] {
   return partials.flatMap((p) => {
@@ -552,19 +506,19 @@ function localMerge(partials: PartialResult[], isBothMode = false): PartialResul
   const merged: PartialResult = {
     title,
     // Worklog fields — collect from all chunks (均等マージ)
-    today:           dedup(collectStrings(flat, 'today')),
-    decisions:       dedup(collectStrings(flat, 'decisions')),
-    todo:            dedup(collectStrings(flat, 'todo')),
-    relatedProjects: dedup(collectStrings(flat, 'relatedProjects')),
-    tags:            dedup(collectStrings(flat, 'tags')),
+    today:           dedupStrings(collectStrings(flat, 'today')),
+    decisions:       dedupStrings(collectStrings(flat, 'decisions')),
+    todo:            dedupStrings(collectStrings(flat, 'todo')),
+    relatedProjects: dedupStrings(collectStrings(flat, 'relatedProjects')),
+    tags:            dedupStrings(collectStrings(flat, 'tags')),
     // Handoff: last-chunk-wins for state/resume (末尾が最新状態)
     currentStatus:   collectLastChunk(flat, 'currentStatus'),
     nextActions:     [],  // populated below by mergeNextActionItems
     resumeContext:   collectLastChunk(flat, 'resumeContext'),
     // Handoff: collect from all chunks for accumulated items (均等マージ)
-    completed:       dedup(collectStrings(flat, 'completed')),
-    blockers:        dedup(collectStrings(flat, 'blockers')),
-    constraints:     dedup(collectStrings(flat, 'constraints')),
+    completed:       dedupStrings(collectStrings(flat, 'completed')),
+    blockers:        dedupStrings(collectStrings(flat, 'blockers')),
+    constraints:     dedupStrings(collectStrings(flat, 'constraints')),
   };
 
   // Merge decisionRationales from all chunks, deduplicate by decision text

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, memo } from 'react';
+import { useState, useRef, useCallback, useMemo, memo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { usePersistedState } from './usePersistedState';
 import { AlertTriangle } from 'lucide-react';
@@ -67,9 +67,8 @@ function SortableTodoItem({ id, disabled, children }: { id: string; disabled: bo
 // ─── Main TodoView ───
 function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
   const [todosVersion, setTodosVersion] = useState(0);
-  void todosVersion;
-  const todos = loadTodos();
-  const archivedTodos = loadArchivedTodos();
+  const todos = useMemo(() => loadTodos(), [todosVersion]);
+  const archivedTodos = useMemo(() => loadArchivedTodos(), [todosVersion]);
 
   const [activeTab, setActiveTab] = useState<TabKey>('pending');
   const [sortKey, setSortKey] = usePersistedState<SortKey>('threadlog_todos_sort', 'created');
@@ -246,7 +245,7 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
   };
 
   // Sort (pinned first, then by sort key)
-  const sorted = [...displayed].sort((a, b) => {
+  const sorted = useMemo(() => [...displayed].sort((a, b) => {
     if (a.pinned && !b.pinned) return -1;
     if (!a.pinned && b.pinned) return 1;
     switch (sortKey) {
@@ -270,7 +269,7 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
         return b.createdAt - a.createdAt;
       }
     }
-  });
+  }), [displayed, sortKey]);
 
   // Group
   const logMap = new Map<string, LogEntry>();
@@ -278,7 +277,7 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
 
   type GroupedEntry = { key: string; label: string; items: Todo[] };
 
-  const buildGroups = (): GroupedEntry[] => {
+  const groups = useMemo((): GroupedEntry[] => {
     if (groupKey === 'none') {
       return [{ key: '_all', label: '', items: sorted }];
     }
@@ -338,9 +337,7 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
     }
 
     return order.map((k) => ({ key: k, ...map.get(k)! }));
-  };
-
-  const groups = buildGroups();
+  }, [groupKey, sorted, lang, logMap]);
 
   // Virtual scrolling
   const virtualizer = useVirtualizer({
@@ -410,14 +407,14 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
 
       {/* Stale TODO banner */}
       {staleTodos.length > 0 && activeTab === 'pending' && !staleFilter && (
-        <div
+        <button
           className="stale-todo-banner"
           onClick={() => setStaleFilter(true)}
-          style={{ cursor: 'pointer' }}
+          type="button"
         >
           <AlertTriangle size={14} />
           <span>{tf('staleTodoBanner', lang, staleTodos.length)}</span>
-        </div>
+        </button>
       )}
 
       {/* Bulk action bar */}

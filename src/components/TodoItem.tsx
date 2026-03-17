@@ -81,7 +81,7 @@ export function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
 
   if (subMenu === 'priority') {
     return (
-      <div className="action-sheet-overlay" onClick={onClose}>
+      <div className="action-sheet-overlay" role="presentation" onClick={onClose}>
         <div className="action-sheet" onClick={(e) => e.stopPropagation()}>
           <div className="action-sheet-handle" />
           <div className="action-sheet-header">
@@ -120,7 +120,7 @@ export function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
 
   if (subMenu === 'due') {
     return (
-      <div className="action-sheet-overlay" onClick={onClose}>
+      <div className="action-sheet-overlay" role="presentation" onClick={onClose}>
         <div className="action-sheet" onClick={(e) => e.stopPropagation()}>
           <div className="action-sheet-handle" />
           <div className="action-sheet-header">
@@ -165,7 +165,7 @@ export function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
       { label: t('snooze1Week', lang), ms: 7 * 24 * 60 * 60 * 1000 },
     ];
     return (
-      <div className="action-sheet-overlay" onClick={onClose}>
+      <div className="action-sheet-overlay" role="presentation" onClick={onClose}>
         <div className="action-sheet" onClick={(e) => e.stopPropagation()}>
           <div className="action-sheet-handle" />
           <div className="action-sheet-header">
@@ -201,7 +201,7 @@ export function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
   }
 
   return (
-    <div className="action-sheet-overlay" onClick={onClose}>
+    <div className="action-sheet-overlay" role="presentation" onClick={onClose}>
       <div className="action-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="action-sheet-handle" />
         <div className="action-sheet-header">
@@ -350,6 +350,10 @@ export function renderTodoItem(
           className="check-pop-target"
           onClick={() => onToggle(todo.id, todo.done)}
           style={{ flexShrink: 0, marginTop: 1, cursor: 'pointer', padding: '2px', transition: 'transform 0.15s ease' }}
+          role="checkbox"
+          aria-checked={todo.done}
+          aria-label={todo.text}
+          tabIndex={0}
         >
           {todo.done
             ? <CheckSquare size={17} style={{ color: 'var(--success-text)' }} />
@@ -404,7 +408,7 @@ export function renderTodoItem(
                   borderRadius: 3,
                   lineHeight: '16px',
                 }}>
-                  {lang === 'ja' ? '期限切れ' : 'Overdue'}
+                  {t('todoOverdueBadge', lang)}
                 </span>
               )}
             </span>

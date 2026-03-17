@@ -43,15 +43,7 @@ function noteToMarkdown(note: MasterNote, projectName: string, lang: Lang): stri
   return lines.join('\n');
 }
 
-function downloadFile(content: string, fileName: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+import { downloadFile } from '../utils/downloadFile';
 
 // ─── Three-dot menu ───
 interface OverflowMenuProps {

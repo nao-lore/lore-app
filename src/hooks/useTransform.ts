@@ -14,6 +14,7 @@ import type { Lang } from '../i18n';
 import { formatHandoffMarkdown, formatFullAiContext } from '../formatHandoff';
 import { generateProjectContext } from '../generateProjectContext';
 import { recordMetric } from '../aiMetrics';
+import { isStaleMasterNote } from '../utils/staleness';
 
 export type TransformAction = 'both' | 'handoff' | 'worklog' | 'todo_only' | 'worklog_handoff' | 'handoff_todo';
 
@@ -601,8 +602,7 @@ export function useTransform(params: UseTransformParams) {
     // Show summary update prompt
     if (getFeatureEnabled('project_summary', true)) {
       const mn = getMasterNote(projectId);
-      const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-      const isStale = mn && (Date.now() - mn.updatedAt > SEVEN_DAYS);
+      const isStale = mn && isStaleMasterNote(mn.updatedAt);
       const msg = tf('addedToProject', lang, projectName)
         + '\n' + (isStale ? t('updateSummaryStale', lang) : t('updateSummaryPrompt', lang));
       showToast?.(msg, 'success');
@@ -633,8 +633,7 @@ export function useTransform(params: UseTransformParams) {
     if (project) {
       if (getFeatureEnabled('project_summary', true)) {
         const mn = getMasterNote(projectId);
-        const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-        const isStale = mn && (Date.now() - mn.updatedAt > SEVEN_DAYS);
+        const isStale = mn && isStaleMasterNote(mn.updatedAt);
         const msg = tf('addedToProject', lang, project.name)
           + '\n' + (isStale ? t('updateSummaryStale', lang) : t('updateSummaryPrompt', lang));
         showToast?.(msg, 'success');

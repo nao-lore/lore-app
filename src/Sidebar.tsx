@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
-import { FileText, ScrollText, FolderOpen, Folder, CheckSquare, MoreHorizontal, Settings, Trash2, HelpCircle, LogOut, ChevronUp, ChevronDown, ChevronRight, BookOpen, Clock, BarChart2, FileBarChart, LayoutDashboard, MessageSquare, Menu, CreditCard, User } from 'lucide-react';
+import { FileText, ScrollText, FolderOpen, Folder, CheckSquare, MoreHorizontal, Settings, Trash2, HelpCircle, ChevronUp, ChevronDown, ChevronRight, BookOpen, Clock, BarChart2, FileBarChart, LayoutDashboard, MessageSquare, Menu, CreditCard, User } from 'lucide-react';
 import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { t } from './i18n';
 import type { Lang } from './i18n';
@@ -11,6 +11,7 @@ import ConfirmDialog from './ConfirmDialog';
 import FeedbackModal from './FeedbackModal';
 import { getProjectColor } from './projectColors';
 import { useFocusTrap } from './useFocusTrap';
+import { isStaleMasterNote } from './utils/staleness';
 
 
 function formatNumber(n: number): string {
@@ -46,6 +47,7 @@ function StatsModal({ stats, lang, onClose, onOpenHistory, onOpenProjects, onOpe
   return (
     <div
       className="modal-overlay"
+      role="presentation"
       onClick={onClose}
     >
       <div
@@ -270,7 +272,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
       {/* Header */}
       <div style={{ padding: '16px 14px 12px' }}>
         <div className="flex-row justify-between mb-md">
-          <span className="cursor-pointer" onClick={onNewLog} style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>{t('appName', lang)}</span>
+          <button className="cursor-pointer" onClick={onNewLog} type="button" style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', letterSpacing: '-0.3px', background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}>{t('appName', lang)}</button>
           <div className="flex gap-xs">
             <button className="toggle-btn" onClick={onCollapse} title={t('hideSidebar', lang)} aria-label={t('ariaHideSidebar', lang)}><Menu size={18} /></button>
           </div>
@@ -403,8 +405,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
               {pinnedProjects.map((p) => {
                 const pColor = getProjectColor(p.color);
                 const mn = masterNotes.find(n => n.projectId === p.id);
-                const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-                const isStale = mn && (Date.now() - mn.updatedAt > SEVEN_DAYS);
+                const isStale = mn && isStaleMasterNote(mn.updatedAt);
                 const hasUnreflected = mn && logs.some(
                   (l) => l.projectId === p.id && l.outputMode === 'handoff' && new Date(l.createdAt).getTime() > mn.updatedAt,
                 );
@@ -505,7 +506,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
         <div className="account-avatar"><User size={16} /></div>
         <div className="account-info">
           <span className="account-name">{t('accountMenuUser', lang)}</span>
-          <span className="account-plan" onClick={(e) => { e.stopPropagation(); onOpenPricing?.(); }} style={{ cursor: 'pointer' }}>{t('accountMenuPlan', lang)}</span>
+          <button className="account-plan" onClick={(e) => { e.stopPropagation(); onOpenPricing?.(); }} type="button" style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'inherit', textAlign: 'inherit' }}>{t('accountMenuPlan', lang)}</button>
         </div>
         <ChevronUp size={14} className="account-menu-chevron" />
       </button>
@@ -547,11 +548,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
               <MessageSquare size={16} />
               <span>{t('accountMenuFeedback', lang)}</span>
             </button>
-            <div className="account-popover-divider" role="separator" />
-            <button className="account-popover-item danger" role="menuitem" onClick={() => { setAccountMenuOpen(false); }}>
-              <LogOut size={16} />
-              <span>{t('accountMenuLogout', lang)}</span>
-            </button>
+            {/* Logout button hidden — will be implemented with auth */}
           </div>
         );
       })()}
@@ -583,7 +580,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
         document.body,
       )}
       {changingProjectLogId && createPortal(
-        <div className="modal-overlay" onClick={() => setChangingProjectLogId(null)}>
+        <div className="modal-overlay" role="presentation" onClick={() => setChangingProjectLogId(null)}>
           <div
             className="shortcuts-modal"
             role="dialog"
