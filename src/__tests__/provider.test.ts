@@ -12,7 +12,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Suppress unhandled rejections from lingering AbortController timeouts
 // when fake timers are used with the retry loop.
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 const _process = (globalThis as Record<string, unknown>).process as { listeners?: (e: string) => unknown[]; removeAllListeners?: (e: string) => void; on?: (e: string, fn: unknown) => void } || {};
 const origListeners = _process.listeners?.('unhandledRejection') ?? [];
 beforeEach(() => {

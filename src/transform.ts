@@ -37,6 +37,7 @@ DECISIONS rules:
   - "maybe X" / "Xかも" / "候補としてX" -> Today
 - Ambiguous agreement to assistant suggestions is NOT a decision.
   - User saying "OK" or "sure" to an assistant idea without restating commitment is NOT enough.
+  - "OK sure, X sounds fine" → NOT a decision. User must RESTATE commitment.
   - User must show clear ownership: "よし、それでいく" or "Let's go with that" counts.
 - If zero items meet this bar, return []. Do NOT fill with weaker items.
 
@@ -64,11 +65,15 @@ TODAY rules:
 - Keep items short and work-log style (1 line each).
 - Include discussions, comparisons, reviews, and explorations here.
 - Items that almost-but-didn't-quite become Decisions belong in Today.
+- Deferred items: "Discussed X but deferred to later"
+- today MUST NOT be empty for conversations with 5+ messages.
+- Items discussed but not decided belong in today.
 - Do not editorialize or add interpretation.
 
 TITLE rules:
 - 20-40 characters. Concise and descriptive.
 - Summarize the MAIN work topic, not the conversation itself.
+- title MUST be specific. NEVER generic like "Restart Memo" or "Session Summary". Extract the main topic.
 - Japanese input → Japanese title. English input → English title.
 - Use specific nouns and actions: "Lore拡張UI改善", "レート制限リトライ実装", "検索モジュール統合"
 - BAD: "会話ログ", "AIとの議論", "作業メモ" → TOO VAGUE
@@ -79,6 +84,7 @@ TAGS rules:
   A. CATEGORY tags (2-3): broad work categories. Examples: 開発, UI, 設計, バグ修正, テスト, リファクタ, 調査, 戦略, 営業, 自動化, インフラ, ドキュメント
   B. TOPIC tags (2-4): specific tools, features, or concepts discussed. Examples: React, IndexedDB, rate-limit, i18n, CSS変数
 - Total 4-7 tags.
+- tags MUST contain at least 3 items for any non-trivial conversation.
 - IMPORTANT: Tags MUST match the input language. Japanese input → Japanese tags. English input → English tags. Category tag examples: EN: development, UI, design, bugfix, testing, refactor, research, strategy. JA: 開発, UI, 設計, バグ修正, テスト, リファクタ, 調査, 戦略. Keep widely-recognized technical proper nouns as-is (React, TypeScript, Supabase, etc.).
 - AVOID vague tags like "productivity", "improvement", "work", "AI", "development", "code", "programming".
 - Each tag should help filter and distinguish this log from others.
@@ -278,6 +284,7 @@ Schema:
 TITLE rules:
 - 20-40 characters. Concise and descriptive.
 - Summarize the MAIN work topic, not the conversation itself.
+- title MUST be specific. NEVER generic like "Restart Memo" or "Session Summary". Extract the main topic.
 - Japanese input → Japanese title. English input → English title.
 - Use specific nouns and actions: "Lore拡張UI改善", "レート制限リトライ実装", "検索モジュール統合"
 - BAD: "会話ログ", "AIとの議論", "作業メモ" → TOO VAGUE
@@ -352,6 +359,7 @@ DECISIONS (決定事項 — active only, max 6): ONLY decisions that STILL const
   - Finality markers (EN): "decided", "will go with", "settled on"
   - Finality markers (JA): "に決めた", "でいく", "にする", "で確定"
   - NOT a decision: "OK that schema looks good" → no restated commitment, just acknowledgement.
+  - NOT a decision: "OK sure, X sounds fine" → NOT a decision. User must RESTATE commitment.
   - NOT a decision: "Maybe later, not a priority now" → deferral, not commitment.
   - NOT a decision: "もう少し調べてから判断する" → explicit deferral, not a decision.
 
@@ -363,6 +371,7 @@ TAGS rules:
   A. CATEGORY tags (2-3): broad work categories. Examples: 開発, UI, 設計, バグ修正, テスト, リファクタ, 調査, 戦略
   B. TOPIC tags (2-4): specific tools, features, or concepts. Examples: React, IndexedDB, レート制限, i18n
 - Total 4-7 tags.
+- tags MUST contain at least 3 items for any non-trivial conversation.
 - IMPORTANT: Tags MUST match the input language. Japanese input → Japanese tags. English input → English tags. Keep widely-recognized technical proper nouns as-is (React, TypeScript, Supabase, etc.).
 - AVOID vague tags like "productivity", "improvement", "work", "AI", "development".
 
@@ -628,16 +637,16 @@ Schema:
 }
 
 === WORKLOG RULES ===
-TITLE: 20-40 chars, specific nouns and actions. Match input language.
-TODAY: What was actually done. 3-8 items. Include file names, values, parameters.
-DECISIONS: Only explicit commitments with finality markers ("decided", "でいく", "にする", "settled on"). Empty [] if none.
+TITLE: 20-40 chars, specific nouns and actions. Match input language. title MUST be specific. NEVER generic like "Restart Memo" or "Session Summary". Extract the main topic.
+TODAY: What was actually done. 3-8 items. Include file names, values, parameters. today MUST NOT be empty for conversations with 5+ messages. Items discussed but not decided belong in today. Deferred items: "Discussed X but deferred to later".
+DECISIONS: Only explicit commitments with finality markers ("decided", "でいく", "にする", "settled on"). "OK sure, X sounds fine" → NOT a decision. User must RESTATE commitment. Empty [] if none.
 TODO: Only actions the user explicitly committed to doing NEXT. EXCLUDE items completed/resolved later in the conversation. EXCLUDE concluded investigations ("調べる"/"考える" with conclusion reached). EXCLUDE vague aspirations ("〜かも", "〜したい"). Each TODO = ONE concrete executable action. Empty [] if none.
 RELATED PROJECTS: Only actual project/product names. Exclude tool names (Claude, VS Code). Empty [] if none.
-TAGS: 4-7 tags. Tags MUST match the input language. Japanese input → Japanese tags (開発, UI, バグ修正). English input → English tags (development, UI, bugfix). Keep proper nouns as-is (React, TypeScript, Supabase).
+TAGS: 4-7 tags. tags MUST contain at least 3 items for any non-trivial conversation. Tags MUST match the input language. Japanese input → Japanese tags (開発, UI, バグ修正). English input → English tags (development, UI, bugfix). Keep proper nouns as-is (React, TypeScript, Supabase).
 
 === HANDOFF RULES ===
 This is a RESTART MEMO — a cockpit checklist for resuming work, NOT a report.
-TITLE: Same as worklog title (reuse).
+TITLE: Same as worklog title (reuse). title MUST be specific. NEVER generic like "Restart Memo" or "Session Summary". Extract the main topic.
 HANDOFF META: sessionFocus (1 sentence: what to move forward), whyThisSession (1 sentence: why this matters now — infer from context), timePressure (1 sentence: phase-level urgency; FORBIDDEN: vague "急ぎ"/"重要" alone — must state WHAT creates pressure; INFERENCE ALLOWED: convert weak expressions like "今週中に"/"早めに" into concrete phase statements using context; Japanese examples: "来週月曜までに" → "Deadline: next Monday (来週月曜)", "今週中に" → "Must complete this week", "急ぎで" → "Urgent, needs immediate attention"; null ONLY if no pressure mentioned or inferable).
 CURRENT STATUS (今どこ？): PROJECT STATE right now. 3-5 bullets. ONLY present-tense — NO completed actions → COMPLETED. currentStatus MUST use present tense ONLY. NEVER use past tense (completed/完了した). Past items belong in 'completed' array, not currentStatus. BAD: "The header redesign was completed" → WRONG. GOOD: "Header redesign is done, focus is now on responsive layout".
 RESUME CHECKLIST (max 3): What to check/verify/decide FIRST when resuming. Each {"action":"string","whyNow":"string","ifSkipped":"string"}. whyNow and ifSkipped are MANDATORY — NEVER null. Infer from context: what downstream task depends on this? What breaks if skipped? NOT a copy of nextActions.
@@ -647,10 +656,11 @@ COMPLETED (終わったこと): MANDATORY. All completed work. 2-6 bullets. FORB
 BLOCKERS: Risks still unresolved at end. 0-3 bullets.
 DECISIONS (active only, max 6): Only decisions still constraining future work. HARD LIMIT: Maximum 6 decisions. If more than 6 qualify, keep only the 6 most significant. Each {"decision":"string","rationale":"string or null"}. rationale: extract if stated; infer from context if not (what was the alternative?). EXCLUDE completed/overturned decisions.
   - NOT a decision: "OK that schema looks good" → no restated commitment, just acknowledgement.
+  - NOT a decision: "OK sure, X sounds fine" → NOT a decision. User must RESTATE commitment.
   - NOT a decision: "Maybe later, not a priority now" → deferral, not commitment.
   - NOT a decision: "もう少し調べてから判断する" → explicit deferral, not a decision.
 CONSTRAINTS: Stable rules. 0-3 bullets.
-TAGS: Can reuse worklog tags.
+TAGS: Can reuse worklog tags. tags MUST contain at least 3 items for any non-trivial conversation.
 
 === CLASSIFICATION RULES ===
 If a PROJECTS list is provided, match the log to the best project.

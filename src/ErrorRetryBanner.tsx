@@ -53,6 +53,9 @@ export default function ErrorRetryBanner({ message, retryLabel, dismissLabel, on
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
+            minWidth: 44,
+            minHeight: 44,
           }}
           aria-label={dismissLabel || 'Dismiss'}
         >

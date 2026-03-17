@@ -146,7 +146,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
     safeSetItem(SIDEBAR_PINNED_KEY, next ? 'open' : 'closed');
   };
   const accountTriggerRef = useRef<HTMLButtonElement>(null);
-  const accountPopoverRef = useRef<HTMLDivElement>(null);
+  const accountPopoverRef = useFocusTrap<HTMLDivElement>(accountMenuOpen);
 
   // Close account menu on Esc or outside click
   const closeAccountMenu = useCallback(() => setAccountMenuOpen(false), []);

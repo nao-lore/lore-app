@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
-import { trashLog, restoreLog, updateLog, loadLogs, duplicateLog, getAiContext, getMasterNote, getFeatureEnabled } from './storage';
+import { trashLog, restoreLog, updateLog, loadLogs, duplicateLog, getAiContext, getMasterNote, getFeatureEnabled, safeGetItem } from './storage';
 import { saveCorrection } from './classify';
 import { MoreVertical, Pin, ExternalLink, Copy, Check, Activity, Share2 } from 'lucide-react';
 import { logToMarkdown } from './markdown';
@@ -9,7 +9,6 @@ import { t } from './i18n';
 import type { Lang } from './i18n';
 import ConfirmDialog from './ConfirmDialog';
 import { analyzeWorkload, WORKLOAD_CONFIG } from './workload';
-import { isNotionConfigured, isSlackConfigured } from './integrations';
 import { formatDateTimeFull } from './utils/dateFormat';
 import { formatHandoffMarkdown, formatFullAiContext } from './formatHandoff';
 import { generateProjectContext } from './generateProjectContext';
@@ -224,7 +223,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
 
   const handleSendNotion = async () => {
     if (!log) return;
-    if (!isNotionConfigured()) {
+    if (!(safeGetItem('threadlog_notion_api_key') && safeGetItem('threadlog_notion_database_id'))) {
       showToast?.(t('notionNotConfigured', lang), 'error');
       return;
     }
@@ -242,7 +241,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
 
   const handleSendSlack = async () => {
     if (!log) return;
-    if (!isSlackConfigured()) {
+    if (!safeGetItem('threadlog_slack_webhook_url')) {
       showToast?.(t('slackNotConfigured', lang), 'error');
       return;
     }
@@ -590,9 +589,9 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
       )}
 
       {/* External integrations */}
-      {(isNotionConfigured() || isSlackConfigured()) && (
+      {(!!(safeGetItem('threadlog_notion_api_key') && safeGetItem('threadlog_notion_database_id')) || !!safeGetItem('threadlog_slack_webhook_url')) && (
         <div className="flex flex-wrap gap-sm mb-md">
-          {isNotionConfigured() && (
+          {!!(safeGetItem('threadlog_notion_api_key') && safeGetItem('threadlog_notion_database_id')) && (
             <button
               className="btn flex-row"
               style={{ gap: 6, fontSize: 12, padding: '4px 12px', minHeight: 28 }}
@@ -603,7 +602,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
               {sendingNotion ? t('notionSending', lang) : t('notionSend', lang)}
             </button>
           )}
-          {isSlackConfigured() && (
+          {!!safeGetItem('threadlog_slack_webhook_url') && (
             <button
               className="btn flex-row"
               style={{ gap: 6, fontSize: 12, padding: '4px 12px', minHeight: 28 }}

@@ -45,6 +45,12 @@ export default defineConfig({
           if (id.includes('/src/provider') || id.includes('/src/transform')) {
             return 'provider-transform';
           }
+          if (id.includes('/src/i18n')) {
+            return 'i18n';
+          }
+          if (id.includes('/src/storage')) {
+            return 'storage';
+          }
         },
       },
     },

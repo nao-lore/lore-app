@@ -20,6 +20,8 @@ vi.mock('../storage', () => ({
   linkLogs: vi.fn(),
   unlinkLogs: vi.fn(),
   updateTodo: vi.fn(),
+  safeGetItem: () => null,
+  safeSetItem: vi.fn(),
 }));
 
 // Mock classify

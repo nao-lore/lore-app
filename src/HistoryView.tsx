@@ -1094,7 +1094,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
       ) : selectMode ? (
         /* Select mode: render all items without virtualization (needed for bulk selection UX) */
         groupKey === 'none' ? (
-          <div role="list">{sorted.map(renderItem)}</div>
+          <div role="list">{sorted.map((log) => <div key={log.id} role="listitem">{renderItem(log)}</div>)}</div>
         ) : (
           <div className="flex-col" style={{ gap: 24 }}>
             {groups.map((group) => (
@@ -1110,7 +1110,9 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
                     <span className="meta" style={{ fontSize: 12 }}>{tf('logCount', lang, group.items.length)}</span>
                   </div>
                 )}
-                {group.items.map(renderLogCard)}
+                <div role="list">
+                  {group.items.map((log) => <div key={log.id} role="listitem">{renderLogCard(log)}</div>)}
+                </div>
               </div>
             ))}
           </div>

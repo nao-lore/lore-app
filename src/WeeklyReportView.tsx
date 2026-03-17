@@ -3,13 +3,12 @@ import { ChevronLeft, ChevronRight, Copy, Printer, Trash2, FileBarChart } from '
 import type { LogEntry, Project, Todo, WeeklyReport } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
-import { loadWeeklyReports, saveWeeklyReport, getWeeklyReport, deleteWeeklyReport, setLastReportDate } from './storage';
+import { loadWeeklyReports, saveWeeklyReport, getWeeklyReport, deleteWeeklyReport, setLastReportDate, safeGetItem } from './storage';
 import { generateWeeklyReport, weeklyReportToMarkdown } from './weeklyReport';
 import ConfirmDialog from './ConfirmDialog';
 import { WORKLOAD_CONFIG } from './workload';
 import { formatDateFull } from './utils/dateFormat';
 import type { WorkloadLevel } from './workload';
-import { sendToSlack, isSlackConfigured } from './integrations';
 
 // ─── Date helpers ───
 
@@ -160,13 +159,14 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
   };
 
   const handleSlackPost = async (report: WeeklyReport) => {
-    if (!isSlackConfigured()) {
+    if (!safeGetItem('threadlog_slack_webhook_url')) {
       showToast?.(t('slackNotConfigured', lang), 'error');
       return;
     }
     setSendingSlack(true);
     try {
       const pName = report.projectId ? projects.find((p) => p.id === report.projectId)?.name : undefined;
+      const { sendToSlack } = await import('./integrations');
       await sendToSlack(weeklyReportToMarkdown(report, pName));
       showToast?.(t('slackSent', lang), 'success');
     } catch (err) {
@@ -203,7 +203,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
             <button className="btn" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, display: 'flex', alignItems: 'center', gap: 4 }} onClick={handlePrint}>
               <Printer size={12} /> {t('weeklyReportPrint', lang)}
             </button>
-            {isSlackConfigured() && (
+            {!!safeGetItem('threadlog_slack_webhook_url') && (
               <button
                 className="btn"
                 style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, display: 'flex', alignItems: 'center', gap: 4 }}

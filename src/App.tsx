@@ -143,7 +143,7 @@ export default function App() {
     const handler = () => s.showToast(t('storageFullWarning', s.lang), 'error');
     window.addEventListener('lore-storage-full', handler);
     return () => window.removeEventListener('lore-storage-full', handler);
-  }, [s.lang]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [s.lang, s.showToast]);
 
   // Auto weekly report reminder on app load
   useEffect(() => {
@@ -229,8 +229,7 @@ export default function App() {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s.paletteOpen, s.shortcutsOpen, s.view, s.prevView, s.activeProjectId]);
+  }, [s.paletteOpen, s.shortcutsOpen, s.view, s.prevView, s.activeProjectId, s.handleNewLog, s.goToRaw, s.setPaletteOpen, s.setShortcutsOpen, s.setActiveProjectId]);
 
   // Multi-tab localStorage sync
   useEffect(() => {
@@ -368,7 +367,7 @@ export default function App() {
             <button
               className="btn"
               onClick={() => { setDemoMode(false); s.setLogsVersion((v: number) => v + 1); }}
-              style={{ fontSize: 12, padding: '2px 10px', color: 'var(--accent)' }}
+              style={{ fontSize: 12, padding: '2px 10px', color: 'var(--accent)', minHeight: 44 }}
             >
               {t('exitDemoMode', s.lang)}
             </button>
@@ -456,6 +455,7 @@ export default function App() {
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: 'inherit', fontSize: 14, lineHeight: 1, padding: '0 4px',
+                minWidth: 44, minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
               x
