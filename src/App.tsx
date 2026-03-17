@@ -138,6 +138,9 @@ export default function App() {
   const projects = useMemo(() => loadProjects(), [logsVersion]);
   const todos = useMemo(() => loadTodos(), [logsVersion]);
   const masterNotes = useMemo(() => loadMasterNotes(), [logsVersion]);
+  const pendingTodosCount = useMemo(() => todos.filter((td) => !td.done && !td.archivedAt).length, [todos]);
+  const lastLogCreatedAt = useMemo(() => logs.length > 0 ? logs[logs.length - 1].createdAt : null, [logs]);
+
 
   // Tab title: show pending TODO count + current view
   const pendingCount = useMemo(() => todos.filter((td) => !td.done).length, [todos]);
@@ -488,7 +491,7 @@ export default function App() {
       if (project) return <ErrorBoundary key={`knowledgebase-${activeProjectId}`} onGoHome={goHome}><KnowledgeBaseView project={project} logs={logs} onBack={() => goTo(prevView === 'knowledgebase' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} /></ErrorBoundary>;
     }
     // Fallback: 'input', 'detail', and any view that couldn't render (e.g. projecthome without activeProjectId)
-    return <ErrorBoundary key={`workspace-${inputKey}`} onGoHome={goHome}><Workspace key={inputKey} mode={view === 'detail' ? 'detail' : 'input'} selectedId={selectedId} onSaved={handleSaved} onDeleted={handleDeleted} onOpenLog={handleSelect} onBack={handleBack} prevView={prevView} lang={lang} activeProjectId={activeProjectId} projects={projects} onRefresh={refreshLogs} showToast={showToast} onDirtyChange={(dirty: boolean) => { inputDirtyRef.current = dirty; }} onTagFilter={handleTagFilter} onOpenMasterNote={handleOpenMasterNote} onSelectProject={setActiveProjectId} /></ErrorBoundary>;
+    return <ErrorBoundary key={`workspace-${inputKey}`} onGoHome={goHome}><Workspace key={inputKey} mode={view === 'detail' ? 'detail' : 'input'} selectedId={selectedId} onSaved={handleSaved} onDeleted={handleDeleted} onOpenLog={handleSelect} onBack={handleBack} prevView={prevView} lang={lang} activeProjectId={activeProjectId} projects={projects} onRefresh={refreshLogs} showToast={showToast} onDirtyChange={(dirty: boolean) => { inputDirtyRef.current = dirty; }} onTagFilter={handleTagFilter} onOpenMasterNote={handleOpenMasterNote} allLogs={logs} pendingTodosCount={pendingTodosCount} lastLogCreatedAt={lastLogCreatedAt} /></ErrorBoundary>;
   };
 
   return (
@@ -547,6 +550,7 @@ export default function App() {
           onDeleted={handleDeleted}
           lang={lang}
           showToast={showToast}
+          masterNotes={masterNotes}
         />
       )}
       <div id="main-content" ref={scrollRef} data-main-scroll style={{ flex: 1, overflowY: 'auto', minHeight: 0, background: 'var(--bg-app)' }}>

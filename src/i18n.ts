@@ -16,7 +16,7 @@ const labels = {
   appName: { ja: 'Lore', en: 'Lore', es: 'Lore', fr: 'Lore', de: 'Lore', zh: 'Lore', ko: 'Lore', pt: 'Lore' },
 
   // Sidebar
-  newLog: { ja: '+ Create Handoff', en: '+ Create Handoff', es: '+ Crear Handoff', fr: '+ Créer un Handoff', de: '+ Handoff erstellen', zh: '+ 创建Handoff', ko: '+ Handoff 생성', pt: '+ Criar Handoff' },
+  createHandoff: { ja: '+ Create Handoff', en: '+ Create Handoff', es: '+ Crear Handoff', fr: '+ Créer un Handoff', de: '+ Handoff erstellen', zh: '+ 创建Handoff', ko: '+ Handoff 생성', pt: '+ Criar Handoff' },
   searchLogs: { ja: 'ログを検索...', en: 'Search logs...', es: 'Buscar registros...', fr: 'Rechercher des logs...', de: 'Logs durchsuchen...', zh: '搜索日志...', ko: '로그 검색...', pt: 'Pesquisar registros...' },
   goToLogs: { ja: 'ログを見る', en: 'View Logs', es: 'Ver registros', fr: 'Voir les logs', de: 'Logs anzeigen', zh: '查看日志', ko: '로그 보기', pt: 'Ver Registros' },
   navLogs: { ja: 'ログ', en: 'Logs', es: 'Registros', fr: 'Logs', de: 'Logs', zh: '日志', ko: '로그', pt: 'Registros' },
@@ -49,7 +49,7 @@ const labels = {
   searchHint: { ja: '⌘K で検索', en: '⌘K to search', es: '⌘K para buscar', fr: '⌘K pour rechercher', de: '⌘K zum Suchen', zh: '⌘K 搜索', ko: '⌘K 검색', pt: '⌘K para pesquisar' },
 
   // Input view
-  newLogTitle: { ja: 'Create Handoff', en: 'Create Handoff', es: 'Crear Handoff', fr: 'Créer un Handoff', de: 'Handoff erstellen', zh: '创建Handoff', ko: 'Handoff 생성', pt: 'Criar Handoff' },
+  createHandoffTitle: { ja: 'Create Handoff', en: 'Create Handoff', es: 'Crear Handoff', fr: 'Créer un Handoff', de: 'Handoff erstellen', zh: '创建Handoff', ko: 'Handoff 생성', pt: 'Criar Handoff' },
   inputDesc: { ja: 'テキスト貼り付け、ファイルインポート、またはドラッグ&ドロップで作業ログを抽出します。', en: 'Paste text, import files, or drag & drop to extract your work log.', es: 'Pegue texto, importe archivos o arrastre y suelte para extraer su registro de trabajo.', fr: 'Collez du texte, importez des fichiers ou glissez-déposez pour extraire votre journal de travail.', de: 'Text einfügen, Dateien importieren oder per Drag & Drop Arbeitsprotokoll extrahieren.', zh: '粘贴文本、导入文件或拖放以提取工作日志。', ko: '텍스트 붙여넣기, 파일 가져오기 또는 드래그 앤 드롭으로 작업 로그를 추출합니다.', pt: 'Cole texto, importe arquivos ou arraste e solte para extrair seu registro de trabalho.' },
   inputPlaceholder: { ja: 'AIとの会話を貼り付け、またはファイルをドロップ', en: 'Paste an AI conversation, or drop a file', es: 'Pegue una conversación con IA, o suelte un archivo', fr: 'Collez une conversation IA, ou déposez un fichier', de: 'KI-Konversation einfügen oder Datei ablegen', zh: '粘贴AI对话，或拖放文件', ko: 'AI 대화를 붙여넣거나 파일을 드롭하세요', pt: 'Cole uma conversa com IA ou solte um arquivo' },
   importFiles: { ja: 'Import File', en: 'Import File', es: 'Importar archivo', fr: 'Importer un fichier', de: 'Datei importieren', zh: 'Import File', ko: 'Import File', pt: 'Importar Arquivo' },
@@ -1093,6 +1093,11 @@ const labels = {
   ariaHideSidebar: { ja: 'サイドバーを隠す', en: 'Hide sidebar', es: 'Ocultar barra lateral', fr: 'Masquer la barre latérale', de: 'Seitenleiste ausblenden', zh: '隐藏侧边栏', ko: '사이드바 숨기기', pt: 'Ocultar barra lateral' },
   ariaCardView: { ja: 'カード表示', en: 'Card view', es: 'Vista de tarjetas', fr: 'Vue en cartes', de: 'Kartenansicht', zh: '卡片视图', ko: '카드 보기', pt: 'Visualização em cartão' },
   ariaListView: { ja: 'リスト表示', en: 'List view', es: 'Vista de lista', fr: 'Vue en liste', de: 'Listenansicht', zh: '列表视图', ko: '목록 보기', pt: 'Visualização em lista' },
+
+  // Notification dot labels
+  dotOverdueTodos: { ja: '期限切れのTODOあり', en: 'Overdue TODOs', es: 'TODOs vencidos', fr: 'TODOs en retard', de: 'Überfällige TODOs', zh: '逾期待办', ko: '기한 초과 TODO', pt: 'TODOs atrasados' },
+  dotUnassignedLogs: { ja: '未割り当ての引き継ぎあり', en: 'Unassigned handoffs', es: 'Traspasos sin asignar', fr: 'Transferts non assignés', de: 'Nicht zugewiesene Übergaben', zh: '未分配的交接', ko: '미배정 인수인계', pt: 'Transferências não atribuídas' },
+  dotStaleSummary: { ja: 'サマリー更新が必要', en: 'Summary needs update', es: 'Resumen necesita actualización', fr: 'Résumé à mettre à jour', de: 'Zusammenfassung aktualisieren', zh: '摘要需要更新', ko: '요약 업데이트 필요', pt: 'Resumo precisa de atualização' },
 
   // Overdue TODO banner
   overdueBanner: (n: number) => ({

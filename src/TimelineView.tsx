@@ -501,7 +501,7 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
           <p className="page-subtitle">{t('timelineEmptyHint', lang)}</p>
           {onNewLog && (
             <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={onNewLog}>
-              {t('newLog', lang)}
+              {t('createHandoff', lang)}
             </button>
           )}
         </div>

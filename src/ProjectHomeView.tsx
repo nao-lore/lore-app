@@ -151,7 +151,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
               {t('addLogsToProject', lang)}
             </button>
             <button className="btn btn-primary" onClick={onNewLog} style={{ fontSize: 13 }}>
-              {t('newLog', lang)}
+              {t('createHandoff', lang)}
             </button>
           </div>
         </div>
@@ -226,7 +226,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
               {t('addLogsToProject', lang)}
             </button>
             <button className="btn btn-primary" onClick={onNewLog}>
-              {t('newLog', lang)}
+              {t('createHandoff', lang)}
             </button>
           </div>
         </div>

@@ -1,5 +1,4 @@
-import { loadLogs } from './storage';
-import type { Project } from './types';
+import type { LogEntry, Project } from './types';
 import type { Lang } from './i18n';
 import InputView from './InputView';
 import DetailView from './DetailView';
@@ -22,11 +21,12 @@ interface WorkspaceProps {
   onDirtyChange?: (dirty: boolean) => void;
   onTagFilter?: (tag: string) => void;
   onOpenMasterNote?: (projectId: string) => void;
-  onSelectProject?: (projectId: string | null) => void;
+  allLogs: LogEntry[];
+  pendingTodosCount: number;
+  lastLogCreatedAt: string | null;
 }
 
-export default function Workspace({ mode, selectedId, onSaved, onDeleted, onOpenLog, onBack, prevView, lang, activeProjectId, projects, onRefresh, showToast, onDirtyChange, onTagFilter, onOpenMasterNote, onSelectProject: _onSelectProject }: WorkspaceProps) {
-  void _onSelectProject;
-  if (mode === 'detail' && selectedId) return <DetailView id={selectedId} onDeleted={onDeleted} onOpenLog={onOpenLog} onBack={onBack} prevView={prevView} lang={lang} projects={projects} onRefresh={onRefresh} showToast={showToast} onTagFilter={onTagFilter} allLogs={loadLogs()} onOpenMasterNote={onOpenMasterNote} />;
-  return <InputView onSaved={onSaved} onOpenLog={onOpenLog} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onDirtyChange={onDirtyChange} />;
+export default function Workspace({ mode, selectedId, onSaved, onDeleted, onOpenLog, onBack, prevView, lang, activeProjectId, projects, onRefresh, showToast, onDirtyChange, onTagFilter, onOpenMasterNote, allLogs, pendingTodosCount, lastLogCreatedAt }: WorkspaceProps) {
+  if (mode === 'detail' && selectedId) return <DetailView id={selectedId} onDeleted={onDeleted} onOpenLog={onOpenLog} onBack={onBack} prevView={prevView} lang={lang} projects={projects} onRefresh={onRefresh} showToast={showToast} onTagFilter={onTagFilter} allLogs={allLogs} onOpenMasterNote={onOpenMasterNote} />;
+  return <InputView onSaved={onSaved} onOpenLog={onOpenLog} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onDirtyChange={onDirtyChange} pendingTodosCount={pendingTodosCount} lastLogCreatedAt={lastLogCreatedAt} />;
 }

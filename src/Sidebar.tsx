@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { FileText, ScrollText, FolderOpen, CheckSquare, MoreHorizontal, Settings, Trash2, HelpCircle, LogOut, ChevronUp, ChevronDown, ChevronRight, BookOpen, Clock, BarChart2, FileBarChart, LayoutDashboard, MessageSquare, Menu, CreditCard, User } from 'lucide-react';
-import type { LogEntry, Project, Todo } from './types';
+import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { t } from './i18n';
 import type { Lang } from './i18n';
-import { updateLog, trashLog, getMasterNote, loadMasterNotes } from './storage';
+import { updateLog, trashLog, getMasterNote } from './storage';
 import ContextMenu from './ContextMenu';
 import type { MenuItem } from './ContextMenu';
 import ConfirmDialog from './ConfirmDialog';
@@ -107,11 +107,12 @@ interface SidebarProps {
   lang: Lang;
   showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void;
   todos: Todo[];
+  masterNotes: MasterNote[];
 }
 
 const MAX_PINNED = 5;
 
-export default function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSelect, onNewLog, onOpenSettings, onOpenHistory, onOpenProjects, onOpenTodos, onOpenProjectSummaryList, onOpenDashboard, onOpenTimeline, onOpenWeeklyReport, onOpenTrash, onOpenHelp, onOpenPricing, onCollapse, onSelectProject, onOpenMasterNote, onRefresh, onDeleted, lang, showToast, todos }: SidebarProps) {
+export default function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSelect, onNewLog, onOpenSettings, onOpenHistory, onOpenProjects, onOpenTodos, onOpenProjectSummaryList, onOpenDashboard, onOpenTimeline, onOpenWeeklyReport, onOpenTrash, onOpenHelp, onOpenPricing, onCollapse, onSelectProject, onOpenMasterNote, onRefresh, onDeleted, lang, showToast, todos, masterNotes }: SidebarProps) {
   const [menuState, setMenuState] = useState<{ logId: string; rect: DOMRect } | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
@@ -172,11 +173,10 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
   const dots = useMemo(() => {
     const overdueTodos = todos.some((td) => !td.done && td.dueDate && td.dueDate < new Date().toISOString().slice(0, 10));
     const unassignedLogs = logs.some((l) => l.outputMode === 'handoff' && !l.projectId);
-    const allNotes = loadMasterNotes();
     let staleSummary = false;
     let dismissals: Record<string, number> = {};
     try { dismissals = JSON.parse(localStorage.getItem('threadlog_notification_dismissals') || '{}'); } catch { /* ignore */ }
-    for (const note of allNotes) {
+    for (const note of masterNotes) {
       const projectHandoffs = logs.filter((l) => l.projectId === note.projectId && l.outputMode === 'handoff' && new Date(l.createdAt).getTime() > note.updatedAt);
       if (projectHandoffs.length === 0) continue;
       const dismissedAt = dismissals[`summary_${note.projectId}`];
@@ -186,7 +186,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
       break;
     }
     return { overdueTodos, unassignedLogs, staleSummary };
-  }, [logs, todos]);
+  }, [logs, todos, masterNotes]);
 
   const pinnedProjects = projects.filter((p) => p.pinned);
 
@@ -285,7 +285,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
           </div>
         </div>
         <button className="btn btn-primary" onClick={onNewLog} style={{ width: '100%', marginBottom: 0 }}>
-          {t('newLog', lang)}
+          {t('createHandoff', lang)}
         </button>
       </div>
 
@@ -315,7 +315,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
         >
           <ScrollText size={15} />
           <span>{t('navLogs', lang)}</span>
-          {dots.unassignedLogs && <span className="nav-dot accent" />}
+          {dots.unassignedLogs && <span className="nav-dot accent" role="status" aria-label={t('dotUnassignedLogs', lang)} title={t('dotUnassignedLogs', lang)} />}
         </button>
         <button
           className={`sidebar-nav-item${activeView === 'projects' || activeView === 'projecthome' ? ' active' : ''}`}
@@ -332,7 +332,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
         >
           <CheckSquare size={15} />
           <span>{t('navTodo', lang)}</span>
-          {dots.overdueTodos && <span className="nav-dot warning" />}
+          {dots.overdueTodos && <span className="nav-dot warning" role="status" aria-label={t('dotOverdueTodos', lang)} title={t('dotOverdueTodos', lang)} />}
         </button>
 
         {/* Collapsible "More" section */}
@@ -375,7 +375,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
             >
               <BookOpen size={15} />
               <span>{t('navProjectSummary', lang)}</span>
-              {dots.staleSummary && <span className="nav-dot warning" />}
+              {dots.staleSummary && <span className="nav-dot warning" role="status" aria-label={t('dotStaleSummary', lang)} title={t('dotStaleSummary', lang)} />}
             </button>
           </div>
         )}
@@ -492,35 +492,37 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
           <div
             ref={accountPopoverRef}
             className="account-popover"
+            role="menu"
+            aria-label={t('accountMenuUser', lang)}
             style={{ left: rect.left, bottom: window.innerHeight - rect.top + 4, top: 'auto' }}
           >
-            <button className="account-popover-item" onClick={() => { setAccountMenuOpen(false); onOpenSettings(); }}>
+            <button className="account-popover-item" role="menuitem" onClick={() => { setAccountMenuOpen(false); onOpenSettings(); }}>
               <Settings size={16} />
               <span>{t('accountMenuSettings', lang)}</span>
             </button>
-            <button className="account-popover-item" onClick={() => { setAccountMenuOpen(false); onOpenPricing?.(); }}>
+            <button className="account-popover-item" role="menuitem" onClick={() => { setAccountMenuOpen(false); onOpenPricing?.(); }}>
               <CreditCard size={16} />
               <span>{t('navPricing', lang)}</span>
             </button>
-            <button className="account-popover-item" onClick={() => { setAccountMenuOpen(false); setStatsOpen(true); }}>
+            <button className="account-popover-item" role="menuitem" onClick={() => { setAccountMenuOpen(false); setStatsOpen(true); }}>
               <BarChart2 size={16} />
               <span>{t('statsTitle', lang)}</span>
             </button>
-            <button className="account-popover-item" onClick={() => { setAccountMenuOpen(false); onOpenTrash(); }}>
+            <button className="account-popover-item" role="menuitem" onClick={() => { setAccountMenuOpen(false); onOpenTrash(); }}>
               <Trash2 size={16} />
               <span>{t('accountMenuTrash', lang)}</span>
             </button>
-            <div className="account-popover-divider" />
-            <button className="account-popover-item" onClick={() => { setAccountMenuOpen(false); onOpenHelp(); }}>
+            <div className="account-popover-divider" role="separator" />
+            <button className="account-popover-item" role="menuitem" onClick={() => { setAccountMenuOpen(false); onOpenHelp(); }}>
               <HelpCircle size={16} />
               <span>{t('accountMenuHelp', lang)}</span>
             </button>
-            <button className="account-popover-item" onClick={() => { setAccountMenuOpen(false); setFeedbackOpen(true); }}>
+            <button className="account-popover-item" role="menuitem" onClick={() => { setAccountMenuOpen(false); setFeedbackOpen(true); }}>
               <MessageSquare size={16} />
               <span>{t('accountMenuFeedback', lang)}</span>
             </button>
-            <div className="account-popover-divider" />
-            <button className="account-popover-item danger" onClick={() => { setAccountMenuOpen(false); }}>
+            <div className="account-popover-divider" role="separator" />
+            <button className="account-popover-item danger" role="menuitem" onClick={() => { setAccountMenuOpen(false); }}>
               <LogOut size={16} />
               <span>{t('accountMenuLogout', lang)}</span>
             </button>

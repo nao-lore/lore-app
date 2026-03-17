@@ -3,7 +3,7 @@ import { transformText, transformHandoff, transformBoth, transformTodoOnly, tran
 import type { TransformBothOptions } from './transform';
 import { ChunkEngine, getChunkTarget, getEngineConcurrency } from './chunkEngine';
 import type { EngineProgress } from './chunkEngine';
-import { addLog, getLog, addTodosFromLog, addTodosFromLogWithMeta, loadTodos, loadLogs, updateLog, getApiKey, getFeatureEnabled, getMasterNote, getStreak, isDemoMode } from './storage';
+import { addLog, getLog, addTodosFromLog, addTodosFromLogWithMeta, loadLogs, updateLog, getApiKey, getFeatureEnabled, getMasterNote, getStreak, isDemoMode } from './storage';
 import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
 const loadDemoData = () => import('./demoData');
 import { classifyLog, saveCorrection } from './classify';
@@ -137,7 +137,7 @@ function downloadFile(content: string, fileName: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void; onDirtyChange?: (dirty: boolean) => void }) {
+export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, pendingTodosCount, lastLogCreatedAt }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void; onDirtyChange?: (dirty: boolean) => void; pendingTodosCount: number; lastLogCreatedAt: string | null }) {
   const [text, setText] = useState('');
   const [files, setFiles] = useState<ImportedFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -154,7 +154,7 @@ export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, p
   const [outputMode, setOutputMode] = useState<OutputMode>('handoff');
   type TransformAction = 'both' | 'handoff' | 'worklog' | 'todo_only' | 'worklog_handoff' | 'handoff_todo';
   const [transformAction, setTransformAction] = useState<TransformAction>(() => {
-    try { const v = localStorage.getItem('threadlog_transform_action'); return (['both', 'handoff', 'worklog', 'todo_only', 'worklog_handoff', 'handoff_todo'].includes(v || '') ? v as TransformAction : 'handoff_todo'); } catch { return 'handoff_todo'; }
+    try { const v = localStorage.getItem('threadlog_transform_action'); return (['handoff', 'handoff_todo', 'todo_only'].includes(v || '') ? v as TransformAction : 'handoff_todo'); } catch { return 'handoff_todo'; }
   });
 
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(activeProjectId ?? undefined);
@@ -827,12 +827,9 @@ export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, p
       </h1>
       {/* Quick stats */}
       {(() => {
-        const pendingTodos = loadTodos().filter(t => !t.done && !t.archivedAt).length;
-        const allLogs = loadLogs();
-        const lastLog = allLogs.length > 0 ? allLogs[allLogs.length - 1] : null;
         const parts: string[] = [];
-        if (pendingTodos > 0) parts.push(lang === 'ja' ? `未完了TODO ${pendingTodos}件` : `${pendingTodos} pending TODO${pendingTodos !== 1 ? 's' : ''}`);
-        if (lastLog) parts.push((lang === 'ja' ? '最終変換: ' : 'Last: ') + formatRelativeTime(lastLog.createdAt, lang as 'en' | 'ja'));
+        if (pendingTodosCount > 0) parts.push(lang === 'ja' ? `未完了TODO ${pendingTodosCount}件` : `${pendingTodosCount} pending TODO${pendingTodosCount !== 1 ? 's' : ''}`);
+        if (lastLogCreatedAt) parts.push((lang === 'ja' ? '最終変換: ' : 'Last: ') + formatRelativeTime(lastLogCreatedAt, lang as 'en' | 'ja'));
         return parts.length > 0 ? (
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', margin: '0 0 12px', fontWeight: 400 }}>
             {parts.join(' · ')}
@@ -1048,7 +1045,7 @@ export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, p
                   opacity: (!combined.trim() || overLimit) ? 0.35 : 1,
                 }}
               >
-                {t(transformAction === 'handoff_todo' ? 'createBtnHandoffTodo' : transformAction === 'todo_only' ? 'createBtnTodoOnly' : transformAction === 'both' || transformAction === 'worklog_handoff' ? 'createBtnBoth' : transformAction === 'handoff' ? 'createBtnHandoff' : 'createBtnWorklog', lang)}
+                {t(transformAction === 'handoff_todo' ? 'createBtnHandoffTodo' : transformAction === 'todo_only' ? 'createBtnTodoOnly' : 'createBtnHandoff', lang)}
               </button>
             </FirstUseTooltip>
           )}
@@ -1058,7 +1055,7 @@ export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, p
       {/* Toolbar: mode tabs + project + import — single row */}
       {!savedResult && (<div style={{ maxWidth: 760, margin: '10px auto 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <div className="mode-selector">
+          <div className="mode-selector" role="radiogroup" aria-label="Transform mode">
             {(['handoff', 'handoff_todo', 'todo_only'] as TransformAction[]).map((a) => {
               const isActive = transformAction === a;
               const label = t(
@@ -1077,6 +1074,8 @@ export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, p
                 <button
                   key={a}
                   className={`mode-selector-btn${isActive ? ' active' : ''}`}
+                  role="radio"
+                  aria-checked={isActive}
                   title={tooltip}
                   onClick={() => { setTransformAction(a); try { localStorage.setItem('threadlog_transform_action', a); } catch { /* ignore */ } }}
                 >
@@ -1260,7 +1259,7 @@ export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, p
       )}
 
       {result && (
-        <div className="result-panel" style={{ marginTop: 28 }}>
+        <div className="result-panel" aria-live="polite" style={{ marginTop: 28 }}>
           {savedId && (
             <div className="alert-success" style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
               <span>{t('savedToLogs', lang)}</span>
