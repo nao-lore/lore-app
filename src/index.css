@@ -122,8 +122,8 @@
   --text-secondary: #e0e0e0;
   --text-body: #b0b0b0;
   --text-muted: #a0a0a0;
-  --text-subtle: #8a8a8a;
-  --text-placeholder: #9a9a9a;
+  --text-subtle: #999999;
+  --text-placeholder: #a8a8a8;
   --accent: #9b8ff8;
   --accent-hover: #a99df9;
   --accent-active: #8b7cf6;
