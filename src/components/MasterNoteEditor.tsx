@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { useState, useRef, useEffect } from 'react';
 import type { MasterNote, LogEntry, SourcedItem } from '../types';
 import type { Lang } from '../i18n';

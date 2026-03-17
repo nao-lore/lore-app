@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect, useRef, memo } from 'react';
 import { MoreHorizontal, Pin, FolderOpen, Pencil, Trash2, Copy, Download, ExternalLink, CopyPlus } from 'lucide-react';
 import type { LogEntry, Project } from '../types';

@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 import Workspace from './Workspace';
 import CommandPalette from './CommandPalette';
 import BottomNav from './BottomNav';
-import { Toast } from './Toast';
+import { ToastStack } from './Toast';
 import ConfirmDialog from './ConfirmDialog';
 import Onboarding from './Onboarding';
 import ErrorBoundary from './ErrorBoundary';
@@ -65,7 +65,13 @@ function resolveEffectiveTheme(pref: ThemePref): 'light' | 'dark' | 'high-contra
 
 export default function App() {
   const { inputDirtyRef, scrollRef, scrollPositionRef, shortcutsTrapRef, ...s } = useAppState();
-  const [navDirection, setNavDirection] = useState<'forward' | 'back'>('forward');
+  const [navState, setNavState] = useState<{ direction: 'forward' | 'back'; prevView: View }>({ direction: 'forward', prevView: s.view });
+  const navDirection = navState.direction;
+  if (navState.prevView !== s.view) {
+    const prevDepth = VIEW_DEPTH[navState.prevView] ?? 0;
+    const nextDepth = VIEW_DEPTH[s.view] ?? 0;
+    setNavState({ direction: nextDepth >= prevDepth ? 'forward' : 'back', prevView: s.view });
+  }
 
   // Bootstrap: mount-only effects consolidated into a single hook
   useBootstrapEffects({
@@ -151,15 +157,6 @@ export default function App() {
     }
   }, [s.fontSize]);
 
-  // Track navigation direction based on view depth
-  const prevViewForDir = React.useRef(s.view);
-  useEffect(() => {
-    const prevDepth = VIEW_DEPTH[prevViewForDir.current] ?? 0;
-    const nextDepth = VIEW_DEPTH[s.view] ?? 0;
-    setNavDirection(nextDepth >= prevDepth ? 'forward' : 'back');
-    prevViewForDir.current = s.view;
-  }, [s.view]);
-
   // Save last view to localStorage
   useEffect(() => {
     safeSetItem(s.LAST_VIEW_KEY, s.view);
@@ -175,7 +172,7 @@ export default function App() {
     const handler = () => s.showToast(t('storageFullWarning', s.lang), 'error');
     window.addEventListener('lore-storage-full', handler);
     return () => window.removeEventListener('lore-storage-full', handler);
-  }, [s.lang, s.showToast]);
+  }, [s]);
 
   // Apply data-theme attribute
   useEffect(() => {
@@ -243,7 +240,7 @@ export default function App() {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [s.paletteOpen, s.shortcutsOpen, s.view, s.prevView, s.activeProjectId, s.handleNewLog, s.goTo, s.goToRaw, s.setPaletteOpen, s.setShortcutsOpen, s.setActiveProjectId]);
+  }, [s]);
 
   // Restore scroll position when view changes
   useEffect(() => {
@@ -471,7 +468,7 @@ export default function App() {
           )}
         </div>
       )}
-      <Toast {...s.toast} />
+      <ToastStack toasts={s.toasts} />
       {s.paletteOpen && (
         <CommandPalette
           logs={s.logs}

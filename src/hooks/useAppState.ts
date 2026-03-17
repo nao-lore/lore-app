@@ -36,7 +36,7 @@ export function useAppState() {
     return 'medium';
   });
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const { toast, showToast } = useToast();
+  const { toast, toasts, showToast } = useToast();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingPausedForSettings, setOnboardingPausedForSettings] = useState(false);
   const [helpFeedbackOpen, setHelpFeedbackOpen] = useState(false);
@@ -78,17 +78,17 @@ export function useAppState() {
   const handleSelect = useCallback((id: string) => {
     nav.handleSelect(id);
     setPaletteOpen(false);
-  }, [nav.handleSelect]);
+  }, [nav]);
 
   const handleNewLog = useCallback(() => {
     nav.handleNewLog();
-  }, [nav.handleNewLog]);
+  }, [nav]);
 
   const handleSaved = useCallback((id: string) => {
     nav.setSelectedId(id);
     data.refreshLogs();
     nav.inputDirtyRef.current = false;
-  }, [data.refreshLogs, nav.setSelectedId, nav.inputDirtyRef]);
+  }, [data, nav]);
 
   const handleDeleted = useCallback(() => {
     nav.setSelectedId(null);
@@ -97,16 +97,16 @@ export function useAppState() {
     data.refreshLogs();
     showToast(t('deleted', lang), 'success');
     nav.inputDirtyRef.current = false;
-  }, [data.refreshLogs, showToast, lang, nav.setSelectedId, nav.setInputKey, nav.goToRawRef, nav.inputDirtyRef]);
+  }, [data, nav, showToast, lang]);
 
   // Wrap nav.handleBack to pass activeProjectId
   const handleBack = useCallback(() => {
     nav.handleBack(activeProjectId);
-  }, [nav.handleBack, activeProjectId]);
+  }, [nav, activeProjectId]);
 
   const goHome = useCallback(() => {
     nav.goHome();
-  }, [nav.goHome]);
+  }, [nav]);
 
   const handleTagFilter = (tag: string) => {
     setTagFilter(tag);
@@ -146,21 +146,21 @@ export function useAppState() {
     if (isFirstLaunch) {
       nav.goToRawRef.current('dashboard');
     }
-  }, [lang, data.setLogsVersion, nav.goToRawRef]);
+  }, [lang, data, nav]);
 
   // ── Stable "go-to" callbacks for memo'd child components ──────
-  const handleGoToSettings = useCallback(() => nav.goToRef.current('settings'), [nav.goToRef]);
-  const handleGoToHistory = useCallback(() => { setActiveProjectId(null); nav.setView('history'); }, [nav.setView]);
-  const handleGoToProjects = useCallback(() => nav.goToRef.current('projects'), [nav.goToRef]);
-  const handleGoToTodos = useCallback(() => nav.goToRef.current('todos'), [nav.goToRef]);
-  const handleGoToSummaryList = useCallback(() => nav.goToRef.current('summarylist'), [nav.goToRef]);
-  const handleGoToDashboard = useCallback(() => nav.goToRef.current('dashboard'), [nav.goToRef]);
-  const handleGoToTimeline = useCallback(() => nav.goToRef.current('timeline'), [nav.goToRef]);
-  const handleGoToWeeklyReport = useCallback(() => nav.goToRef.current('weeklyreport'), [nav.goToRef]);
-  const handleGoToTrash = useCallback(() => nav.goToRef.current('trash'), [nav.goToRef]);
-  const handleGoToHelp = useCallback(() => nav.goToRef.current('help'), [nav.goToRef]);
-  const handleGoToPricing = useCallback(() => nav.goToRef.current('pricing'), [nav.goToRef]);
-  const handleGoToInput = useCallback(() => nav.goToRef.current('input'), [nav.goToRef]);
+  const handleGoToSettings = useCallback(() => nav.goToRef.current('settings'), [nav]);
+  const handleGoToHistory = useCallback(() => { setActiveProjectId(null); nav.setView('history'); }, [nav]);
+  const handleGoToProjects = useCallback(() => nav.goToRef.current('projects'), [nav]);
+  const handleGoToTodos = useCallback(() => nav.goToRef.current('todos'), [nav]);
+  const handleGoToSummaryList = useCallback(() => nav.goToRef.current('summarylist'), [nav]);
+  const handleGoToDashboard = useCallback(() => nav.goToRef.current('dashboard'), [nav]);
+  const handleGoToTimeline = useCallback(() => nav.goToRef.current('timeline'), [nav]);
+  const handleGoToWeeklyReport = useCallback(() => nav.goToRef.current('weeklyreport'), [nav]);
+  const handleGoToTrash = useCallback(() => nav.goToRef.current('trash'), [nav]);
+  const handleGoToHelp = useCallback(() => nav.goToRef.current('help'), [nav]);
+  const handleGoToPricing = useCallback(() => nav.goToRef.current('pricing'), [nav]);
+  const handleGoToInput = useCallback(() => nav.goToRef.current('input'), [nav]);
   const handleCollapseSidebar = sidebar.handleCollapseSidebar;
   const handleHideSidebar = sidebar.handleHideSidebar;
 
@@ -168,7 +168,7 @@ export function useAppState() {
     if (v === 'input') { handleNewLog(); }
     else if (v === 'settings') { nav.goToRef.current('settings'); }
     else { nav.goToRef.current(v); }
-  }, [handleNewLog, nav.goToRef]);
+  }, [handleNewLog, nav]);
 
   const handleDashboardToggleAction = useCallback((logId: string, actionIndex: number) => {
     const log = getLog(logId);
@@ -177,7 +177,7 @@ export function useAppState() {
     const next = current.includes(actionIndex) ? current.filter((i: number) => i !== actionIndex) : [...current, actionIndex];
     updateLog(logId, { checkedActions: next });
     data.refreshLogs();
-  }, [data.refreshLogs]);
+  }, [data]);
 
   return {
     // View state (from useNavigation)
@@ -210,7 +210,7 @@ export function useAppState() {
     activeProjectId, setActiveProjectId,
     fontSize, setFontSizeState,
     paletteOpen, setPaletteOpen,
-    toast, showToast,
+    toast, toasts, showToast,
     showOnboarding, setShowOnboarding,
     onboardingPausedForSettings, setOnboardingPausedForSettings,
     helpFeedbackOpen, setHelpFeedbackOpen,

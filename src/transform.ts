@@ -6,6 +6,8 @@ import type { StreamCallback } from './provider';
 import { normalizeDecisions as normalizeDecisionsUtil } from './utils/decisions';
 import { SYSTEM_PROMPT, HANDOFF_PROMPT, BOTH_PROMPT, TODO_ONLY_PROMPT } from './prompts';
 import { parseJsonInWorker } from './workers/parseHelper';
+import { safeParse, WorklogResultSchema, HandoffResultSchema, TodoOnlyResultSchema } from './schemas';
+import { AIError } from './errors';
 
 // Prompts (SYSTEM_PROMPT, HANDOFF_PROMPT, BOTH_PROMPT, TODO_ONLY_PROMPT) are
 // defined in ./prompts.ts with PROMPT_VERSION for tracking.
@@ -126,6 +128,65 @@ function validateWorklogResult(
   }
 }
 
+/**
+ * Validate and fix handoff-style parsed result.
+ * Mutates the object in-place for efficiency.
+ */
+function validateHandoffResult(
+  parsed: {
+    title?: string;
+    currentStatus?: string[];
+    resumeChecklist?: { action?: string; whyNow?: string | null; ifSkipped?: string | null }[];
+    nextActions?: unknown[];
+    completed?: string[];
+    tags?: string[];
+  },
+  sourceText: string,
+): void {
+  const charLen = sourceText.length;
+
+  // Fix generic / empty titles (reuse GENERIC_TITLE_PATTERNS)
+  const title = parsed.title?.trim() || '';
+  if (!title || GENERIC_TITLE_PATTERNS.some((p) => p.test(title))) {
+    const fallback = extractFallbackTitle(sourceText);
+    if (fallback) {
+      parsed.title = fallback;
+    }
+  }
+
+  // Warn if currentStatus is empty for non-trivial conversations
+  if (import.meta.env.DEV && parsed.currentStatus && parsed.currentStatus.length === 0 && charLen > 2000) {
+    console.warn(`[Transform Validation] currentStatus is empty for ${charLen}-char input — expected at least 1 item`);
+  }
+
+  // Warn if resumeChecklist items have missing whyNow/ifSkipped
+  if (import.meta.env.DEV && Array.isArray(parsed.resumeChecklist)) {
+    for (const item of parsed.resumeChecklist) {
+      if (!item.whyNow || !item.whyNow.trim()) {
+        console.warn(`[Transform Validation] resumeChecklist item "${item.action}" has empty whyNow`);
+      }
+      if (!item.ifSkipped || !item.ifSkipped.trim()) {
+        console.warn(`[Transform Validation] resumeChecklist item "${item.action}" has empty ifSkipped`);
+      }
+    }
+  }
+
+  // Warn if nextActions is empty for non-trivial conversations
+  if (import.meta.env.DEV && parsed.nextActions && (parsed.nextActions as unknown[]).length === 0 && charLen > 2000) {
+    console.warn(`[Transform Validation] nextActions is empty for ${charLen}-char input — expected at least 1 item`);
+  }
+
+  // Warn if completed is empty for non-trivial conversations
+  if (import.meta.env.DEV && parsed.completed && parsed.completed.length === 0 && charLen > 2000) {
+    console.warn(`[Transform Validation] completed is empty for ${charLen}-char input — expected at least 1 item`);
+  }
+
+  // Warn if too few tags
+  if (import.meta.env.DEV && parsed.tags && parsed.tags.length < 3 && charLen > 500) {
+    console.warn(`[Transform Validation] tags.length=${parsed.tags.length} for ${charLen}-char input — expected >= 3`);
+  }
+}
+
 export function extractJson(raw: string): string {
   // 1. Strip markdown code fences (handle ```json ... ``` wrapping)
   let stripped = raw;
@@ -137,7 +198,7 @@ export function extractJson(raw: string): string {
 
   // 2. Find first '{' and its matching '}' via bracket counting
   const start = stripped.indexOf('{');
-  if (start === -1) throw new Error('[Parse Error] No JSON found');
+  if (start === -1) throw new AIError('PARSE_ERROR', '[Parse Error] No JSON found');
 
   let depth = 0;
   let inString = false;
@@ -153,7 +214,7 @@ export function extractJson(raw: string): string {
   }
 
   // Bracket matching failed — truncated JSON
-  throw new Error('[Truncated] レスポンスが長すぎて途中で切れました。入力を短くして再試行してください。 / Response was truncated. Try shorter input.');
+  throw new AIError('TRUNCATED', '[Truncated] レスポンスが長すぎて途中で切れました。入力を短くして再試行してください。 / Response was truncated. Try shorter input.', true);
 }
 
 /**
@@ -161,13 +222,12 @@ export function extractJson(raw: string): string {
  * For large responses (>10 KB), offloads to a Web Worker to avoid blocking the main thread.
  * Falls back to synchronous parsing for small responses.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function extractAndParse(rawText: string): Promise<any> {
+async function extractAndParse(rawText: string): Promise<Record<string, unknown>> {
   if (rawText.length > WORKER_PARSE_THRESHOLD) {
-    return parseJsonInWorker(rawText);
+    return parseJsonInWorker(rawText) as Promise<Record<string, unknown>>;
   }
   const jsonText = extractJson(rawText);
-  return JSON.parse(jsonText);
+  return JSON.parse(jsonText) as Record<string, unknown>;
 }
 
 // =============================================================================
@@ -216,7 +276,7 @@ function getLangInstruction(lang: string): string {
 export async function transformText(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<TransformResult> {
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) {
-    throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
+    throw new AIError('API_KEY_MISSING', '[API Key] Not set. Go to Settings and enter your API key.');
   }
 
   const lang = resolveLang(sourceText);
@@ -230,19 +290,20 @@ export async function transformText(sourceText: string, opts?: { onStream?: Stre
     : await callProvider(req);
 
   try {
-    const parsed = await extractAndParse(rawText) as Record<string, unknown>;
+    const raw = await extractAndParse(rawText) as Record<string, unknown>;
+    const parsed = safeParse(WorklogResultSchema, raw, 'worklog');
     validateWorklogResult(parsed, sourceText);
     return {
-      title: (parsed.title as string) || 'Untitled',
-      today: (parsed.today as string[]) || [],
-      decisions: (parsed.decisions as string[]) || [],
-      todo: (parsed.todo as string[]) || [],
-      relatedProjects: (parsed.relatedProjects as string[]) || [],
-      tags: (parsed.tags as string[]) || [],
+      title: parsed.title || 'Untitled',
+      today: parsed.today || [],
+      decisions: parsed.decisions || [],
+      todo: parsed.todo || [],
+      relatedProjects: parsed.relatedProjects || [],
+      tags: parsed.tags || [],
     };
   } catch (error) {
     if (import.meta.env.DEV) console.warn('[Transform] Parse error:', error);
-    throw new Error('[Parse Error] AI response was not valid JSON. Check console for details.');
+    throw new AIError('PARSE_ERROR', '[Parse Error] AI response was not valid JSON. Check console for details.');
   }
 }
 
@@ -403,7 +464,7 @@ export function buildHandoffLogEntry(
 export async function transformHandoff(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<HandoffResult> {
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) {
-    throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
+    throw new AIError('API_KEY_MISSING', '[API Key] Not set. Go to Settings and enter your API key.');
   }
 
   const lang = resolveLang(sourceText);
@@ -417,9 +478,10 @@ export async function transformHandoff(sourceText: string, opts?: { onStream?: S
     : await callProvider(req);
 
   try {
-    const parsed = await extractAndParse(rawText) as Record<string, unknown>;
-    // Validate handoff title (reuse generic-title check)
-    validateWorklogResult(parsed, sourceText);
+    const raw = await extractAndParse(rawText) as Record<string, unknown>;
+    const parsed = safeParse(HandoffResultSchema, raw, 'handoff') as Record<string, unknown>;
+    // Validate handoff fields (title, currentStatus, resumeChecklist, nextActions, completed, tags)
+    validateHandoffResult(parsed, sourceText);
     const completed = (parsed.completed || []) as string[];
     const rawDecisions = (parsed.decisions || []) as unknown[];
     const { decisions, decisionRationales } = normalizeDecisions(rawDecisions);
@@ -464,7 +526,7 @@ export async function transformHandoff(sourceText: string, opts?: { onStream?: S
     };
   } catch (error) {
     if (import.meta.env.DEV) console.warn('[Transform] Parse error:', error);
-    throw new Error('[Parse Error] AI response was not valid JSON. Check console for details.');
+    throw new AIError('PARSE_ERROR', '[Parse Error] AI response was not valid JSON. Check console for details.');
   }
 }
 
@@ -487,7 +549,7 @@ export interface TodoOnlyResult {
 export async function transformTodoOnly(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<TodoOnlyResult> {
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) {
-    throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
+    throw new AIError('API_KEY_MISSING', '[API Key] Not set. Go to Settings and enter your API key.');
   }
 
   const lang = resolveLang(sourceText);
@@ -501,8 +563,9 @@ export async function transformTodoOnly(sourceText: string, opts?: { onStream?: 
     : await callProvider(req);
 
   try {
-    const parsed = await extractAndParse(rawText) as Record<string, unknown>;
-    const todos: TodoOnlyItem[] = ((parsed.todos as Record<string, unknown>[]) || []).map((t: Record<string, unknown>) => ({
+    const raw = await extractAndParse(rawText) as Record<string, unknown>;
+    const parsed = safeParse(TodoOnlyResultSchema, raw, 'todo_only');
+    const todos: TodoOnlyItem[] = ((parsed.todos as unknown as Record<string, unknown>[]) || []).map((t: Record<string, unknown>) => ({
       title: String(t.title || ''),
       priority: (['high', 'medium', 'low'].includes(t.priority as string) ? t.priority : 'medium') as 'high' | 'medium' | 'low',
       dueDate: typeof t.dueDate === 'string' && t.dueDate ? t.dueDate : undefined,
@@ -510,7 +573,7 @@ export async function transformTodoOnly(sourceText: string, opts?: { onStream?: 
     return { todos };
   } catch (error) {
     if (import.meta.env.DEV) console.warn('[Transform] Parse error:', error);
-    throw new Error('[Parse Error] AI response was not valid JSON. Check console for details.');
+    throw new AIError('PARSE_ERROR', '[Parse Error] AI response was not valid JSON. Check console for details.');
   }
 }
 
@@ -539,7 +602,7 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
   const { onStream, projects } = opts || {};
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) {
-    throw new Error('[API Key] Not set. Go to Settings and enter your API key.');
+    throw new AIError('API_KEY_MISSING', '[API Key] Not set. Go to Settings and enter your API key.');
   }
 
   const lang = resolveLang(sourceText);
@@ -575,8 +638,8 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
         tags: (w.tags || []) as string[],
       },
       handoff: (() => {
-        // Validate handoff title
-        validateWorklogResult(h, sourceText);
+        // Validate handoff fields (title, currentStatus, resumeChecklist, nextActions, completed, tags)
+        validateHandoffResult(h, sourceText);
         const hCompleted = (h.completed || []) as string[];
         const rawHDecisions = (h.decisions || []) as unknown[];
         const { decisions: hDecisions, decisionRationales: hDecisionRationales } = normalizeDecisions(rawHDecisions);
@@ -628,6 +691,6 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
     return result;
   } catch (error) {
     if (import.meta.env.DEV) console.warn('[Transform] Parse error:', error);
-    throw new Error('[Parse Error] AI response was not valid JSON. Check console for details.');
+    throw new AIError('PARSE_ERROR', '[Parse Error] AI response was not valid JSON. Check console for details.');
   }
 }

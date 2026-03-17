@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, startTransition } from 'react';
+import { useState, useCallback, useRef, useEffect, startTransition } from 'react';
 import { safeGetItem } from '../storage';
 
 export type View = 'input' | 'detail' | 'settings' | 'history' | 'masternote' | 'projects' | 'todos' | 'trash' | 'summarylist' | 'projecthome' | 'timeline' | 'help' | 'weeklyreport' | 'knowledgebase' | 'dashboard' | 'pricing';
@@ -45,8 +45,10 @@ export function useNavigation() {
   }, [view, goToRaw]);
 
   // Keep refs in sync
-  goToRawRef.current = goToRaw;
-  goToRef.current = goTo;
+  useEffect(() => {
+    goToRawRef.current = goToRaw;
+    goToRef.current = goTo;
+  });
 
   const handleSelect = useCallback((id: string) => {
     const doNav = () => { setSelectedId(id); goToRawRef.current('detail'); };

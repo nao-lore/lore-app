@@ -2492,6 +2492,34 @@ textarea.input:focus {
   background: rgba(255,255,255,0.15);
 }
 
+.toast-stack {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast-stack .toast {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: translateY(20px);
+  pointer-events: auto;
+}
+
+.toast-stack .toast.toast-visible {
+  transform: translateY(0);
+}
+
+.toast-stack .toast:not(.toast-visible) {
+  transform: translateY(10px);
+}
+
 .summary-update-badge {
   display: inline-block;
   width: 7px;
@@ -3899,4 +3927,50 @@ button:focus-visible,
 }
 .swipe-indicator.active {
   opacity: 1;
+}
+
+/* ===== Windows High Contrast Mode (forced-colors) ===== */
+@media (forced-colors: active) {
+  /* Ensure borders are visible */
+  .btn, .input, .card, .content-card, .sidebar-nav-item {
+    border: 1px solid ButtonText;
+  }
+
+  /* Ensure focus indicators are visible */
+  :focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  /* Badges need visible borders */
+  .badge-handoff, .badge-worklog, .badge-handoff-sm, .badge-worklog-sm {
+    border: 1px solid ButtonText;
+  }
+
+  /* Tags */
+  .tag {
+    border: 1px solid ButtonText;
+  }
+
+  /* Progress bars */
+  .progress-bar-fill {
+    forced-color-adjust: none;
+  }
+
+  /* Toast */
+  .toast {
+    border: 1px solid ButtonText;
+  }
+
+  /* Action sheet */
+  .action-sheet {
+    border: 1px solid ButtonText;
+  }
+
+  /* Selected states */
+  .sidebar-nav-item.active,
+  .card-selected,
+  .list-row-selected {
+    outline: 2px solid Highlight;
+  }
 }

@@ -318,6 +318,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
 
   const virtualData = groupKey === 'none' ? sorted : flatItems;
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: selectMode ? 0 : virtualData.length,
     getScrollElement: useCallback(() => scrollContainerRef.current, []),

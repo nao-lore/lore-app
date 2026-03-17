@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FileText, ArrowRight } from 'lucide-react';
 import type { Project, LogEntry } from './types';
 import { t, tf } from './i18n';
@@ -45,9 +45,9 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
 
   const logCountFor = (pid: string) => logs.filter((l) => l.projectId === pid).length;
 
-  const countUnreflectedHandoffs = (projectId: string, noteUpdatedAt: number) =>
-    logs.filter((l) => l.projectId === projectId && l.outputMode === 'handoff' && new Date(l.createdAt).getTime() > noteUpdatedAt).length;
-
+  const countUnreflectedHandoffs = useCallback((projectId: string, noteUpdatedAt: number) =>
+    logs.filter((l) => l.projectId === projectId && l.outputMode === 'handoff' && new Date(l.createdAt).getTime() > noteUpdatedAt).length,
+  [logs]);
 
   // Only projects that have a summary
   const withSummaryRaw = useMemo(() =>
@@ -74,9 +74,7 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
         items.sort((a, b) => b.note.updatedAt - a.note.updatedAt);
     }
     return items;
-    // `logs` is an intentional reactive trigger for countUnreflectedHandoffs
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [withSummaryRaw, sortKey, filterUnreflected, logs]);
+  }, [withSummaryRaw, sortKey, filterUnreflected, countUnreflectedHandoffs]);
 
   // Projects without a summary (for the picker)
   const withoutSummary = projects.filter((p) => !getMasterNote(p.id));

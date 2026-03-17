@@ -6,144 +6,19 @@ import { callProvider, callProviderStream, getActiveProvider } from './provider'
 import type { StreamCallback } from './provider';
 import { filterResolvedBlockers, normalizeNextActions, normalizeResumeChecklist, normalizeHandoffMeta, normalizeActionBacklog, detectLanguage, extractJson } from './transform';
 import { dedupStrings, dedupDecisions } from './utils/decisions';
+import {
+  CHUNK_WORKLOG_EXTRACT_PROMPT as WORKLOG_EXTRACT_PROMPT,
+  CHUNK_HANDOFF_EXTRACT_PROMPT as HANDOFF_EXTRACT_PROMPT,
+  CHUNK_HANDOFF_EXTRACT_LIGHT_PROMPT,
+  CHUNK_HANDOFF_EXTRACT_ULTRA_PROMPT as HANDOFF_EXTRACT_ULTRA_PROMPT,
+  CHUNK_BOTH_EXTRACT_PROMPT as BOTH_EXTRACT_PROMPT,
+  CHUNK_COMPLETED_EXTRACT_PROMPT as COMPLETED_EXTRACT_PROMPT,
+  CHUNK_CONSISTENCY_CHECK_PROMPT as CONSISTENCY_CHECK_PROMPT,
+  CHUNK_FINAL_SUMMARIZATION_PROMPT as FINAL_SUMMARIZATION_PROMPT,
+} from './prompts';
 
-// =============================================================================
-// Worklog prompts
-// =============================================================================
-
-const WORKLOG_EXTRACT_PROMPT = `You are a JSON extraction machine. You read chat logs and output structured JSON. Nothing else.
-
-CRITICAL RULES — VIOLATION = FAILURE:
-1. Output ONLY a single JSON object. No text before or after.
-2. No markdown. No code fences. No explanations. No greetings. No questions.
-3. Do NOT respond to the chat content. Do NOT continue the conversation. EXTRACT only.
-4. If the input contains casual chat, opinions, or greetings — SKIP them. Extract only work items.
-
-WHAT TO EXTRACT (priority order):
-- Implementation actions (code changes, config changes, file edits)
-- Technical decisions with specific parameters
-- Explicit next steps / TODOs the user committed to
-- Bug fixes, test results, deployment actions
-
-WHAT TO SKIP:
-- Greetings, thanks, encouragement, opinions, feelings
-- General discussion without concrete outcomes
-- Assistant explanations or suggestions the user did not confirm
-- UI reviews or feedback without specific action taken
-
-Schema — output EXACTLY this structure:
-{"title":"string","today":["string"],"decisions":["string"],"todo":["string"]}
-
-Field rules:
-- title: 1 short phrase summarizing the main work topic
-- today: 3-8 specific action items. Include file names, values, parameters. BAD: "Worked on UI" GOOD: "Changed CHUNK_TARGET from 25k to 15k in chunkEngine.ts"
-- decisions: Only items with explicit commitment markers ("decided", "でいく", "にする"). Empty [] if none.
-- todo: Only next actions the user explicitly committed to. Empty [] if none.
-
-Language: Match input language. Japanese input → Japanese output. English → English.`;
-
-// =============================================================================
-// Handoff prompts — optimized for completion reliability
-// =============================================================================
-
-const HANDOFF_EXTRACT_PROMPT = `You are a JSON extraction machine. You read chat logs and output structured JSON. Nothing else.
-
-CRITICAL RULES — VIOLATION = FAILURE:
-1. Output ONLY a single JSON object. No text before or after.
-2. No markdown. No code fences. No explanations. No greetings. No questions.
-3. Do NOT respond to the chat content. Do NOT continue the conversation. EXTRACT only.
-4. If the input contains casual chat, opinions, or greetings — SKIP them. Extract only work state.
-
-This is a RESTART MEMO — a cockpit checklist for resuming work. Not a report.
-
-WHAT TO EXTRACT (priority order):
-- Current system state (what works, what is partial, what is broken)
-- Next concrete actions to take on resume
-- Decisions (technical judgments and policy changes ONLY)
-- Constraints and scope boundaries
-- Blockers or risks
-
-NOTE: Do NOT extract completed items here. Completed work is collected separately.
-
-WHAT TO SKIP:
-- Greetings, thanks, encouragement, opinions
-- General discussion without concrete outcomes
-- Background explanations
-
-Schema — output EXACTLY this structure:
-{"title":"string","currentStatus":["string"],"nextActions":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"actionBacklog":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"decisions":[{"decision":"string","rationale":"string or null"}],"blockers":["string"],"constraints":["string"]}
-
-Field rules:
-- title: 1 short phrase, max 8 words
-- currentStatus: 3-5 bullets. PROJECT STATE right now — ONLY present-tense. NO completed actions → skip.
-- nextActions (immediate only, max 4): Tasks that MUST be done now or next work is blocked. Each MUST be {"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}. Non-blocking tasks → actionBacklog.
-  - whyImportant: Infer from context — what depends on this task? What breaks without it? Almost always fillable. null only if truly no context.
-  - priorityReason: Infer ordering signal from conversation flow. null only if all tasks equally urgent.
-- actionBacklog (max 7): Important but not immediately blocking. Same format. whyImportant should explain why this task is in the backlog.
-- decisions (active only, max 6): Only decisions still constraining future work. Each {"decision":"string","rationale":"string or null"}. EXCLUDE completed/overturned decisions.
-- blockers: Risks still unresolved at end. 0-3 bullets.
-- constraints: Stable rules. 0-3 bullets.
-
-NOTE: Do NOT output handoffMeta or resumeChecklist — those are generated at final merge.
-
-Language: Match input. Japanese → Japanese (keep file names/code terms in English). English → English.`;
-
-// Light/Ultra handoff — same minimal schema, even shorter output
-export const HANDOFF_EXTRACT_LIGHT_PROMPT = HANDOFF_EXTRACT_PROMPT;
-
-const HANDOFF_EXTRACT_ULTRA_PROMPT = `JSON extraction machine. Output ONLY valid JSON. No text before/after. No markdown.
-
-{"title":"string","currentStatus":["string"],"nextActions":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"actionBacklog":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"decisions":[{"decision":"string","rationale":"string or null"}],"blockers":["string"],"constraints":["string"]}
-
-Do NOT extract completed items — they are collected separately.
-Do NOT output handoffMeta or resumeChecklist — those are generated at final merge.
-
-Field rules:
-- currentStatus: present-tense state ONLY. NO past actions → skip.
-- nextActions (immediate only, max 4): blocking tasks only. Non-blocking → actionBacklog. whyImportant: infer from context (what depends on this?). priorityReason: infer ordering signal. Both should be filled when possible.
-- actionBacklog (max 7): important but not blocking now. Same format. whyImportant: why is this in the backlog?
-- decisions (active only, max 6): still-active decisions only. Each {"decision":"string","rationale":"string or null"}.
-- blockers: risks, concerns still unresolved.
-- constraints: stable rules.
-
-Skip chat, greetings, opinions. Extract only work-related information.
-Japanese input → Japanese (keep code terms in English). English → English.`;
-
-
-// =============================================================================
-// Combined "both" extraction prompt (single API call for worklog + handoff)
-// =============================================================================
-
-const BOTH_EXTRACT_PROMPT = `You are a JSON extraction machine. You read chat logs and output structured JSON. Nothing else.
-
-CRITICAL RULES — VIOLATION = FAILURE:
-1. Output ONLY a single JSON object. No text before or after.
-2. No markdown. No code fences. No explanations. No greetings. No questions.
-3. Do NOT respond to the chat content. Do NOT continue the conversation. EXTRACT only.
-4. If the input contains casual chat, opinions, or greetings — SKIP them. Extract only work items.
-
-Schema — output EXACTLY this structure:
-{"worklog":{"title":"string","today":["string"],"decisions":["string"],"todo":["string"],"relatedProjects":["string"],"tags":["string"]},"handoff":{"title":"string","currentStatus":["string"],"nextActions":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"actionBacklog":[{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"decisions":[{"decision":"string","rationale":"string or null"}],"blockers":["string"],"constraints":["string"]}}
-
-worklog field rules:
-- title: 1 short phrase summarizing the main work topic
-- today: 3-8 specific action items with file names, values, parameters
-- decisions: ONE decision per bullet. Only items with explicit commitment markers. Empty [] if none.
-- todo: Only next actions the user explicitly committed to. Empty [] if none.
-- relatedProjects: Actual project/product names being built. Exclude tool names (ChatGPT, VS Code). Empty [] if none.
-- tags: 4-7 tags matching input language. Category (development, UI, bugfix / 開発, UI, バグ修正) + Topic (React, Supabase). Keep proper nouns as-is.
-
-handoff field rules:
-- title: reuse worklog title
-- currentStatus: PROJECT STATE right now. 3-5 bullets. ONLY present-tense.
-- nextActions (immediate only, max 4): Blocking tasks only. Non-blocking → actionBacklog. whyImportant: infer from context (what depends on this?). priorityReason: infer ordering signal. Both should be filled when possible.
-- actionBacklog (max 7): Important but not blocking now. Same format. whyImportant: why is this in the backlog?
-- decisions (active only, max 6): Still-active decisions only. Each {"decision":"string","rationale":"string or null"}.
-- blockers: Risks or issues still unresolved at end. 0-3 bullets. Empty [] if none.
-- constraints: Stable rules. 0-3 bullets.
-- Do NOT output handoffMeta or resumeChecklist — those are generated at final merge.
-
-Language: Match input language. Japanese input → Japanese output. English → English.`;
+// Re-export for any external consumers
+export { CHUNK_HANDOFF_EXTRACT_LIGHT_PROMPT as HANDOFF_EXTRACT_LIGHT_PROMPT };
 
 // =============================================================================
 // Chunk splitting — mode-aware
@@ -759,126 +634,8 @@ export interface EngineProgress {
 
 export type ProgressCallback = (p: EngineProgress) => void;
 
-// =============================================================================
-// Post-merge consistency check prompt
-// =============================================================================
-
-const COMPLETED_EXTRACT_PROMPT = `You extract completed work items from a chat log. Output ONLY valid JSON. No markdown. No explanation.
-
-Schema: {"completed":["string"]}
-
-WHAT TO INCLUDE — items that produced a DELIVERABLE or CHANGED STATE:
-- Code/config actually written, modified, or deleted (file edits, function changes, bug fixes)
-- Features actually implemented and working
-- UI/UX changes actually applied
-- Settings/values actually changed
-- Documents/pages actually created as a final deliverable (e.g. landing page, README)
-
-WHAT TO EXCLUDE — items with NO deliverable or state change:
-- Investigation/analysis: "確認した", "特定した", "検討した", "調べた", "reviewed", "identified", "investigated"
-- Preparation/planning: "指示を作成した", "依頼を作成した", "文章を作成した", "プロンプトを作成した", "drafted instructions", "wrote a prompt"
-- Intermediate steps: anything done AS A MEANS to something else (e.g. "〇〇するために△△を調べた", "Claude Codeに送る指示を作った")
-- Delegation: "〇〇を依頼した", "〇〇に送った", "asked someone to do X"
-- Discussion/decision only: "〇〇に決めた" (decisions go elsewhere), "〇〇について話した"
-
-KEY PRINCIPLE: Ask "did this produce a tangible output or change the state of the system?" If NO → exclude.
-
-FORMAT:
-- Each bullet = ONE specific action with file names, function names, values where mentioned.
-- If there are 20+ qualifying items, output ALL of them. Never truncate.
-
-Language: Match input. Japanese → Japanese (keep code terms in English). English → English.`;
-
-const CONSISTENCY_CHECK_PROMPT = `You are a strict editor. You receive a merged handoff memo (JSON) that was assembled from multiple chunks. Your job is to clean it up and output the final, consistent version.
-
-FIELD-SPECIFIC RULES:
-
-"completed": Keep the most recent 50 items. If more than 50 exist, drop the oldest (items appearing earlier in the list). Do NOT drop items from currentStatus/nextActions/decisions to compensate.
-"resumeContext": MANDATORY output. Copy "nextActions" as-is. Never output empty resumeContext.
-"currentStatus": Latest state only. Present-tense. Target: 3-5 items. No count limit.
-"nextActions": Latest tasks only. Future actions. No count limit.
-"decisions": Keep all. No count limit.
-
-CLEANUP RULES:
-
-1. completed vs currentStatus SEPARATION:
-   - Completed actions ("〜済み", "〜修正した", "fixed", "added", "implemented") → "completed". Remove from "currentStatus".
-   - "currentStatus" = present-tense state ONLY.
-
-2. DECISION QUALITY: Keep only technical judgments, architecture choices, policy changes. Remove task-level items.
-
-3. blockers vs constraints SEPARATION:
-   - "blockers" = temporary risks, concerns, gotchas, known bugs.
-   - "constraints" = stable, ongoing rules (tech stack, budget, scope).
-
-4. blockers vs completed CONTRADICTION CHECK — THIS IS THE HIGHEST PRIORITY RULE:
-   You MUST cross-check EVERY blocker against the ENTIRE completed list before outputting.
-   Process: For each blocker, scan all completed items. If ANY completed item addresses, resolves, fixes, or implements what the blocker describes → DELETE that blocker.
-   Match semantically, not just by exact words:
-     - "〜がない" / "〜is missing" / "no 〜" in blockers + "〜を実装した" / "〜を追加した" / "added 〜" / "implemented 〜" in completed → DELETE blocker
-     - "〜が壊れている" / "〜is broken" in blockers + "〜を修正した" / "fixed 〜" in completed → DELETE blocker
-     - "〜が不安定" / "〜is unstable" in blockers + "〜を安定化した" / "stabilized 〜" in completed → DELETE blocker
-   If in doubt whether a completed item resolves a blocker, DELETE the blocker (err on the side of removal).
-   After this check, only blockers with ZERO matching completed items may remain.
-
-5. DEDUPLICATION: Same work in "completed" and "nextActions" → keep in "completed" only.
-
-6. nextActions CLEANUP: Only future tasks. No risks (→ blockers), no constraints (→ constraints), no completed work (→ completed).
-
-Output format: ONLY the cleaned JSON object. Same schema as input. No markdown. No explanation. Start with { end with }.`;
-
-// =============================================================================
-// Final summarization — generates session-wide handoffMeta, resumeChecklist,
-// and compresses decisions to active-only (max 6).
-// Runs post-merge as a parallel promise alongside completed + consistency.
-// =============================================================================
-
-const FINAL_SUMMARIZATION_PROMPT = `You are a session summarizer. You receive a merged handoff memo (JSON) assembled from multiple chunks. Your job is to generate three session-wide fields that require holistic context — they CANNOT be extracted per-chunk.
-
-Output ONLY valid JSON with this exact schema:
-{
-  "handoffMeta": {
-    "sessionFocus": "string or null",
-    "whyThisSession": "string or null",
-    "timePressure": "string or null"
-  },
-  "resumeChecklist": [
-    {"action": "string", "whyNow": "string (REQUIRED)", "ifSkipped": "string (REQUIRED)"}
-  ],
-  "activeDecisions": [
-    {"decision": "string", "rationale": "string (infer if not stated)"}
-  ]
-}
-
-FIELD RULES:
-
-handoffMeta — each field is 1 sentence max:
-- sessionFocus: What was this session trying to advance? (1 sentence) null only if the session had no coherent focus.
-- whyThisSession: Why is this work important right now? (1 sentence) Infer from context — what larger goal does this session serve? null only if truly unknowable.
-- timePressure: What SPECIFIC phase, deadline, or dependency creates time pressure?
-  GOOD: "Phase 3実装がリリースブランチ切り(3/15)までに必要"
-  GOOD: "API migration must complete before v2 deprecation on April 1"
-  BAD: "急ぎ", "重要", "urgent" (vague words alone — must state WHAT creates the pressure)
-  INFERENCE ALLOWED: Convert weak expressions ("今週中に", "早めに", "〜の前に") into concrete phase statements using session context.
-  Example: chat says "早めにやりたい" + session is about launch prep → "ローンチ前にこの機能完成が必要"
-  null ONLY if no time pressure is mentioned or inferable at all.
-
-resumeChecklist — max 3 items. These are the FIRST things the next person (or future you) should do when resuming:
-- action: Use specific verbs — confirm, verify, decide, fix, implement, test, run. NOT just "確認する".
-  GOOD: "chunkEngine.tsのfinalSummarizationPromiseがhandoffMeta/resumeChecklistを正しくマージ結果に反映しているかテスト実行で確認"
-  BAD: "テストする", "確認する" (too vague)
-- whyNow: MANDATORY — NEVER null. Why is this the first thing to do? What downstream task or decision depends on this being done first? Infer from context.
-- ifSkipped: MANDATORY — NEVER null. What specific failure, delay, or wrong decision results from skipping this? Name the concrete consequence.
-  GOOD: {"action": "テスト実行でPhase 3変更のリグレッションを確認", "whyNow": "formatHandoff.tsの構造変更がCopy Handoff出力に影響するため、デプロイ前に検証必須", "ifSkipped": "resumeChecklistが表示されない・actionBacklogがCopy Handoffに混入するバグが本番流出"}
-  BAD: {"action": "テスト実行", "whyNow": null, "ifSkipped": null}
-
-activeDecisions — max 6. ONLY decisions that are STILL ACTIVE and affect future work:
-- Drop resolved, superseded, or one-time decisions
-- rationale: Why was this decided? What was the alternative? Infer from context when not explicitly stated.
-- If the input has decisionRationales, prefer those. If it only has decisions (string[]), infer rationale from context or set null.
-
-Language: Match input. Japanese → Japanese (keep code terms in English). English → English.
-No markdown. No explanation. Start with { end with }.`;
+// Post-merge prompts (COMPLETED_EXTRACT_PROMPT, CONSISTENCY_CHECK_PROMPT,
+// FINAL_SUMMARIZATION_PROMPT) are imported from ./prompts.ts above.
 
 // =============================================================================
 // Engine

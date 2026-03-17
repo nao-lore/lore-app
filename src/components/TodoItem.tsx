@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect, useCallback } from 'react';
 import { CheckSquare, Square, MoreHorizontal, Star, Edit3, Trash2, Flag, Calendar, ExternalLink, Pin, Check, Undo2, Archive, ArchiveRestore, GripVertical, Clock } from 'lucide-react';
 import type { Todo, LogEntry } from '../types';

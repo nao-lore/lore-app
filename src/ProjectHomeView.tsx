@@ -39,9 +39,12 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
   const [editDraft, setEditDraft] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Reset pagination when search changes — setState-in-effect is intentional here
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setPhVisibleCount(PH_PAGE_SIZE); }, [searchQuery]);
+  // Reset pagination when search changes
+  const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery);
+  if (prevSearchQuery !== searchQuery) {
+    setPrevSearchQuery(searchQuery);
+    setPhVisibleCount(PH_PAGE_SIZE);
+  }
 
   // Scroll to top when search query changes
   useEffect(() => {

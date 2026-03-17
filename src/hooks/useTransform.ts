@@ -15,6 +15,7 @@ import { formatHandoffMarkdown, formatFullAiContext } from '../formatHandoff';
 import { generateProjectContext } from '../generateProjectContext';
 import { recordMetric } from '../aiMetrics';
 import { isStaleMasterNote } from '../utils/staleness';
+import { AIError } from '../errors';
 
 export type TransformAction = 'both' | 'handoff' | 'worklog' | 'todo_only' | 'worklog_handoff' | 'handoff_todo';
 
@@ -128,6 +129,24 @@ export function useTransform(params: UseTransformParams) {
     const apiKey = getApiKey();
     if (!demo && !apiKey && !shouldUseBuiltinApi()) { setError(t('errorApiKeyMissing', lang)); return; }
 
+    // --- Shared streaming helpers (deduplicated from 5 action blocks) ---
+    function initSingleTransform() {
+      setSimStep(0);
+      setTimeout(() => setSimStep(1), 800);
+    }
+
+    function createStreamCallback(): { onStream?: (chunk: string, accumulated: string) => void } {
+      const streamingEnabled = getFeatureEnabled('streaming', true);
+      let charCount = 0;
+      return {
+        onStream: streamingEnabled ? (_chunk: string, accumulated: string) => {
+          if (charCount === 0) setSimStep(2);
+          charCount = accumulated.length;
+          setStreamDetail(`${t('streamReceiving', lang)}... ${charCount.toLocaleString()} chars`);
+        } : undefined,
+      };
+    }
+
     // Persist last used action
     setTransformAction(action);
     safeSetItem('threadlog_transform_action', action);
@@ -225,16 +244,9 @@ export function useTransform(params: UseTransformParams) {
           if (import.meta.env.DEV && _t0) console.log(`[Perf] API response (chunked): ${(performance.now() - _t0).toFixed(0)}ms`);
           engineRef.current = null;
         } else {
-          setSimStep(0);
-          setTimeout(() => setSimStep(1), 800);
-          let streamCharCount = 0;
-          const streamingEnabled = getFeatureEnabled('streaming', true);
+          initSingleTransform();
           const bothOpts: TransformBothOptions = {
-            onStream: streamingEnabled ? (_chunk: string, accumulated: string) => {
-              if (streamCharCount === 0) setSimStep(2);
-              streamCharCount = accumulated.length;
-              setStreamDetail(`${t('streamReceiving', lang)}... ${streamCharCount.toLocaleString()} chars`);
-            } : undefined,
+            ...createStreamCallback(),
             projects: !selectedProjectId && projects.length > 0
               ? projects.map(p => ({ id: p.id, name: p.name }))
               : undefined,
@@ -304,21 +316,12 @@ export function useTransform(params: UseTransformParams) {
           if (import.meta.env.DEV && _t0) console.log(`[Perf] API response (chunked): ${(performance.now() - _t0).toFixed(0)}ms`);
           engineRef.current = null;
         } else {
-          setSimStep(0);
-          setTimeout(() => setSimStep(1), 800);
-          let streamCharCount = 0;
-          const streamingEnabled = getFeatureEnabled('streaming', true);
+          initSingleTransform();
           const cachedHandoff = getCachedResult<HandoffResult>(combined, 'handoff');
           if (cachedHandoff) {
             r = cachedHandoff;
           } else {
-            r = await transformHandoff(combined, {
-              onStream: streamingEnabled ? (_chunk: string, accumulated: string) => {
-                if (streamCharCount === 0) setSimStep(2);
-                streamCharCount = accumulated.length;
-                setStreamDetail(`${t('streamReceiving', lang)}... ${streamCharCount.toLocaleString()} chars`);
-              } : undefined,
-            });
+            r = await transformHandoff(combined, createStreamCallback());
             setCachedResult(combined, 'handoff', r);
           }
           if (import.meta.env.DEV && _t0) console.log(`[Perf] API response${cachedHandoff ? ' (cached)' : ''}: ${(performance.now() - _t0).toFixed(0)}ms`);
@@ -345,21 +348,12 @@ export function useTransform(params: UseTransformParams) {
           r = await engine.process(combined, apiKey, (p) => setProgress(p));
           engineRef.current = null;
         } else {
-          setSimStep(0);
-          setTimeout(() => setSimStep(1), 800);
-          let streamCharCount = 0;
-          const streamingEnabled = getFeatureEnabled('streaming', true);
+          initSingleTransform();
           const cachedWorklog = getCachedResult<TransformResult>(combined, 'worklog');
           if (cachedWorklog) {
             r = cachedWorklog;
           } else {
-            r = await transformText(combined, {
-              onStream: streamingEnabled ? (_chunk: string, accumulated: string) => {
-                if (streamCharCount === 0) setSimStep(2);
-                streamCharCount = accumulated.length;
-                setStreamDetail(`${t('streamReceiving', lang)}... ${streamCharCount.toLocaleString()} chars`);
-              } : undefined,
-            });
+            r = await transformText(combined, createStreamCallback());
             setCachedResult(combined, 'worklog', r);
           }
           setStreamDetail(null);
@@ -387,22 +381,13 @@ export function useTransform(params: UseTransformParams) {
 
       // --- Handoff + TODO ---
       if (isHandoffTodo) {
-        setSimStep(0);
-        setTimeout(() => setSimStep(1), 800);
-        let streamCharCount = 0;
-        const streamingEnabled = getFeatureEnabled('streaming', true);
+        initSingleTransform();
         let htResult: HandoffTodoResult;
         const cachedHT = getCachedResult<HandoffTodoResult>(combined, 'handoff_todo');
         if (cachedHT) {
           htResult = cachedHT;
         } else {
-          htResult = await transformHandoffTodo(combined, {
-            onStream: streamingEnabled ? (_chunk: string, accumulated: string) => {
-              if (streamCharCount === 0) setSimStep(2);
-              streamCharCount = accumulated.length;
-              setStreamDetail(`${t('streamReceiving', lang)}... ${streamCharCount.toLocaleString()} chars`);
-            } : undefined,
-          });
+          htResult = await transformHandoffTodo(combined, createStreamCallback());
           setCachedResult(combined, 'handoff_todo', htResult);
         }
         setStreamDetail(null);
@@ -426,22 +411,13 @@ export function useTransform(params: UseTransformParams) {
 
       // --- TODO only ---
       if (isTodoOnly) {
-        setSimStep(0);
-        setTimeout(() => setSimStep(1), 800);
-        let streamCharCount = 0;
-        const streamingEnabled = getFeatureEnabled('streaming', true);
+        initSingleTransform();
         let todoResult: TodoOnlyResult;
         const cachedTodo = getCachedResult<TodoOnlyResult>(combined, 'todo_only');
         if (cachedTodo) {
           todoResult = cachedTodo;
         } else {
-          todoResult = await transformTodoOnly(combined, {
-            onStream: streamingEnabled ? (_chunk: string, accumulated: string) => {
-              if (streamCharCount === 0) setSimStep(2);
-              streamCharCount = accumulated.length;
-              setStreamDetail(`${t('streamReceiving', lang)}... ${streamCharCount.toLocaleString()} chars`);
-            } : undefined,
-          });
+          todoResult = await transformTodoOnly(combined, createStreamCallback());
           setCachedResult(combined, 'todo_only', todoResult);
         }
         setStreamDetail(null);
@@ -529,35 +505,52 @@ export function useTransform(params: UseTransformParams) {
         playSuccess();
       }
     } catch (err) {
-      const raw = err instanceof Error ? err.message : 'Transform failed.';
-      // Translate internal error tags to user-facing messages
-      if (raw.includes('[API Key]')) {
-        setError(t('errorApiKey', lang));
-      } else if (raw.includes('[Rate Limit]')) {
-        setError(shouldUseBuiltinApi() ? t('errorRateLimitBuiltin', lang) : t('errorRateLimit', lang));
-      } else if (raw.includes('[Overloaded]')) {
-        setError(t('errorServiceDown', lang));
-      } else if (raw.includes('[Truncated]')) {
-        setError(t('errorTruncated', lang));
-      } else if (raw.includes('[Parse Error]') || raw.includes('[Non-JSON Response]')) {
-        setError(t('errorParseResponse', lang));
-      } else if (raw.includes('[Cancelled]')) {
-        setError('');
-      } else if (raw.includes('[Too Long]')) {
-        setError(t('errorTooLong', lang));
-      } else if (raw.includes('[Network]') || raw.includes('Failed to fetch') || raw.includes('NetworkError') || (err instanceof TypeError && raw.includes('fetch'))) {
-        setError(t('errorNetwork', lang));
-      } else if (raw.includes('[AI Response]')) {
-        setError(t('errorEmptyResponse', lang));
-      } else if (err instanceof DOMException && err.name === 'AbortError') {
-        setError(t('errorTimeout', lang));
-      } else if (raw.includes('[API Error]')) {
-        setError(t('errorApiGeneric', lang));
-      } else if (err instanceof TypeError) {
-        // fetch TypeError (network failure, CORS, etc.)
-        setError(t('errorNetwork', lang));
+      // Handle structured AIError instances (thrown by transform.ts)
+      if (err instanceof AIError) {
+        const codeToMessage: Record<string, string> = {
+          API_KEY_MISSING: t('errorApiKey', lang),
+          RATE_LIMIT: shouldUseBuiltinApi() ? t('errorRateLimitBuiltin', lang) : t('errorRateLimit', lang),
+          OVERLOADED: t('errorServiceDown', lang),
+          TRUNCATED: t('errorTruncated', lang),
+          PARSE_ERROR: t('errorParseResponse', lang),
+          CANCELLED: '',
+          TOO_LONG: t('errorTooLong', lang),
+          NETWORK: t('errorNetwork', lang),
+          EMPTY_RESPONSE: t('errorEmptyResponse', lang),
+          TIMEOUT: t('errorTimeout', lang),
+          GENERIC: t('errorGeneric', lang),
+        };
+        setError(codeToMessage[err.code] ?? t('errorGeneric', lang));
       } else {
-        setError(t('errorGeneric', lang));
+        // Fallback: legacy string-tag matching for errors from provider.ts / chunkEngine.ts
+        const raw = err instanceof Error ? err.message : 'Transform failed.';
+        if (raw.includes('[API Key]')) {
+          setError(t('errorApiKey', lang));
+        } else if (raw.includes('[Rate Limit]')) {
+          setError(shouldUseBuiltinApi() ? t('errorRateLimitBuiltin', lang) : t('errorRateLimit', lang));
+        } else if (raw.includes('[Overloaded]')) {
+          setError(t('errorServiceDown', lang));
+        } else if (raw.includes('[Truncated]')) {
+          setError(t('errorTruncated', lang));
+        } else if (raw.includes('[Parse Error]') || raw.includes('[Non-JSON Response]')) {
+          setError(t('errorParseResponse', lang));
+        } else if (raw.includes('[Cancelled]')) {
+          setError('');
+        } else if (raw.includes('[Too Long]')) {
+          setError(t('errorTooLong', lang));
+        } else if (raw.includes('[Network]') || raw.includes('Failed to fetch') || raw.includes('NetworkError') || (err instanceof TypeError && raw.includes('fetch'))) {
+          setError(t('errorNetwork', lang));
+        } else if (raw.includes('[AI Response]')) {
+          setError(t('errorEmptyResponse', lang));
+        } else if (err instanceof DOMException && err.name === 'AbortError') {
+          setError(t('errorTimeout', lang));
+        } else if (raw.includes('[API Error]')) {
+          setError(t('errorApiGeneric', lang));
+        } else if (err instanceof TypeError) {
+          setError(t('errorNetwork', lang));
+        } else {
+          setError(t('errorGeneric', lang));
+        }
       }
     } finally {
       if (import.meta.env.DEV && _t0) {

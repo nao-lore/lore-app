@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useMemo } from 'react';
 import { Calendar, TrendingUp, LayoutGrid, List, AlignJustify } from 'lucide-react';
 import type { LogEntry, OutputMode } from '../types';

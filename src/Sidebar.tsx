@@ -165,7 +165,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
     document.addEventListener('keydown', handleKey);
     document.addEventListener('mousedown', handleClick);
     return () => { document.removeEventListener('keydown', handleKey); document.removeEventListener('mousedown', handleClick); };
-  }, [accountMenuOpen, closeAccountMenu]);
+  }, [accountMenuOpen, closeAccountMenu, accountPopoverRef]);
 
   const stats = useMemo(() => {
     const worklogs = logs.filter((l) => l.outputMode !== 'handoff').length;

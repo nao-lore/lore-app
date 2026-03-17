@@ -105,12 +105,14 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
   // Stable callback for file import reset (avoids recreating useFileImport when transform state changes)
   const resetAllRef = useRef(() => { resetTransformState(); setText(''); });
-  resetAllRef.current = () => { resetTransformState(); setText(''); };
+  useEffect(() => {
+    resetAllRef.current = () => { resetTransformState(); setText(''); };
+  });
   const stableResetAll = useCallback(() => resetAllRef.current(), []);
   const stableSetError = useCallback((err: string) => setError(err), [setError]);
 
   // File import hook
-  const fileImport = useFileImport({
+  const { fileRef: fileImportRef, ...fileImportHandlers } = useFileImport({
     lang,
     showToast,
     onResetTransform: stableResetAll,
@@ -133,17 +135,16 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
   // Auto-focus textarea on mount
   useEffect(() => { textareaRef.current?.focus(); }, []);
 
-  // Pre-fill demo conversation if demo mode and empty
+  // Pre-fill demo conversation if demo mode and empty (mount-only via ref guard)
+  const demoPrefilled = useRef(false);
   useEffect(() => {
+    if (demoPrefilled.current) return;
+    demoPrefilled.current = true;
     if (isDemoMode() && !text && files.length === 0) {
       loadDemoData().then(({ getDemoConversation }) => setText(getDemoConversation(lang)));
     }
-  // Intentionally mount-only: pre-fill demo data once, not on every lang change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [text, files.length, lang]);
 
-  // Reset project selection on mount
-  useEffect(() => { setSelectedProjectId(undefined); }, []);
 
   const handleCopy = async () => {
     if (!result) return;
@@ -211,9 +212,9 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
   return (
     <div
       className="workspace-content-centered"
-      onDrop={fileImport.handleDrop}
-      onDragOver={fileImport.handleDragOver}
-      onDragLeave={fileImport.handleDragLeave}
+      onDrop={fileImportHandlers.handleDrop}
+      onDragOver={fileImportHandlers.handleDragOver}
+      onDragLeave={fileImportHandlers.handleDragLeave}
     >
       {/* Greeting + Project Switcher */}
       <h1 className="text-center" style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', margin: '0 0 8px', color: 'var(--text-primary)' }}>
@@ -333,10 +334,10 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       {/* Input Card — hidden when preview panel is shown */}
       {!savedResult && (<div
         className="input-card-hero relative"
-        style={fileImport.dragging ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 3px var(--accent-focus)' } : undefined}
+        style={fileImportHandlers.dragging ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 3px var(--accent-focus)' } : undefined}
       >
         {/* Drag & drop overlay */}
-        {fileImport.dragging && (
+        {fileImportHandlers.dragging && (
           <div className="flex-center" style={{
             position: 'absolute', inset: 0, zIndex: 10,
             background: 'var(--accent-bg, rgba(99,102,241,0.08))',
@@ -516,8 +517,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
 
-          <input ref={fileImport.fileRef} type="file" accept=".txt,.md,.docx,.json" multiple onChange={fileImport.handleFiles} aria-label={t('ariaSelectFile', lang)} style={{ display: 'none' }} />
-          <button className="input input-sm" onClick={() => fileImport.fileRef.current?.click()} disabled={loading} style={{ minWidth: 'auto', padding: '4px 8px', fontSize: 12, minHeight: 0, width: 'auto', flexShrink: 0, cursor: 'pointer', textAlign: 'left' }}>
+          <input ref={fileImportRef} type="file" accept=".txt,.md,.docx,.json" multiple onChange={fileImportHandlers.handleFiles} aria-label={t('ariaSelectFile', lang)} style={{ display: 'none' }} />
+          <button className="input input-sm" onClick={() => fileImportRef.current?.click()} disabled={loading} style={{ minWidth: 'auto', padding: '4px 8px', fontSize: 12, minHeight: 0, width: 'auto', flexShrink: 0, cursor: 'pointer', textAlign: 'left' }}>
             + {files.length === 0 ? t('importFiles', lang) : t('addMoreFiles', lang)}
           </button>
 
@@ -539,22 +540,22 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       </div>)}
 
       {/* Capture banner — shown when data arrives from Chrome extension */}
-      {fileImport.captureInfo && (
+      {fileImportHandlers.captureInfo && (
         <div className="capture-banner" style={{ maxWidth: 760, margin: '12px auto 0' }}>
           <div className="capture-banner-icon">✓</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="capture-banner-title">
-              {tf('capturedFrom', lang, captureSourceLabel(fileImport.captureInfo.source))}
+              {tf('capturedFrom', lang, captureSourceLabel(fileImportHandlers.captureInfo.source))}
             </div>
             <div className="capture-banner-meta">
-              {fileImport.captureInfo.messageCount} messages · {fileImport.captureInfo.charCount.toLocaleString()} {t('chars', lang)}
+              {fileImportHandlers.captureInfo.messageCount} messages · {fileImportHandlers.captureInfo.charCount.toLocaleString()} {t('chars', lang)}
             </div>
             <div className="capture-banner-hint">
               {t('captureTransformHint', lang)}
             </div>
           </div>
           <button
-            onClick={() => fileImport.setCaptureInfo(null)}
+            onClick={() => fileImportHandlers.setCaptureInfo(null)}
             className="capture-banner-close"
             title={t('titleDismiss', lang)}
             aria-label={t('ariaDismissNotification', lang)}
@@ -563,7 +564,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       )}
 
       {/* File list — between card and options when files exist */}
-      {files.length > 0 && !fileImport.captureInfo && !result && (
+      {files.length > 0 && !fileImportHandlers.captureInfo && !result && (
         <div className="file-list" style={{ marginTop: 12, maxWidth: 760, margin: '12px auto 0' }}>
           {files.map((f, i) => (
             <div key={i} className="file-list-item">
@@ -579,7 +580,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                 {f.content.length.toLocaleString()}
               </span>
               <button
-                onClick={() => fileImport.removeFile(i)}
+                onClick={() => fileImportHandlers.removeFile(i)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--border-hover)', fontSize: 16, padding: '0 4px', lineHeight: 1, transition: 'color 0.12s' }}
                 title={t('titleRemoveFile', lang)}
                 aria-label={tf('ariaRemoveFile', lang, f.name)}

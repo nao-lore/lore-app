@@ -67,7 +67,9 @@ function SortableTodoItem({ id, disabled, children }: { id: string; disabled: bo
 // ─── Main TodoView ───
 function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
   const [todosVersion, setTodosVersion] = useState(0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const todos = useMemo(() => loadTodos(), [todosVersion]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const archivedTodos = useMemo(() => loadArchivedTodos(), [todosVersion]);
 
   const [activeTab, setActiveTab] = useState<TabKey>('pending');
@@ -272,8 +274,11 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
   }), [displayed, sortKey]);
 
   // Group
-  const logMap = new Map<string, LogEntry>();
-  for (const log of logs) logMap.set(log.id, log);
+  const logMap = useMemo(() => {
+    const map = new Map<string, LogEntry>();
+    for (const log of logs) map.set(log.id, log);
+    return map;
+  }, [logs]);
 
   type GroupedEntry = { key: string; label: string; items: Todo[] };
 

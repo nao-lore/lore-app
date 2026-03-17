@@ -1,4 +1,4 @@
-import type { ToastState } from './useToast';
+import type { ToastState, ToastItem } from './useToast';
 
 export function Toast({ message, type, visible, action }: ToastState) {
   if (!message) return null;
@@ -18,6 +18,17 @@ export function Toast({ message, type, visible, action }: ToastState) {
           {action.label}
         </button>
       )}
+    </div>
+  );
+}
+
+export function ToastStack({ toasts }: { toasts: ToastItem[] }) {
+  if (toasts.length === 0) return null;
+  return (
+    <div className="toast-stack">
+      {toasts.map((t) => (
+        <Toast key={t.id} message={t.message} type={t.type} visible={t.visible} action={t.action} />
+      ))}
     </div>
   );
 }
