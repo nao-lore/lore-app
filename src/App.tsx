@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from 'react';
+import React, { useEffect, useRef, lazy, Suspense } from 'react';
 import { Menu, ChevronUp } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Workspace from './Workspace';
@@ -8,6 +8,7 @@ import { Toast } from './Toast';
 import ConfirmDialog from './ConfirmDialog';
 import Onboarding from './Onboarding';
 import ErrorBoundary from './ErrorBoundary';
+import SkeletonLoader from './SkeletonLoader';
 import FeedbackModal from './FeedbackModal';
 import { setLastReportDate, isDemoMode, setDemoMode, getFeatureEnabled, safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import type { ThemePref } from './storage';
@@ -61,6 +62,32 @@ export default function App() {
     refreshLogs: s.refreshLogs,
     logs: s.logs,
   });
+
+  // Aria-live view transition announcements
+  const [viewAnnouncement, setViewAnnouncement] = React.useState('');
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) { isInitialMount.current = false; return; }
+    const viewLabelMap: Partial<Record<View, string>> = {
+      input: s.lang === 'ja' ? '新規ログ' : 'New Log',
+      detail: s.lang === 'ja' ? 'ログ詳細' : 'Log Detail',
+      dashboard: s.lang === 'ja' ? 'ダッシュボード' : 'Dashboard',
+      history: s.lang === 'ja' ? '履歴' : 'History',
+      todos: s.lang === 'ja' ? 'TODO' : 'Todos',
+      timeline: s.lang === 'ja' ? 'タイムライン' : 'Timeline',
+      projects: s.lang === 'ja' ? 'プロジェクト' : 'Projects',
+      settings: s.lang === 'ja' ? '設定' : 'Settings',
+      help: s.lang === 'ja' ? 'ヘルプ' : 'Help',
+      pricing: s.lang === 'ja' ? '料金' : 'Pricing',
+      masternote: s.lang === 'ja' ? 'マスターノート' : 'Master Note',
+      projecthome: s.lang === 'ja' ? 'プロジェクトホーム' : 'Project Home',
+      weeklyreport: s.lang === 'ja' ? '週次レポート' : 'Weekly Report',
+      trash: s.lang === 'ja' ? 'ゴミ箱' : 'Trash',
+      summarylist: s.lang === 'ja' ? 'サマリー一覧' : 'Summary List',
+      knowledgebase: s.lang === 'ja' ? 'ナレッジベース' : 'Knowledge Base',
+    };
+    setViewAnnouncement(viewLabelMap[s.view] || s.view);
+  }, [s.view, s.lang]);
 
   // Tab title: show pending TODO count + current view
   useEffect(() => {
@@ -180,41 +207,60 @@ export default function App() {
     });
   }, [s.view, s.scrollRef, s.scrollPositionRef]);
 
+  const backTo = (v: View) => () => s.goTo(s.prevView === v ? 'input' : s.prevView);
+  const activeProject = s.activeProjectId ? s.projects.find((p) => p.id === s.activeProjectId) : undefined;
+
+  const viewRouteMap: Partial<Record<View, () => React.ReactElement | null>> = {
+    settings: () => <SettingsPanel onBack={backTo('settings')} lang={s.lang} onUiLangChange={s.handleUiLangChange} themePref={s.themePref} onThemeChange={s.handleThemeChange} fontSize={s.fontSize} onFontSizeChange={s.handleFontSizeChange} showToast={s.showToast} onShowOnboarding={() => s.setShowOnboarding(true)} onResumeOnboarding={s.onboardingPausedForSettings ? () => { s.setOnboardingPausedForSettings(false); s.setShowOnboarding(true); } : undefined} />,
+    help: () => <HelpView onBack={backTo('help')} lang={s.lang} onShowOnboarding={() => s.setShowOnboarding(true)} onFeedback={() => s.setHelpFeedbackOpen(true)} />,
+    pricing: () => <PricingView onBack={backTo('pricing')} lang={s.lang} showToast={s.showToast} />,
+    history: () => <HistoryView logs={s.logs} onSelect={s.handleSelect} onBack={s.handleGoToInput} onRefresh={s.refreshLogs} lang={s.lang} activeProjectId={s.activeProjectId} projects={s.projects} showToast={s.showToast} onOpenMasterNote={s.handleOpenMasterNote} onOpenProject={s.handleOpenProjectLogs} tagFilter={s.tagFilter} onClearTagFilter={() => s.setTagFilter(null)} onTagFilter={s.setTagFilter} onDuplicate={(newId: string) => { s.refreshLogs(); s.handleSelect(newId); }} />,
+    todos: () => <TodoView logs={s.logs} onBack={backTo('todos')} onOpenLog={s.handleSelect} lang={s.lang} showToast={s.showToast} />,
+    dashboard: () => <DashboardView logs={s.logs} projects={s.projects} todos={s.todos} masterNotes={s.masterNotes} lang={s.lang} onOpenLog={s.handleSelect} onOpenProject={s.handleOpenProjectLogs} onOpenTodos={s.handleGoToTodos} onOpenSummaryList={s.handleGoToSummaryList} onOpenHistory={s.handleGoToHistory} onNewLog={s.handleGoToInput} onToggleAction={s.handleDashboardToggleAction} />,
+    timeline: () => <TimelineView logs={s.logs} projects={s.projects} todos={s.todos} masterNotes={s.masterNotes} onBack={backTo('timeline')} onOpenLog={s.handleSelect} onOpenProject={s.handleOpenProjectLogs} onOpenSummary={s.handleOpenMasterNote} onNewLog={() => s.goTo('input')} lang={s.lang} />,
+    weeklyreport: () => <WeeklyReportView logs={s.logs} projects={s.projects} todos={s.todos} onBack={backTo('weeklyreport')} lang={s.lang} showToast={s.showToast} />,
+    trash: () => <TrashView onBack={backTo('trash')} onRefresh={s.refreshLogs} lang={s.lang} showToast={s.showToast} />,
+    summarylist: () => <ProjectSummaryListView projects={s.projects} logs={s.logs} onBack={backTo('summarylist')} onOpenSummary={s.handleOpenMasterNote} lang={s.lang} />,
+    projects: () => <ProjectsView projects={s.projects} logs={s.logs} onBack={backTo('projects')} onSelectProject={s.handleOpenProjectLogs} onOpenMasterNote={s.handleOpenMasterNote} onRefresh={s.refreshLogs} lang={s.lang} showToast={s.showToast} />,
+    projecthome: () => {
+      if (!activeProject) return null;
+      return <ProjectHomeView project={activeProject} logs={s.logs} onBack={() => { s.setActiveProjectId(null); s.goTo('input'); }} onOpenLog={s.handleSelect} onOpenSummary={s.handleOpenMasterNote} onOpenKnowledgeBase={s.handleOpenKnowledgeBase} onNewLog={s.handleNewLog} onRefresh={s.refreshLogs} lang={s.lang} showToast={s.showToast} />;
+    },
+    masternote: () => {
+      if (!activeProject) return null;
+      const latestHandoff = s.logs
+        .filter((l) => l.projectId === s.activeProjectId && l.outputMode === 'handoff')
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] || undefined;
+      return <MasterNoteView project={activeProject} logs={s.logs} latestHandoff={latestHandoff} onBack={backTo('masternote')} onOpenLog={s.handleSelect} lang={s.lang} showToast={s.showToast} />;
+    },
+    knowledgebase: () => {
+      if (!activeProject) return null;
+      return <KnowledgeBaseView project={activeProject} logs={s.logs} onBack={backTo('knowledgebase')} onOpenLog={s.handleSelect} lang={s.lang} showToast={s.showToast} />;
+    },
+  };
+
+  const defaultWorkspace = <ErrorBoundary key={`workspace-${s.inputKey}`} onGoHome={s.goHome}><Workspace key={s.inputKey} mode={s.view === 'detail' ? 'detail' : 'input'} selectedId={s.selectedId} onSaved={s.handleSaved} onDeleted={s.handleDeleted} onOpenLog={s.handleSelect} onBack={s.handleBack} prevView={s.prevView} lang={s.lang} activeProjectId={s.activeProjectId} projects={s.projects} onRefresh={s.refreshLogs} showToast={s.showToast} onDirtyChange={(dirty: boolean) => { s.setInputDirty(dirty); }} onTagFilter={s.handleTagFilter} onOpenMasterNote={s.handleOpenMasterNote} allLogs={s.logs} pendingTodosCount={s.pendingTodosCount} lastLogCreatedAt={s.lastLogCreatedAt} /></ErrorBoundary>;
+
   const renderWorkspace = () => {
-    if (s.view === 'settings') return <ErrorBoundary key="settings" onGoHome={s.goHome}><SettingsPanel onBack={() => s.goTo(s.prevView === 'settings' ? 'input' : s.prevView)} lang={s.lang} onUiLangChange={s.handleUiLangChange} themePref={s.themePref} onThemeChange={s.handleThemeChange} fontSize={s.fontSize} onFontSizeChange={s.handleFontSizeChange} showToast={s.showToast} onShowOnboarding={() => s.setShowOnboarding(true)} onResumeOnboarding={s.onboardingPausedForSettings ? () => { s.setOnboardingPausedForSettings(false); s.setShowOnboarding(true); } : undefined} /></ErrorBoundary>;
-    if (s.view === 'help') return <ErrorBoundary key="help" onGoHome={s.goHome}><HelpView onBack={() => s.goTo(s.prevView === 'help' ? 'input' : s.prevView)} lang={s.lang} onShowOnboarding={() => s.setShowOnboarding(true)} onFeedback={() => s.setHelpFeedbackOpen(true)} /></ErrorBoundary>;
-    if (s.view === 'pricing') return <ErrorBoundary key="pricing" onGoHome={s.goHome}><PricingView onBack={() => s.goTo(s.prevView === 'pricing' ? 'input' : s.prevView)} lang={s.lang} showToast={s.showToast} /></ErrorBoundary>;
-    if (s.view === 'history') return <ErrorBoundary key="history" onGoHome={s.goHome}><HistoryView logs={s.logs} onSelect={s.handleSelect} onBack={s.handleGoToInput} onRefresh={s.refreshLogs} lang={s.lang} activeProjectId={s.activeProjectId} projects={s.projects} showToast={s.showToast} onOpenMasterNote={s.handleOpenMasterNote} onOpenProject={s.handleOpenProjectLogs} tagFilter={s.tagFilter} onClearTagFilter={() => s.setTagFilter(null)} onTagFilter={s.setTagFilter} onDuplicate={(newId: string) => { s.refreshLogs(); s.handleSelect(newId); }} /></ErrorBoundary>;
-    if (s.view === 'todos') return <ErrorBoundary key="todos" onGoHome={s.goHome}><TodoView logs={s.logs} onBack={() => s.goTo(s.prevView === 'todos' ? 'input' : s.prevView)} onOpenLog={s.handleSelect} lang={s.lang} showToast={s.showToast} /></ErrorBoundary>;
-    if (s.view === 'dashboard') return <ErrorBoundary key="dashboard" onGoHome={s.goHome}><DashboardView logs={s.logs} projects={s.projects} todos={s.todos} masterNotes={s.masterNotes} lang={s.lang} onOpenLog={s.handleSelect} onOpenProject={s.handleOpenProjectLogs} onOpenTodos={s.handleGoToTodos} onOpenSummaryList={s.handleGoToSummaryList} onOpenHistory={s.handleGoToHistory} onNewLog={s.handleGoToInput} onToggleAction={s.handleDashboardToggleAction} /></ErrorBoundary>;
-    if (s.view === 'timeline') return <ErrorBoundary key="timeline" onGoHome={s.goHome}><TimelineView logs={s.logs} projects={s.projects} todos={s.todos} masterNotes={s.masterNotes} onBack={() => s.goTo(s.prevView === 'timeline' ? 'input' : s.prevView)} onOpenLog={s.handleSelect} onOpenProject={s.handleOpenProjectLogs} onOpenSummary={s.handleOpenMasterNote} onNewLog={() => s.goTo('input')} lang={s.lang} /></ErrorBoundary>;
-    if (s.view === 'weeklyreport') return <ErrorBoundary key="weeklyreport" onGoHome={s.goHome}><WeeklyReportView logs={s.logs} projects={s.projects} todos={s.todos} onBack={() => s.goTo(s.prevView === 'weeklyreport' ? 'input' : s.prevView)} lang={s.lang} showToast={s.showToast} /></ErrorBoundary>;
-    if (s.view === 'trash') return <ErrorBoundary key="trash" onGoHome={s.goHome}><TrashView onBack={() => s.goTo(s.prevView === 'trash' ? 'input' : s.prevView)} onRefresh={s.refreshLogs} lang={s.lang} showToast={s.showToast} /></ErrorBoundary>;
-    if (s.view === 'summarylist') return <ErrorBoundary key="summarylist" onGoHome={s.goHome}><ProjectSummaryListView projects={s.projects} logs={s.logs} onBack={() => s.goTo(s.prevView === 'summarylist' ? 'input' : s.prevView)} onOpenSummary={s.handleOpenMasterNote} lang={s.lang} /></ErrorBoundary>;
-    if (s.view === 'projects') return <ErrorBoundary key="projects" onGoHome={s.goHome}><ProjectsView projects={s.projects} logs={s.logs} onBack={() => s.goTo(s.prevView === 'projects' ? 'input' : s.prevView)} onSelectProject={s.handleOpenProjectLogs} onOpenMasterNote={s.handleOpenMasterNote} onRefresh={s.refreshLogs} lang={s.lang} showToast={s.showToast} /></ErrorBoundary>;
-    if (s.view === 'projecthome' && s.activeProjectId) {
-      const project = s.projects.find((p) => p.id === s.activeProjectId);
-      if (project) return <ErrorBoundary key={`projecthome-${s.activeProjectId}`} onGoHome={s.goHome}><ProjectHomeView project={project} logs={s.logs} onBack={() => { s.setActiveProjectId(null); s.goTo('input'); }} onOpenLog={s.handleSelect} onOpenSummary={s.handleOpenMasterNote} onOpenKnowledgeBase={s.handleOpenKnowledgeBase} onNewLog={s.handleNewLog} onRefresh={s.refreshLogs} lang={s.lang} showToast={s.showToast} /></ErrorBoundary>;
-    }
-    if (s.view === 'masternote' && s.activeProjectId) {
-      const project = s.projects.find((p) => p.id === s.activeProjectId);
-      if (project) {
-        const latestHandoff = s.logs
-          .filter((l) => l.projectId === s.activeProjectId && l.outputMode === 'handoff')
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] || undefined;
-        return <ErrorBoundary key={`masternote-${s.activeProjectId}`} onGoHome={s.goHome}><MasterNoteView project={project} logs={s.logs} latestHandoff={latestHandoff} onBack={() => s.goTo(s.prevView === 'masternote' ? 'input' : s.prevView)} onOpenLog={s.handleSelect} lang={s.lang} showToast={s.showToast} /></ErrorBoundary>;
-      }
-    }
-    if (s.view === 'knowledgebase' && s.activeProjectId) {
-      const project = s.projects.find((p) => p.id === s.activeProjectId);
-      if (project) return <ErrorBoundary key={`knowledgebase-${s.activeProjectId}`} onGoHome={s.goHome}><KnowledgeBaseView project={project} logs={s.logs} onBack={() => s.goTo(s.prevView === 'knowledgebase' ? 'input' : s.prevView)} onOpenLog={s.handleSelect} lang={s.lang} showToast={s.showToast} /></ErrorBoundary>;
-    }
-    return <ErrorBoundary key={`workspace-${s.inputKey}`} onGoHome={s.goHome}><Workspace key={s.inputKey} mode={s.view === 'detail' ? 'detail' : 'input'} selectedId={s.selectedId} onSaved={s.handleSaved} onDeleted={s.handleDeleted} onOpenLog={s.handleSelect} onBack={s.handleBack} prevView={s.prevView} lang={s.lang} activeProjectId={s.activeProjectId} projects={s.projects} onRefresh={s.refreshLogs} showToast={s.showToast} onDirtyChange={(dirty: boolean) => { s.inputDirtyRef.current = dirty; }} onTagFilter={s.handleTagFilter} onOpenMasterNote={s.handleOpenMasterNote} allLogs={s.logs} pendingTodosCount={s.pendingTodosCount} lastLogCreatedAt={s.lastLogCreatedAt} /></ErrorBoundary>;
+    const routeFactory = viewRouteMap[s.view];
+    if (!routeFactory) return defaultWorkspace;
+    const content = routeFactory();
+    if (!content) return defaultWorkspace;
+    const key = s.activeProjectId && (s.view === 'projecthome' || s.view === 'masternote' || s.view === 'knowledgebase')
+      ? `${s.view}-${s.activeProjectId}` : s.view;
+    return <ErrorBoundary key={key} onGoHome={s.goHome}>{content}</ErrorBoundary>;
   };
 
   return (
     <div style={{ display: 'flex', height: '100%' }}>
       <a href="#main-content" className="skip-link">Skip to content</a>
+      <div
+        aria-live="polite"
+        role="status"
+        className="sr-only"
+      >
+        {viewAnnouncement}
+      </div>
       {!s.sidebarOpen && !s.sidebarHidden && (
         <div style={{ width: 48, minWidth: 48, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 14, gap: 4, background: 'transparent' }}>
           <button className="toggle-btn" onClick={() => { s.setSidebarOpen(true); safeSetItem(s.SIDEBAR_KEY, 'open'); }} title={t('showSidebar', s.lang)} aria-label={t('ariaShowSidebar', s.lang)}>
@@ -286,7 +332,7 @@ export default function App() {
           </div>
         )}
         <div style={{ height: '100%' }}>
-          <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)', fontSize: 13 }}>Loading...</div>}>
+          <Suspense fallback={<SkeletonLoader lang={s.lang} variant="list" />}>
             <div className="view-fade-in" key={s.view}>
               {renderWorkspace()}
             </div>
@@ -416,7 +462,7 @@ export default function App() {
           confirmLabel={t('unsavedInputConfirm', s.lang)}
           cancelLabel={t('cancel', s.lang)}
           danger={false}
-          onConfirm={() => { const nav = s.pendingNav; s.setPendingNav(null); s.inputDirtyRef.current = false; nav!(); }}
+          onConfirm={() => { const nav = s.pendingNav; s.setPendingNav(null); s.clearInputDirty(); nav!(); }}
           onCancel={() => s.setPendingNav(null)}
         />
       )}

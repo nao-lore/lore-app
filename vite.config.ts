@@ -12,6 +12,7 @@ export default defineConfig({
       includeAssets: ['favicon.ico'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globIgnores: ['**/mammoth-*.js', '**/sampleData-*.js'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\./,

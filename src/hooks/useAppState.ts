@@ -63,10 +63,10 @@ export function useAppState() {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Computed data
-  const logs = useMemo(() => loadLogs(), [logsVersion]);
-  const projects = useMemo(() => loadProjects(), [logsVersion]);
-  const todos = useMemo(() => loadTodos(), [logsVersion]);
-  const masterNotes = useMemo(() => loadMasterNotes(), [logsVersion]);
+  const logs = useMemo(() => { void logsVersion; return loadLogs(); }, [logsVersion]);
+  const projects = useMemo(() => { void logsVersion; return loadProjects(); }, [logsVersion]);
+  const todos = useMemo(() => { void logsVersion; return loadTodos(); }, [logsVersion]);
+  const masterNotes = useMemo(() => { void logsVersion; return loadMasterNotes(); }, [logsVersion]);
   const pendingTodosCount = useMemo(() => todos.filter((td) => !td.done && !td.archivedAt).length, [todos]);
   const lastLogCreatedAt = useMemo(() => logs.length > 0 ? logs[logs.length - 1].createdAt : null, [logs]);
 
@@ -171,6 +171,8 @@ export function useAppState() {
     handleOpenProjectLogs(projectId);
   };
 
+  const clearInputDirty = useCallback(() => { inputDirtyRef.current = false; }, []);
+  const setInputDirty = useCallback((dirty: boolean) => { inputDirtyRef.current = dirty; }, []);
   const goHome = useCallback(() => { setSelectedId(null); setInputKey((k) => k + 1); inputDirtyRef.current = false; goToRawRef.current('input'); }, []);
 
   // Onboarding
@@ -261,7 +263,7 @@ export function useAppState() {
     handleTagFilter,
     handleOpenMasterNote, handleOpenKnowledgeBase, handleOpenProjectLogs,
     handlePaletteSelectProject,
-    goHome,
+    goHome, clearInputDirty, setInputDirty,
     handleOnboardingClose,
     handleGoToSettings, handleGoToHistory, handleGoToProjects, handleGoToTodos,
     handleGoToSummaryList, handleGoToDashboard, handleGoToTimeline,
