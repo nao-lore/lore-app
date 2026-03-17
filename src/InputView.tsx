@@ -1,72 +1,26 @@
 import { useState, useRef, useCallback, useEffect, memo } from 'react';
-import { transformText, transformHandoff, transformBoth, transformTodoOnly, transformHandoffTodo, buildHandoffLogEntry, CHAR_WARN, needsChunking } from './transform';
-import type { TransformBothOptions } from './transform';
-import { ChunkEngine, getChunkTarget, getEngineConcurrency } from './chunkEngine';
-import type { EngineProgress } from './chunkEngine';
-import { addLog, getLog, addTodosFromLog, addTodosFromLogWithMeta, loadLogs, updateLog, getApiKey, getFeatureEnabled, getMasterNote, getStreak, isDemoMode, safeGetItem, safeSetItem } from './storage';
+import { CHAR_WARN, needsChunking } from './transform';
+import { getChunkTarget, getEngineConcurrency } from './chunkEngine';
+import { getStreak, isDemoMode, safeSetItem } from './storage';
 import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
 const loadDemoData = () => import('./demoData');
-import { classifyLog, saveCorrection } from './classify';
-// extractDocxText is lazy-loaded only when a .docx file is selected
-import { parseConversationJson } from './jsonImport';
 import { Copy, Check, X, Share2 } from 'lucide-react';
 import { getGreeting } from './greeting';
 import ProgressPanel from './ProgressPanel';
 import type { ProgressStep } from './ProgressPanel';
 import SkeletonLoader from './SkeletonLoader';
 import { logToMarkdown, handoffResultToMarkdown } from './markdown';
-import { playSuccess } from './sounds';
-import type { TransformResult, HandoffResult, BothResult, LogEntry, OutputMode, SourceReference, Project } from './types';
+import type { TransformResult, HandoffResult, SourceReference, Project } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import ErrorRetryBanner from './ErrorRetryBanner';
 import FirstUseTooltip from './FirstUseTooltip';
 import { formatRelativeTime } from './utils/dateFormat';
-import { formatHandoffMarkdown, formatFullAiContext } from './formatHandoff';
-import { generateProjectContext } from './generateProjectContext';
 import { HandoffResultDisplay, WorklogResultDisplay } from './ResultDisplay';
-
-interface ImportedFile {
-  name: string;
-  content: string;
-  lastModified?: number;
-}
-
-interface CaptureInfo {
-  source: string;       // 'chatgpt' | 'claude' | 'gemini'
-  messageCount: number;
-  charCount: number;
-  title?: string;
-}
-
-async function readFileContent(file: File): Promise<{ content: string; lastModified: number }> {
-  if (file.size === 0) throw new Error('File is empty');
-  if (file.size > 50_000_000) throw new Error('File too large (max 50MB)');
-  const name = file.name.toLowerCase();
-  if (name.endsWith('.txt') || name.endsWith('.md')) {
-    const content = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error('Failed to read file.'));
-      reader.readAsText(file);
-    });
-    return { content, lastModified: file.lastModified };
-  } else if (name.endsWith('.docx')) {
-    const { extractDocxText } = await import('./docx');
-    const content = await extractDocxText(file);
-    return { content, lastModified: file.lastModified };
-  } else if (name.endsWith('.json')) {
-    const raw = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error('Failed to read file.'));
-      reader.readAsText(file);
-    });
-    const result = parseConversationJson(raw, file.name);
-    return { content: result.content, lastModified: result.timestamp ?? file.lastModified };
-  }
-  throw new Error(`Unsupported format: ${file.name}`);
-}
+import { useTransform } from './hooks/useTransform';
+import type { TransformAction } from './hooks/useTransform';
+import { useFileImport } from './hooks/useFileImport';
+import type { ImportedFile } from './hooks/useFileImport';
 
 function buildCombinedText(pastedText: string, files: ImportedFile[]): string {
   const parts: string[] = [];
@@ -140,39 +94,55 @@ function downloadFile(content: string, fileName: string, mimeType: string) {
 
 function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, pendingTodosCount, lastLogCreatedAt }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void; onDirtyChange?: (dirty: boolean) => void; pendingTodosCount: number; lastLogCreatedAt: string | null }) {
   const [text, setText] = useState('');
-  const [files, setFiles] = useState<ImportedFile[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [result, setResult] = useState<TransformResult | HandoffResult | null>(null);
-  const [savedId, setSavedId] = useState<string | null>(null);
-  const [savedHandoffId, setSavedHandoffId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [pasteFeedback, setPasteFeedback] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const [progress, setProgress] = useState<EngineProgress | null>(null);
-  const [simStep, setSimStep] = useState(0); // simulated step for single transforms
-  const [streamDetail, setStreamDetail] = useState<string | null>(null); // streaming progress text
-  const [outputMode, setOutputMode] = useState<OutputMode>('handoff');
-  type TransformAction = 'both' | 'handoff' | 'worklog' | 'todo_only' | 'worklog_handoff' | 'handoff_todo';
-  const [transformAction, setTransformAction] = useState<TransformAction>(() => {
-    const v = safeGetItem('threadlog_transform_action'); return (['handoff', 'handoff_todo', 'todo_only'].includes(v || '') ? v as TransformAction : 'handoff_todo');
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(activeProjectId ?? undefined);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // File state is lifted here so both hooks can access it without circular deps
+  const [files, setFiles] = useState<ImportedFile[]>([]);
+  const combined = buildCombinedText(text, files);
+  const willChunk = needsChunking(combined);
+
+  // Transform hook
+  const {
+    result, savedResult, error, loading, progress, simStep, streamDetail,
+    savedId, savedHandoffId, outputMode, transformAction, setTransformAction,
+    wasFirstTransform, classifying, suggestion, postSavePickerOpen, setPostSavePickerOpen,
+    runTransform, handlePauseResume, handleCancel,
+    handleAcceptSuggestion, handleDismissSuggestion, handlePostSaveAssign,
+    resetTransformState, setError,
+  } = useTransform({
+    lang,
+    selectedProjectId,
+    projects,
+    combined,
+    text,
+    files,
+    willChunk,
+    onSaved,
+    showToast,
+    buildSourceReference,
   });
 
-  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(activeProjectId ?? undefined);
-  const [captureInfo, setCaptureInfo] = useState<CaptureInfo | null>(null);
-  const [classifying, setClassifying] = useState(false);
-  const [suggestion, setSuggestion] = useState<{ logId: string; projectId: string; projectName: string; confidence: number } | null>(null);
-  const [postSavePickerOpen, setPostSavePickerOpen] = useState(false);
-  const [savedResult, setSavedResult] = useState<{ log: LogEntry; markdown: string; fullContext: string | null } | null>(null);
-  const [wasFirstTransform, setWasFirstTransform] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const engineRef = useRef<ChunkEngine | null>(null);
+  // Stable callback for file import reset (avoids recreating useFileImport when transform state changes)
+  const resetAllRef = useRef(() => { resetTransformState(); setText(''); });
+  resetAllRef.current = () => { resetTransformState(); setText(''); };
+  const stableResetAll = useCallback(() => resetAllRef.current(), []);
+  const stableSetError = useCallback((err: string) => setError(err), [setError]);
 
-  const combined = buildCombinedText(text, files);
+  // File import hook
+  const fileImport = useFileImport({
+    lang,
+    showToast,
+    onResetTransform: stableResetAll,
+    setError: stableSetError,
+    files,
+    setFiles,
+  });
+
   const isDirty = combined.trim().length > 0;
   useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
-  const willChunk = needsChunking(combined);
   const isLargeInput = combined.length > 300_000;
   const overLimit = combined.length > 500_000;
   const overWarn = combined.length > CHAR_WARN && !willChunk;
@@ -195,483 +165,6 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
   // Reset project selection on mount
   useEffect(() => { setSelectedProjectId(undefined); }, []);
-
-  // Import from URL hash (extension "Send to Lore" flow)
-  const handleHashImport = useCallback(() => {
-    const hash = window.location.hash;
-    if (!hash.startsWith('#import=')) return;
-    try {
-      const raw = decodeURIComponent(hash.slice(8));
-      window.location.hash = '';
-      // Reset state for new import
-      setResult(null);
-      setSavedId(null);
-      setSavedHandoffId(null);
-      setSavedResult(null);
-      setError('');
-      setText('');
-      // Parse the raw JSON to extract capture metadata before conversion
-      let parsed: Record<string, unknown> | null = null;
-      try { parsed = JSON.parse(raw); } catch (err) { if (import.meta.env.DEV) console.warn('[InputView] extension JSON parse:', err); }
-      const result = parseConversationJson(raw, 'extension-capture.json');
-      setFiles([{ name: 'extension-capture.json', content: result.content, lastModified: result.timestamp }]);
-      // Build capture info from the raw extension payload
-      if (parsed && typeof parsed === 'object' && 'source' in parsed && 'messages' in parsed && Array.isArray(parsed.messages)) {
-        const msgs = parsed.messages as Array<{ content?: string }>;
-        const info = {
-          source: String(parsed.source || 'unknown'),
-          messageCount: msgs.length,
-          charCount: msgs.reduce((sum, m) => sum + (typeof m.content === 'string' ? m.content.length : 0), 0),
-          title: typeof parsed.title === 'string' ? parsed.title : undefined,
-        };
-        setCaptureInfo(info);
-        setTimeout(() => setCaptureInfo((cur) => cur === info ? null : cur), 5000);
-      }
-      showToast?.(t('extensionReceived', lang), 'success');
-    } catch (err) {
-      if (import.meta.env.DEV) console.error('[Hash Import] Failed:', err);
-      setError('Failed to import from extension.');
-    }
-  }, [showToast, lang]);
-
-  // Run on mount + listen for hash changes (extension updates URL on existing tab)
-  useEffect(() => {
-    handleHashImport();
-    window.addEventListener('hashchange', handleHashImport);
-    return () => window.removeEventListener('hashchange', handleHashImport);
-  }, [handleHashImport]);
-
-
-  const addFiles = useCallback(async (fileList: File[]) => {
-    setError('');
-    const newFiles: ImportedFile[] = [];
-    const errors: string[] = [];
-    for (const file of fileList) {
-      try {
-        const { content, lastModified } = await readFileContent(file);
-        newFiles.push({ name: file.name, content, lastModified });
-      } catch (err) {
-        if (import.meta.env.DEV) console.warn('[InputView] file read failed:', err);
-        errors.push(file.name);
-      }
-    }
-    if (newFiles.length > 0) setFiles((prev) => [...prev, ...newFiles]);
-    if (errors.length > 0) setError(tf('errorFileRead', lang, errors.join(', ')));
-  }, [lang]);
-
-  const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files;
-    if (!selected || selected.length === 0) return;
-    await addFiles(Array.from(selected));
-    e.target.value = '';
-  };
-
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    const dropped = Array.from(e.dataTransfer.files);
-    if (dropped.length > 0) await addFiles(dropped);
-  }, [addFiles]);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-  }, []);
-
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const runTransform = async (action: TransformAction) => {
-    if (loading) return;
-    if (!combined.trim()) { setError(t('errorEmptyInput', lang)); return; }
-
-    const demo = isDemoMode();
-    if (!demo && !navigator.onLine) { setError(t('offlineAiUnavailable', lang)); return; }
-
-    const apiKey = getApiKey();
-    if (!demo && !apiKey && !shouldUseBuiltinApi()) { setError(t('errorApiKeyMissing', lang)); return; }
-
-    // Persist last used action
-    setTransformAction(action);
-    safeSetItem('threadlog_transform_action', action);
-
-    setError(''); setLoading(true); setResult(null); setSavedId(null); setSavedHandoffId(null); setSavedResult(null); setProgress(null); setSimStep(0); setStreamDetail(null);
-
-    const isFirstTransform = loadLogs().length === 0;
-    const _t0 = import.meta.env.DEV ? performance.now() : 0;
-
-    // Normalize worklog_handoff → both internally
-    const effectiveAction = action === 'worklog_handoff' ? 'both' as const : action;
-    const doHandoff = effectiveAction === 'both' || effectiveAction === 'handoff';
-    const doWorklog = effectiveAction === 'both' || effectiveAction === 'worklog';
-    const isBoth = doHandoff && doWorklog;
-    const isTodoOnly = effectiveAction === 'todo_only';
-    const isHandoffTodo = effectiveAction === 'handoff_todo';
-    let todoCount = 0;
-    // Set outputMode for progress display
-    setOutputMode((doHandoff || isHandoffTodo) ? 'handoff' : 'worklog');
-
-    try {
-      let lastEntryId: string | null = null;
-      let savedHandoffLog: LogEntry | null = null;
-
-      // --- Demo mode — return pre-generated results (lazy-loaded) ---
-      if (demo) {
-        setSimStep(1);
-        const { demoTransformBoth, demoTransformHandoff, demoTransformText, demoTransformTodoOnly, demoTransformHandoffTodo } = await loadDemoData();
-        if (isBoth) {
-          const bothResult = await demoTransformBoth(lang);
-          setSimStep(4);
-          const handoffEntry = buildHandoffLogEntry(bothResult.handoff, { projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length) });
-          addLog(handoffEntry);
-          savedHandoffLog = handoffEntry;
-          onSaved(handoffEntry.id);
-          setSavedHandoffId(handoffEntry.id);
-          const r = bothResult.worklog;
-          setResult(r); setOutputMode('worklog');
-          const worklogEntry: LogEntry = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), importedAt: new Date().toISOString(), title: r.title, projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length), outputMode: 'worklog', today: r.today, decisions: r.decisions, todo: r.todo, relatedProjects: r.relatedProjects, tags: r.tags };
-          addLog(worklogEntry); if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(worklogEntry.id, r.todo); todoCount = r.todo.length; }
-          lastEntryId = worklogEntry.id; onSaved(worklogEntry.id);
-        } else if (isHandoffTodo) {
-          const htr = await demoTransformHandoffTodo(lang);
-          setSimStep(4);
-          const handoffEntry = buildHandoffLogEntry(htr.handoff, { projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length) });
-          addLog(handoffEntry);
-          savedHandoffLog = handoffEntry;
-          onSaved(handoffEntry.id);
-          setSavedHandoffId(handoffEntry.id);
-          setResult(htr.handoff); setOutputMode('handoff');
-          if (htr.todos.length > 0 && getFeatureEnabled('todo_extract', true)) {
-            addTodosFromLogWithMeta(handoffEntry.id, htr.todos.map(td => ({ title: td.title, priority: td.priority, dueDate: td.dueDate })));
-            todoCount = htr.todos.length;
-          }
-          lastEntryId = handoffEntry.id;
-        } else if (doHandoff) {
-          const r = await demoTransformHandoff(lang);
-          setSimStep(4);
-          const handoffEntry = buildHandoffLogEntry(r, { projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length) });
-          addLog(handoffEntry);
-          savedHandoffLog = handoffEntry;
-          onSaved(handoffEntry.id); lastEntryId = handoffEntry.id;
-          setResult(r); setOutputMode('handoff');
-        } else if (isTodoOnly) {
-          const r = await demoTransformTodoOnly(lang);
-          setSimStep(4);
-          if (r.todos.length > 0) { todoCount = r.todos.length; }
-        } else {
-          const r = await demoTransformText(lang);
-          setSimStep(4);
-          setResult(r); setOutputMode('worklog');
-          const worklogEntry: LogEntry = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), importedAt: new Date().toISOString(), title: r.title, projectId: selectedProjectId, sourceReference: buildSourceReference(text, files, combined.length), outputMode: 'worklog', today: r.today, decisions: r.decisions, todo: r.todo, relatedProjects: r.relatedProjects, tags: r.tags };
-          addLog(worklogEntry); if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(worklogEntry.id, r.todo); todoCount = r.todo.length; }
-          lastEntryId = worklogEntry.id; onSaved(worklogEntry.id);
-        }
-        // Post-save: generate savedResult for markdown/context buttons
-        if (savedHandoffLog) {
-          const md = formatHandoffMarkdown(savedHandoffLog);
-          setSavedResult({ log: savedHandoffLog, markdown: md, fullContext: null });
-          setWasFirstTransform(isFirstTransform);
-        }
-        setSavedId(lastEntryId);
-        if (todoCount > 0) showToast?.(tf('toastTodosExtracted', lang, todoCount), 'success');
-        setLoading(false);
-        return;
-      }
-
-      // --- Combined "both" mode — single API call ---
-      if (isBoth) {
-        let bothResult: BothResult;
-        if (willChunk) {
-          const engine = new ChunkEngine();
-          engineRef.current = engine;
-          bothResult = await engine.processBoth(combined, apiKey, (p) => setProgress(p));
-          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response (chunked): ${(performance.now() - _t0).toFixed(0)}ms`);
-          engineRef.current = null;
-        } else {
-          setSimStep(0);
-          setTimeout(() => setSimStep(1), 800);
-          let streamCharCount = 0;
-          const streamingEnabled = getFeatureEnabled('streaming', true);
-          const bothOpts: TransformBothOptions = {
-            onStream: streamingEnabled ? (_chunk, accumulated) => {
-              if (streamCharCount === 0) setSimStep(2);
-              streamCharCount = accumulated.length;
-              setStreamDetail(`${t('streamReceiving', lang)}... ${streamCharCount.toLocaleString()} chars`);
-            } : undefined,
-            projects: !selectedProjectId && projects.length > 0
-              ? projects.map(p => ({ id: p.id, name: p.name }))
-              : undefined,
-          };
-          bothResult = await transformBoth(combined, bothOpts);
-          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response: ${(performance.now() - _t0).toFixed(0)}ms`);
-          setStreamDetail(null);
-          setSimStep(4);
-        }
-
-        // Save handoff entry
-        const handoffEntry = buildHandoffLogEntry(bothResult.handoff, {
-          projectId: selectedProjectId,
-          sourceReference: buildSourceReference(text, files, combined.length),
-        });
-        addLog(handoffEntry);
-        savedHandoffLog = handoffEntry;
-        onSaved(handoffEntry.id);
-        setSavedHandoffId(handoffEntry.id);
-
-        // Save worklog entry
-        const r = bothResult.worklog;
-        setResult(r);
-        setOutputMode('worklog'); // display worklog result (not handoff)
-        const worklogEntry: LogEntry = {
-          id: crypto.randomUUID(), createdAt: new Date().toISOString(),
-          importedAt: new Date().toISOString(),
-          title: r.title,
-          projectId: selectedProjectId,
-          sourceReference: buildSourceReference(text, files, combined.length),
-          outputMode: 'worklog',
-          today: r.today, decisions: r.decisions, todo: r.todo,
-          relatedProjects: r.relatedProjects, tags: r.tags,
-        };
-        addLog(worklogEntry);
-        if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(worklogEntry.id, r.todo); todoCount = r.todo.length; }
-        lastEntryId = worklogEntry.id; onSaved(worklogEntry.id);
-
-        // Use inline classification from the combined response (no extra API call)
-        if (!selectedProjectId && projects.length > 0 && bothResult.classification?.projectId) {
-          const cl = bothResult.classification;
-          const matchedProject = projects.find(p => p.id === cl.projectId);
-          if (matchedProject && cl.confidence > 0.7) {
-            updateLog(handoffEntry.id, { projectId: cl.projectId ?? undefined, classificationConfidence: cl.confidence });
-            updateLog(worklogEntry.id, { projectId: cl.projectId ?? undefined, classificationConfidence: cl.confidence });
-            onSaved(worklogEntry.id);
-          } else if (matchedProject && cl.confidence > 0) {
-            setSuggestion({ logId: worklogEntry.id, projectId: cl.projectId!, projectName: matchedProject.name, confidence: cl.confidence });
-            updateLog(worklogEntry.id, { suggestedProjectId: cl.projectId ?? undefined, classificationConfidence: cl.confidence });
-          }
-        }
-      }
-
-      // --- Handoff only ---
-      if (doHandoff && !isBoth) {
-        let r: HandoffResult;
-        if (willChunk) {
-          const engine = new ChunkEngine();
-          engineRef.current = engine;
-          r = await engine.processHandoff(combined, apiKey, (p) => setProgress(p));
-          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response (chunked): ${(performance.now() - _t0).toFixed(0)}ms`);
-          engineRef.current = null;
-        } else {
-          setSimStep(0);
-          setTimeout(() => setSimStep(1), 800);
-          setTimeout(() => setSimStep(2), 2500);
-          r = await transformHandoff(combined);
-          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response: ${(performance.now() - _t0).toFixed(0)}ms`);
-          setSimStep(4);
-        }
-        setResult(r);
-        const entry = buildHandoffLogEntry(r, {
-          projectId: selectedProjectId,
-          sourceReference: buildSourceReference(text, files, combined.length),
-        });
-        addLog(entry); savedHandoffLog = entry; lastEntryId = entry.id; onSaved(entry.id);
-        if (!selectedProjectId && projects.length > 0) {
-          triggerClassification(entry);
-        }
-      }
-
-      // --- Worklog only ---
-      if (doWorklog && !isBoth) {
-        let r: TransformResult;
-        if (willChunk) {
-          const engine = new ChunkEngine();
-          engineRef.current = engine;
-          r = await engine.process(combined, apiKey, (p) => setProgress(p));
-          engineRef.current = null;
-        } else {
-          setSimStep(0);
-          setTimeout(() => setSimStep(1), 800);
-          setTimeout(() => setSimStep(2), 2500);
-          r = await transformText(combined);
-          setSimStep(4);
-        }
-
-        setResult(r);
-        const entry: LogEntry = {
-          id: crypto.randomUUID(), createdAt: new Date().toISOString(),
-          importedAt: new Date().toISOString(),
-          title: r.title,
-          projectId: selectedProjectId,
-          sourceReference: buildSourceReference(text, files, combined.length),
-          outputMode: 'worklog',
-          today: r.today, decisions: r.decisions, todo: r.todo,
-          relatedProjects: r.relatedProjects, tags: r.tags,
-        };
-        addLog(entry);
-        if (getFeatureEnabled('todo_extract', true)) { addTodosFromLog(entry.id, r.todo); todoCount = r.todo.length; }
-        lastEntryId = entry.id; onSaved(entry.id);
-        if (!selectedProjectId && projects.length > 0) {
-          triggerClassification(entry);
-        }
-      }
-
-      // --- Handoff + TODO ---
-      if (isHandoffTodo) {
-        setSimStep(0);
-        setTimeout(() => setSimStep(1), 800);
-        const htResult = await transformHandoffTodo(combined);
-        setSimStep(4);
-
-        const r = htResult.handoff;
-        setResult(r);
-        const entry = buildHandoffLogEntry(r, {
-          projectId: selectedProjectId,
-          sourceReference: buildSourceReference(text, files, combined.length),
-        });
-        entry.todo = htResult.todos.map(td => td.title);
-        addLog(entry);
-        savedHandoffLog = entry;
-        if (getFeatureEnabled('todo_extract', true)) { addTodosFromLogWithMeta(entry.id, htResult.todos); todoCount = htResult.todos.length; }
-        lastEntryId = entry.id; onSaved(entry.id);
-        if (!selectedProjectId && projects.length > 0) {
-          triggerClassification(entry);
-        }
-      }
-
-      // --- TODO only ---
-      if (isTodoOnly) {
-        setSimStep(0);
-        setTimeout(() => setSimStep(1), 800);
-        setTimeout(() => setSimStep(2), 2500);
-        const todoResult = await transformTodoOnly(combined);
-        setSimStep(4);
-
-        // Save as a minimal log entry (handoff body empty, worklog fields empty)
-        const entry: LogEntry = {
-          id: crypto.randomUUID(), createdAt: new Date().toISOString(),
-          importedAt: new Date().toISOString(),
-          title: t('todoExtractionTitle', lang),
-          projectId: selectedProjectId,
-          sourceReference: buildSourceReference(text, files, combined.length),
-          outputMode: 'worklog',
-          today: [], decisions: [], todo: todoResult.todos.map(t => t.title),
-          relatedProjects: [], tags: [],
-        };
-        addLog(entry);
-        if (getFeatureEnabled('todo_extract', true)) { addTodosFromLogWithMeta(entry.id, todoResult.todos); todoCount = todoResult.todos.length; }
-        setResult({ title: entry.title, today: [], decisions: [], todo: todoResult.todos.map(t => t.title), relatedProjects: [], tags: [] });
-        setOutputMode('worklog');
-        lastEntryId = entry.id; onSaved(entry.id);
-        if (!selectedProjectId && projects.length > 0) {
-          triggerClassification(entry);
-        }
-      }
-
-      if (lastEntryId) setSavedId(lastEntryId);
-
-      // Show preview panel for handoff/both modes; toast for worklog-only/todo-only
-      if (savedHandoffLog) {
-        const handoffMd = formatHandoffMarkdown(savedHandoffLog);
-        let fullContextMd: string | null = null;
-        if (savedHandoffLog.projectId) {
-          const project = projects.find(p => p.id === savedHandoffLog!.projectId);
-          const masterNote = getMasterNote(savedHandoffLog.projectId);
-          if (masterNote && project) {
-            const allLogs = loadLogs();
-            const ctx = generateProjectContext(masterNote, allLogs, project.name);
-            fullContextMd = formatFullAiContext(ctx, savedHandoffLog);
-          }
-        }
-        setSavedResult({ log: savedHandoffLog, markdown: handoffMd, fullContext: fullContextMd });
-        setWasFirstTransform(isFirstTransform);
-        // Still show todo count toast for handoff_todo mode
-        if (isHandoffTodo && todoCount > 0) {
-          const todoMsg = tf('toastTodosExtracted', lang, todoCount);
-          showToast?.(isFirstTransform ? `🎉 ${todoMsg}` : todoMsg, 'success');
-        }
-      } else {
-        // Worklog-only or todo-only — just toast
-        const lines: string[] = [];
-        if (isTodoOnly) {
-          if (todoCount > 0) {
-            lines.push(tf('toastTodosExtracted', lang, todoCount));
-          } else {
-            lines.push(t('toastNoTodosFound', lang));
-          }
-        }
-        if (doWorklog) {
-          lines.push(t('toastLogSaved', lang));
-          if (todoCount > 0) {
-            lines.push(tf('toastTodosAdded', lang, todoCount));
-          }
-        }
-        const toastMsg = lines.join('\n');
-        showToast?.(isFirstTransform ? `🎉 ${toastMsg}` : toastMsg, 'success');
-        playSuccess();
-      }
-    } catch (err) {
-      const raw = err instanceof Error ? err.message : 'Transform failed.';
-      // Translate internal error tags to user-facing messages
-      if (raw.includes('[API Key]')) {
-        setError(t('errorApiKey', lang));
-      } else if (raw.includes('[Rate Limit]')) {
-        setError(shouldUseBuiltinApi() ? t('errorRateLimitBuiltin', lang) : t('errorRateLimit', lang));
-      } else if (raw.includes('[Overloaded]')) {
-        setError(t('errorServiceDown', lang));
-      } else if (raw.includes('[Truncated]')) {
-        setError(t('errorTruncated', lang));
-      } else if (raw.includes('[Parse Error]') || raw.includes('[Non-JSON Response]')) {
-        setError(t('errorParseResponse', lang));
-      } else if (raw.includes('[Cancelled]')) {
-        setError('');
-      } else if (raw.includes('[Too Long]')) {
-        setError(t('errorTooLong', lang));
-      } else if (raw.includes('[Network]') || raw.includes('Failed to fetch') || raw.includes('NetworkError') || (err instanceof TypeError && raw.includes('fetch'))) {
-        setError(t('errorNetwork', lang));
-      } else if (raw.includes('[AI Response]')) {
-        setError(t('errorEmptyResponse', lang));
-      } else if (err instanceof DOMException && err.name === 'AbortError') {
-        setError(t('errorTimeout', lang));
-      } else if (raw.includes('[API Error]')) {
-        setError(t('errorApiGeneric', lang));
-      } else if (err instanceof TypeError) {
-        // fetch TypeError (network failure, CORS, etc.)
-        setError(t('errorNetwork', lang));
-      } else {
-        setError(t('errorGeneric', lang));
-      }
-    } finally {
-      if (import.meta.env.DEV && _t0) {
-        const _t1 = performance.now();
-        console.log(`[Perf] total: ${(_t1 - _t0).toFixed(0)}ms`);
-        // Render timing — fires after React commit
-        requestAnimationFrame(() => {
-          const _t2 = performance.now();
-          console.log(`[Perf] render: ${(_t2 - _t1).toFixed(0)}ms`);
-        });
-      }
-      setLoading(false); setProgress(null); engineRef.current = null;
-    }
-  };
-
-  const handlePauseResume = () => {
-    const engine = engineRef.current;
-    if (!engine) return;
-    if (engine.isPaused) {
-      engine.resume();
-    } else {
-      engine.pause();
-    }
-  };
-
-  const handleCancel = () => {
-    engineRef.current?.cancel();
-  };
 
   const handleCopy = async () => {
     if (!result) return;
@@ -700,86 +193,6 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     } else {
       const json = JSON.stringify(result, null, 2);
       downloadFile(json, `threadlog-${date}-${type}.json`, 'application/json');
-    }
-  };
-
-  const triggerClassification = async (entry: LogEntry) => {
-    if (!getFeatureEnabled('auto_classify', true)) return;
-    setClassifying(true);
-    setSuggestion(null);
-    try {
-      const result = await classifyLog(entry, projects);
-      if (!result.projectId) return;
-      const project = projects.find((p) => p.id === result.projectId);
-      if (!project) return;
-
-      if (result.confidence > 0) {
-        // Always suggest — never auto-assign
-        setSuggestion({ logId: entry.id, projectId: result.projectId, projectName: project.name, confidence: result.confidence });
-        updateLog(entry.id, { suggestedProjectId: result.projectId, classificationConfidence: result.confidence });
-      }
-    } catch (err) {
-      if (import.meta.env.DEV) console.warn('[Classify] Error:', err);
-    } finally {
-      setClassifying(false);
-    }
-  };
-
-  const handleAcceptSuggestion = () => {
-    if (!suggestion) return;
-    const { logId, projectId, projectName } = suggestion;
-    updateLog(logId, { projectId, suggestedProjectId: undefined });
-    const log = getLog(logId);
-    if (log) saveCorrection(log, projectId);
-    // If both mode, also assign the worklog
-    if (savedHandoffId && savedId && logId === savedHandoffId) {
-      updateLog(savedId, { projectId });
-    }
-    setSuggestion(null);
-    onSaved(logId);
-    // Show summary update prompt
-    if (getFeatureEnabled('project_summary', true)) {
-      const mn = getMasterNote(projectId);
-      const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-      const isStale = mn && (Date.now() - mn.updatedAt > SEVEN_DAYS);
-      const msg = tf('addedToProject', lang, projectName)
-        + '\n' + (isStale ? t('updateSummaryStale', lang) : t('updateSummaryPrompt', lang));
-      showToast?.(msg, 'success');
-    } else {
-      showToast?.(tf('addedToProject', lang, projectName), 'success');
-    }
-  };
-
-  const handleDismissSuggestion = () => {
-    setSuggestion(null);
-  };
-
-  const handlePostSaveAssign = (projectId: string) => {
-    if (!savedId && !savedHandoffId) return;
-    const logId = savedHandoffId || savedId!;
-    updateLog(logId, { projectId });
-    const log = getLog(logId);
-    if (log) saveCorrection(log, projectId);
-    // If both mode, also assign the worklog
-    if (savedHandoffId && savedId) {
-      updateLog(savedId, { projectId });
-    }
-    const project = projects.find((p) => p.id === projectId);
-    setPostSavePickerOpen(false);
-    setSuggestion(null);
-    onSaved(logId);
-    // Show summary update prompt
-    if (project) {
-      if (getFeatureEnabled('project_summary', true)) {
-        const mn = getMasterNote(projectId);
-        const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-        const isStale = mn && (Date.now() - mn.updatedAt > SEVEN_DAYS);
-        const msg = tf('addedToProject', lang, project.name)
-          + '\n' + (isStale ? t('updateSummaryStale', lang) : t('updateSummaryPrompt', lang));
-        showToast?.(msg, 'success');
-      } else {
-        showToast?.(tf('addedToProject', lang, project.name), 'success');
-      }
     }
   };
 
@@ -819,9 +232,9 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
   return (
     <div
       className="workspace-content-centered"
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
+      onDrop={fileImport.handleDrop}
+      onDragOver={fileImport.handleDragOver}
+      onDragLeave={fileImport.handleDragLeave}
     >
       {/* Greeting + Project Switcher */}
       <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', margin: '0 0 8px', color: 'var(--text-primary)', textAlign: 'center' }}>
@@ -900,15 +313,9 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             <button
               className="btn"
               onClick={() => {
-                setSavedResult(null);
-                setResult(null);
-                setSavedId(null);
-                setSavedHandoffId(null);
+                resetTransformState();
                 setText('');
                 setFiles([]);
-                setError('');
-                setSuggestion(null);
-                setPostSavePickerOpen(false);
               }}
             >
               {t('startNewLog', lang)}
@@ -939,10 +346,10 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       {/* Input Card — hidden when preview panel is shown */}
       {!savedResult && (<div
         className="input-card-hero"
-        style={dragging ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 3px var(--accent-focus)', position: 'relative' as const } : { position: 'relative' as const }}
+        style={fileImport.dragging ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 3px var(--accent-focus)', position: 'relative' as const } : { position: 'relative' as const }}
       >
         {/* Drag & drop overlay */}
-        {dragging && (
+        {fileImport.dragging && (
           <div style={{
             position: 'absolute', inset: 0, zIndex: 10,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1112,8 +519,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
 
-          <input ref={fileRef} type="file" accept=".txt,.md,.docx,.json" multiple onChange={handleFiles} aria-label={t('ariaSelectFile', lang)} style={{ display: 'none' }} />
-          <button className="input input-sm" onClick={() => fileRef.current?.click()} disabled={loading} style={{ minWidth: 'auto', padding: '4px 8px', fontSize: 12, minHeight: 0, width: 'auto', flexShrink: 0, cursor: 'pointer', textAlign: 'left' }}>
+          <input ref={fileImport.fileRef} type="file" accept=".txt,.md,.docx,.json" multiple onChange={fileImport.handleFiles} aria-label={t('ariaSelectFile', lang)} style={{ display: 'none' }} />
+          <button className="input input-sm" onClick={() => fileImport.fileRef.current?.click()} disabled={loading} style={{ minWidth: 'auto', padding: '4px 8px', fontSize: 12, minHeight: 0, width: 'auto', flexShrink: 0, cursor: 'pointer', textAlign: 'left' }}>
             + {files.length === 0 ? t('importFiles', lang) : t('addMoreFiles', lang)}
           </button>
 
@@ -1126,22 +533,22 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       </div>)}
 
       {/* Capture banner — shown when data arrives from Chrome extension */}
-      {captureInfo && (
+      {fileImport.captureInfo && (
         <div className="capture-banner" style={{ maxWidth: 760, margin: '12px auto 0' }}>
           <div className="capture-banner-icon">✓</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="capture-banner-title">
-              {tf('capturedFrom', lang, captureSourceLabel(captureInfo.source))}
+              {tf('capturedFrom', lang, captureSourceLabel(fileImport.captureInfo.source))}
             </div>
             <div className="capture-banner-meta">
-              {captureInfo.messageCount} messages · {captureInfo.charCount.toLocaleString()} {t('chars', lang)}
+              {fileImport.captureInfo.messageCount} messages · {fileImport.captureInfo.charCount.toLocaleString()} {t('chars', lang)}
             </div>
             <div className="capture-banner-hint">
               {t('captureTransformHint', lang)}
             </div>
           </div>
           <button
-            onClick={() => setCaptureInfo(null)}
+            onClick={() => fileImport.setCaptureInfo(null)}
             className="capture-banner-close"
             title={t('titleDismiss', lang)}
             aria-label={t('ariaDismissNotification', lang)}
@@ -1150,7 +557,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       )}
 
       {/* File list — between card and options when files exist */}
-      {files.length > 0 && !captureInfo && !result && (
+      {files.length > 0 && !fileImport.captureInfo && !result && (
         <div className="file-list" style={{ marginTop: 12, maxWidth: 760, margin: '12px auto 0' }}>
           {files.map((f, i) => (
             <div key={i} className="file-list-item">
@@ -1166,7 +573,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                 {f.content.length.toLocaleString()}
               </span>
               <button
-                onClick={() => removeFile(i)}
+                onClick={() => fileImport.removeFile(i)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--border-hover)', fontSize: 16, padding: '0 4px', lineHeight: 1, transition: 'color 0.12s' }}
                 title={t('titleRemoveFile', lang)}
                 aria-label={tf('ariaRemoveFile', lang, f.name)}
@@ -1309,7 +716,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
               <button className="btn btn-primary" onClick={handleAcceptSuggestion} style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }}>
                 {t('classifyAccept', lang)}
               </button>
-              <button className="btn" onClick={() => { setSuggestion(null); setPostSavePickerOpen(true); }} style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }}>
+              <button className="btn" onClick={() => { handleDismissSuggestion(); setPostSavePickerOpen(true); }} style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }}>
                 {t('classifyPickOther', lang)}
               </button>
               <button className="btn" onClick={handleDismissSuggestion} style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }}>
