@@ -1752,6 +1752,10 @@ const labels = {
   // Tagline for zero-data / first-time state
   taglineZeroState: { ja: 'AIとの会話を貼り付けるだけ。構造化された引き継ぎを数秒で。', en: 'Paste an AI conversation. Get a structured handoff in seconds.', es: 'Pega una conversación con IA. Obtén un handoff estructurado en segundos.', fr: 'Collez une conversation IA. Obtenez un handoff structuré en quelques secondes.', de: 'Fügen Sie eine KI-Konversation ein. Erhalten Sie eine strukturierte Übergabe in Sekunden.', zh: '粘贴AI对话，几秒内获得结构化交接。', ko: 'AI 대화를 붙여넣으세요. 몇 초 만에 구조화된 핸드오프를 받으세요.', pt: 'Cole uma conversa com IA. Receba um handoff estruturado em segundos.' },
 
+  // A11y — BottomNav & Onboarding
+  ariaBottomNav: { ja: 'ナビゲーション', en: 'Bottom navigation', es: 'Navegación inferior', fr: 'Navigation inférieure', de: 'Untere Navigation', zh: '底部导航', ko: '하단 탐색', pt: 'Navegação inferior' },
+  ariaSetupWizard: { ja: 'セットアップウィザード', en: 'Setup wizard', es: 'Asistente de configuración', fr: "Assistant de configuration", de: 'Einrichtungsassistent', zh: '设置向导', ko: '설정 마법사', pt: 'Assistente de configuração' },
+
 } as const;
 
 /** Exported for testing — do not use in application code. */

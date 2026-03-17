@@ -67,7 +67,7 @@ function BottomNav({ activeView, onNavigate, lang }: BottomNavProps) {
       )}
 
       {/* Bottom tab bar */}
-      <nav className="bottom-nav">
+      <nav className="bottom-nav" aria-label={t('ariaBottomNav', lang)}>
         <div className="bottom-nav-inner">
           {PRIMARY_TABS.map((tab) => {
             const Icon = tab.icon;
@@ -78,6 +78,7 @@ function BottomNav({ activeView, onNavigate, lang }: BottomNavProps) {
                 key={tab.view}
                 className={`bottom-nav-item${active ? ' active' : ''}`}
                 onClick={() => onNavigate(tab.view)}
+                aria-label={t(tab.labelKey, lang)}
               >
                 <Icon size={20} />
                 <span>{t(tab.labelKey, lang)}</span>
@@ -87,6 +88,7 @@ function BottomNav({ activeView, onNavigate, lang }: BottomNavProps) {
           <button
             className={`bottom-nav-item${isMoreActive ? ' active' : ''}`}
             onClick={() => setMoreOpen((v) => !v)}
+            aria-label={t('more', lang)}
           >
             <MoreHorizontal size={20} />
             <span>{t('more', lang)}</span>

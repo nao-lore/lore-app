@@ -1184,7 +1184,7 @@ export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, p
 
       {/* Progress card — single transform (simulated steps) */}
       {loading && !progress && (
-        <>
+        <div aria-live="polite">
           <ProgressPanel
             steps={singleSteps}
             state={{ stepIndex: simStep, detail: streamDetail || undefined }}
@@ -1192,12 +1192,12 @@ export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, p
             heading={undefined}
           />
           <SkeletonLoader lang={lang} />
-        </>
+        </div>
       )}
 
       {/* Progress card — chunked transform (real progress) */}
       {loading && progress && (
-        <>
+        <div aria-live="polite">
         <ProgressPanel
           heading={undefined}
           steps={[{ label: progress.phase === 'extract' ? tf('processing', lang, progress.current, progress.total)
@@ -1245,7 +1245,7 @@ export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, p
           </>}
         />
         <SkeletonLoader lang={lang} />
-        </>
+        </div>
       )}
 
       {error && (

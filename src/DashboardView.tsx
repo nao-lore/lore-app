@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, memo } from 'react';
 import { Square, CheckSquare, AlertTriangle, ChevronDown, ChevronRight, Plus, PlayCircle, Clock, FileText, FolderOpen, TrendingUp } from 'lucide-react';
 import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { t, tf } from './i18n';
@@ -59,7 +59,7 @@ function isNotDismissed(key: string, latestActivityTs: number): boolean {
   return latestActivityTs > dismissedAt;
 }
 
-export default function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject, onOpenTodos, onOpenSummaryList, onOpenHistory, onNewLog, onToggleAction }: DashboardViewProps) {
+function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject, onOpenTodos, onOpenSummaryList, onOpenHistory, onNewLog, onToggleAction }: DashboardViewProps) {
   const [moreTasksOpen, setMoreTasksOpen] = useState(false);
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try {
@@ -514,6 +514,8 @@ export default function DashboardView({ logs, projects, todos, masterNotes, lang
     </div>
   );
 }
+
+export default memo(DashboardView);
 
 // ── Activity Summary Card ──
 

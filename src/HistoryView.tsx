@@ -295,7 +295,7 @@ interface HistoryViewProps {
   onDuplicate?: (newId: string) => void;
 }
 
-export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId, projects, showToast, onOpenMasterNote, onOpenProject, tagFilter, onClearTagFilter, onTagFilter, onDuplicate }: HistoryViewProps) {
+function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId, projects, showToast, onOpenMasterNote, onOpenProject, tagFilter, onClearTagFilter, onTagFilter, onDuplicate }: HistoryViewProps) {
   const [rawQuery, setRawQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [modeFilter, setModeFilter] = usePersistedState<ModeFilter>('threadlog_logs_filter', 'all');
@@ -309,6 +309,8 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const [logPickerOpen, setLogPickerOpen] = useState(false);
   const [actionSheetLog, setActionSheetLog] = useState<LogEntry | null>(null);
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState('');
   const [inlinePickerLogId, setInlinePickerLogId] = useState<string | null>(null);
   const [confirmTrashLog, setConfirmTrashLog] = useState<LogEntry | null>(null);
   const [dateFilterOpen, setDateFilterOpen] = useState(false);
@@ -457,11 +459,9 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
         onRefresh();
         break;
       case 'rename': {
-        const newName = prompt(t('ctxRenamePrompt', lang), log.title);
-        if (newName && newName.trim() && newName.trim() !== log.title) {
-          updateLog(log.id, { title: newName.trim() });
-          onRefresh();
-        }
+        setEditingLogId(log.id);
+        setEditDraft(log.title);
+        setActionSheetLog(null);
         break;
       }
       case 'assignProject':
@@ -614,7 +614,21 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
           </div>
           {/* Row 2: title */}
           <div className="card-title-clamp" style={{ fontWeight: 600, fontSize: compact ? 13 : 15, color: 'var(--text-secondary)', lineHeight: compact ? 1.2 : 1.4, paddingRight: 48 }}>
-            <Highlight text={log.title} query={debouncedQuery} />
+            {editingLogId === log.id ? (
+              <input
+                className="input"
+                style={{ fontSize: 'inherit', fontWeight: 'inherit', width: '100%' }}
+                value={editDraft}
+                onChange={(e) => setEditDraft(e.target.value)}
+                onBlur={() => { if (editDraft.trim() && editDraft.trim() !== log.title) { updateLog(log.id, { title: editDraft.trim() }); onRefresh(); } setEditingLogId(null); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } if (e.key === 'Escape') { setEditingLogId(null); } }}
+                onClick={(e) => e.stopPropagation()}
+                autoFocus
+                maxLength={200}
+              />
+            ) : (
+              <Highlight text={log.title} query={debouncedQuery} />
+            )}
           </div>
           {/* Row 3: preview */}
           {preview && <div className="meta" style={{ marginTop: compact ? 2 : 5, lineHeight: compact ? 1.3 : 1.55, fontSize: compact ? 11 : 12.5 }}><Highlight text={preview} query={debouncedQuery} /></div>}
@@ -708,7 +722,23 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
         <span className={log.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} style={{ flexShrink: 0, ...(compact ? { fontSize: 10 } : {}) }}>
           {modeLabel}
         </span>
-        <span className="list-row-title" style={compact ? { fontSize: 12 } : undefined}><Highlight text={log.title} query={debouncedQuery} /></span>
+        <span className="list-row-title" style={compact ? { fontSize: 12 } : undefined}>
+          {editingLogId === log.id ? (
+            <input
+              className="input"
+              style={{ fontSize: 'inherit', fontWeight: 'inherit', width: '100%' }}
+              value={editDraft}
+              onChange={(e) => setEditDraft(e.target.value)}
+              onBlur={() => { if (editDraft.trim() && editDraft.trim() !== log.title) { updateLog(log.id, { title: editDraft.trim() }); onRefresh(); } setEditingLogId(null); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } if (e.key === 'Escape') { setEditingLogId(null); } }}
+              onClick={(e) => e.stopPropagation()}
+              autoFocus
+              maxLength={200}
+            />
+          ) : (
+            <Highlight text={log.title} query={debouncedQuery} />
+          )}
+        </span>
         <span className="meta" style={{ fontSize: compact ? 10 : 11, flexShrink: 0, whiteSpace: 'nowrap' }}>{formatRelativeTime(log.createdAt, lang === 'ja' ? 'ja' : 'en')}</span>
         {!selectMode && (
           <div style={{ position: 'relative', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
@@ -1235,3 +1265,5 @@ export default function HistoryView({ logs, onSelect, onBack, onRefresh, lang, a
     </div>
   );
 }
+
+export default memo(HistoryView);

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { getLog, trashLog, restoreLog, updateLog, loadTodos, loadLogs, duplicateLog, getAiContext, getMasterNote, getFeatureEnabled, linkLogs, unlinkLogs } from './storage';
 import { updateTodo as updateTodoStorage } from './storage';
 import { classifyLog as _classifyLog, saveCorrection } from './classify';
@@ -28,7 +28,7 @@ function downloadFile(content: string, fileName: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-export default function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lang, projects, onRefresh, showToast, onTagFilter, allLogs, onOpenMasterNote }: { id: string; onDeleted: () => void; onOpenLog: (id: string) => void; onBack: () => void; prevView: string; lang: Lang; projects: Project[]; onRefresh: () => void; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onTagFilter?: (tag: string) => void; allLogs: LogEntry[]; onOpenMasterNote?: (projectId: string) => void }) {
+function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lang, projects, onRefresh, showToast, onTagFilter, allLogs, onOpenMasterNote }: { id: string; onDeleted: () => void; onOpenLog: (id: string) => void; onBack: () => void; prevView: string; lang: Lang; projects: Project[]; onRefresh: () => void; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onTagFilter?: (tag: string) => void; allLogs: LogEntry[]; onOpenMasterNote?: (projectId: string) => void }) {
   void _prevView;
   const log = getLog(id);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1062,3 +1062,5 @@ function CheckableCardSection({ title, items, checkedIndices, onToggle, richItem
     </div>
   );
 }
+
+export default memo(DetailView);

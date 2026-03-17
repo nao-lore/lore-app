@@ -35,6 +35,8 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
   const [searchQuery, setSearchQuery] = useState('');
   const PH_PAGE_SIZE = 30;
   const [phVisibleCount, setPhVisibleCount] = useState(PH_PAGE_SIZE);
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -270,7 +272,21 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
                   {log.pinned && (
                     <Pin size={10} style={{ color: 'var(--accent)', transform: 'rotate(45deg)', flexShrink: 0 }} />
                   )}
-                  <span className="ph-log-title">{log.title}</span>
+                  {editingLogId === log.id ? (
+                    <input
+                      className="input"
+                      style={{ fontSize: 'inherit', fontWeight: 'inherit', flex: 1, minWidth: 0 }}
+                      value={editDraft}
+                      onChange={(e) => setEditDraft(e.target.value)}
+                      onBlur={() => { if (editDraft.trim() && editDraft.trim() !== log.title) { updateLog(log.id, { title: editDraft.trim() }); onRefresh(); } setEditingLogId(null); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } if (e.key === 'Escape') { setEditingLogId(null); } }}
+                      onClick={(e) => e.stopPropagation()}
+                      autoFocus
+                      maxLength={200}
+                    />
+                  ) : (
+                    <span className="ph-log-title">{log.title}</span>
+                  )}
                   <span className="meta ph-log-date">{formatDateShort(log.createdAt)}</span>
                   <div className="ph-log-actions" onClick={(e) => e.stopPropagation()}>
                     <button
@@ -287,7 +303,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
                           <Pin size={14} style={{ transform: 'rotate(45deg)' }} />
                           <span>{log.pinned ? t('ctxUnpin', lang) : t('ctxPin', lang)}</span>
                         </button>
-                        <button className="mn-export-item" onClick={() => { setMenuLogId(null); const name = prompt(t('ctxRenamePrompt', lang), log.title); if (name?.trim() && name.trim() !== log.title) { updateLog(log.id, { title: name.trim() }); onRefresh(); } }}>
+                        <button className="mn-export-item" onClick={() => { setMenuLogId(null); setEditingLogId(log.id); setEditDraft(log.title); }}>
                           <Pencil size={14} />
                           <span>{t('ctxRename', lang)}</span>
                         </button>

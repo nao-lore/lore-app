@@ -363,6 +363,8 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
   const [sortKey, setSortKey] = usePersistedState<SortKey>('threadlog_todos_sort', 'created');
   const [groupKey, setGroupKey] = usePersistedState<GroupKey>('threadlog_todos_group', 'none');
   const [actionSheetTodo, setActionSheetTodo] = useState<Todo | null>(null);
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState('');
 
   // Bulk select
   const [selectMode, setSelectMode] = useState(false);
@@ -423,10 +425,9 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
         updateTodo(todo.id, { dueDate: value || undefined });
         break;
       case 'edit': {
-        const editedText = prompt(t('todoEditPrompt', lang), todo.text);
-        if (editedText && editedText.trim() && editedText.trim() !== todo.text) {
-          updateTodo(todo.id, { text: editedText.trim() });
-        }
+        setEditingTodoId(todo.id);
+        setEditDraft(todo.text);
+        setActionSheetTodo(null);
         break;
       }
       case 'openLog':
@@ -753,16 +754,30 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
 
         {/* Text + meta */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <span style={{
-            fontSize: 14,
-            lineHeight: 1.5,
-            color: todo.done || todo.archivedAt ? 'var(--text-subtle)' : 'var(--text-body)',
-            textDecoration: todo.done ? 'line-through' : 'none',
-            overflowWrap: 'break-word',
-            wordBreak: 'break-word',
-          }}>
-            {todo.text}
-          </span>
+          {editingTodoId === todo.id ? (
+            <input
+              className="input"
+              style={{ fontSize: 14, width: '100%' }}
+              value={editDraft}
+              onChange={(e) => setEditDraft(e.target.value)}
+              onBlur={() => { if (editDraft.trim() && editDraft.trim() !== todo.text) { updateTodo(todo.id, { text: editDraft.trim() }); refresh(); } setEditingTodoId(null); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } if (e.key === 'Escape') { setEditingTodoId(null); } }}
+              onClick={(e) => e.stopPropagation()}
+              autoFocus
+              maxLength={500}
+            />
+          ) : (
+            <span style={{
+              fontSize: 14,
+              lineHeight: 1.5,
+              color: todo.done || todo.archivedAt ? 'var(--text-subtle)' : 'var(--text-body)',
+              textDecoration: todo.done ? 'line-through' : 'none',
+              overflowWrap: 'break-word',
+              wordBreak: 'break-word',
+            }}>
+              {todo.text}
+            </span>
+          )}
           <div style={{ display: 'flex', gap: 8, marginTop: 2, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
             {todo.dueDate && (
               <span style={{
