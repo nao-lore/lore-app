@@ -42,33 +42,33 @@ export function purgeExpiredTrash(): void {
   const now = Date.now();
 
   // Logs — use deleteLog() for cascade cleanup
-  const rawLogs = localStorage.getItem(LOGS_KEY);
+  const rawLogs = safeGetItem(LOGS_KEY);
   if (rawLogs) {
     try {
       const logs: LogEntry[] = JSON.parse(rawLogs);
       const expired = logs.filter((l) => l.trashedAt && now - l.trashedAt >= TRASH_RETENTION_MS);
       for (const l of expired) deleteLog(l.id);
-    } catch { /* ignore */ }
+    } catch (err) { if (import.meta.env.DEV) console.warn('[storage] purgeExpiredTrash logs', err); }
   }
 
   // Projects — use deleteProject() for cascade cleanup
-  const rawProjects = localStorage.getItem(PROJECTS_KEY);
+  const rawProjects = safeGetItem(PROJECTS_KEY);
   if (rawProjects) {
     try {
       const projects: Project[] = JSON.parse(rawProjects);
       const expired = projects.filter((p) => p.trashedAt && now - p.trashedAt >= TRASH_RETENTION_MS);
       for (const p of expired) deleteProject(p.id);
-    } catch { /* ignore */ }
+    } catch (err) { if (import.meta.env.DEV) console.warn('[storage] purgeExpiredTrash projects', err); }
   }
 
   // Todos — simple removal (no cascade needed)
-  const rawTodos = localStorage.getItem(TODOS_KEY);
+  const rawTodos = safeGetItem(TODOS_KEY);
   if (rawTodos) {
     try {
       const todos: Todo[] = JSON.parse(rawTodos);
       const kept = todos.filter((t) => !t.trashedAt || now - t.trashedAt < TRASH_RETENTION_MS);
       if (kept.length !== todos.length) safeSetItem(TODOS_KEY, JSON.stringify(kept));
-    } catch { /* ignore */ }
+    } catch (err) { if (import.meta.env.DEV) console.warn('[storage] purgeExpiredTrash todos', err); }
   }
 }
 
@@ -103,7 +103,8 @@ function loadAllLogs(): LogEntry[] {
       return migrated.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     return logs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  } catch {
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn('[storage] loadAllLogs', err);
     return [];
   }
 }
@@ -218,7 +219,7 @@ function loadAllProjects(): Project[] {
   try {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
-  } catch { return []; }
+  } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadAllProjects', err); return []; }
 }
 
 export function loadProjects(): Project[] {
@@ -296,7 +297,7 @@ export function loadMasterNotes(): MasterNote[] {
   try {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
-  } catch { return []; }
+  } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadMasterNotes', err); return []; }
 }
 
 export function getMasterNote(projectId: string): MasterNote | undefined {
@@ -349,7 +350,7 @@ function loadAllMnHistory(): MasterNoteHistory[] {
   try {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
-  } catch { return []; }
+  } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadAllMnHistory', err); return []; }
 }
 
 function saveMnHistory(histories: MasterNoteHistory[]): void {
@@ -408,7 +409,7 @@ export function loadLogSummaries(): LogSummary[] {
   try {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
-  } catch { return []; }
+  } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadLogSummaries', err); return []; }
 }
 
 export function saveLogSummary(summary: LogSummary): void {
@@ -429,7 +430,7 @@ function loadAllTodos(): Todo[] {
   try {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
-  } catch { return []; }
+  } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadAllTodos', err); return []; }
 }
 
 export function loadTodos(): Todo[] {
@@ -575,7 +576,7 @@ const WEEKLY_REPORTS_KEY = 'threadlog_weekly_reports';
 export function loadWeeklyReports(): WeeklyReport[] {
   const raw = localStorage.getItem(WEEKLY_REPORTS_KEY);
   if (!raw) return [];
-  try { return JSON.parse(raw); } catch { return []; }
+  try { return JSON.parse(raw); } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadWeeklyReports', err); return []; }
 }
 
 export function saveWeeklyReport(report: WeeklyReport): void {
@@ -609,7 +610,7 @@ function deleteWeeklyReportsForProject(projectId: string): void {
 export function loadKnowledgeBases(): KnowledgeBase[] {
   const raw = localStorage.getItem(KNOWLEDGE_BASE_KEY);
   if (!raw) return [];
-  try { return JSON.parse(raw); } catch { return []; }
+  try { return JSON.parse(raw); } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadKnowledgeBases', err); return []; }
 }
 
 export function getKnowledgeBase(projectId: string): KnowledgeBase | undefined {
@@ -658,7 +659,7 @@ export function exportAllData(): LoreBackup {
   for (const key of DATA_KEYS) {
     const raw = localStorage.getItem(key);
     if (raw) {
-      try { data[key] = JSON.parse(raw); } catch { /* skip */ }
+      try { data[key] = JSON.parse(raw); } catch (err) { if (import.meta.env.DEV) console.warn('[storage] exportAllData parse', err); }
     }
   }
   return { version: 1, exportedAt: new Date().toISOString(), data };
@@ -706,7 +707,7 @@ export function importData(backup: LoreBackup, mode: 'merge' | 'overwrite'): Imp
       const raw = localStorage.getItem(key);
       let existing: Record<string, unknown>[] = [];
       if (raw) {
-        try { existing = JSON.parse(raw); } catch { /* ignore */ }
+        try { existing = JSON.parse(raw); } catch (err) { if (import.meta.env.DEV) console.warn('[storage] importData parse', err); }
       }
       const map = new Map<string, unknown>();
       for (const item of existing) {
@@ -781,7 +782,7 @@ export function recordActivity(): void {
       while (dates.length > 90) dates.shift();
       localStorage.setItem(ACTIVITY_DATES_KEY, JSON.stringify(dates));
     }
-  } catch { /* ignore */ }
+  } catch (err) { if (import.meta.env.DEV) console.warn('[storage] recordActivity', err); }
 }
 
 export function getStreak(): number {
@@ -799,7 +800,7 @@ export function getStreak(): number {
       else if (i > 0) break; // allow today to not be recorded yet
     }
     return streak;
-  } catch { return 0; }
+  } catch (err) { if (import.meta.env.DEV) console.warn('[storage] getStreak', err); return 0; }
 }
 
 // ─── Settings ───
@@ -869,7 +870,7 @@ export function setDemoMode(on: boolean): void {
   if (on) {
     safeSetItem(DEMO_MODE_KEY, '1');
   } else {
-    try { localStorage.removeItem(DEMO_MODE_KEY); } catch { /* ignore */ }
+    try { localStorage.removeItem(DEMO_MODE_KEY); } catch (err) { if (import.meta.env.DEV) console.warn('[storage] setDemoMode', err); }
   }
 }
 

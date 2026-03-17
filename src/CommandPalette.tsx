@@ -6,6 +6,7 @@ import { search } from './search';
 import type { SearchResult } from './search';
 import { t } from './i18n';
 import type { Lang } from './i18n';
+import { useFocusTrap } from './useFocusTrap';
 
 interface ActionCommand {
   id: string;
@@ -35,6 +36,7 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
   const setQuery = useCallback((q: string) => { setQueryRaw(q); setSelectedIndex(0); }, []);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -231,8 +233,8 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
   };
 
   return (
-    <div className="palette-overlay" onClick={onClose}>
-      <div className="palette-container" onClick={(e) => e.stopPropagation()}>
+    <div className="palette-overlay" onClick={onClose} role="presentation">
+      <div ref={trapRef} className="palette-container" role="dialog" aria-modal="true" aria-label={t('searchPlaceholder', lang)} onClick={(e) => e.stopPropagation()}>
         <input
           ref={inputRef}
           className="palette-input"

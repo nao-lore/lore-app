@@ -10,6 +10,7 @@ import type { MenuItem } from './ContextMenu';
 import ConfirmDialog from './ConfirmDialog';
 import FeedbackModal from './FeedbackModal';
 import { getProjectColor } from './projectColors';
+import { useFocusTrap } from './useFocusTrap';
 
 
 function formatNumber(n: number): string {
@@ -25,6 +26,8 @@ function StatsModal({ stats, lang, onClose, onOpenHistory, onOpenProjects, onOpe
   stats: Stats; lang: Lang; onClose: () => void;
   onOpenHistory: () => void; onOpenProjects: () => void; onOpenTodos: () => void;
 }) {
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handler);
@@ -46,6 +49,7 @@ function StatsModal({ stats, lang, onClose, onOpenHistory, onOpenProjects, onOpe
       onClick={onClose}
     >
       <div
+        ref={trapRef}
         className="shortcuts-modal"
         role="dialog"
         aria-modal="true"
@@ -111,6 +115,9 @@ interface SidebarProps {
 }
 
 const MAX_PINNED = 5;
+const SIDEBAR_MORE_KEY = 'threadlog_sidebar_more';
+const SIDEBAR_PINNED_KEY = 'threadlog_sidebar_pinned';
+const NOTIFICATION_DISMISSALS_KEY = 'threadlog_notification_dismissals';
 
 function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSelect, onNewLog, onOpenSettings, onOpenHistory, onOpenProjects, onOpenTodos, onOpenProjectSummaryList, onOpenDashboard, onOpenTimeline, onOpenWeeklyReport, onOpenTrash, onOpenHelp, onOpenPricing, onCollapse, onSelectProject, onOpenMasterNote, onRefresh, onDeleted, lang, showToast, todos, masterNotes }: SidebarProps) {
   const [menuState, setMenuState] = useState<{ logId: string; rect: DOMRect } | null>(null);
@@ -122,21 +129,21 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
   const [editDraft, setEditDraft] = useState('');
   const [changingProjectLogId, setChangingProjectLogId] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(() => {
-    try { return localStorage.getItem('threadlog_sidebar_more') === 'open'; } catch { return false; }
+    try { return localStorage.getItem(SIDEBAR_MORE_KEY) === 'open'; } catch { return false; }
   });
   const [pinnedOpen, setPinnedOpen] = useState(() => {
-    try { return localStorage.getItem('threadlog_sidebar_pinned') !== 'closed'; } catch { return true; }
+    try { return localStorage.getItem(SIDEBAR_PINNED_KEY) !== 'closed'; } catch { return true; }
   });
 
   const toggleMore = () => {
     const next = !moreOpen;
     setMoreOpen(next);
-    try { localStorage.setItem('threadlog_sidebar_more', next ? 'open' : 'closed'); } catch { /* ignore */ }
+    try { localStorage.setItem(SIDEBAR_MORE_KEY, next ? 'open' : 'closed'); } catch { /* ignore */ }
   };
   const togglePinned = () => {
     const next = !pinnedOpen;
     setPinnedOpen(next);
-    try { localStorage.setItem('threadlog_sidebar_pinned', next ? 'open' : 'closed'); } catch { /* ignore */ }
+    try { localStorage.setItem(SIDEBAR_PINNED_KEY, next ? 'open' : 'closed'); } catch { /* ignore */ }
   };
   const accountTriggerRef = useRef<HTMLButtonElement>(null);
   const accountPopoverRef = useRef<HTMLDivElement>(null);
@@ -178,7 +185,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
     const unassignedLogs = logs.some((l) => l.outputMode === 'handoff' && !l.projectId);
     let staleSummary = false;
     let dismissals: Record<string, number> = {};
-    try { dismissals = JSON.parse(localStorage.getItem('threadlog_notification_dismissals') || '{}'); } catch { /* ignore */ }
+    try { dismissals = JSON.parse(localStorage.getItem(NOTIFICATION_DISMISSALS_KEY) || '{}'); } catch { /* ignore */ }
     for (const note of masterNotes) {
       const projectHandoffs = logs.filter((l) => l.projectId === note.projectId && l.outputMode === 'handoff' && new Date(l.createdAt).getTime() > note.updatedAt);
       if (projectHandoffs.length === 0) continue;
@@ -279,6 +286,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
           className={`sidebar-nav-item${activeView === 'input' ? ' active' : ''}`}
           onClick={onNewLog}
           title={t('navHomeTitle', lang)}
+          aria-current={activeView === 'input' ? 'page' : undefined}
         >
           <LayoutDashboard size={15} />
           <span>{t('navHome', lang)}</span>
@@ -287,6 +295,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
           className={`sidebar-nav-item${activeView === 'dashboard' ? ' active' : ''}`}
           onClick={onOpenDashboard}
           title={t('navDashboardTitle', lang)}
+          aria-current={activeView === 'dashboard' ? 'page' : undefined}
         >
           <BarChart2 size={15} />
           <span>{t('navDashboard', lang)}</span>
@@ -295,6 +304,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
           className={`sidebar-nav-item${activeView === 'history' ? ' active' : ''}`}
           onClick={onOpenHistory}
           title={t('navLogsTitle', lang)}
+          aria-current={activeView === 'history' ? 'page' : undefined}
         >
           <ScrollText size={15} />
           <span>{t('navLogs', lang)}</span>
@@ -304,6 +314,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
           className={`sidebar-nav-item${activeView === 'projects' || activeView === 'projecthome' ? ' active' : ''}`}
           onClick={onOpenProjects}
           title={t('navProjectsTitle', lang)}
+          aria-current={activeView === 'projects' || activeView === 'projecthome' ? 'page' : undefined}
         >
           <FolderOpen size={15} />
           <span>{t('navProjects', lang)}</span>
@@ -312,6 +323,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
           className={`sidebar-nav-item${activeView === 'todos' ? ' active' : ''}`}
           onClick={onOpenTodos}
           title={t('navTodoTitle', lang)}
+          aria-current={activeView === 'todos' ? 'page' : undefined}
         >
           <CheckSquare size={15} />
           <span>{t('navTodo', lang)}</span>
@@ -337,6 +349,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
               className={`sidebar-nav-item${activeView === 'timeline' ? ' active' : ''}`}
               onClick={onOpenTimeline}
               title={t('navTimelineTitle', lang)}
+              aria-current={activeView === 'timeline' ? 'page' : undefined}
             >
               <Clock size={15} />
               <span>{t('navTimeline', lang)}</span>
@@ -346,6 +359,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
                 className={`sidebar-nav-item${activeView === 'weeklyreport' ? ' active' : ''}`}
                 onClick={onOpenWeeklyReport}
                 title={t('navWeeklyReportTitle', lang)}
+                aria-current={activeView === 'weeklyreport' ? 'page' : undefined}
               >
                 <FileBarChart size={15} />
                 <span>{t('navWeeklyReport', lang)}</span>
@@ -355,6 +369,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
               className={`sidebar-nav-item${activeView === 'summarylist' || activeView === 'masternote' ? ' active' : ''}`}
               onClick={onOpenProjectSummaryList}
               title={t('navProjectSummaryTitle', lang)}
+              aria-current={activeView === 'summarylist' || activeView === 'masternote' ? 'page' : undefined}
             >
               <BookOpen size={15} />
               <span>{t('navProjectSummary', lang)}</span>

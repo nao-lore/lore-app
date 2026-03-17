@@ -285,8 +285,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                     borderLeft: `4px solid ${n.borderColor}`,
                     transition: 'all 0.15s ease', position: 'relative',
                   }}
-                  onMouseEnter={(e) => { const el = e.currentTarget; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; }}
-                  onMouseLeave={(e) => { const el = e.currentTarget; el.style.transform = 'none'; el.style.boxShadow = 'none'; }}
+                  className="nudge-card"
                 >
                   <div style={{ fontSize: 20, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <IconComponent size={20} style={{ color: n.borderColor }} />
@@ -297,23 +296,22 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                   <button
                     onClick={(e) => { e.stopPropagation(); dismissAll(n.dismissKeys); }}
                     aria-label={t('ariaDismissNotification', lang)}
+                    className="nudge-dismiss-btn"
                     style={{
-                      position: 'absolute', top: 8, right: 8,
-                      width: 18, height: 18, borderRadius: '50%', border: 'none',
-                      background: 'color-mix(in srgb, var(--text-placeholder) 15%, transparent)',
+                      position: 'absolute', top: 0, right: 0,
+                      width: 44, height: 44, borderRadius: '50%', border: 'none',
+                      background: 'transparent',
                       color: 'var(--text-placeholder)', fontSize: 11, lineHeight: 1,
                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                       opacity: 0, transition: 'opacity 0.15s',
                     }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = '0'; }}
                   >×</button>
                 </div>
                 );
               })}
             </div>
             {/* Show × on card hover */}
-            <style>{`.workspace-content div:hover > button { opacity: 0.5 !important; }`}</style>
+            <style>{`.nudge-card:hover > .nudge-dismiss-btn { opacity: 0.5 !important; } .nudge-card:focus-within > .nudge-dismiss-btn { opacity: 0.5 !important; }`}</style>
           </div>
         )}
 
@@ -340,8 +338,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                       background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
                       transition: 'all 0.15s ease', flexShrink: 0,
                     }}
-                    onMouseEnter={(e) => { const el = e.currentTarget; el.style.borderColor = 'var(--accent)'; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; }}
-                    onMouseLeave={(e) => { const el = e.currentTarget; el.style.borderColor = 'var(--border-subtle)'; el.style.transform = 'none'; el.style.boxShadow = 'none'; }}
+                    className="project-snap-card"
                   >
                     <div style={{ fontSize: 24, marginBottom: 10, lineHeight: 1 }}>{snap.project.icon || '📂'}</div>
                     <div className="truncate font-semibold" style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
@@ -371,8 +368,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                   alignItems: 'center', justifyContent: 'center', gap: 6,
                   color: 'var(--text-placeholder)', transition: 'all 0.15s ease', flexShrink: 0,
                 }}
-                onMouseEnter={(e) => { const el = e.currentTarget; el.style.borderColor = 'var(--accent)'; el.style.color = 'var(--accent)'; }}
-                onMouseLeave={(e) => { const el = e.currentTarget; el.style.borderColor = 'var(--border-subtle)'; el.style.color = 'var(--text-placeholder)'; }}
+                className="new-log-card"
               >
                 <Plus size={20} />
                 <span style={{ fontSize: 11, fontWeight: 600 }}>{t('dashboardNew', lang)}</span>
@@ -414,8 +410,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                     background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
                     userSelect: 'none', transition: 'all 0.12s ease',
                   }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-subtle)'; }}
+                  className="focus-task-item"
                 >
                   <Square size={14} style={{ color: 'var(--text-placeholder)', flexShrink: 0 }} />
                   <span style={{ flex: 1, color: 'var(--text-body)', overflowWrap: 'break-word', wordBreak: 'break-word', minWidth: 0 }}>{action.text}</span>

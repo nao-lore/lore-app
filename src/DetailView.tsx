@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, memo } from 'react';
-import { getLog, trashLog, restoreLog, updateLog, loadTodos, loadLogs, duplicateLog, getAiContext, getMasterNote, getFeatureEnabled, linkLogs, unlinkLogs } from './storage';
+import { trashLog, restoreLog, updateLog, loadTodos, loadLogs, duplicateLog, getAiContext, getMasterNote, getFeatureEnabled, linkLogs, unlinkLogs } from './storage';
 import { updateTodo as updateTodoStorage } from './storage';
 import { classifyLog as _classifyLog, saveCorrection } from './classify';
 void _classifyLog;
@@ -30,7 +30,7 @@ function downloadFile(content: string, fileName: string, mimeType: string) {
 
 function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lang, projects, onRefresh, showToast, onTagFilter, allLogs, onOpenMasterNote }: { id: string; onDeleted: () => void; onOpenLog: (id: string) => void; onBack: () => void; prevView: string; lang: Lang; projects: Project[]; onRefresh: () => void; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onTagFilter?: (tag: string) => void; allLogs: LogEntry[]; onOpenMasterNote?: (projectId: string) => void }) {
   void _prevView;
-  const log = getLog(id);
+  const log = allLogs.find((l) => l.id === id);
   const [menuOpen, setMenuOpen] = useState(false);
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -521,33 +521,31 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
               <Copy size={14} />
               {t('copyHandoff', lang)}
             </button>
-            {log.projectId && (() => {
-              const project = projects.find(p => p.id === log.projectId);
-              const mn = getMasterNote(log.projectId!);
-              if (!project || !mn) return null;
-              return (
-                <button
-                  className="btn btn-primary"
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}
-                  title={t('copyAiContextTitle', lang)}
-                  onClick={async () => {
-                    try {
-                      const allLogs = loadLogs();
-                      const ctx = generateProjectContext(mn, allLogs, project.name);
-                      const aiContextMd = formatFullAiContext(ctx, log);
-                      const handoffMd = formatHandoffMarkdown(log);
-                      await navigator.clipboard.writeText(aiContextMd + '\n\n---\n\n' + handoffMd);
-                      showToast?.(t('logCopied', lang), 'success');
-                    } catch {
-                      showToast?.(t('copyFailed', lang), 'error');
-                    }
-                  }}
-                >
-                  <Copy size={14} />
-                  {t('copyAiContext', lang)}
-                </button>
-              );
-            })()}
+            {log.projectId && projects.find(p => p.id === log.projectId) && (
+              <button
+                className="btn btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}
+                title={t('copyAiContextTitle', lang)}
+                onClick={async () => {
+                  try {
+                    const project = projects.find(p => p.id === log.projectId);
+                    const mn = getMasterNote(log.projectId!);
+                    if (!project || !mn) { showToast?.(t('aiContextNeeded', lang), 'default'); return; }
+                    const freshLogs = loadLogs();
+                    const ctx = generateProjectContext(mn, freshLogs, project.name);
+                    const aiContextMd = formatFullAiContext(ctx, log);
+                    const handoffMd = formatHandoffMarkdown(log);
+                    await navigator.clipboard.writeText(aiContextMd + '\n\n---\n\n' + handoffMd);
+                    showToast?.(t('logCopied', lang), 'success');
+                  } catch {
+                    showToast?.(t('copyFailed', lang), 'error');
+                  }
+                }}
+              >
+                <Copy size={14} />
+                {t('copyAiContext', lang)}
+              </button>
+            )}
           </div>
           {/* Session Context (handoffMeta) */}
           {log.handoffMeta && (log.handoffMeta.sessionFocus || log.handoffMeta.whyThisSession || log.handoffMeta.timePressure) && (
@@ -665,7 +663,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
           </details>
         )}
 
-        <RelatedLogsSection log={log} onOpenLog={onOpenLog} lang={lang} />
+        <RelatedLogsSection log={log} onOpenLog={onOpenLog} lang={lang} allLogs={allLogs} />
 
         {/* Memo section */}
         <div className="content-card">
@@ -748,9 +746,9 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
 
 // --- Todo Section (checkboxes for worklog detail) ---
 
-function TodoSection({ logId, lang, todosVersion, onToggle }: { logId: string; lang: Lang; todosVersion: number; onToggle: () => void }) {
+function TodoSection({ logId, lang, todosVersion, onToggle, allTodos }: { logId: string; lang: Lang; todosVersion: number; onToggle: () => void; allTodos?: Todo[] }) {
   void todosVersion;
-  const todos = loadTodos().filter((t: Todo) => t.logId === logId);
+  const todos = (allTodos ?? loadTodos()).filter((t: Todo) => t.logId === logId);
   if (todos.length === 0) return null;
 
   const handleToggle = (id: string, done: boolean) => {
@@ -789,17 +787,15 @@ function TodoSection({ logId, lang, todosVersion, onToggle }: { logId: string; l
 
 // --- Shared ---
 
-function RelatedLogsSection({ log, onOpenLog, lang }: { log: LogEntry; onOpenLog: (id: string) => void; lang: Lang }) {
+function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; onOpenLog: (id: string) => void; lang: Lang; allLogs: LogEntry[] }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   void refreshKey;
 
-  const allLogs = loadLogs();
-
   // Explicitly linked logs (bidirectional backlinks)
-  const currentLog = getLog(log.id);
+  const currentLog = allLogs.find((l) => l.id === log.id);
   const linkedIds = currentLog?.relatedLogIds || [];
   const linkedLogs = linkedIds
     .map((lid) => allLogs.find((l) => l.id === lid))

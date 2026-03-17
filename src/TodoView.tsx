@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { usePersistedState } from './usePersistedState';
 import { CheckSquare, Square, MoreHorizontal, MoreVertical, Star, Edit3, Trash2, Flag, Calendar, ExternalLink, Pin, Check, Undo2, Archive, ArchiveRestore, CheckCheck, GripVertical, AlertTriangle, Copy, Clock } from 'lucide-react';
 import type { Todo, LogEntry } from './types';
@@ -353,7 +354,7 @@ function SortableTodoItem({ id, disabled, children }: { id: string; disabled: bo
 
 
 // ─── Main TodoView ───
-export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
+function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
   const [todosVersion, setTodosVersion] = useState(0);
   void todosVersion;
   const todos = loadTodos();
@@ -400,6 +401,7 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
   const [newDueDate, setNewDueDate] = useState('');
   const [todoError, setTodoError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const listParentRef = useRef<HTMLDivElement>(null);
 
   const refresh = () => setTodosVersion((v) => v + 1);
 
@@ -646,6 +648,14 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
   };
 
   const groups = buildGroups();
+
+  // Virtual scrolling for the flat (non-grouped, non-drag) todo list
+  const virtualizer = useVirtualizer({
+    count: sorted.length,
+    getScrollElement: useCallback(() => listParentRef.current, []),
+    estimateSize: () => 60,
+    overscan: 10,
+  });
 
   // Drag-and-drop: only when pending tab, no grouping, sort=created, not in select mode
   const dragEnabled = activeTab === 'pending' && groupKey === 'none' && sortKey === 'created' && !selectMode;
@@ -1197,18 +1207,35 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
                 </SortableContext>
               </DndContext>
             ) : (
-              <div role="list" style={{ display: 'flex', flexDirection: 'column' }}>
-                {sorted.slice(0, todoVisibleCount).map((todo) => renderTodoItem(todo, true))}
+              <div
+                ref={listParentRef}
+                role="list"
+                style={{ maxHeight: 'min(70vh, 600px)', overflowY: 'auto', position: 'relative' }}
+              >
+                <div style={{ height: virtualizer.getTotalSize(), width: '100%', position: 'relative' }}>
+                  {virtualizer.getVirtualItems().map((virtualRow) => {
+                    const todo = sorted[virtualRow.index];
+                    return (
+                      <div
+                        key={todo.id}
+                        data-index={virtualRow.index}
+                        ref={virtualizer.measureElement}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                      >
+                        {renderTodoItem(todo, true)}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
-          {sorted.length > todoVisibleCount && (
-            <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <button className="btn" onClick={() => setTodoVisibleCount((v) => v + TODO_PAGE_SIZE)} style={{ fontSize: 13 }}>
-                {tf('loadMore', lang, sorted.length - todoVisibleCount)}
-              </button>
-            </div>
-          )}
         </>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1281,3 +1308,5 @@ export default function TodoView({ logs, onBack, onOpenLog, lang, showToast }: T
     </div>
   );
 }
+
+export default memo(TodoView);

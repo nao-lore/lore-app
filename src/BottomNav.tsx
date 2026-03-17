@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { LayoutDashboard, BarChart2, CheckSquare, ScrollText, MoreHorizontal, FolderOpen, Clock, FileBarChart, BookOpen, Settings } from 'lucide-react';
 import { t } from './i18n';
 import type { Lang } from './i18n';
+import { useFocusTrap } from './useFocusTrap';
 
 interface BottomNavProps {
   activeView: string;
@@ -26,8 +27,14 @@ const MORE_ITEMS = [
 
 function BottomNav({ activeView, onNavigate, lang }: BottomNavProps) {
   const [moreOpen, setMoreOpen] = useState(false);
+  const moreTriggerRef = useRef<HTMLButtonElement>(null);
+  const sheetTrapRef = useFocusTrap<HTMLDivElement>(moreOpen);
 
-  const closeMore = useCallback(() => setMoreOpen(false), []);
+  const closeMore = useCallback(() => {
+    setMoreOpen(false);
+    // Restore focus to the trigger element
+    setTimeout(() => moreTriggerRef.current?.focus(), 0);
+  }, []);
 
   // Close on Escape
   useEffect(() => {
@@ -43,8 +50,8 @@ function BottomNav({ activeView, onNavigate, lang }: BottomNavProps) {
     <>
       {/* More sheet overlay */}
       {moreOpen && (
-        <div className="bottom-nav-overlay" onClick={closeMore}>
-          <div className="bottom-nav-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="bottom-nav-overlay" onClick={closeMore} role="presentation">
+          <div ref={sheetTrapRef} className="bottom-nav-sheet" role="dialog" aria-modal="true" aria-label={t('more', lang)} onClick={(e) => e.stopPropagation()}>
             {MORE_ITEMS.map((item) => {
               const Icon = item.icon;
               const active = activeView === item.view;
@@ -79,6 +86,7 @@ function BottomNav({ activeView, onNavigate, lang }: BottomNavProps) {
                 className={`bottom-nav-item${active ? ' active' : ''}`}
                 onClick={() => onNavigate(tab.view)}
                 aria-label={t(tab.labelKey, lang)}
+                aria-current={active ? 'page' : undefined}
               >
                 <Icon size={20} />
                 <span>{t(tab.labelKey, lang)}</span>
@@ -86,9 +94,12 @@ function BottomNav({ activeView, onNavigate, lang }: BottomNavProps) {
             );
           })}
           <button
+            ref={moreTriggerRef}
             className={`bottom-nav-item${isMoreActive ? ' active' : ''}`}
             onClick={() => setMoreOpen((v) => !v)}
             aria-label={t('more', lang)}
+            aria-expanded={moreOpen}
+            aria-current={isMoreActive ? 'page' : undefined}
           >
             <MoreHorizontal size={20} />
             <span>{t('more', lang)}</span>

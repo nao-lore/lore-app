@@ -32,7 +32,7 @@
   --text-body: #374151;
   --text-muted: #5c6370;
   --text-subtle: #64748b;
-  --text-placeholder: #808080;
+  --text-placeholder: #707070;
   --accent: #7c5cfc;
   --accent-hover: #8b6dff;
   --accent-active: #6b4ce6;
@@ -123,7 +123,7 @@
   --text-body: #b0b0b0;
   --text-muted: #a0a0a0;
   --text-subtle: #8a8a8a;
-  --text-placeholder: #808080;
+  --text-placeholder: #909090;
   --accent: #9b8ff8;
   --accent-hover: #a99df9;
   --accent-active: #8b7cf6;
@@ -2878,6 +2878,48 @@ textarea.input:focus {
   opacity: 1;
 }
 
+/* ===== Dashboard hover cards (CSS-only, respects prefers-reduced-motion) ===== */
+.nudge-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.nudge-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+.project-snap-card {
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.project-snap-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.new-log-card {
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.new-log-card:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.focus-task-item {
+  transition: border-color 0.12s ease;
+}
+.focus-task-item:hover {
+  border-color: var(--accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nudge-card,
+  .project-snap-card,
+  .new-log-card,
+  .focus-task-item {
+    transition: none;
+  }
+  .nudge-card:hover,
+  .project-snap-card:hover {
+    transform: none;
+  }
+}
+
 /* ===== List view rows ===== */
 .list-row {
   display: flex;
@@ -3251,8 +3293,10 @@ textarea.input:focus {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
   padding: 4px 12px;
+  min-height: 44px;
   border: none;
   background: none;
   color: var(--text-muted);

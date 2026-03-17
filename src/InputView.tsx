@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { transformText, transformHandoff, transformBoth, transformTodoOnly, transformHandoffTodo, buildHandoffLogEntry, CHAR_WARN, needsChunking } from './transform';
 import type { TransformBothOptions } from './transform';
 import { ChunkEngine, getChunkTarget, getEngineConcurrency } from './chunkEngine';
@@ -137,7 +137,7 @@ function downloadFile(content: string, fileName: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, pendingTodosCount, lastLogCreatedAt }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void; onDirtyChange?: (dirty: boolean) => void; pendingTodosCount: number; lastLogCreatedAt: string | null }) {
+function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, pendingTodosCount, lastLogCreatedAt }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void; onDirtyChange?: (dirty: boolean) => void; pendingTodosCount: number; lastLogCreatedAt: string | null }) {
   const [text, setText] = useState('');
   const [files, setFiles] = useState<ImportedFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -841,7 +841,7 @@ export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, p
         <div style={{ maxWidth: 760, margin: '0 auto', padding: 20 }}>
           <h3 style={{ marginBottom: 12, fontSize: 18, fontWeight: 700 }}>{wasFirstTransform ? `🎉 ${t('logSaved', lang)}` : t('logSaved', lang)}</h3>
 
-          {/* Markdown preview in a scrollable code-block style container */}
+          {/* Rich formatted preview */}
           <div style={{
             background: 'var(--bg-surface)',
             border: '1px solid var(--border-default)',
@@ -850,12 +850,25 @@ export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, p
             maxHeight: 400,
             overflow: 'auto',
             fontSize: 13,
-            fontFamily: 'monospace',
-            whiteSpace: 'pre-wrap',
             lineHeight: 1.6,
             marginBottom: 16,
           }}>
-            {savedResult.fullContext || savedResult.markdown}
+            <HandoffResultDisplay result={{
+              title: savedResult.log.title,
+              currentStatus: savedResult.log.currentStatus ?? [],
+              nextActions: savedResult.log.nextActions ?? [],
+              nextActionItems: savedResult.log.nextActionItems,
+              actionBacklog: savedResult.log.actionBacklog,
+              completed: savedResult.log.completed ?? [],
+              blockers: savedResult.log.blockers ?? [],
+              decisions: savedResult.log.decisions ?? [],
+              decisionRationales: savedResult.log.decisionRationales,
+              constraints: savedResult.log.constraints ?? [],
+              resumeContext: savedResult.log.resumeContext ?? [],
+              resumeChecklist: savedResult.log.resumeChecklist,
+              handoffMeta: savedResult.log.handoffMeta,
+              tags: savedResult.log.tags ?? [],
+            }} lang={lang} />
           </div>
 
           {/* Action buttons */}
@@ -1348,3 +1361,5 @@ export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, p
     </div>
   );
 }
+
+export default memo(InputView);

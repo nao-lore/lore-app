@@ -12,6 +12,7 @@ import ErrorBoundary from './ErrorBoundary';
 import FeedbackModal from './FeedbackModal';
 import { isOnboardingDone } from './onboardingState';
 import { isSampleSeeded } from './sampleData';
+import { useFocusTrap } from './useFocusTrap';
 
 const HistoryView = lazy(() => import('./HistoryView'));
 const SettingsPanel = lazy(() => import('./SettingsPanel'));
@@ -87,6 +88,7 @@ export default function App() {
   const [helpFeedbackOpen, setHelpFeedbackOpen] = useState(false);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const shortcutsTrapRef = useFocusTrap<HTMLDivElement>(shortcutsOpen);
   const [showReportReminder, setShowReportReminder] = useState(false);
   const [offlineStatus, setOfflineStatus] = useState<'online' | 'offline' | 'back'>(() =>
     navigator.onLine ? 'online' : 'offline'
@@ -454,20 +456,42 @@ export default function App() {
 
   const goHome = useCallback(() => { setSelectedId(null); setInputKey((k) => k + 1); inputDirtyRef.current = false; goToRaw('input'); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Stable callbacks for memo'd child components
+  const handleGoToSettings = useCallback(() => goTo('settings' as View), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleGoToHistory = useCallback(() => { setActiveProjectId(null); setView('history'); }, []);
+  const handleGoToProjects = useCallback(() => goTo('projects'), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleGoToTodos = useCallback(() => goTo('todos'), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleGoToSummaryList = useCallback(() => goTo('summarylist'), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleGoToDashboard = useCallback(() => goTo('dashboard'), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleGoToTimeline = useCallback(() => goTo('timeline'), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleGoToWeeklyReport = useCallback(() => goTo('weeklyreport'), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleGoToTrash = useCallback(() => goTo('trash'), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleGoToHelp = useCallback(() => goTo('help'), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleGoToPricing = useCallback(() => goTo('pricing'), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleGoToInput = useCallback(() => goTo('input'), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleCollapseSidebar = useCallback(() => { setSidebarOpen(false); safeSetItem(SIDEBAR_KEY, 'collapsed'); }, []);
+  const handleHideSidebar = useCallback(() => { setSidebarOpen(false); setSidebarHidden(true); safeSetItem(SIDEBAR_KEY, 'hidden'); }, []);
+  const handleBottomNav = useCallback((v: string) => {
+    if (v === 'input') { handleNewLog(); }
+    else if (v === 'settings') { goTo('settings' as View); }
+    else { goTo(v as View); }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleDashboardToggleAction = useCallback((logId: string, actionIndex: number) => {
+    const log = getLog(logId);
+    if (!log) return;
+    const current = log.checkedActions || [];
+    const next = current.includes(actionIndex) ? current.filter((i: number) => i !== actionIndex) : [...current, actionIndex];
+    updateLog(logId, { checkedActions: next });
+    refreshLogs();
+  }, [refreshLogs]);
+
   const renderWorkspace = () => {
     if (view === 'settings') return <ErrorBoundary key="settings" onGoHome={goHome}><SettingsPanel onBack={() => goTo(prevView === 'settings' ? 'input' : prevView)} lang={lang} onUiLangChange={handleUiLangChange} themePref={themePref} onThemeChange={handleThemeChange} fontSize={fontSize} onFontSizeChange={handleFontSizeChange} showToast={showToast} onShowOnboarding={() => setShowOnboarding(true)} onResumeOnboarding={onboardingPausedForSettings ? () => { setOnboardingPausedForSettings(false); setShowOnboarding(true); } : undefined} /></ErrorBoundary>;
     if (view === 'help') return <ErrorBoundary key="help" onGoHome={goHome}><HelpView onBack={() => goTo(prevView === 'help' ? 'input' : prevView)} lang={lang} onShowOnboarding={() => setShowOnboarding(true)} onFeedback={() => setHelpFeedbackOpen(true)} /></ErrorBoundary>;
     if (view === 'pricing') return <ErrorBoundary key="pricing" onGoHome={goHome}><PricingView onBack={() => goTo(prevView === 'pricing' ? 'input' : prevView)} lang={lang} showToast={showToast} /></ErrorBoundary>;
-    if (view === 'history') return <ErrorBoundary key="history" onGoHome={goHome}><HistoryView logs={logs} onSelect={handleSelect} onBack={() => goTo('input')} onRefresh={refreshLogs} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onOpenMasterNote={handleOpenMasterNote} onOpenProject={handleOpenProjectLogs} tagFilter={tagFilter} onClearTagFilter={() => setTagFilter(null)} onTagFilter={setTagFilter} onDuplicate={(newId) => { refreshLogs(); handleSelect(newId); }} /></ErrorBoundary>;
+    if (view === 'history') return <ErrorBoundary key="history" onGoHome={goHome}><HistoryView logs={logs} onSelect={handleSelect} onBack={handleGoToInput} onRefresh={refreshLogs} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onOpenMasterNote={handleOpenMasterNote} onOpenProject={handleOpenProjectLogs} tagFilter={tagFilter} onClearTagFilter={() => setTagFilter(null)} onTagFilter={setTagFilter} onDuplicate={(newId) => { refreshLogs(); handleSelect(newId); }} /></ErrorBoundary>;
     if (view === 'todos') return <ErrorBoundary key="todos" onGoHome={goHome}><TodoView logs={logs} onBack={() => goTo(prevView === 'todos' ? 'input' : prevView)} onOpenLog={handleSelect} lang={lang} showToast={showToast} /></ErrorBoundary>;
-    if (view === 'dashboard') return <ErrorBoundary key="dashboard" onGoHome={goHome}><DashboardView logs={logs} projects={projects} todos={todos} masterNotes={masterNotes} lang={lang} onOpenLog={handleSelect} onOpenProject={handleOpenProjectLogs} onOpenTodos={() => goTo('todos')} onOpenSummaryList={() => goTo('summarylist')} onOpenHistory={() => goTo('history')} onNewLog={() => goTo('input')} onToggleAction={(logId, actionIndex) => {
-      const log = getLog(logId);
-      if (!log) return;
-      const current = log.checkedActions || [];
-      const next = current.includes(actionIndex) ? current.filter((i) => i !== actionIndex) : [...current, actionIndex];
-      updateLog(logId, { checkedActions: next });
-      refreshLogs();
-    }} /></ErrorBoundary>;
+    if (view === 'dashboard') return <ErrorBoundary key="dashboard" onGoHome={goHome}><DashboardView logs={logs} projects={projects} todos={todos} masterNotes={masterNotes} lang={lang} onOpenLog={handleSelect} onOpenProject={handleOpenProjectLogs} onOpenTodos={handleGoToTodos} onOpenSummaryList={handleGoToSummaryList} onOpenHistory={handleGoToHistory} onNewLog={handleGoToInput} onToggleAction={handleDashboardToggleAction} /></ErrorBoundary>;
     if (view === 'timeline') return <ErrorBoundary key="timeline" onGoHome={goHome}><TimelineView logs={logs} projects={projects} todos={todos} masterNotes={masterNotes} onBack={() => goTo(prevView === 'timeline' ? 'input' : prevView)} onOpenLog={handleSelect} onOpenProject={handleOpenProjectLogs} onOpenSummary={handleOpenMasterNote} onNewLog={() => goTo('input')} lang={lang} /></ErrorBoundary>;
     if (view === 'weeklyreport') return <ErrorBoundary key="weeklyreport" onGoHome={goHome}><WeeklyReportView logs={logs} projects={projects} todos={todos} onBack={() => goTo(prevView === 'weeklyreport' ? 'input' : prevView)} lang={lang} showToast={showToast} /></ErrorBoundary>;
     if (view === 'trash') return <ErrorBoundary key="trash" onGoHome={goHome}><TrashView onBack={() => goTo(prevView === 'trash' ? 'input' : prevView)} onRefresh={refreshLogs} lang={lang} showToast={showToast} /></ErrorBoundary>;
@@ -531,19 +555,19 @@ export default function App() {
           activeProjectId={activeProjectId}
           activeView={view}
           onSelect={handleSelect} onNewLog={handleNewLog}
-          onOpenSettings={() => setView('settings')}
-          onOpenHistory={() => { setActiveProjectId(null); setView('history'); }}
-          onOpenProjects={() => goTo('projects')}
-          onOpenTodos={() => goTo('todos')}
-          onOpenProjectSummaryList={() => goTo('summarylist')}
-          onOpenDashboard={() => goTo('dashboard')}
-          onOpenTimeline={() => goTo('timeline')}
-          onOpenWeeklyReport={() => goTo('weeklyreport')}
-          onOpenTrash={() => goTo('trash')}
-          onOpenHelp={() => goTo('help')}
-          onOpenPricing={() => goTo('pricing')}
-          onCollapse={() => { setSidebarOpen(false); safeSetItem(SIDEBAR_KEY, 'collapsed'); }}
-          onHide={() => { setSidebarOpen(false); setSidebarHidden(true); safeSetItem(SIDEBAR_KEY, 'hidden'); }}
+          onOpenSettings={handleGoToSettings}
+          onOpenHistory={handleGoToHistory}
+          onOpenProjects={handleGoToProjects}
+          onOpenTodos={handleGoToTodos}
+          onOpenProjectSummaryList={handleGoToSummaryList}
+          onOpenDashboard={handleGoToDashboard}
+          onOpenTimeline={handleGoToTimeline}
+          onOpenWeeklyReport={handleGoToWeeklyReport}
+          onOpenTrash={handleGoToTrash}
+          onOpenHelp={handleGoToHelp}
+          onOpenPricing={handleGoToPricing}
+          onCollapse={handleCollapseSidebar}
+          onHide={handleHideSidebar}
           onSelectProject={handleOpenProjectLogs}
           onOpenMasterNote={handleOpenMasterNote}
           onRefresh={refreshLogs}
@@ -553,7 +577,7 @@ export default function App() {
           masterNotes={masterNotes}
         />
       )}
-      <div id="main-content" ref={scrollRef} data-main-scroll style={{ flex: 1, overflowY: 'auto', minHeight: 0, background: 'var(--bg-app)' }}>
+      <div id="main-content" tabIndex={-1} ref={scrollRef} data-main-scroll style={{ flex: 1, overflowY: 'auto', minHeight: 0, background: 'var(--bg-app)', outline: 'none' }}>
         {isDemoMode() && (
           <div style={{ background: 'var(--accent-bg, rgba(99,102,241,0.08))', borderBottom: '1px solid var(--accent)', padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, fontSize: 13 }}>
             <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{t('demoBadge', lang)}</span>
@@ -583,7 +607,7 @@ export default function App() {
         <ChevronUp size={18} />
       </button>
       {showOverdueBanner && (
-        <div className="overdue-banner">
+        <div className="overdue-banner" role="alert">
           <span>
             {tf('overdueBanner', lang, overdueTodos.length)}
           </span>
@@ -606,7 +630,7 @@ export default function App() {
         </div>
       )}
       {showReportReminder && (
-        <div className="overdue-banner">
+        <div className="overdue-banner" role="alert">
           <span>{t('weeklyReportReminder', lang)}</span>
           <button
             className="overdue-banner-link"
@@ -629,15 +653,11 @@ export default function App() {
       )}
       <BottomNav
         activeView={view}
-        onNavigate={(v) => {
-          if (v === 'input') { handleNewLog(); }
-          else if (v === 'settings') { goTo('settings' as View); }
-          else { goTo(v as View); }
-        }}
+        onNavigate={handleBottomNav}
         lang={lang}
       />
       {offlineStatus !== 'online' && !offlineDismissed && (
-        <div style={{
+        <div role="alert" aria-live="assertive" style={{
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
           background: offlineStatus === 'offline' ? 'var(--warning-bg, #f59e0b)' : 'var(--success-bg, #22c55e)',
           color: offlineStatus === 'offline' ? 'var(--warning-text, #78350f)' : 'var(--success-text, #052e16)',
@@ -707,7 +727,7 @@ export default function App() {
       )}
       {shortcutsOpen && (
         <div className="modal-overlay" onClick={() => setShortcutsOpen(false)}>
-          <div className="shortcuts-modal" role="dialog" aria-modal="true" aria-label={t('shortcutsTitle', lang)} onClick={(e) => e.stopPropagation()}>
+          <div ref={shortcutsTrapRef} className="shortcuts-modal" role="dialog" aria-modal="true" aria-label={t('shortcutsTitle', lang)} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 16px', fontSize: 16 }}>{t('shortcutsTitle', lang)}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {([

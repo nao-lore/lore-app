@@ -284,8 +284,10 @@ TITLE rules:
 - BAD: "extension-capture.json" → FILE NAMES ARE NOT TITLES
 
 CURRENT STATUS (今どこ？): Describe the PROJECT STATE right now — at this exact moment. Answer "Where exactly are we?" NOT "What happened." Target: 3-5 bullets. HIGHEST PRIORITY.
+  - currentStatus MUST use present tense ONLY. NEVER use past tense (completed/完了した). Past items belong in 'completed' array, not currentStatus.
   - ONLY present-tense state descriptions: what IS working, what IS partially done, what IS broken, what IS blocked.
   - ABSOLUTELY FORBIDDEN in currentStatus: past-tense/completed actions. Any sentence with "〜済み", "〜した", "〜完了", "〜修正した", "〜追加した", "〜実装した", "fixed", "added", "implemented", "updated", "changed", "created", "resolved" belongs in COMPLETED, not here.
+  - BAD: "The header redesign was completed" → WRONG (past tense). GOOD: "Header redesign is done, focus is now on responsive layout" → CORRECT
   - If a name, setting, or value was CHANGED during the conversation, output the LATEST version only. Do NOT output the old name/value.
   - BAD: "Worked on the UI redesign" → PAST TENSE → goes to COMPLETED
   - BAD: "maxTokensを8192に修正した" → COMPLETED ACTION → goes to COMPLETED
@@ -301,6 +303,10 @@ HANDOFF META: Session-level context for the next person/AI resuming work. These 
     GOOD: "ベータユーザー獲得が最優先フェーズ", "公開前に導線確定が必要", "次回テスト前にこの修正が必要"
     FORBIDDEN: vague words alone ("急ぎ", "重要", "urgent"). Must state WHAT creates the pressure.
     INFERENCE ALLOWED: If the chat mentions "今週中に", "早めに", "〜の前に" etc., convert to a concrete phase statement. Example: "早めにやりたい" + context about launch → "ローンチ前にこの機能が必要".
+    Japanese extraction examples:
+      "来週月曜までに" → "Deadline: next Monday (来週月曜)"
+      "今週中に" → "Must complete this week"
+      "急ぎで" → "Urgent, needs immediate attention"
     null ONLY if no time pressure is mentioned or inferable at all.
 
 RESUME CHECKLIST (再開チェックリスト): What to check, verify, or decide FIRST when resuming. Max 3 items.
@@ -329,6 +335,7 @@ ACTION BACKLOG (そのうちやるもの, max 7): Important tasks needed soon bu
   - Selection criteria: needed within next 1-3 sessions, but won't block today's work if deferred.
   - Max 7 items. If more exist, prioritize by importance and drop the rest.
   - FORBIDDEN: listing 20+ items. This is a curated backlog, not a full task dump.
+  - actionBacklog must ONLY contain items the user explicitly mentioned as future work. Do NOT include assistant suggestions that the user did not acknowledge.
 
 COMPLETED (終わったこと): MANDATORY. All completed work. Target: 2-6 bullets.
   - Any action with "〜済み", "〜した", "fixed", "added", "implemented" MUST go here.
@@ -338,11 +345,15 @@ BLOCKERS (注意・リスク): Risks, concerns, gotchas still unresolved at END.
   - NOT constraints. NOT tasks. EXCLUDE resolved issues.
 
 DECISIONS (決定事項 — active only, max 6): ONLY decisions that STILL constrain future work.
+  - HARD LIMIT: Maximum 6 decisions. If more than 6 qualify, keep only the 6 most significant.
   - Each MUST be {"decision": "string", "rationale": "string or null"}.
   - EXCLUDE: completed/overturned decisions, task-level content, URLs.
   - rationale: extract if stated. If not stated explicitly, infer from context (what was the alternative? what problem did this solve?). null only if no context exists at all.
   - Finality markers (EN): "decided", "will go with", "settled on"
   - Finality markers (JA): "に決めた", "でいく", "にする", "で確定"
+  - NOT a decision: "OK that schema looks good" → no restated commitment, just acknowledgement.
+  - NOT a decision: "Maybe later, not a priority now" → deferral, not commitment.
+  - NOT a decision: "もう少し調べてから判断する" → explicit deferral, not a decision.
 
 CONSTRAINTS (前提・制約): Stable rules that persist. 0-3 bullets.
   - NOT risks (→ blockers). NOT tasks (→ nextActions/actionBacklog).
@@ -626,14 +637,17 @@ TAGS: 4-7 tags. Tags MUST match the input language. Japanese input → Japanese 
 === HANDOFF RULES ===
 This is a RESTART MEMO — a cockpit checklist for resuming work, NOT a report.
 TITLE: Same as worklog title (reuse).
-HANDOFF META: sessionFocus (1 sentence: what to move forward), whyThisSession (1 sentence: why this matters now — infer from context), timePressure (1 sentence: phase-level urgency; FORBIDDEN: vague "急ぎ"/"重要" alone — must state WHAT creates pressure; INFERENCE ALLOWED: convert weak expressions like "今週中に"/"早めに" into concrete phase statements using context; null ONLY if no pressure mentioned or inferable).
-CURRENT STATUS (今どこ？): PROJECT STATE right now. 3-5 bullets. ONLY present-tense — NO completed actions → COMPLETED.
+HANDOFF META: sessionFocus (1 sentence: what to move forward), whyThisSession (1 sentence: why this matters now — infer from context), timePressure (1 sentence: phase-level urgency; FORBIDDEN: vague "急ぎ"/"重要" alone — must state WHAT creates pressure; INFERENCE ALLOWED: convert weak expressions like "今週中に"/"早めに" into concrete phase statements using context; Japanese examples: "来週月曜までに" → "Deadline: next Monday (来週月曜)", "今週中に" → "Must complete this week", "急ぎで" → "Urgent, needs immediate attention"; null ONLY if no pressure mentioned or inferable).
+CURRENT STATUS (今どこ？): PROJECT STATE right now. 3-5 bullets. ONLY present-tense — NO completed actions → COMPLETED. currentStatus MUST use present tense ONLY. NEVER use past tense (completed/完了した). Past items belong in 'completed' array, not currentStatus. BAD: "The header redesign was completed" → WRONG. GOOD: "Header redesign is done, focus is now on responsive layout".
 RESUME CHECKLIST (max 3): What to check/verify/decide FIRST when resuming. Each {"action":"string","whyNow":"string","ifSkipped":"string"}. whyNow and ifSkipped are MANDATORY — NEVER null. Infer from context: what downstream task depends on this? What breaks if skipped? NOT a copy of nextActions.
 NEXT ACTIONS (immediate only, max 4): Tasks that MUST be done now or next work is blocked. Same object format. whyImportant: infer from context (what depends on this?), null only if truly no context. priorityReason: infer ordering signal. Non-blocking tasks → actionBacklog.
-ACTION BACKLOG (max 7): Important but not immediately blocking. Same object format. whyImportant: why is this in the backlog? FORBIDDEN: 20+ items.
+ACTION BACKLOG (max 7): Important but not immediately blocking. Same object format. whyImportant: why is this in the backlog? FORBIDDEN: 20+ items. actionBacklog must ONLY contain items the user explicitly mentioned as future work. Do NOT include assistant suggestions that the user did not acknowledge.
 COMPLETED (終わったこと): MANDATORY. All completed work. 2-6 bullets. FORBIDDEN: "確認した", "特定した".
 BLOCKERS: Risks still unresolved at end. 0-3 bullets.
-DECISIONS (active only, max 6): Only decisions still constraining future work. Each {"decision":"string","rationale":"string or null"}. rationale: extract if stated; infer from context if not (what was the alternative?). EXCLUDE completed/overturned decisions.
+DECISIONS (active only, max 6): Only decisions still constraining future work. HARD LIMIT: Maximum 6 decisions. If more than 6 qualify, keep only the 6 most significant. Each {"decision":"string","rationale":"string or null"}. rationale: extract if stated; infer from context if not (what was the alternative?). EXCLUDE completed/overturned decisions.
+  - NOT a decision: "OK that schema looks good" → no restated commitment, just acknowledgement.
+  - NOT a decision: "Maybe later, not a priority now" → deferral, not commitment.
+  - NOT a decision: "もう少し調べてから判断する" → explicit deferral, not a decision.
 CONSTRAINTS: Stable rules. 0-3 bullets.
 TAGS: Can reuse worklog tags.
 
@@ -642,7 +656,7 @@ If a PROJECTS list is provided, match the log to the best project.
 - projectId: the project ID that best matches, or null if no match.
 - confidence: 0.0-1.0 (0.8+ = strong match, 0.5-0.7 = possible, below 0.5 = weak).
 - Only use project IDs from the provided list.
-- If no PROJECTS list is given, set projectId to null and confidence to 0.
+- If no PROJECTS list is provided in the user message, you MUST set projectId to null and confidence to 0. Do NOT infer project names from conversation content.
 
 === SHARED RULES ===
 - Assistant suggestions are NOT decisions/TODOs unless user explicitly accepts them.
