@@ -315,7 +315,7 @@ function tryRepairJson(raw: string): PartialResult | null {
     if (typeof parsed === 'object' && parsed !== null) {
       return parsed as PartialResult;
     }
-  } catch { /* repair failed */ }
+  } catch (err) { if (import.meta.env.DEV) console.warn('[chunkEngine] JSON repair failed:', err); }
   return null;
 }
 
@@ -354,8 +354,8 @@ async function callApiRaw(
       try {
         const schemaHint = extractSchemaHint(system);
         return await reformatToJson(apiKey, rawText, schemaHint);
-      } catch {
-        // reformat fallback failed
+      } catch (err) {
+        if (import.meta.env.DEV) console.warn('[chunkEngine] reformat fallback failed:', err);
       }
     }
     throw new Error('[Non-JSON Response]');
@@ -365,7 +365,8 @@ async function callApiRaw(
   try {
     const jsonText = extractJson(rawText);
     return JSON.parse(jsonText) as PartialResult;
-  } catch {
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn('[chunkEngine] extractJson/parse failed:', err);
     const stripped = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
     const hasCloseBrace = stripped.lastIndexOf('}') > stripped.indexOf('{');
     if (!hasCloseBrace) {
@@ -376,8 +377,8 @@ async function callApiRaw(
       try {
         const schemaHint = extractSchemaHint(system);
         return await reformatToJson(apiKey, rawText, schemaHint);
-      } catch {
-        // reformat fallback failed
+      } catch (err) {
+        if (import.meta.env.DEV) console.warn('[chunkEngine] reformat fallback failed:', err);
       }
     }
     throw new Error('[Parse Error]');
@@ -1286,7 +1287,8 @@ export class ChunkEngine {
                 return cItems.length > MAX_COMPLETED ? (cItems.slice(-MAX_COMPLETED) as string[]) : (cItems as string[]);
               }
               return [];
-            } catch {
+            } catch (err) {
+              if (import.meta.env.DEV) console.warn('[chunkEngine] completed extraction failed:', err);
               return [];
             }
           })();
@@ -1319,7 +1321,8 @@ export class ChunkEngine {
                 4096,
                 true,
               );
-            } catch {
+            } catch (err) {
+              if (import.meta.env.DEV) console.warn('[chunkEngine] final summarization failed:', err);
               return null;
             }
           })();
@@ -1430,7 +1433,8 @@ export class ChunkEngine {
               return items as string[];
             }
             return [];
-          } catch {
+          } catch (err) {
+            if (import.meta.env.DEV) console.warn('[chunkEngine] completed extraction failed:', err);
             return [];
           }
         })();
@@ -1467,7 +1471,8 @@ export class ChunkEngine {
               );
             }
             return null;
-          } catch {
+          } catch (err) {
+            if (import.meta.env.DEV) console.warn('[chunkEngine] consistency check failed:', err);
             return null;
           }
         })();
@@ -1502,7 +1507,8 @@ export class ChunkEngine {
               4096,
               true,
             );
-          } catch {
+          } catch (err) {
+            if (import.meta.env.DEV) console.warn('[chunkEngine] final summarization failed:', err);
             return null;
           }
         })();

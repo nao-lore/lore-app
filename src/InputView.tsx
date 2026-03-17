@@ -3,7 +3,7 @@ import { transformText, transformHandoff, transformBoth, transformTodoOnly, tran
 import type { TransformBothOptions } from './transform';
 import { ChunkEngine, getChunkTarget, getEngineConcurrency } from './chunkEngine';
 import type { EngineProgress } from './chunkEngine';
-import { addLog, getLog, addTodosFromLog, addTodosFromLogWithMeta, loadLogs, updateLog, getApiKey, getFeatureEnabled, getMasterNote, getStreak, isDemoMode } from './storage';
+import { addLog, getLog, addTodosFromLog, addTodosFromLogWithMeta, loadLogs, updateLog, getApiKey, getFeatureEnabled, getMasterNote, getStreak, isDemoMode, safeGetItem, safeSetItem } from './storage';
 import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
 const loadDemoData = () => import('./demoData');
 import { classifyLog, saveCorrection } from './classify';
@@ -154,7 +154,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
   const [outputMode, setOutputMode] = useState<OutputMode>('handoff');
   type TransformAction = 'both' | 'handoff' | 'worklog' | 'todo_only' | 'worklog_handoff' | 'handoff_todo';
   const [transformAction, setTransformAction] = useState<TransformAction>(() => {
-    try { const v = localStorage.getItem('threadlog_transform_action'); return (['handoff', 'handoff_todo', 'todo_only'].includes(v || '') ? v as TransformAction : 'handoff_todo'); } catch { return 'handoff_todo'; }
+    const v = safeGetItem('threadlog_transform_action'); return (['handoff', 'handoff_todo', 'todo_only'].includes(v || '') ? v as TransformAction : 'handoff_todo');
   });
 
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(activeProjectId ?? undefined);
@@ -211,7 +211,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       setText('');
       // Parse the raw JSON to extract capture metadata before conversion
       let parsed: Record<string, unknown> | null = null;
-      try { parsed = JSON.parse(raw); } catch { /* ignore */ }
+      try { parsed = JSON.parse(raw); } catch (err) { if (import.meta.env.DEV) console.warn('[InputView] extension JSON parse:', err); }
       const result = parseConversationJson(raw, 'extension-capture.json');
       setFiles([{ name: 'extension-capture.json', content: result.content, lastModified: result.timestamp }]);
       // Build capture info from the raw extension payload
@@ -249,7 +249,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       try {
         const { content, lastModified } = await readFileContent(file);
         newFiles.push({ name: file.name, content, lastModified });
-      } catch {
+      } catch (err) {
+        if (import.meta.env.DEV) console.warn('[InputView] file read failed:', err);
         errors.push(file.name);
       }
     }
@@ -297,7 +298,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
     // Persist last used action
     setTransformAction(action);
-    try { localStorage.setItem('threadlog_transform_action', action); } catch { /* ignore */ }
+    safeSetItem('threadlog_transform_action', action);
 
     setError(''); setLoading(true); setResult(null); setSavedId(null); setSavedHandoffId(null); setSavedResult(null); setProgress(null); setSimStep(0); setStreamDetail(null);
 
@@ -878,7 +879,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                 className="btn btn-primary"
                 onClick={() => {
                   const text = savedResult.fullContext + '\n\n---\n\n' + savedResult.markdown;
-                  try { navigator.clipboard.writeText(text); } catch { /* non-critical */ }
+                  try { navigator.clipboard.writeText(text); } catch (err) { if (import.meta.env.DEV) console.warn('[InputView] clipboard write:', err); }
                   showToast?.(t('copiedToClipboard', lang), 'success');
                 }}
               >
@@ -888,7 +889,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
               <button
                 className="btn btn-primary"
                 onClick={() => {
-                  try { navigator.clipboard.writeText(savedResult.markdown); } catch { /* non-critical */ }
+                  try { navigator.clipboard.writeText(savedResult.markdown); } catch (err) { if (import.meta.env.DEV) console.warn('[InputView] clipboard write:', err); }
                   showToast?.(t('copiedToClipboard', lang), 'success');
                 }}
               >
@@ -918,7 +919,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                     title: 'Lore Handoff',
                     text: savedResult.fullContext || savedResult.markdown,
                   });
-                } catch { /* ignore */ }
+                } catch (err) { if (import.meta.env.DEV) console.warn('[InputView] share:', err); }
               }}>
                 <Share2 size={14} /> {t('share', lang)}
               </button>
@@ -1090,7 +1091,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                   role="radio"
                   aria-checked={isActive}
                   title={tooltip}
-                  onClick={() => { setTransformAction(a); try { localStorage.setItem('threadlog_transform_action', a); } catch { /* ignore */ } }}
+                  onClick={() => { setTransformAction(a); safeSetItem('threadlog_transform_action', a); }}
                 >
                   {label}
                 </button>

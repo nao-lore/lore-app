@@ -1,13 +1,15 @@
+import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
+
 const ONBOARDING_KEY = 'threadlog_onboarding_done';
 
 export function isOnboardingDone(): boolean {
-  return localStorage.getItem(ONBOARDING_KEY) === '1';
+  return safeGetItem(ONBOARDING_KEY) === '1';
 }
 
 export function markOnboardingDone(): void {
-  try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch { /* ignore */ }
+  safeSetItem(ONBOARDING_KEY, '1');
 }
 
 export function resetOnboarding(): void {
-  localStorage.removeItem(ONBOARDING_KEY);
+  safeRemoveItem(ONBOARDING_KEY);
 }

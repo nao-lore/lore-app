@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { safeGetItem, safeSetItem } from './storage';
 
 /**
  * Like useState, but persists the value to localStorage.
@@ -6,17 +7,13 @@ import { useState, useCallback } from 'react';
  */
 export function usePersistedState<T extends string>(key: string, defaultValue: T): [T, (v: T) => void] {
   const [value, setValue] = useState<T>(() => {
-    try {
-      const stored = localStorage.getItem(key);
-      return stored !== null ? (stored as T) : defaultValue;
-    } catch {
-      return defaultValue;
-    }
+    const stored = safeGetItem(key);
+    return stored !== null ? (stored as T) : defaultValue;
   });
 
   const set = useCallback((v: T) => {
     setValue(v);
-    try { localStorage.setItem(key, v); } catch { /* ignore */ }
+    safeSetItem(key, v);
   }, [key]);
 
   return [value, set];

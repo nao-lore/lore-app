@@ -80,12 +80,12 @@ export function saveLogs(logs: LogEntry[]): void {
 
 /** Load all logs (including trashed) — raw access */
 function loadAllLogs(): LogEntry[] {
-  const raw = localStorage.getItem(LOGS_KEY);
+  const raw = safeGetItem(LOGS_KEY);
   if (!raw) return [];
   try {
     const logs: LogEntry[] = JSON.parse(raw);
     // Auto-migrate: strip sourceText from old logs on first load
-    if (!localStorage.getItem(MIGRATION_KEY) && logs.some((l) => l.sourceText)) {
+    if (!safeGetItem(MIGRATION_KEY) && logs.some((l) => l.sourceText)) {
       const migrated = logs.map((l) => {
         if (!l.sourceText) return l;
         const { sourceText, ...rest } = l;
@@ -214,7 +214,7 @@ export function unlinkLogs(logId1: string, logId2: string): void {
 // ─── Projects ───
 
 function loadAllProjects(): Project[] {
-  const raw = localStorage.getItem(PROJECTS_KEY);
+  const raw = safeGetItem(PROJECTS_KEY);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -292,7 +292,7 @@ export function updateProject(id: string, patch: Partial<Project>): void {
 // ─── Master Notes ───
 
 export function loadMasterNotes(): MasterNote[] {
-  const raw = localStorage.getItem(MASTER_NOTES_KEY);
+  const raw = safeGetItem(MASTER_NOTES_KEY);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -345,7 +345,7 @@ function cleanMasterNoteSourceLogIds(logId: string): void {
 // ─── Master Note History ───
 
 function loadAllMnHistory(): MasterNoteHistory[] {
-  const raw = localStorage.getItem(MN_HISTORY_KEY);
+  const raw = safeGetItem(MN_HISTORY_KEY);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -404,7 +404,7 @@ export function restoreMasterNoteSnapshot(projectId: string, version: number): M
 // ─── Log Summaries ───
 
 export function loadLogSummaries(): LogSummary[] {
-  const raw = localStorage.getItem(LOG_SUMMARIES_KEY);
+  const raw = safeGetItem(LOG_SUMMARIES_KEY);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -425,7 +425,7 @@ export function getLogSummary(logId: string): LogSummary | undefined {
 // ─── Todos ───
 
 function loadAllTodos(): Todo[] {
-  const raw = localStorage.getItem(TODOS_KEY);
+  const raw = safeGetItem(TODOS_KEY);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -574,7 +574,7 @@ export function deleteTodosForLog(logId: string): void {
 const WEEKLY_REPORTS_KEY = 'threadlog_weekly_reports';
 
 export function loadWeeklyReports(): WeeklyReport[] {
-  const raw = localStorage.getItem(WEEKLY_REPORTS_KEY);
+  const raw = safeGetItem(WEEKLY_REPORTS_KEY);
   if (!raw) return [];
   try { return JSON.parse(raw); } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadWeeklyReports', err); return []; }
 }
@@ -608,7 +608,7 @@ function deleteWeeklyReportsForProject(projectId: string): void {
 // ─── Knowledge Base ───
 
 export function loadKnowledgeBases(): KnowledgeBase[] {
-  const raw = localStorage.getItem(KNOWLEDGE_BASE_KEY);
+  const raw = safeGetItem(KNOWLEDGE_BASE_KEY);
   if (!raw) return [];
   try { return JSON.parse(raw); } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadKnowledgeBases', err); return []; }
 }
@@ -633,7 +633,7 @@ export function deleteKnowledgeBase(projectId: string): void {
 const AI_CONTEXT_PREFIX = 'lore_ai_context_';
 
 export function getAiContext(projectId: string): string | null {
-  return localStorage.getItem(AI_CONTEXT_PREFIX + projectId) || null;
+  return safeGetItem(AI_CONTEXT_PREFIX + projectId) || null;
 }
 
 export function saveAiContext(projectId: string, content: string): void {
@@ -641,7 +641,7 @@ export function saveAiContext(projectId: string, content: string): void {
 }
 
 export function deleteAiContext(projectId: string): void {
-  localStorage.removeItem(AI_CONTEXT_PREFIX + projectId);
+  safeRemoveItem(AI_CONTEXT_PREFIX + projectId);
 }
 
 // ─── Data Export / Import ───
@@ -657,7 +657,7 @@ export interface LoreBackup {
 export function exportAllData(): LoreBackup {
   const data: Record<string, unknown[]> = {};
   for (const key of DATA_KEYS) {
-    const raw = localStorage.getItem(key);
+    const raw = safeGetItem(key);
     if (raw) {
       try { data[key] = JSON.parse(raw); } catch (err) { if (import.meta.env.DEV) console.warn('[storage] exportAllData parse', err); }
     }
@@ -704,7 +704,7 @@ export function importData(backup: LoreBackup, mode: 'merge' | 'overwrite'): Imp
       if (cat) result[cat] = incoming.length;
     } else {
       // Merge: combine by id, incoming wins on conflict
-      const raw = localStorage.getItem(key);
+      const raw = safeGetItem(key);
       let existing: Record<string, unknown>[] = [];
       if (raw) {
         try { existing = JSON.parse(raw); } catch (err) { if (import.meta.env.DEV) console.warn('[storage] importData parse', err); }
@@ -742,7 +742,7 @@ export interface DataUsage {
 export function getDataUsage(): DataUsage {
   let totalBytes = 0;
   for (const key of DATA_KEYS) {
-    const val = localStorage.getItem(key);
+    const val = safeGetItem(key);
     if (val) {
       // Each char in JS string = 2 bytes in memory, but localStorage uses UTF-16
       totalBytes += (key.length + val.length) * 2;
@@ -751,7 +751,7 @@ export function getDataUsage(): DataUsage {
   // Also count settings keys
   const settingsKeys = [LANG_KEY, THEME_KEY, 'threadlog_provider', 'threadlog_migration_v2'];
   for (const key of settingsKeys) {
-    const val = localStorage.getItem(key);
+    const val = safeGetItem(key);
     if (val) totalBytes += (key.length + val.length) * 2;
   }
   return {
@@ -774,20 +774,20 @@ const ACTIVITY_DATES_KEY = 'threadlog_activity_dates';
 export function recordActivity(): void {
   const today = new Date().toISOString().slice(0, 10);
   try {
-    const raw = localStorage.getItem(ACTIVITY_DATES_KEY);
+    const raw = safeGetItem(ACTIVITY_DATES_KEY);
     const dates: string[] = raw ? JSON.parse(raw) : [];
     if (!dates.includes(today)) {
       dates.push(today);
       // Keep only last 90 days
       while (dates.length > 90) dates.shift();
-      localStorage.setItem(ACTIVITY_DATES_KEY, JSON.stringify(dates));
+      safeSetItem(ACTIVITY_DATES_KEY, JSON.stringify(dates));
     }
   } catch (err) { if (import.meta.env.DEV) console.warn('[storage] recordActivity', err); }
 }
 
 export function getStreak(): number {
   try {
-    const raw = localStorage.getItem(ACTIVITY_DATES_KEY);
+    const raw = safeGetItem(ACTIVITY_DATES_KEY);
     if (!raw) return 0;
     const dates: string[] = JSON.parse(raw);
     let streak = 0;
@@ -808,13 +808,13 @@ export function getStreak(): number {
 /** Returns the API key for the currently active provider */
 export function getApiKey(): string {
   // Delegate to provider module (avoids circular import by reading directly)
-  const provider = localStorage.getItem('threadlog_provider') || 'gemini';
-  return localStorage.getItem(`threadlog_api_key_${provider}`) || '';
+  const provider = safeGetItem('threadlog_provider') || 'gemini';
+  return safeGetItem(`threadlog_api_key_${provider}`) || '';
 }
 
 /** @deprecated Use setProviderApiKey from provider.ts instead */
 export function setApiKey(key: string): void {
-  const provider = localStorage.getItem('threadlog_provider') || 'gemini';
+  const provider = safeGetItem('threadlog_provider') || 'gemini';
   safeSetItem(`threadlog_api_key_${provider}`, key);
 }
 
@@ -822,7 +822,7 @@ export function setApiKey(key: string): void {
 const VALID_OUTPUT_LANGS = ['ja', 'en', 'es', 'fr', 'de', 'zh', 'ko', 'pt'];
 
 export function getLang(): string {
-  const v = localStorage.getItem(LANG_KEY);
+  const v = safeGetItem(LANG_KEY);
   if (v && VALID_OUTPUT_LANGS.includes(v)) return v;
   return 'auto';
 }
@@ -837,7 +837,7 @@ const UI_LANG_KEY = 'threadlog_ui_lang';
 const VALID_LANGS: Lang[] = ['ja', 'en', 'es', 'fr', 'de', 'zh', 'ko', 'pt'];
 
 export function getUiLang(): Lang {
-  const v = localStorage.getItem(UI_LANG_KEY);
+  const v = safeGetItem(UI_LANG_KEY);
   if (v && VALID_LANGS.includes(v as Lang)) return v as Lang;
   return 'en';
 }
@@ -849,7 +849,7 @@ export function setUiLang(lang: Lang): void {
 export type ThemePref = 'light' | 'dark' | 'system';
 
 export function getTheme(): ThemePref {
-  const v = localStorage.getItem(THEME_KEY);
+  const v = safeGetItem(THEME_KEY);
   if (v === 'light' || v === 'dark' || v === 'system') return v;
   return 'system';
 }
@@ -863,14 +863,14 @@ export function setTheme(theme: ThemePref): void {
 const DEMO_MODE_KEY = 'threadlog_demo_mode';
 
 export function isDemoMode(): boolean {
-  return localStorage.getItem(DEMO_MODE_KEY) === '1';
+  return safeGetItem(DEMO_MODE_KEY) === '1';
 }
 
 export function setDemoMode(on: boolean): void {
   if (on) {
     safeSetItem(DEMO_MODE_KEY, '1');
   } else {
-    try { localStorage.removeItem(DEMO_MODE_KEY); } catch (err) { if (import.meta.env.DEV) console.warn('[storage] setDemoMode', err); }
+    safeRemoveItem(DEMO_MODE_KEY);
   }
 }
 
@@ -879,7 +879,7 @@ export function setDemoMode(on: boolean): void {
 const FEATURE_PREFIX = 'threadlog_feature_';
 
 export function getFeatureEnabled(key: string, defaultValue = true): boolean {
-  const v = localStorage.getItem(FEATURE_PREFIX + key);
+  const v = safeGetItem(FEATURE_PREFIX + key);
   if (v === null) return defaultValue;
   return v === 'true';
 }
@@ -894,7 +894,7 @@ const AUTO_REPORT_KEY = 'threadlog_auto_weekly_report';
 const LAST_REPORT_DATE_KEY = 'threadlog_last_report_date';
 
 export function getAutoReportSetting(): boolean {
-  return localStorage.getItem(AUTO_REPORT_KEY) === 'true';
+  return safeGetItem(AUTO_REPORT_KEY) === 'true';
 }
 
 export function setAutoReportSetting(enabled: boolean): void {
@@ -902,7 +902,7 @@ export function setAutoReportSetting(enabled: boolean): void {
 }
 
 export function getLastReportDate(): number | null {
-  const raw = localStorage.getItem(LAST_REPORT_DATE_KEY);
+  const raw = safeGetItem(LAST_REPORT_DATE_KEY);
   if (!raw) return null;
   const n = Number(raw);
   return isNaN(n) ? null : n;

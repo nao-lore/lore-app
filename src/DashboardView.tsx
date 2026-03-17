@@ -4,7 +4,7 @@ import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { getGreeting } from './greeting';
-import { getStreak } from './storage';
+import { getStreak, safeGetItem, safeSetItem } from './storage';
 import FirstUseTooltip from './FirstUseTooltip';
 
 interface DashboardViewProps {
@@ -44,13 +44,13 @@ interface ProjectSnapshot {
 // ── Notification dismissal ──
 const DISMISS_KEY = 'threadlog_notification_dismissals';
 function loadDismissals(): Record<string, number> {
-  try { return JSON.parse(localStorage.getItem(DISMISS_KEY) || '{}'); } catch { return {}; }
+  try { return JSON.parse(safeGetItem(DISMISS_KEY) || '{}'); } catch (err) { if (import.meta.env.DEV) console.warn('[DashboardView] loadDismissals:', err); return {}; }
 }
 function saveDismissals(keys: string[]) {
   const d = loadDismissals();
   const now = Date.now();
   for (const k of keys) d[k] = now;
-  try { localStorage.setItem(DISMISS_KEY, JSON.stringify(d)); } catch { /* ignore */ }
+  safeSetItem(DISMISS_KEY, JSON.stringify(d));
 }
 function isNotDismissed(key: string, latestActivityTs: number): boolean {
   const d = loadDismissals();
@@ -63,12 +63,12 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
   const [moreTasksOpen, setMoreTasksOpen] = useState(false);
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try {
-      const saved = localStorage.getItem(DISMISS_KEY);
+      const saved = safeGetItem(DISMISS_KEY);
       if (saved) {
         const entries = JSON.parse(saved) as Record<string, number>;
         return new Set(Object.keys(entries));
       }
-    } catch { /* ignore */ }
+    } catch (err) { if (import.meta.env.DEV) console.warn('[DashboardView] dismissed parse:', err); }
     return new Set();
   });
 

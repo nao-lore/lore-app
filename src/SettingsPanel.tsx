@@ -126,7 +126,8 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
         }
         // Show merge/overwrite choice
         setPendingImport({ backup: parsed, mode: 'merge' });
-      } catch {
+      } catch (err) {
+        if (import.meta.env.DEV) console.warn('[SettingsPanel] import parse:', err);
         setImportError(t('dataImportError', lang));
       }
     };

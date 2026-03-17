@@ -1,6 +1,6 @@
 import type { LogEntry, Project } from './types';
 import { callProvider, shouldUseBuiltinApi } from './provider';
-import { getApiKey } from './storage';
+import { getApiKey, safeGetItem, safeSetItem } from './storage';
 import { extractJson } from './transform';
 
 const CORRECTIONS_KEY = 'threadlog_classify_corrections';
@@ -20,11 +20,11 @@ interface Correction {
 
 export function loadCorrections(): Correction[] {
   try {
-    const raw = localStorage.getItem(CORRECTIONS_KEY);
+    const raw = safeGetItem(CORRECTIONS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
-  } catch { return []; }
+  } catch (err) { if (import.meta.env.DEV) console.warn('[classify] loadCorrections:', err); return []; }
 }
 
 export function saveCorrection(log: LogEntry, projectId: string): void {
@@ -32,7 +32,7 @@ export function saveCorrection(log: LogEntry, projectId: string): void {
   // Keep last 50 corrections
   corrections.push({ title: log.title, tags: log.tags, projectId });
   if (corrections.length > 50) corrections.splice(0, corrections.length - 50);
-  try { localStorage.setItem(CORRECTIONS_KEY, JSON.stringify(corrections)); } catch { /* ignore */ }
+  safeSetItem(CORRECTIONS_KEY, JSON.stringify(corrections));
 }
 
 // --- Classification ---

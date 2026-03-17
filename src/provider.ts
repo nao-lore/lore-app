@@ -8,6 +8,8 @@
  * server-side proxy (/api/generate) which uses a shared Gemini key.
  */
 
+import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
+
 export type ProviderName = 'anthropic' | 'gemini' | 'openai';
 
 // ---------------------------------------------------------------------------
@@ -406,7 +408,7 @@ function handleHttpError(status: number, body: string): never {
       const msgMatch = errorMessage.match(/retry\s+after\s+(\d+)/i);
       if (msgMatch) retryDelaySec = parseInt(msgMatch[1], 10);
     }
-  } catch { /* not JSON */ }
+  } catch (err) { if (import.meta.env.DEV) console.warn('[provider] handleHttpError JSON parse:', err); }
 
   if (status === 401 || status === 403) throw new Error('[API Key] Invalid or expired. Check your key in Settings.');
   if (status === 429) {
@@ -432,14 +434,14 @@ const BUILTIN_DAILY_LIMIT = 20;
 function saveBuiltinUsage(remaining: number): void {
   try {
     const today = new Date().toISOString().slice(0, 10);
-    localStorage.setItem(BUILTIN_USAGE_KEY, JSON.stringify({ remaining, date: today }));
-  } catch { /* ignore */ }
+    safeSetItem(BUILTIN_USAGE_KEY, JSON.stringify({ remaining, date: today }));
+  } catch (err) { if (import.meta.env.DEV) console.warn('[provider] saveBuiltinUsage:', err); }
 }
 
 /** Get built-in API usage for today: { used, limit, remaining } */
 export function getBuiltinUsage(): { used: number; limit: number; remaining: number } {
   try {
-    const raw = localStorage.getItem(BUILTIN_USAGE_KEY);
+    const raw = safeGetItem(BUILTIN_USAGE_KEY);
     if (raw) {
       const { remaining, date } = JSON.parse(raw);
       const today = new Date().toISOString().slice(0, 10);
@@ -447,7 +449,7 @@ export function getBuiltinUsage(): { used: number; limit: number; remaining: num
         return { used: BUILTIN_DAILY_LIMIT - remaining, limit: BUILTIN_DAILY_LIMIT, remaining };
       }
     }
-  } catch { /* ignore */ }
+  } catch (err) { if (import.meta.env.DEV) console.warn('[provider] getBuiltinUsage:', err); }
   return { used: 0, limit: BUILTIN_DAILY_LIMIT, remaining: BUILTIN_DAILY_LIMIT };
 }
 
@@ -579,25 +581,25 @@ async function callBuiltinStream(req: ProviderRequest, onChunk: StreamCallback):
 /** Get the active provider from localStorage */
 export function getActiveProvider(): ProviderName {
   try {
-    const v = localStorage.getItem('threadlog_provider');
+    const v = safeGetItem('threadlog_provider');
     if (v === 'anthropic' || v === 'gemini' || v === 'openai') return v;
-  } catch { /* ignore */ }
+  } catch (err) { if (import.meta.env.DEV) console.warn('[provider] getActiveProvider:', err); }
   return 'gemini';
 }
 
 /** Set the active provider */
 export function setActiveProvider(name: ProviderName): void {
-  try { localStorage.setItem('threadlog_provider', name); } catch { /* ignore */ }
+  safeSetItem('threadlog_provider', name);
 }
 
 /** Get API key for a specific provider */
 export function getProviderApiKey(provider: ProviderName): string {
-  try { return localStorage.getItem(`threadlog_api_key_${provider}`) || ''; } catch { return ''; }
+  return safeGetItem(`threadlog_api_key_${provider}`) || '';
 }
 
 /** Set API key for a specific provider */
 export function setProviderApiKey(provider: ProviderName, key: string): void {
-  try { localStorage.setItem(`threadlog_api_key_${provider}`, key); } catch { /* ignore */ }
+  safeSetItem(`threadlog_api_key_${provider}`, key);
 }
 
 /** Check if any user-provided API key is configured */
@@ -614,7 +616,7 @@ export function shouldUseBuiltinApi(): boolean {
 /** Migrate: if old single key exists, move it to anthropic slot */
 function migrateOldApiKey(): void {
   let old: string | null = null;
-  try { old = localStorage.getItem('threadlog_api_key'); } catch { return; }
+  old = safeGetItem('threadlog_api_key');
   if (!old) return;
   // Detect provider from key prefix
   if (old.startsWith('AIza')) {
@@ -628,7 +630,7 @@ function migrateOldApiKey(): void {
     const active = getActiveProvider();
     if (!getProviderApiKey(active)) setProviderApiKey(active, old);
   }
-  try { localStorage.removeItem('threadlog_api_key'); } catch { /* ignore */ }
+  safeRemoveItem('threadlog_api_key');
 }
 
 // Run migration once on load

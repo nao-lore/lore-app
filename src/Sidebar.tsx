@@ -4,7 +4,7 @@ import { FileText, ScrollText, FolderOpen, Folder, CheckSquare, MoreHorizontal, 
 import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { t } from './i18n';
 import type { Lang } from './i18n';
-import { updateLog, trashLog } from './storage';
+import { updateLog, trashLog, safeGetItem, safeSetItem } from './storage';
 import ContextMenu from './ContextMenu';
 import type { MenuItem } from './ContextMenu';
 import ConfirmDialog from './ConfirmDialog';
@@ -129,21 +129,21 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
   const [editDraft, setEditDraft] = useState('');
   const [changingProjectLogId, setChangingProjectLogId] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(() => {
-    try { return localStorage.getItem(SIDEBAR_MORE_KEY) === 'open'; } catch { return false; }
+    return safeGetItem(SIDEBAR_MORE_KEY) === 'open';
   });
   const [pinnedOpen, setPinnedOpen] = useState(() => {
-    try { return localStorage.getItem(SIDEBAR_PINNED_KEY) !== 'closed'; } catch { return true; }
+    return safeGetItem(SIDEBAR_PINNED_KEY) !== 'closed';
   });
 
   const toggleMore = () => {
     const next = !moreOpen;
     setMoreOpen(next);
-    try { localStorage.setItem(SIDEBAR_MORE_KEY, next ? 'open' : 'closed'); } catch { /* ignore */ }
+    safeSetItem(SIDEBAR_MORE_KEY, next ? 'open' : 'closed');
   };
   const togglePinned = () => {
     const next = !pinnedOpen;
     setPinnedOpen(next);
-    try { localStorage.setItem(SIDEBAR_PINNED_KEY, next ? 'open' : 'closed'); } catch { /* ignore */ }
+    safeSetItem(SIDEBAR_PINNED_KEY, next ? 'open' : 'closed');
   };
   const accountTriggerRef = useRef<HTMLButtonElement>(null);
   const accountPopoverRef = useRef<HTMLDivElement>(null);
@@ -185,7 +185,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
     const unassignedLogs = logs.some((l) => l.outputMode === 'handoff' && !l.projectId);
     let staleSummary = false;
     let dismissals: Record<string, number> = {};
-    try { dismissals = JSON.parse(localStorage.getItem(NOTIFICATION_DISMISSALS_KEY) || '{}'); } catch { /* ignore */ }
+    try { dismissals = JSON.parse(safeGetItem(NOTIFICATION_DISMISSALS_KEY) || '{}'); } catch (err) { if (import.meta.env.DEV) console.warn('[Sidebar] dismissals parse:', err); }
     for (const note of masterNotes) {
       const projectHandoffs = logs.filter((l) => l.projectId === note.projectId && l.outputMode === 'handoff' && new Date(l.createdAt).getTime() > note.updatedAt);
       if (projectHandoffs.length === 0) continue;

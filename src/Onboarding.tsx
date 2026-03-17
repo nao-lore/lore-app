@@ -3,6 +3,7 @@ import { t } from './i18n';
 import type { Lang } from './i18n';
 import { useFocusTrap } from './useFocusTrap';
 import { markOnboardingDone } from './onboardingState';
+import { safeSetItem } from './storage';
 
 interface OnboardingProps {
   lang: Lang;
@@ -55,7 +56,7 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
 
   const handlePauseForSettings = useCallback(() => {
     // Save current step so we can resume
-    try { localStorage.setItem('threadlog_onboarding_step', String(step)); } catch { /* ignore */ }
+    safeSetItem('threadlog_onboarding_step', String(step));
     onPauseForSettings?.();
   }, [step, onPauseForSettings]);
 

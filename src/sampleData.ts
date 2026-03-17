@@ -1,18 +1,18 @@
 /**
  * Sample data seeded on first launch to help new users understand Lore.
  */
-import { addLog, addProject, saveMasterNote, addTodosFromLogWithMeta } from './storage';
+import { addLog, addProject, saveMasterNote, addTodosFromLogWithMeta, safeGetItem, safeSetItem } from './storage';
 import type { LogEntry, MasterNote } from './types';
 import type { Lang } from './i18n';
 
 const SAMPLE_SEEDED_KEY = 'threadlog_sample_seeded';
 
 export function isSampleSeeded(): boolean {
-  return localStorage.getItem(SAMPLE_SEEDED_KEY) === '1';
+  return safeGetItem(SAMPLE_SEEDED_KEY) === '1';
 }
 
 function markSampleSeeded(): void {
-  try { localStorage.setItem(SAMPLE_SEEDED_KEY, '1'); } catch { /* ignore */ }
+  safeSetItem(SAMPLE_SEEDED_KEY, '1');
 }
 
 // ── Localized content ──────────────────────────────────────────
@@ -611,9 +611,9 @@ export function seedSampleData(lang: Lang = 'en'): void {
   const project = addProject(c.projectName);
   project.pinned = true;
   project.icon = '🚀';
-  const projects = JSON.parse(localStorage.getItem('threadlog_projects') || '[]');
+  const projects = JSON.parse(safeGetItem('threadlog_projects') || '[]');
   const idx = projects.findIndex((p: { id: string }) => p.id === project.id);
-  if (idx >= 0) { projects[idx] = project; localStorage.setItem('threadlog_projects', JSON.stringify(projects)); }
+  if (idx >= 0) { projects[idx] = project; safeSetItem('threadlog_projects', JSON.stringify(projects)); }
 
   const now = Date.now();
   const logId1 = crypto.randomUUID();
@@ -691,9 +691,9 @@ export function seedSampleData(lang: Lang = 'en'): void {
   const project3 = addProject(isJa3 ? 'プロダクトローンチ戦略' : 'Product Launch Campaign');
   project3.icon = '📊';
   // pinned defaults to false — leave it unpinned
-  const projects3 = JSON.parse(localStorage.getItem('threadlog_projects') || '[]');
+  const projects3 = JSON.parse(safeGetItem('threadlog_projects') || '[]');
   const idx3 = projects3.findIndex((p: { id: string }) => p.id === project3.id);
-  if (idx3 >= 0) { projects3[idx3] = project3; localStorage.setItem('threadlog_projects', JSON.stringify(projects3)); }
+  if (idx3 >= 0) { projects3[idx3] = project3; safeSetItem('threadlog_projects', JSON.stringify(projects3)); }
 
   const logId3_1 = crypto.randomUUID();
 
@@ -776,9 +776,9 @@ export function seedSampleData(lang: Lang = 'en'): void {
   const project4 = addProject(isJa4 ? 'YouTube チャンネル運営' : 'YouTube Channel Growth');
   project4.pinned = true;
   project4.icon = '🎬';
-  const projects4 = JSON.parse(localStorage.getItem('threadlog_projects') || '[]');
+  const projects4 = JSON.parse(safeGetItem('threadlog_projects') || '[]');
   const idx4 = projects4.findIndex((p: { id: string }) => p.id === project4.id);
-  if (idx4 >= 0) { projects4[idx4] = project4; localStorage.setItem('threadlog_projects', JSON.stringify(projects4)); }
+  if (idx4 >= 0) { projects4[idx4] = project4; safeSetItem('threadlog_projects', JSON.stringify(projects4)); }
 
   const logId4_1 = crypto.randomUUID();
 

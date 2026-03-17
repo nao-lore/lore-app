@@ -382,14 +382,14 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', handler);
   }, []);
 
-  const goToRaw = (next: View) => {
+  const goToRaw = useCallback((next: View) => {
     // Save current scroll position before navigating away
     if (scrollRef.current) {
       scrollPositionRef.current[view] = scrollRef.current.scrollTop;
     }
     setPrevView(view);
     setView(next);
-  };
+  }, [view]);
 
   // Restore scroll position when view changes (or reset to 0 for fresh views)
   useEffect(() => {
@@ -402,26 +402,26 @@ export default function App() {
   }, [view]);
 
   // Navigation with dirty-input guard: only guard when leaving the input view
-  const goTo = (next: View) => {
+  const goTo = useCallback((next: View) => {
     if (view === 'input' && inputDirtyRef.current && next !== 'input') {
       setPendingNav(() => () => goToRaw(next));
       return;
     }
     goToRaw(next);
-  };
+  }, [view, goToRaw]);
 
-  const handleSelect = (id: string) => {
+  const handleSelect = useCallback((id: string) => {
     const doNav = () => { setSelectedId(id); goToRaw('detail'); setPaletteOpen(false); };
     if (view === 'input' && inputDirtyRef.current) {
       setPendingNav(() => doNav);
       return;
     }
     doNav();
-  };
-  const handleNewLog = () => { setSelectedId(null); setInputKey((k) => k + 1); goToRaw('input'); inputDirtyRef.current = false; };
-  const handleSaved = (id: string) => { setSelectedId(id); refreshLogs(); inputDirtyRef.current = false; };
-  const handleDeleted = () => { setSelectedId(null); setInputKey((k) => k + 1); goToRaw('input'); refreshLogs(); showToast(t('deleted', lang), 'success'); inputDirtyRef.current = false; };
-  const handleBack = () => { goTo(prevView === 'detail' ? (activeProjectId ? 'projecthome' : 'history') : prevView); };
+  }, [view, goToRaw]);
+  const handleNewLog = useCallback(() => { setSelectedId(null); setInputKey((k) => k + 1); goToRaw('input'); inputDirtyRef.current = false; }, [goToRaw]);
+  const handleSaved = useCallback((id: string) => { setSelectedId(id); refreshLogs(); inputDirtyRef.current = false; }, [refreshLogs]);
+  const handleDeleted = useCallback(() => { setSelectedId(null); setInputKey((k) => k + 1); goToRaw('input'); refreshLogs(); showToast(t('deleted', lang), 'success'); inputDirtyRef.current = false; }, [goToRaw, refreshLogs, showToast, lang]);
+  const handleBack = useCallback(() => { goTo(prevView === 'detail' ? (activeProjectId ? 'projecthome' : 'history') : prevView); }, [goTo, prevView, activeProjectId]);
 
   const handleUiLangChange = (v: Lang) => {
     setUiLang(v);
@@ -707,7 +707,7 @@ export default function App() {
             goTo('settings');
           }}
           initialStep={(() => {
-            try { return parseInt(localStorage.getItem('threadlog_onboarding_step') || '0', 10); } catch { return 0; }
+            return parseInt(safeGetItem('threadlog_onboarding_step') || '0', 10);
           })()}
         />
       )}

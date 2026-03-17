@@ -382,6 +382,7 @@ function normalizeDecisions(raw: unknown[]): {
   if (!Array.isArray(raw) || raw.length === 0) {
     return { decisions: [], decisionRationales: [] };
   }
+  const MAX_DECISIONS = 6;
   // Check if first element is an object (new format)
   if (typeof raw[0] === 'object' && raw[0] !== null && 'decision' in raw[0]) {
     const decisionRationales: DecisionWithRationale[] = raw.map((item: unknown) => {
@@ -390,12 +391,12 @@ function normalizeDecisions(raw: unknown[]): {
         decision: String(obj.decision || ''),
         rationale: typeof obj.rationale === 'string' ? obj.rationale : null,
       };
-    }).filter(dr => dr.decision.trim());
+    }).filter(dr => dr.decision.trim()).slice(0, MAX_DECISIONS);
     const decisions = decisionRationales.map(dr => dr.decision);
     return { decisions, decisionRationales };
   }
   // Legacy string format fallback
-  const decisions = raw.map(s => String(s)).filter(s => s.trim());
+  const decisions = raw.map(s => String(s)).filter(s => s.trim()).slice(0, MAX_DECISIONS);
   const decisionRationales = decisions.map(d => ({ decision: d, rationale: null }));
   return { decisions, decisionRationales };
 }

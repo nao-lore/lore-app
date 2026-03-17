@@ -1,3 +1,5 @@
+import { safeGetItem } from './storage';
+
 let audioCtx: AudioContext | null = null;
 
 function getAudioCtx(): AudioContext | null {
@@ -11,9 +13,7 @@ function playTone(frequency: number, duration: number, volume = 0.08) {
   const ctx = getAudioCtx();
   if (!ctx) return;
   // Respect feature toggle
-  try {
-    if (localStorage.getItem('threadlog_feature_sounds') === 'false') return;
-  } catch { /* ignore */ }
+  if (safeGetItem('threadlog_feature_sounds') === 'false') return;
 
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();

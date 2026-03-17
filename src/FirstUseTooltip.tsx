@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { safeGetItem, safeSetItem } from './storage';
 
 interface FirstUseTooltipProps {
   id: string; // unique key for localStorage
@@ -12,7 +13,7 @@ export default function FirstUseTooltip({ id, text, position = 'bottom', childre
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    if (!localStorage.getItem(key)) {
+    if (!safeGetItem(key)) {
       const timer = setTimeout(() => setShow(true), 1000);
       return () => clearTimeout(timer);
     }
@@ -20,7 +21,7 @@ export default function FirstUseTooltip({ id, text, position = 'bottom', childre
 
   const dismiss = () => {
     setShow(false);
-    localStorage.setItem(key, '1');
+    safeSetItem(key, '1');
   };
 
   return (

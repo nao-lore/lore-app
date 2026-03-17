@@ -56,7 +56,7 @@ export async function analyzeWorkload(log: LogEntry): Promise<'high' | 'medium' 
     const parsed = JSON.parse(jsonText);
     const level = parsed.level;
     if (level === 'high' || level === 'medium' || level === 'low') return level;
-  } catch { /* ignore */ }
+  } catch (err) { if (import.meta.env.DEV) console.warn('[workload] parse failed:', err); }
   return 'medium';
 }
 

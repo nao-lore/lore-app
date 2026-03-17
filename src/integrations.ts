@@ -4,6 +4,7 @@
  */
 import type { LogEntry } from './types';
 import { logToMarkdown } from './markdown';
+import { safeGetItem, safeSetItem } from './storage';
 
 // ─── Storage keys ───
 const NOTION_KEY = 'threadlog_notion_api_key';
@@ -13,19 +14,19 @@ const SLACK_WEBHOOK_KEY = 'threadlog_slack_webhook_url';
 // ─── Notion settings ───
 
 export function getNotionApiKey(): string {
-  try { return localStorage.getItem(NOTION_KEY) || ''; } catch { return ''; }
+  return safeGetItem(NOTION_KEY) || '';
 }
 
 export function setNotionApiKey(key: string): void {
-  try { localStorage.setItem(NOTION_KEY, key); } catch { /* ignore */ }
+  safeSetItem(NOTION_KEY, key);
 }
 
 export function getNotionDatabaseId(): string {
-  try { return localStorage.getItem(NOTION_DB_KEY) || ''; } catch { return ''; }
+  return safeGetItem(NOTION_DB_KEY) || '';
 }
 
 export function setNotionDatabaseId(id: string): void {
-  try { localStorage.setItem(NOTION_DB_KEY, id); } catch { /* ignore */ }
+  safeSetItem(NOTION_DB_KEY, id);
 }
 
 export function isNotionConfigured(): boolean {
@@ -35,11 +36,11 @@ export function isNotionConfigured(): boolean {
 // ─── Slack settings ───
 
 export function getSlackWebhookUrl(): string {
-  try { return localStorage.getItem(SLACK_WEBHOOK_KEY) || ''; } catch { return ''; }
+  return safeGetItem(SLACK_WEBHOOK_KEY) || '';
 }
 
 export function setSlackWebhookUrl(url: string): void {
-  try { localStorage.setItem(SLACK_WEBHOOK_KEY, url); } catch { /* ignore */ }
+  safeSetItem(SLACK_WEBHOOK_KEY, url);
 }
 
 export function isSlackConfigured(): boolean {
@@ -155,7 +156,7 @@ export async function sendToNotion(log: LogEntry): Promise<void> {
       try {
         const err = JSON.parse(text);
         if (err.message) msg = `Notion: ${err.message}`;
-      } catch { /* ignore */ }
+      } catch (parseErr) { if (import.meta.env.DEV) console.warn('[integrations] Notion error parse:', parseErr); }
       throw new Error(msg);
     }
   } finally {
