@@ -143,6 +143,70 @@ export function detectLanguage(text: string): 'ja' | 'en' {
   return jaRatio > 0.1 ? 'ja' : 'en';
 }
 
+// =============================================================================
+// Post-parse validation — runtime sanity checks on AI output
+// =============================================================================
+
+const GENERIC_TITLE_PATTERNS = [
+  /^restart\s*memo$/i,
+  /^session\s*summary$/i,
+  /^chat\s*log$/i,
+  /^会話ログ$/,
+  /^作業メモ$/,
+  /^AIとの議論$/,
+  /^セッションまとめ$/,
+  /^untitled$/i,
+];
+
+/** Extract a fallback title from the first user message in the conversation text */
+function extractFallbackTitle(sourceText: string): string | null {
+  // Look for "User:" or "Human:" prefix patterns
+  const userMsgMatch = sourceText.match(/(?:^|\n)(?:User|Human|ユーザー)\s*[:：]\s*(.+)/i);
+  if (userMsgMatch) {
+    const line = userMsgMatch[1].trim();
+    if (line.length > 0) return line.slice(0, 50);
+  }
+  // Fallback: first non-empty line
+  const firstLine = sourceText.split('\n').find((l) => l.trim().length > 5);
+  if (firstLine) return firstLine.trim().slice(0, 50);
+  return null;
+}
+
+/**
+ * Validate and fix worklog-style parsed result.
+ * Mutates the object in-place for efficiency.
+ */
+function validateWorklogResult(
+  parsed: { title?: string; today?: string[]; decisions?: string[]; tags?: string[] },
+  sourceText: string,
+): void {
+  const charLen = sourceText.length;
+
+  // Cap decisions at 6
+  if (parsed.decisions && parsed.decisions.length > 6) {
+    parsed.decisions = parsed.decisions.slice(0, 6);
+  }
+
+  // Warn if too few tags for non-trivial conversations
+  if (import.meta.env.DEV && parsed.tags && parsed.tags.length < 3 && charLen > 500) {
+    console.warn(`[Transform Validation] tags.length=${parsed.tags.length} for ${charLen}-char input — expected >= 3`);
+  }
+
+  // Warn if today is empty for long conversations
+  if (import.meta.env.DEV && parsed.today && parsed.today.length === 0 && charLen > 2000) {
+    console.warn(`[Transform Validation] today is empty for ${charLen}-char input — expected at least 1 item`);
+  }
+
+  // Fix generic / empty titles
+  const title = parsed.title?.trim() || '';
+  if (!title || GENERIC_TITLE_PATTERNS.some((p) => p.test(title))) {
+    const fallback = extractFallbackTitle(sourceText);
+    if (fallback) {
+      parsed.title = fallback;
+    }
+  }
+}
+
 export function extractJson(raw: string): string {
   // 1. Strip markdown code fences (handle ```json ... ``` wrapping)
   let stripped = raw;
@@ -237,6 +301,7 @@ export async function transformText(sourceText: string): Promise<TransformResult
   try {
     const jsonText = extractJson(rawText);
     const parsed = JSON.parse(jsonText);
+    validateWorklogResult(parsed, sourceText);
     return {
       title: parsed.title || 'Untitled',
       today: parsed.today || [],
@@ -552,6 +617,8 @@ export async function transformHandoff(sourceText: string): Promise<HandoffResul
   try {
     const jsonText = extractJson(rawText);
     const parsed = JSON.parse(jsonText);
+    // Validate handoff title (reuse generic-title check)
+    validateWorklogResult(parsed, sourceText);
     const completed = parsed.completed || [];
     const rawDecisions = parsed.decisions || [];
     const { decisions, decisionRationales } = normalizeDecisions(rawDecisions);
@@ -807,6 +874,9 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
     const w = parsed.worklog || parsed;
     const h = parsed.handoff || parsed;
 
+    // Validate worklog part
+    validateWorklogResult(w, sourceText);
+
     const c = parsed.classification;
     const result: BothResult = {
       worklog: {
@@ -818,6 +888,8 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
         tags: w.tags || [],
       },
       handoff: (() => {
+        // Validate handoff title
+        validateWorklogResult(h, sourceText);
         const hCompleted = h.completed || [];
         const rawHDecisions = h.decisions || [];
         const { decisions: hDecisions, decisionRationales: hDecisionRationales } = normalizeDecisions(rawHDecisions);

@@ -2498,6 +2498,11 @@ textarea.input:focus {
   padding: 0 2px;
   line-height: 1;
   flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .capture-banner-close:hover {
   color: var(--text-secondary);

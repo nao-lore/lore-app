@@ -9,13 +9,12 @@ import ConfirmDialog from './ConfirmDialog';
 import Onboarding from './Onboarding';
 import ErrorBoundary from './ErrorBoundary';
 import FeedbackModal from './FeedbackModal';
-import { isOnboardingDone } from './onboardingState';
-import { purgeExpiredTrash, getAutoReportSetting, getLastReportDate, setLastReportDate, isDemoMode, setDemoMode, getFeatureEnabled, recordActivity, safeGetItem, safeSetItem, safeRemoveItem } from './storage';
+import { setLastReportDate, isDemoMode, setDemoMode, getFeatureEnabled, safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import type { ThemePref } from './storage';
 import type { FontSize } from './types';
 import { t, tf } from './i18n';
-import { registerSW } from 'virtual:pwa-register';
 import { useAppState } from './hooks/useAppState';
+import { useBootstrapEffects } from './hooks/useBootstrapEffects';
 import type { View } from './hooks/useAppState';
 
 export type { View };
@@ -45,45 +44,23 @@ function resolveEffectiveTheme(pref: ThemePref): 'light' | 'dark' {
 export default function App() {
   const s = useAppState();
 
-  // Offline / online detection
-  useEffect(() => {
-    let onlineTimer: ReturnType<typeof setTimeout> | null = null;
-    const handleOffline = () => { s.setOfflineStatus('offline'); s.setOfflineDismissed(false); };
-    const handleOnline = () => {
-      s.setOfflineStatus('back');
-      onlineTimer = setTimeout(() => s.setOfflineStatus('online'), 3000);
-    };
-    window.addEventListener('offline', handleOffline);
-    window.addEventListener('online', handleOnline);
-    return () => {
-      window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('online', handleOnline);
-      if (onlineTimer) clearTimeout(onlineTimer);
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Scroll-to-top button visibility
-  useEffect(() => {
-    const el = s.scrollRef.current;
-    if (!el) return;
-    const handleScroll = () => {
-      s.setShowScrollTop(el.scrollTop > 400);
-    };
-    el.addEventListener('scroll', handleScroll, { passive: true });
-    return () => el.removeEventListener('scroll', handleScroll);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // PWA service worker update notification
-  useEffect(() => {
-    const updateSW = registerSW({
-      onNeedRefresh() {
-        s.showToast(t('updateAvailable', s.lang), 'default', {
-          label: t('updateReload', s.lang),
-          onClick: () => { updateSW(); },
-        });
-      },
-    });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Bootstrap: mount-only effects consolidated into a single hook
+  useBootstrapEffects({
+    lang: s.lang,
+    showToast: s.showToast,
+    setShowReportReminder: s.setShowReportReminder,
+    setSelectedId: s.setSelectedId,
+    setInputKey: s.setInputKey,
+    inputDirtyRef: s.inputDirtyRef,
+    setView: s.setView,
+    setShowOnboarding: s.setShowOnboarding,
+    setOfflineStatus: s.setOfflineStatus,
+    setOfflineDismissed: s.setOfflineDismissed,
+    setShowScrollTop: s.setShowScrollTop,
+    scrollRef: s.scrollRef,
+    refreshLogs: s.refreshLogs,
+    logs: s.logs,
+  });
 
   // Tab title: show pending TODO count + current view
   useEffect(() => {
@@ -132,52 +109,12 @@ export default function App() {
     else safeRemoveItem(s.LAST_PROJECT_KEY);
   }, [s.activeProjectId, s.LAST_PROJECT_KEY]);
 
-  // Purge expired trash on app load
-  useEffect(() => { purgeExpiredTrash(); }, []);
-
-  // Record daily activity for streak tracking
-  useEffect(() => { recordActivity(); }, []);
-
   // Warn user when localStorage quota is exceeded
   useEffect(() => {
     const handler = () => s.showToast(t('storageFullWarning', s.lang), 'error');
     window.addEventListener('lore-storage-full', handler);
     return () => window.removeEventListener('lore-storage-full', handler);
   }, [s.lang, s.showToast]);
-
-  // Auto weekly report reminder on app load
-  useEffect(() => {
-    if (!getAutoReportSetting()) return;
-    const last = getLastReportDate();
-    const sevenDays = 7 * 24 * 60 * 60 * 1000;
-    if (last === null || Date.now() - last >= sevenDays) {
-      s.setShowReportReminder(true);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Chrome extension import
-  useEffect(() => {
-    const handleExtensionImport = () => {
-      if (window.location.hash.startsWith('#import=')) {
-        s.setSelectedId(null);
-        s.setInputKey((k: number) => k + 1);
-        s.inputDirtyRef.current = false;
-        s.setView('input');
-        s.showToast(t('extensionReceived', s.lang), 'success');
-      }
-    };
-    handleExtensionImport();
-    window.addEventListener('hashchange', handleExtensionImport);
-    return () => window.removeEventListener('hashchange', handleExtensionImport);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Show onboarding on first launch
-  useEffect(() => {
-    if (s.logs.length === 0 && !isOnboardingDone()) {
-      s.setShowOnboarding(true);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // only on mount
 
   // Apply data-theme attribute
   useEffect(() => {
@@ -231,42 +168,17 @@ export default function App() {
     return () => document.removeEventListener('keydown', handler);
   }, [s.paletteOpen, s.shortcutsOpen, s.view, s.prevView, s.activeProjectId, s.handleNewLog, s.goToRaw, s.setPaletteOpen, s.setShortcutsOpen, s.setActiveProjectId]);
 
-  // Multi-tab localStorage sync
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (
-        e.key === 'threadlog_logs' ||
-        e.key === 'threadlog_projects' ||
-        e.key === 'threadlog_todos' ||
-        e.key === 'threadlog_master_notes'
-      ) {
-        s.refreshLogs();
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, [s.refreshLogs]);
-
-  // Warn user before closing tab with unsaved input
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (s.inputDirtyRef.current) {
-        e.preventDefault();
-      }
-    };
-    window.addEventListener('beforeunload', handler);
-    return () => window.removeEventListener('beforeunload', handler);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   // Restore scroll position when view changes
   useEffect(() => {
+    const scrollEl = s.scrollRef.current;
+    const positions = s.scrollPositionRef.current;
     requestAnimationFrame(() => {
-      if (s.scrollRef.current) {
-        const saved = s.scrollPositionRef.current[s.view];
-        s.scrollRef.current.scrollTo(0, saved || 0);
+      if (scrollEl) {
+        const saved = positions[s.view];
+        scrollEl.scrollTo(0, saved || 0);
       }
     });
-  }, [s.view]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [s.view, s.scrollRef, s.scrollPositionRef]);
 
   const renderWorkspace = () => {
     if (s.view === 'settings') return <ErrorBoundary key="settings" onGoHome={s.goHome}><SettingsPanel onBack={() => s.goTo(s.prevView === 'settings' ? 'input' : s.prevView)} lang={s.lang} onUiLangChange={s.handleUiLangChange} themePref={s.themePref} onThemeChange={s.handleThemeChange} fontSize={s.fontSize} onFontSizeChange={s.handleFontSizeChange} showToast={s.showToast} onShowOnboarding={() => s.setShowOnboarding(true)} onResumeOnboarding={s.onboardingPausedForSettings ? () => { s.setOnboardingPausedForSettings(false); s.setShowOnboarding(true); } : undefined} /></ErrorBoundary>;

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Check, Download, Upload, AlertTriangle } from 'lucide-react';
-import { getLang, setLang, getUiLang, exportAllData, validateBackup, importData, getDataUsage, formatBytes, getAutoReportSetting, setAutoReportSetting, isDemoMode, setDemoMode, getFeatureEnabled, setFeatureEnabled } from './storage';
+import { getLang, setLang, getUiLang, exportAllData, validateBackup, importData, getDataUsage, formatBytes, getAutoReportSetting, setAutoReportSetting, isDemoMode, setDemoMode, getFeatureEnabled, setFeatureEnabled, safeGetItem } from './storage';
 import { resetOnboarding } from './onboardingState';
 import type { ThemePref, LoreBackup } from './storage';
 import {
@@ -12,12 +12,6 @@ import type { ProviderName } from './provider';
 import { t, tf, OUTPUT_LANGS } from './i18n';
 import type { Lang } from './i18n';
 import type { FontSize } from './types';
-
-import {
-  getNotionApiKey, setNotionApiKey,
-  getNotionDatabaseId, setNotionDatabaseId,
-  getSlackWebhookUrl, setSlackWebhookUrl,
-} from './integrations';
 
 interface SettingsPanelProps {
   onBack: () => void;
@@ -46,12 +40,12 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Notion
-  const [notionKey, setNotionKeyState] = useState(getNotionApiKey);
-  const [notionDbId, setNotionDbIdState] = useState(getNotionDatabaseId);
+  const [notionKey, setNotionKeyState] = useState(() => safeGetItem('threadlog_notion_api_key') || '');
+  const [notionDbId, setNotionDbIdState] = useState(() => safeGetItem('threadlog_notion_database_id') || '');
   const [notionSaved, setNotionSaved] = useState(false);
 
   // Slack
-  const [slackWebhook, setSlackWebhookState] = useState(getSlackWebhookUrl);
+  const [slackWebhook, setSlackWebhookState] = useState(() => safeGetItem('threadlog_slack_webhook_url') || '');
   const [slackSaved, setSlackSaved] = useState(false);
 
   // Auto weekly report
@@ -377,8 +371,10 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                     return;
                   }
                   setNotionError('');
-                  setNotionApiKey(notionKey);
-                  setNotionDatabaseId(notionDbId);
+                  import('./integrations').then(({ setNotionApiKey, setNotionDatabaseId }) => {
+                    setNotionApiKey(notionKey);
+                    setNotionDatabaseId(notionDbId);
+                  });
                   setNotionSaved(true);
                   setTimeout(() => setNotionSaved(false), 2000);
                 }}
@@ -428,7 +424,9 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                     return;
                   }
                   setSlackError('');
-                  setSlackWebhookUrl(slackWebhook);
+                  import('./integrations').then(({ setSlackWebhookUrl }) => {
+                    setSlackWebhookUrl(slackWebhook);
+                  });
                   setSlackSaved(true);
                   setTimeout(() => setSlackSaved(false), 2000);
                 }}
