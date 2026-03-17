@@ -3,26 +3,27 @@ import { LayoutDashboard, BarChart2, CheckSquare, ScrollText, MoreHorizontal, Fo
 import { t } from './i18n';
 import type { Lang } from './i18n';
 import { useFocusTrap } from './useFocusTrap';
+import type { View } from './App';
 
 interface BottomNavProps {
   activeView: string;
-  onNavigate: (view: string) => void;
+  onNavigate: (view: View) => void;
   lang: Lang;
 }
 
 const PRIMARY_TABS = [
-  { view: 'input', icon: LayoutDashboard, labelKey: 'navHome' as const },
-  { view: 'dashboard', icon: BarChart2, labelKey: 'navDashboard' as const },
-  { view: 'history', icon: ScrollText, labelKey: 'navLogs' as const },
-  { view: 'projects', icon: FolderOpen, labelKey: 'navProjects' as const },
+  { view: 'input' as const, icon: LayoutDashboard, labelKey: 'navHome' as const },
+  { view: 'dashboard' as const, icon: BarChart2, labelKey: 'navDashboard' as const },
+  { view: 'history' as const, icon: ScrollText, labelKey: 'navLogs' as const },
+  { view: 'projects' as const, icon: FolderOpen, labelKey: 'navProjects' as const },
 ];
 
 const MORE_ITEMS = [
-  { view: 'todos', icon: CheckSquare, labelKey: 'navTodo' as const },
-  { view: 'timeline', icon: Clock, labelKey: 'navTimeline' as const },
-  { view: 'weeklyreport', icon: FileBarChart, labelKey: 'navWeeklyReport' as const },
-  { view: 'summarylist', icon: BookOpen, labelKey: 'navProjectSummary' as const },
-  { view: 'settings', icon: Settings, labelKey: 'settings' as const },
+  { view: 'todos' as const, icon: CheckSquare, labelKey: 'navTodo' as const },
+  { view: 'timeline' as const, icon: Clock, labelKey: 'navTimeline' as const },
+  { view: 'weeklyreport' as const, icon: FileBarChart, labelKey: 'navWeeklyReport' as const },
+  { view: 'summarylist' as const, icon: BookOpen, labelKey: 'navProjectSummary' as const },
+  { view: 'settings' as const, icon: Settings, labelKey: 'settings' as const },
 ];
 
 function BottomNav({ activeView, onNavigate, lang }: BottomNavProps) {

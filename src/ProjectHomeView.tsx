@@ -97,8 +97,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
   const handleDownloadJson = (log: LogEntry) => {
     const date = new Date(log.createdAt).toISOString().slice(0, 10);
     const type = log.outputMode === 'handoff' ? 'handoff' : 'worklog';
-    const { sourceText: _s, ...exportData } = log;
-    void _s;
+    const { sourceText: _sourceText, ...exportData } = log; // eslint-disable-line @typescript-eslint/no-unused-vars
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -244,6 +243,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label={t('ariaSearchLogs', lang)}
               placeholder={t('searchLogs', lang)}
               maxLength={200}
               style={{ flex: 1, minWidth: 100 }}

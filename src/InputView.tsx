@@ -7,7 +7,7 @@ import { addLog, getLog, addTodosFromLog, addTodosFromLogWithMeta, loadLogs, upd
 import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
 const loadDemoData = () => import('./demoData');
 import { classifyLog, saveCorrection } from './classify';
-import { extractDocxText } from './docx';
+// extractDocxText is lazy-loaded only when a .docx file is selected
 import { parseConversationJson } from './jsonImport';
 import { Copy, Check, X, Share2 } from 'lucide-react';
 import { getGreeting } from './greeting';
@@ -52,6 +52,7 @@ async function readFileContent(file: File): Promise<{ content: string; lastModif
     });
     return { content, lastModified: file.lastModified };
   } else if (name.endsWith('.docx')) {
+    const { extractDocxText } = await import('./docx');
     const content = await extractDocxText(file);
     return { content, lastModified: file.lastModified };
   } else if (name.endsWith('.json')) {

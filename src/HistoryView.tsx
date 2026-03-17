@@ -885,6 +885,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
           type="text"
           value={rawQuery}
           onChange={(e) => setRawQuery(e.target.value)}
+          aria-label={t('ariaSearchLogs', lang)}
           placeholder={t('searchLogs', lang)}
           maxLength={200}
           style={{ flex: 1, minWidth: 120 }}

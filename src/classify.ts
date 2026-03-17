@@ -35,6 +35,18 @@ export function saveCorrection(log: LogEntry, projectId: string): void {
   safeSetItem(CORRECTIONS_KEY, JSON.stringify(corrections));
 }
 
+// --- Classification cache (in-memory, max 50 entries) ---
+
+const classifyCache = new Map<string, ClassifyResult>();
+const CACHE_MAX = 50;
+
+function makeCacheKey(
+  log: Pick<LogEntry, 'title' | 'tags' | 'relatedProjects'>,
+  projectIds: string[],
+): string {
+  return `${log.title}|${log.tags.join(',')}|${(log.relatedProjects || []).join(',')}|${projectIds.join(',')}`;
+}
+
 // --- Classification ---
 
 function buildExamplesBlock(corrections: Correction[], projects: Project[]): string {
@@ -57,6 +69,11 @@ export async function classifyLog(
 
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) return { projectId: null, confidence: 0 };
+
+  // Check in-memory cache
+  const cacheKey = makeCacheKey(log, projects.map((p) => p.id));
+  const cached = classifyCache.get(cacheKey);
+  if (cached) return cached;
 
   const corrections = loadCorrections();
   const examplesBlock = buildExamplesBlock(corrections, projects);
@@ -105,7 +122,11 @@ Rules:
       return { projectId: null, confidence: 0 };
     }
 
-    return { projectId, confidence };
+    const result: ClassifyResult = { projectId, confidence };
+    // Store in cache; clear if full
+    if (classifyCache.size >= CACHE_MAX) classifyCache.clear();
+    classifyCache.set(cacheKey, result);
+    return result;
   } catch (err) {
     if (import.meta.env.DEV) console.warn('[Classify] Failed:', err);
     return { projectId: null, confidence: 0 };

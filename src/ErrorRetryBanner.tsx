@@ -23,7 +23,7 @@ export default function ErrorRetryBanner({ message, retryLabel, dismissLabel, on
   };
 
   return (
-    <div className="error-retry-banner">
+    <div className="error-retry-banner" role="alert">
       <span style={{ flex: 1 }}>{message}</span>
       {onRetry && (
         <button

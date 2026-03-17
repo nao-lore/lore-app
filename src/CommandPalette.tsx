@@ -7,6 +7,7 @@ import type { SearchResult } from './search';
 import { t } from './i18n';
 import type { Lang } from './i18n';
 import { useFocusTrap } from './useFocusTrap';
+import type { View } from './App';
 
 interface ActionCommand {
   id: string;
@@ -25,16 +26,23 @@ interface CommandPaletteProps {
   onClose: () => void;
   lang: Lang;
   // Action command callbacks (optional)
-  onNavigate?: (view: string) => void;
+  onNavigate?: (view: View) => void;
   onToggleTheme?: (theme: 'light' | 'dark') => void;
   onNewProject?: () => void;
 }
 
 export default function CommandPalette({ logs, projects, masterNotes, onSelectLog, onSelectProject, onSelectSummary, onClose, lang, onNavigate, onToggleTheme, onNewProject }: CommandPaletteProps) {
   const [query, setQueryRaw] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const setQuery = useCallback((q: string) => { setQueryRaw(q); setSelectedIndex(0); }, []);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Debounce search input by 150ms
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 150);
+    return () => clearTimeout(t);
+  }, [query]);
   const listRef = useRef<HTMLDivElement>(null);
   const trapRef = useFocusTrap<HTMLDivElement>(true);
 
@@ -77,13 +85,13 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
 
   const filteredCommands = useMemo((): ActionCommand[] => {
     if (!isCommandMode) return [];
-    const cmdQuery = query.slice(1).trim().toLowerCase();
+    const cmdQuery = debouncedQuery.slice(1).trim().toLowerCase();
     if (!cmdQuery) return actionCommands;
     return actionCommands.filter((cmd) =>
       cmd.label.toLowerCase().includes(cmdQuery) ||
       cmd.keywords.some((kw) => kw.includes(cmdQuery))
     );
-  }, [isCommandMode, query, actionCommands]);
+  }, [isCommandMode, debouncedQuery, actionCommands]);
 
   /** Build a content preview (~80 chars) from a log's fields */
   const getContentPreview = useCallback((log: LogEntry): string | undefined => {
@@ -102,7 +110,7 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
 
   const results = useMemo((): SearchResult[] => {
     if (isCommandMode) return []; // Commands handled separately
-    const q = query.trim();
+    const q = debouncedQuery.trim();
     if (!q) {
       // Show recent logs when empty
       return logs.slice(0, 8).map((l) => ({
@@ -114,7 +122,7 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
     }
 
     return search(q, { logs, projects, todos, masterNotes, projectMap }, 30);
-  }, [query, isCommandMode, logs, projects, todos, masterNotes, projectMap]);
+  }, [debouncedQuery, isCommandMode, logs, projects, todos, masterNotes, projectMap]);
 
   // Unified item count for keyboard navigation
   const totalItems = isCommandMode ? filteredCommands.length : results.length;
@@ -246,6 +254,7 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
+          aria-label={t('ariaSearch', lang)}
           placeholder={t('searchPlaceholder', lang)}
           maxLength={200}
         />

@@ -17,6 +17,17 @@ const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 const MAX_MN_SNAPSHOTS = 50;
 
+// ─── In-memory cache for logs (avoids re-parsing localStorage on every read) ───
+
+let logsCacheVersion = 0;
+let logsCache: { data: LogEntry[] | null; version: number } = { data: null, version: 0 };
+
+/** Invalidate the logs cache — call after any direct localStorage write to LOGS_KEY */
+export function invalidateLogsCache(): void {
+  logsCacheVersion++;
+  logsCache.data = null;
+}
+
 export function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { if (import.meta.env.DEV) console.error(`Failed to read localStorage key: ${key}`); return null; }
 }
@@ -76,10 +87,16 @@ export function purgeExpiredTrash(): void {
 
 export function saveLogs(logs: LogEntry[]): void {
   safeSetItem(LOGS_KEY, JSON.stringify(logs));
+  invalidateLogsCache();
 }
 
-/** Load all logs (including trashed) — raw access */
+/** Load all logs (including trashed) — raw access, with in-memory cache */
 function loadAllLogs(): LogEntry[] {
+  // Return cached data if still valid
+  if (logsCache.data !== null && logsCache.version === logsCacheVersion) {
+    return logsCache.data;
+  }
+
   const raw = safeGetItem(LOGS_KEY);
   if (!raw) return [];
   try {
@@ -100,9 +117,13 @@ function loadAllLogs(): LogEntry[] {
       });
       safeSetItem(LOGS_KEY, JSON.stringify(migrated));
       safeSetItem(MIGRATION_KEY, '1');
-      return migrated.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const sorted = migrated.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      logsCache = { data: sorted, version: logsCacheVersion };
+      return sorted;
     }
-    return logs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const sorted = logs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    logsCache = { data: sorted, version: logsCacheVersion };
+    return sorted;
   } catch (err) {
     if (import.meta.env.DEV) console.warn('[storage] loadAllLogs', err);
     return [];
@@ -725,6 +746,8 @@ export function importData(backup: LoreBackup, mode: 'merge' | 'overwrite'): Imp
       if (cat) result[cat] = merged.length;
     }
   }
+  // Invalidate logs cache since import may have written to LOGS_KEY
+  invalidateLogsCache();
   return result;
 }
 

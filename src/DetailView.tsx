@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect, memo } from 'react';
+import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import { trashLog, restoreLog, updateLog, loadTodos, loadLogs, duplicateLog, getAiContext, getMasterNote, getFeatureEnabled, linkLogs, unlinkLogs } from './storage';
 import { updateTodo as updateTodoStorage } from './storage';
-import { classifyLog as _classifyLog, saveCorrection } from './classify';
-void _classifyLog;
+import { saveCorrection } from './classify';
 import { MoreVertical, Pin, CheckSquare, Square, ExternalLink, Copy, Check, Activity, X, Link, Share2 } from 'lucide-react';
 import { logToMarkdown } from './markdown';
 import { playDelete } from './sounds';
@@ -28,8 +27,8 @@ function downloadFile(content: string, fileName: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lang, projects, onRefresh, showToast, onTagFilter, allLogs, onOpenMasterNote }: { id: string; onDeleted: () => void; onOpenLog: (id: string) => void; onBack: () => void; prevView: string; lang: Lang; projects: Project[]; onRefresh: () => void; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onTagFilter?: (tag: string) => void; allLogs: LogEntry[]; onOpenMasterNote?: (projectId: string) => void }) {
-  void _prevView;
   const log = allLogs.find((l) => l.id === id);
   const [menuOpen, setMenuOpen] = useState(false);
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
@@ -47,10 +46,12 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
   const [sendingSlack, setSendingSlack] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  void todosVersion;
 
   // Prev/next navigation
-  const sortedLogs = allLogs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const sortedLogs = useMemo(
+    () => [...allLogs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [allLogs],
+  );
   const currentIndex = sortedLogs.findIndex((l) => l.id === id);
   const prevLogId = currentIndex > 0 ? sortedLogs[currentIndex - 1].id : null;
   const nextLogId = currentIndex >= 0 && currentIndex < sortedLogs.length - 1 ? sortedLogs[currentIndex + 1].id : null;
@@ -77,17 +78,17 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
     return () => document.removeEventListener('mousedown', close);
   }, [projectPickerOpen]);
 
-  if (!log) return <div className="workspace-content"><p className="empty-state">{t('logNotFound', lang)}</p></div>;
-
-  // Find previous handoff in same project for diff highlighting
-  const prevHandoff = (() => {
-    if (log.outputMode !== 'handoff' || !log.projectId) return null;
+  // Find previous handoff in same project for diff highlighting (memoized)
+  const prevHandoff = useMemo(() => {
+    if (!log || log.outputMode !== 'handoff' || !log.projectId) return null;
     const projectHandoffs = allLogs
       .filter((l) => l.projectId === log.projectId && l.outputMode === 'handoff' && l.id !== log.id)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const logTime = new Date(log.createdAt).getTime();
     return projectHandoffs.find((l) => new Date(l.createdAt).getTime() < logTime) || null;
-  })();
+  }, [log, allLogs]);
+
+  if (!log) return <div className="workspace-content"><p className="empty-state">{t('logNotFound', lang)}</p></div>;
 
   const isNewItem = (item: string, prevItems: string[] | undefined): boolean => {
     if (!prevHandoff || !prevItems || prevItems.length === 0) return false;
@@ -139,8 +140,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
     if (format === 'md') {
       downloadFile(logToMarkdown(log), `threadlog-${date}-${type}.md`, 'text/markdown');
     } else {
-      const { sourceText: _s, ...exportData } = log;
-      void _s;
+      const { sourceText: _sourceText, ...exportData } = log; // eslint-disable-line @typescript-eslint/no-unused-vars
       downloadFile(JSON.stringify(exportData, null, 2), `threadlog-${date}-${type}.json`, 'application/json');
     }
     setMenuOpen(false);
@@ -270,7 +270,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
             onClick={onBack}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter') onBack(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onBack(); } }}
           >
             {t('logs', lang)}
           </span>
@@ -285,7 +285,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                 onClick={() => onOpenMasterNote?.(project.id)}
                 role={onOpenMasterNote ? 'button' : undefined}
                 tabIndex={onOpenMasterNote ? 0 : undefined}
-                onKeyDown={onOpenMasterNote ? (e) => { if (e.key === 'Enter') onOpenMasterNote(project.id); } : undefined}
+                onKeyDown={onOpenMasterNote ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenMasterNote(project.id); } } : undefined}
               >
                 {project.icon && <span style={{ marginRight: 3 }}>{project.icon}</span>}
                 {project.name}
@@ -746,8 +746,8 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
 
 // --- Todo Section (checkboxes for worklog detail) ---
 
-function TodoSection({ logId, lang, todosVersion, onToggle, allTodos }: { logId: string; lang: Lang; todosVersion: number; onToggle: () => void; allTodos?: Todo[] }) {
-  void todosVersion;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function TodoSection({ logId, lang, todosVersion: _todosVersion, onToggle, allTodos }: { logId: string; lang: Lang; todosVersion: number; onToggle: () => void; allTodos?: Todo[] }) {
   const todos = (allTodos ?? loadTodos()).filter((t: Todo) => t.logId === logId);
   if (todos.length === 0) return null;
 
@@ -790,9 +790,8 @@ function TodoSection({ logId, lang, todosVersion, onToggle, allTodos }: { logId:
 function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; onOpenLog: (id: string) => void; lang: Lang; allLogs: LogEntry[] }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [, setRefreshKey] = useState(0); // triggers re-render on link/unlink
   const searchInputRef = useRef<HTMLInputElement>(null);
-  void refreshKey;
 
   // Explicitly linked logs (bidirectional backlinks)
   const currentLog = allLogs.find((l) => l.id === log.id);

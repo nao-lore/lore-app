@@ -116,6 +116,7 @@ async function callGeminiWithModel(req: ProviderRequest, model: string): Promise
     ],
     generationConfig: {
       maxOutputTokens: req.maxTokens,
+      responseMimeType: 'application/json',
       thinkingConfig: { thinkingBudget: 0 },
     },
   };
@@ -636,40 +637,65 @@ function migrateOldApiKey(): void {
 // Run migration once on load
 migrateOldApiKey();
 
-export async function callProvider(req: ProviderRequest): Promise<string> {
-  // Use built-in API when no user key is configured
-  if (shouldUseBuiltinApi()) {
-    return callBuiltin(req);
-  }
+// ---------------------------------------------------------------------------
+// Retry with exponential backoff for transient errors (429, 503, overloaded)
+// ---------------------------------------------------------------------------
 
-  const provider = getActiveProvider();
-  switch (provider) {
-    case 'anthropic':
-      return callAnthropic(req);
-    case 'openai':
-      return callOpenAI(req);
-    case 'gemini':
-    default:
-      return callGemini(req);
+async function callProviderWithRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt === maxRetries) throw err;
+      const isRetryable = err instanceof Error && (
+        err.message.includes('429') || err.message.includes('503') || err.message.includes('overloaded') || err.message.includes('[Overloaded]') || err.message.includes('[Rate Limit]')
+      );
+      if (!isRetryable) throw err;
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+    }
   }
+  throw new Error('Unreachable');
+}
+
+export async function callProvider(req: ProviderRequest): Promise<string> {
+  return callProviderWithRetry(() => {
+    // Use built-in API when no user key is configured
+    if (shouldUseBuiltinApi()) {
+      return callBuiltin(req);
+    }
+
+    const provider = getActiveProvider();
+    switch (provider) {
+      case 'anthropic':
+        return callAnthropic(req);
+      case 'openai':
+        return callOpenAI(req);
+      case 'gemini':
+      default:
+        return callGemini(req);
+    }
+  });
 }
 
 /** Streaming variant — calls onChunk with each text delta. Falls back to non-streaming for OpenAI. */
 export async function callProviderStream(req: ProviderRequest, onChunk: StreamCallback): Promise<string> {
-  // Use built-in API when no user key is configured
-  if (shouldUseBuiltinApi()) {
-    return callBuiltinStream(req, onChunk);
-  }
+  return callProviderWithRetry(() => {
+    // Use built-in API when no user key is configured
+    if (shouldUseBuiltinApi()) {
+      return callBuiltinStream(req, onChunk);
+    }
 
-  const provider = getActiveProvider();
-  if (provider === 'anthropic') {
-    return callAnthropicStream(req, onChunk);
-  }
-  if (provider === 'gemini') {
-    return callGeminiStream(req, onChunk);
-  }
-  // OpenAI fallback: non-streaming call, fire onChunk once with full result
-  const result = await callProvider(req);
-  onChunk(result, result);
-  return result;
+    const provider = getActiveProvider();
+    if (provider === 'anthropic') {
+      return callAnthropicStream(req, onChunk);
+    }
+    if (provider === 'gemini') {
+      return callGeminiStream(req, onChunk);
+    }
+    // OpenAI fallback: non-streaming call, fire onChunk once with full result
+    return callProvider(req).then((result) => {
+      onChunk(result, result);
+      return result;
+    });
+  });
 }

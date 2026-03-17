@@ -42,7 +42,7 @@ const SIDEBAR_KEY = 'threadlog_sidebar';
 
 const FONT_SIZE_SCALE: Record<FontSize, number> = { small: 0.87, medium: 1, large: 1.13 };
 
-type View = 'input' | 'detail' | 'settings' | 'history' | 'masternote' | 'projects' | 'todos' | 'trash' | 'summarylist' | 'projecthome' | 'timeline' | 'help' | 'weeklyreport' | 'knowledgebase' | 'dashboard' | 'pricing';
+export type View = 'input' | 'detail' | 'settings' | 'history' | 'masternote' | 'projects' | 'todos' | 'trash' | 'summarylist' | 'projecthome' | 'timeline' | 'help' | 'weeklyreport' | 'knowledgebase' | 'dashboard' | 'pricing';
 
 function resolveUiLang(): Lang {
   return getUiLang();
@@ -81,7 +81,7 @@ export default function App() {
   const { toast, showToast } = useToast();
   const inputDirtyRef = useRef(false);
   const [pendingNav, setPendingNav] = useState<(() => void) | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLElement>(null);
   const scrollPositionRef = useRef<Record<string, number>>({});
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingPausedForSettings, setOnboardingPausedForSettings] = useState(false);
@@ -471,10 +471,10 @@ export default function App() {
   const handleGoToInput = useCallback(() => goTo('input'), []); // eslint-disable-line react-hooks/exhaustive-deps
   const handleCollapseSidebar = useCallback(() => { setSidebarOpen(false); safeSetItem(SIDEBAR_KEY, 'collapsed'); }, []);
   const handleHideSidebar = useCallback(() => { setSidebarOpen(false); setSidebarHidden(true); safeSetItem(SIDEBAR_KEY, 'hidden'); }, []);
-  const handleBottomNav = useCallback((v: string) => {
+  const handleBottomNav = useCallback((v: View) => {
     if (v === 'input') { handleNewLog(); }
-    else if (v === 'settings') { goTo('settings' as View); }
-    else { goTo(v as View); }
+    else if (v === 'settings') { goTo('settings'); }
+    else { goTo(v); }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const handleDashboardToggleAction = useCallback((logId: string, actionIndex: number) => {
     const log = getLog(logId);
@@ -550,7 +550,7 @@ export default function App() {
         />
       )}
       {sidebarOpen && (
-        <Sidebar
+        <aside aria-label="Sidebar"><Sidebar
           logs={logs} projects={projects} todos={todos} selectedId={selectedId}
           activeProjectId={activeProjectId}
           activeView={view}
@@ -575,9 +575,9 @@ export default function App() {
           lang={lang}
           showToast={showToast}
           masterNotes={masterNotes}
-        />
+        /></aside>
       )}
-      <div id="main-content" tabIndex={-1} ref={scrollRef} data-main-scroll style={{ flex: 1, overflowY: 'auto', minHeight: 0, background: 'var(--bg-app)', outline: 'none' }}>
+      <main id="main-content" tabIndex={-1} ref={scrollRef} data-main-scroll style={{ flex: 1, overflowY: 'auto', minHeight: 0, background: 'var(--bg-app)', outline: 'none' }}>
         {isDemoMode() && (
           <div style={{ background: 'var(--accent-bg, rgba(99,102,241,0.08))', borderBottom: '1px solid var(--accent)', padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, fontSize: 13 }}>
             <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{t('demoBadge', lang)}</span>
@@ -598,7 +598,7 @@ export default function App() {
             </div>
           </Suspense>
         </div>
-      </div>
+      </main>
       <button
         className={`scroll-to-top${showScrollTop ? ' visible' : ''}`}
         onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -691,9 +691,9 @@ export default function App() {
           onSelectSummary={handleOpenMasterNote}
           onClose={() => setPaletteOpen(false)}
           lang={lang}
-          onNavigate={(view) => { setPaletteOpen(false); goTo(view as View); }}
+          onNavigate={(view) => { setPaletteOpen(false); goTo(view); }}
           onToggleTheme={(theme) => { handleThemeChange(theme); }}
-          onNewProject={() => { setPaletteOpen(false); goTo('projects' as View); }}
+          onNewProject={() => { setPaletteOpen(false); goTo('projects'); }}
         />
       )}
       {showOnboarding && (

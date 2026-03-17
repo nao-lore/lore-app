@@ -136,12 +136,14 @@ import {
   exportAllData,
   importData,
   validateBackup,
+  invalidateLogsCache,
   type LoreBackup,
 } from './storage';
 
 beforeEach(() => {
   store.clear();
   uuidCounter = 0;
+  invalidateLogsCache();
   vi.useRealTimers();
 });
 

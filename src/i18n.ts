@@ -1740,6 +1740,8 @@ const labels = {
   ariaSwitchToCompact: { ja: 'コンパクト表示に切り替え', en: 'Switch to compact view', es: 'Cambiar a vista compacta', fr: 'Passer à la vue compacte', de: 'Zur kompakten Ansicht wechseln', zh: '切换到紧凑视图', ko: '컴팩트 보기로 전환', pt: 'Mudar para visualização compacta' },
   ariaBulkCheckbox: { ja: 'ログを選択', en: 'Select log', es: 'Seleccionar registro', fr: 'Sélectionner le log', de: 'Log auswählen', zh: '选择日志', ko: '로그 선택', pt: 'Selecionar registro' },
   ariaScrollToTop: { ja: 'トップへスクロール', en: 'Scroll to top', es: 'Volver arriba', fr: 'Retour en haut', de: 'Nach oben scrollen', zh: '滚动到顶部', ko: '맨 위로 스크롤', pt: 'Voltar ao topo' },
+  ariaSearch: { ja: '検索', en: 'Search', es: 'Buscar', fr: 'Rechercher', de: 'Suchen', zh: '搜索', ko: '검색', pt: 'Pesquisar' },
+  ariaSearchLogs: { ja: 'ログを検索', en: 'Search logs', es: 'Buscar registros', fr: 'Rechercher des logs', de: 'Logs durchsuchen', zh: '搜索日志', ko: '로그 검색', pt: 'Pesquisar registros' },
   tabTitleDashboard: { ja: 'ダッシュボード', en: 'Dashboard', es: 'Panel', fr: 'Tableau de bord', de: 'Dashboard', zh: '仪表盘', ko: '대시보드', pt: 'Painel' },
   tabTitleTodos: { ja: 'TODO', en: 'TODO', es: 'TODO', fr: 'TODO', de: 'TODO', zh: 'TODO', ko: 'TODO', pt: 'TODO' },
   tabTitleHistory: { ja: 'ログ', en: 'Logs', es: 'Registros', fr: 'Logs', de: 'Logs', zh: '日志', ko: '로그', pt: 'Registros' },
