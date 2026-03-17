@@ -24,6 +24,11 @@ interface BootstrapParams {
   logs: LogEntry[];
 }
 
+// Fallback for browsers without requestIdleCallback (e.g. Safari < 16.4)
+const ric = typeof window !== 'undefined' && window.requestIdleCallback
+  ? window.requestIdleCallback
+  : (cb: () => void) => setTimeout(cb, 1);
+
 /**
  * Consolidates all mount-only / bootstrap effects from App.tsx.
  * Each effect runs once on mount (or with minimal stable deps).
@@ -83,11 +88,11 @@ export function useBootstrapEffects(params: BootstrapParams): void {
     });
   }, []);
 
-  // 4. Purge expired trash on app load (mount-only)
-  useEffect(() => { purgeExpiredTrash(); }, []);
+  // 4. Purge expired trash on app load (mount-only, non-urgent)
+  useEffect(() => { ric(() => { purgeExpiredTrash(); }); }, []);
 
-  // 5. Record daily activity for streak tracking (mount-only)
-  useEffect(() => { recordActivity(); }, []);
+  // 5. Record daily activity for streak tracking (mount-only, non-urgent)
+  useEffect(() => { ric(() => { recordActivity(); }); }, []);
 
   // 6. Auto weekly report reminder on app load (mount-only)
   useEffect(() => {

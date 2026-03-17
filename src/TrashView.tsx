@@ -42,6 +42,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
   const [searchQuery, setSearchQuery] = useState('');
   const TRASH_PAGE_SIZE = 30;
   const [visibleCount, setVisibleCount] = useState(TRASH_PAGE_SIZE);
+  // Reset pagination when filter/search changes — setState-in-effect is intentional here
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setVisibleCount(TRASH_PAGE_SIZE); }, [filter, searchQuery]);
 

@@ -384,7 +384,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
   // Group
   type GroupedEntry = { key: string; label: string; items: LogEntry[] };
 
-  const buildGroups = (): GroupedEntry[] => {
+  const groups = useMemo((): GroupedEntry[] => {
     if (groupKey === 'none') {
       return [{ key: '_all', label: '', items: sorted }];
     }
@@ -442,10 +442,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
     }
 
     return order.map((k) => ({ key: k, ...map.get(k)! }));
-  };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const groups = useMemo(() => buildGroups(), [sorted, groupKey, lang, projects]);
+  }, [sorted, groupKey, lang, projects]);
 
   // Action handlers
   const handleLogAction = (log: LogEntry, action: string, value?: string) => {

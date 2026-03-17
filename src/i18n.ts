@@ -1,3 +1,11 @@
+/**
+ * i18n — all 8 languages are bundled in a single object (~269KB raw, ~92KB gzip).
+ *
+ * Performance note (Perf #33): Splitting by language would require async loading
+ * which breaks the synchronous t() / tf() API used throughout the app.
+ * The gzipped size (92KB) is acceptable for now. If it becomes a bottleneck,
+ * consider migrating to an async i18n framework (e.g. i18next with lazy namespaces).
+ */
 export type Lang = 'ja' | 'en' | 'es' | 'fr' | 'de' | 'zh' | 'ko' | 'pt';
 export type OutputLang = Lang;
 export const OUTPUT_LANGS: { code: OutputLang; label: string; flag: string }[] = [
@@ -56,6 +64,7 @@ const labels = {
   addMoreFiles: { ja: '+ ファイルを追加', en: '+ Add More Files', es: '+ Agregar más archivos', fr: '+ Ajouter des fichiers', de: '+ Weitere Dateien hinzufügen', zh: '+ 添加更多文件', ko: '+ 파일 추가', pt: '+ Adicionar Mais Arquivos' },
   clearAllFiles: { ja: 'すべてクリア', en: 'Clear All Files', es: 'Borrar todo', fr: 'Tout effacer', de: 'Alle löschen', zh: '全部清除', ko: '모두 지우기', pt: 'Limpar Tudo' },
   clearText: { ja: 'テキストをクリア', en: 'Clear text', es: 'Borrar texto', fr: 'Effacer le texte', de: 'Text löschen', zh: '清除文本', ko: '텍스트 지우기', pt: 'Limpar texto' },
+  inputCleared: { ja: '入力をクリアしました', en: 'Input cleared', es: 'Entrada borrada', fr: 'Entrée effacée', de: 'Eingabe gelöscht', zh: '输入已清除', ko: '입력이 지워졌습니다', pt: 'Entrada limpa' },
   dropFilesHere: { ja: 'ここにファイルをドロップ', en: 'Drop files here', es: 'Suelte archivos aquí', fr: 'Déposez les fichiers ici', de: 'Dateien hier ablegen', zh: '将文件拖放到此处', ko: '여기에 파일을 놓으세요', pt: 'Solte os arquivos aqui' },
   chars: { ja: '文字', en: 'chars', es: 'caracteres', fr: 'caractères', de: 'Zeichen', zh: '字符', ko: '자', pt: 'caracteres' },
   longTextMode: { ja: '長文モード', en: 'Long text mode', es: 'Modo texto largo', fr: 'Mode texte long', de: 'Langtextmodus', zh: '长文模式', ko: '긴 텍스트 모드', pt: 'Modo texto longo' },
@@ -142,11 +151,11 @@ const labels = {
   modeIndicator: { ja: '生成モード', en: 'Mode', es: 'Modo', fr: 'Mode', de: 'Modus', zh: '生成模式', ko: '생성 모드', pt: 'Modo' },
   modeLabelBoth: { ja: 'Worklog＋Handoff', en: 'Worklog + Handoff', es: 'Worklog + Handoff', fr: 'Worklog + Handoff', de: 'Worklog + Handoff', zh: 'Worklog＋Handoff', ko: 'Worklog＋Handoff', pt: 'Worklog + Handoff' },
   modeLabelWorklog: { ja: 'Worklog', en: 'Worklog', es: 'Worklog', fr: 'Worklog', de: 'Worklog', zh: 'Worklog', ko: 'Worklog', pt: 'Worklog' },
-  modeLabelHandoff: { ja: 'Handoff', en: 'Handoff', es: 'Handoff', fr: 'Handoff', de: 'Handoff', zh: 'Handoff', ko: 'Handoff', pt: 'Handoff' },
+  modeLabelHandoff: { ja: 'コンテキストスナップショット', en: 'Context Snapshot', es: 'Snapshot de Contexto', fr: 'Snapshot de Contexte', de: 'Kontext-Snapshot', zh: '上下文快照', ko: '컨텍스트 스냅샷', pt: 'Snapshot de Contexto' },
   worklogDesc: { ja: '作業履歴を保存し、TODOを自動抽出します', en: 'Saves work history and auto-extracts TODOs', es: 'Guarda el historial de trabajo y extrae TODOs automáticamente', fr: 'Sauvegarde l\'historique de travail et extrait les TODOs automatiquement', de: 'Speichert den Arbeitsverlauf und extrahiert automatisch TODOs', zh: '保存工作记录并自动提取TODO', ko: '작업 이력을 저장하고 TODO를 자동 추출합니다', pt: 'Salva o histórico de trabalho e extrai TODOs automaticamente' },
   handoffDesc: { ja: '次のAIがすぐ作業を再開できる要約', en: 'A summary so the next AI can resume immediately', es: 'Un resumen para que la próxima IA pueda retomar inmediatamente', fr: 'Un résumé pour que la prochaine IA puisse reprendre immédiatement', de: 'Eine Zusammenfassung, damit die nächste KI sofort weiterarbeiten kann', zh: '让下一个AI可以立即继续工作的摘要', ko: '다음 AI가 바로 작업을 재개할 수 있는 요약', pt: 'Um resumo para que a próxima IA possa retomar imediatamente' },
   modeLabelTodoOnly: { ja: 'TODO抽出', en: 'TODO Only', es: 'Solo TODO', fr: 'TODO uniquement', de: 'Nur TODO', zh: 'TODO提取', ko: 'TODO 추출', pt: 'Apenas TODO' },
-  modeLabelHandoffTodo: { ja: 'Handoff＋TODO抽出', en: 'Handoff + TODO', es: 'Handoff + TODO', fr: 'Handoff + TODO', de: 'Handoff + TODO', zh: 'Handoff＋TODO提取', ko: 'Handoff＋TODO 추출', pt: 'Handoff + TODO' },
+  modeLabelHandoffTodo: { ja: 'スナップショット＋TODO', en: 'Snapshot + TODO', es: 'Snapshot + TODO', fr: 'Snapshot + TODO', de: 'Snapshot + TODO', zh: '快照＋TODO', ko: '스냅샷＋TODO', pt: 'Snapshot + TODO' },
   modeLabelWorklogHandoff: { ja: 'Worklog＋Handoff', en: 'Worklog + Handoff', es: 'Worklog + Handoff', fr: 'Worklog + Handoff', de: 'Worklog + Handoff', zh: 'Worklog＋Handoff', ko: 'Worklog＋Handoff', pt: 'Worklog + Handoff' },
   createBtnTodoOnly: { ja: 'TODOを抽出', en: 'Extract TODOs', es: 'Extraer TODOs', fr: 'Extraire les TODOs', de: 'TODOs extrahieren', zh: '提取TODO', ko: 'TODO 추출', pt: 'Extrair TODOs' },
   createBtnHandoffTodo: { ja: 'Handoff＋TODOを作成', en: 'Create Handoff + TODO', es: 'Crear Handoff + TODO', fr: 'Créer Handoff + TODO', de: 'Handoff + TODO erstellen', zh: '创建Handoff＋TODO', ko: 'Handoff＋TODO 생성', pt: 'Criar Handoff + TODO' },
@@ -288,8 +297,8 @@ const labels = {
   confirmDeleteBtn: { ja: '削除する', en: 'Delete', es: 'Eliminar', fr: 'Supprimer', de: 'Löschen', zh: '删除', ko: '삭제', pt: 'Excluir' },
   undo: { ja: '元に戻す', en: 'Undo', es: 'Deshacer', fr: 'Annuler', de: 'Rückgängig', zh: '撤销', ko: '실행 취소', pt: 'Desfazer' },
   movedToTrash: { ja: 'ゴミ箱に移動しました', en: 'Moved to trash', es: 'Movido a la papelera', fr: 'Déplacé vers la corbeille', de: 'In den Papierkorb verschoben', zh: '已移至回收站', ko: '휴지통으로 이동됨', pt: 'Movido para a lixeira' },
-  tooltipHandoff: { ja: 'AI会話から引き継ぎメモを生成', en: 'Generate handoff memo from AI conversation', es: 'Generar memo de traspaso desde conversación IA', fr: 'Générer un mémo de passation à partir de la conversation IA', de: 'Übergabe-Memo aus KI-Gespräch erstellen', zh: '从AI对话生成交接备忘录', ko: 'AI 대화에서 인수인계 메모 생성', pt: 'Gerar memo de passagem a partir de conversa com IA' },
-  tooltipHandoffTodo: { ja: '引き継ぎメモとTODOを同時に生成', en: 'Generate handoff memo and TODOs together', es: 'Generar memo de traspaso y TODOs juntos', fr: 'Générer mémo de passation et TODOs ensemble', de: 'Übergabe-Memo und TODOs zusammen erstellen', zh: '同时生成交接备忘录和待办事项', ko: '인수인계 메모와 TODO를 함께 생성', pt: 'Gerar memo de passagem e TODOs juntos' },
+  tooltipHandoff: { ja: 'AI会話からコンテキストスナップショットを生成', en: 'Generate context snapshot from AI conversation', es: 'Generar snapshot de contexto desde conversación IA', fr: 'Générer un snapshot de contexte à partir de la conversation IA', de: 'Kontext-Snapshot aus KI-Gespräch erstellen', zh: '从AI对话生成上下文快照', ko: 'AI 대화에서 컨텍스트 스냅샷 생성', pt: 'Gerar snapshot de contexto a partir de conversa com IA' },
+  tooltipHandoffTodo: { ja: 'スナップショットとTODOを同時に生成', en: 'Generate snapshot and TODOs together', es: 'Generar snapshot y TODOs juntos', fr: 'Générer snapshot et TODOs ensemble', de: 'Snapshot und TODOs zusammen erstellen', zh: '同时生成快照和待办事项', ko: '스냅샷과 TODO를 함께 생성', pt: 'Gerar snapshot e TODOs juntos' },
   tooltipTodoOnly: { ja: 'TODOリストだけを抽出', en: 'Extract only the TODO list', es: 'Extraer solo la lista de TODO', fr: 'Extraire uniquement la liste TODO', de: 'Nur die TODO-Liste extrahieren', zh: '仅提取待办事项列表', ko: 'TODO 목록만 추출', pt: 'Extrair apenas a lista de TODO' },
   tooltipWorklog: { ja: 'AI会話からワークログを生成', en: 'Generate work log from AI conversation', es: 'Generar registro de trabajo desde conversación IA', fr: 'Générer un journal de travail à partir de la conversation IA', de: 'Arbeitsprotokoll aus KI-Gespräch erstellen', zh: '从AI对话生成工作日志', ko: 'AI 대화에서 작업 로그 생성', pt: 'Gerar registro de trabalho a partir de conversa com IA' },
   tooltipBoth: { ja: 'ワークログと引き継ぎメモの両方を生成', en: 'Generate both work log and handoff memo', es: 'Generar registro de trabajo y memo de traspaso', fr: 'Générer le journal de travail et le mémo de passation', de: 'Arbeitsprotokoll und Übergabe-Memo erstellen', zh: '同时生成工作日志和交接备忘录', ko: '작업 로그와 인수인계 메모 모두 생성', pt: 'Gerar registro de trabalho e memo de passagem' },

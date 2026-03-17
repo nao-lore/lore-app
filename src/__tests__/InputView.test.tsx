@@ -200,8 +200,8 @@ describe('InputView', () => {
     // There should be at least 3 mode radio buttons (handoff, handoff+todo, todo only)
     expect(radios.length).toBeGreaterThanOrEqual(3);
     // Check that mode labels exist in the document
-    expect(screen.getAllByText('Handoff', { exact: true }).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Handoff + TODO').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Context Snapshot', { exact: true }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Snapshot + TODO').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('TODO Only').length).toBeGreaterThanOrEqual(1);
   });
 

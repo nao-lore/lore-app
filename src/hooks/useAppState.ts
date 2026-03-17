@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, startTransition } from 'react';
 import { useToast } from '../useToast';
 import { useFocusTrap } from '../useFocusTrap';
 import { loadLogs, loadProjects, loadTodos, loadMasterNotes, getUiLang, setUiLang, getTheme, setTheme as saveTheme, updateLog, getLog, safeGetItem, safeSetItem } from '../storage';
@@ -104,8 +104,10 @@ export function useAppState() {
     if (scrollRef.current) {
       scrollPositionRef.current[view] = scrollRef.current.scrollTop;
     }
-    setPrevView(view);
-    setView(next);
+    startTransition(() => {
+      setPrevView(view);
+      setView(next);
+    });
     // Move focus to main content for screen readers / keyboard users
     requestAnimationFrame(() => scrollRef.current?.focus());
   }, [view]);

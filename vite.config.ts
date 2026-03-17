@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
+// TODO: Add rollup-plugin-visualizer for CI bundle analysis
+// import { visualizer } from 'rollup-plugin-visualizer';
+// Then add visualizer({ filename: 'dist/stats.html' }) to the plugins array.
 export default defineConfig({
   plugins: [
     react(),

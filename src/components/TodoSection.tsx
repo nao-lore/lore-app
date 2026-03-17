@@ -5,7 +5,7 @@ import type { Todo } from '../types';
 import { t } from '../i18n';
 import type { Lang } from '../i18n';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// _todosVersion is destructured as a reactive dependency trigger to force re-render on todo changes
 function TodoSection({ logId, lang, todosVersion: _todosVersion, onToggle, allTodos }: { logId: string; lang: Lang; todosVersion: number; onToggle: () => void; allTodos?: Todo[] }) {
   const todos = (allTodos ?? loadTodos()).filter((t: Todo) => t.logId === logId);
   if (todos.length === 0) return null;

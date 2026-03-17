@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, lazy, Suspense } from 'react';
-import { Menu, ChevronUp } from 'lucide-react';
+import { Menu, ChevronUp, X } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Workspace from './Workspace';
 import CommandPalette from './CommandPalette';
@@ -19,6 +19,26 @@ import { useBootstrapEffects } from './hooks/useBootstrapEffects';
 import type { View } from './hooks/useAppState';
 
 export type { View };
+
+/** Depth map for determining slide direction: higher = deeper in hierarchy */
+const VIEW_DEPTH: Record<View, number> = {
+  input: 0,
+  dashboard: 0,
+  history: 1,
+  todos: 1,
+  timeline: 1,
+  projects: 1,
+  settings: 1,
+  help: 1,
+  pricing: 1,
+  trash: 1,
+  weeklyreport: 1,
+  summarylist: 1,
+  projecthome: 2,
+  masternote: 3,
+  knowledgebase: 3,
+  detail: 3,
+};
 
 const HistoryView = lazy(() => import('./HistoryView'));
 const SettingsPanel = lazy(() => import('./SettingsPanel'));
@@ -44,6 +64,7 @@ function resolveEffectiveTheme(pref: ThemePref): 'light' | 'dark' {
 
 export default function App() {
   const { inputDirtyRef, scrollRef, scrollPositionRef, shortcutsTrapRef, ...s } = useAppState();
+  const [navDirection, setNavDirection] = useState<'forward' | 'back'>('forward');
 
   // Bootstrap: mount-only effects consolidated into a single hook
   useBootstrapEffects({
@@ -125,6 +146,15 @@ export default function App() {
       root.style.height = `${100 / scale}vh`;
     }
   }, [s.fontSize]);
+
+  // Track navigation direction based on view depth
+  const prevViewForDir = React.useRef(s.view);
+  useEffect(() => {
+    const prevDepth = VIEW_DEPTH[prevViewForDir.current] ?? 0;
+    const nextDepth = VIEW_DEPTH[s.view] ?? 0;
+    setNavDirection(nextDepth >= prevDepth ? 'forward' : 'back');
+    prevViewForDir.current = s.view;
+  }, [s.view]);
 
   // Save last view to localStorage
   useEffect(() => {
@@ -287,14 +317,11 @@ export default function App() {
         </button>
       )}
       {s.sidebarHidden && (
-        <div
+        <button
           className="sidebar-reveal-bar"
           onClick={() => { s.setSidebarHidden(false); s.setSidebarOpen(true); safeSetItem(s.SIDEBAR_KEY, 'open'); }}
           title={t('showSidebar', s.lang)}
-          role="button"
-          tabIndex={0}
           aria-label={t('ariaShowSidebar', s.lang)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); s.setSidebarHidden(false); s.setSidebarOpen(true); safeSetItem(s.SIDEBAR_KEY, 'open'); } }}
         />
       )}
       {s.sidebarOpen && (
@@ -341,7 +368,7 @@ export default function App() {
         )}
         <div style={{ height: '100%' }}>
           <Suspense fallback={<SkeletonLoader lang={s.lang} variant={s.view === 'dashboard' ? 'card' : s.view === 'detail' ? 'detail' : 'list'} />}>
-            <div className="view-fade-in" key={s.view}>
+            <div className={navDirection === 'back' ? 'view-slide-back' : 'view-slide-forward'} key={s.view}>
               {renderWorkspace()}
             </div>
           </Suspense>
@@ -373,7 +400,7 @@ export default function App() {
             }}
             aria-label={t('close', s.lang)}
           >
-            x
+            <X size={14} />
           </button>
         </div>
       )}
@@ -395,7 +422,7 @@ export default function App() {
             onClick={() => s.setShowReportReminder(false)}
             aria-label={t('close', s.lang)}
           >
-            x
+            <X size={14} />
           </button>
         </div>
       )}

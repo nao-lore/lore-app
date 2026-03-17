@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { transformText, transformHandoff, transformBoth, transformTodoOnly, transformHandoffTodo, buildHandoffLogEntry } from '../transform';
-import type { TransformBothOptions } from '../transform';
+import type { TransformBothOptions, HandoffTodoResult, TodoOnlyResult } from '../transform';
 import { ChunkEngine } from '../chunkEngine';
 import type { EngineProgress } from '../chunkEngine';
 import { addLog, getLog, addTodosFromLog, addTodosFromLogWithMeta, loadLogs, updateLog, getApiKey, getFeatureEnabled, getMasterNote, isDemoMode, safeGetItem, safeSetItem } from '../storage';
@@ -15,6 +15,41 @@ import { formatHandoffMarkdown, formatFullAiContext } from '../formatHandoff';
 import { generateProjectContext } from '../generateProjectContext';
 
 export type TransformAction = 'both' | 'handoff' | 'worklog' | 'todo_only' | 'worklog_handoff' | 'handoff_todo';
+
+// ---------------------------------------------------------------------------
+// AI result cache (AI #20) — avoids redundant API calls for identical inputs.
+// Key: hash of (first 1000 chars + total length + action). Max 20 entries (LRU eviction).
+// ---------------------------------------------------------------------------
+
+const AI_CACHE_MAX = 20;
+const aiResultCache = new Map<string, unknown>();
+
+function hashCacheKey(text: string, action: string): string {
+  const prefix = text.slice(0, 1000);
+  return `${action}:${text.length}:${prefix}`;
+}
+
+function getCachedResult<T>(text: string, action: string): T | undefined {
+  const key = hashCacheKey(text, action);
+  const cached = aiResultCache.get(key);
+  if (cached !== undefined) {
+    // Move to end for LRU behavior
+    aiResultCache.delete(key);
+    aiResultCache.set(key, cached);
+    return cached as T;
+  }
+  return undefined;
+}
+
+function setCachedResult(text: string, action: string, result: unknown): void {
+  const key = hashCacheKey(text, action);
+  // Evict oldest entry if at capacity
+  if (aiResultCache.size >= AI_CACHE_MAX && !aiResultCache.has(key)) {
+    const oldest = aiResultCache.keys().next().value;
+    if (oldest !== undefined) aiResultCache.delete(oldest);
+  }
+  aiResultCache.set(key, result);
+}
 
 interface UseTransformParams {
   lang: Lang;
@@ -202,8 +237,14 @@ export function useTransform(params: UseTransformParams) {
               ? projects.map(p => ({ id: p.id, name: p.name }))
               : undefined,
           };
-          bothResult = await transformBoth(combined, bothOpts);
-          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response: ${(performance.now() - _t0).toFixed(0)}ms`);
+          const cachedBoth = getCachedResult<BothResult>(combined, 'both');
+          if (cachedBoth) {
+            bothResult = cachedBoth;
+          } else {
+            bothResult = await transformBoth(combined, bothOpts);
+            setCachedResult(combined, 'both', bothResult);
+          }
+          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response${cachedBoth ? ' (cached)' : ''}: ${(performance.now() - _t0).toFixed(0)}ms`);
           setStreamDetail(null);
           setSimStep(4);
         }
@@ -264,8 +305,14 @@ export function useTransform(params: UseTransformParams) {
           setSimStep(0);
           setTimeout(() => setSimStep(1), 800);
           setTimeout(() => setSimStep(2), 2500);
-          r = await transformHandoff(combined);
-          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response: ${(performance.now() - _t0).toFixed(0)}ms`);
+          const cachedHandoff = getCachedResult<HandoffResult>(combined, 'handoff');
+          if (cachedHandoff) {
+            r = cachedHandoff;
+          } else {
+            r = await transformHandoff(combined);
+            setCachedResult(combined, 'handoff', r);
+          }
+          if (import.meta.env.DEV && _t0) console.log(`[Perf] API response${cachedHandoff ? ' (cached)' : ''}: ${(performance.now() - _t0).toFixed(0)}ms`);
           setSimStep(4);
         }
         setResult(r);
@@ -291,7 +338,13 @@ export function useTransform(params: UseTransformParams) {
           setSimStep(0);
           setTimeout(() => setSimStep(1), 800);
           setTimeout(() => setSimStep(2), 2500);
-          r = await transformText(combined);
+          const cachedWorklog = getCachedResult<TransformResult>(combined, 'worklog');
+          if (cachedWorklog) {
+            r = cachedWorklog;
+          } else {
+            r = await transformText(combined);
+            setCachedResult(combined, 'worklog', r);
+          }
           setSimStep(4);
         }
 
@@ -318,7 +371,14 @@ export function useTransform(params: UseTransformParams) {
       if (isHandoffTodo) {
         setSimStep(0);
         setTimeout(() => setSimStep(1), 800);
-        const htResult = await transformHandoffTodo(combined);
+        let htResult: HandoffTodoResult;
+        const cachedHT = getCachedResult<HandoffTodoResult>(combined, 'handoff_todo');
+        if (cachedHT) {
+          htResult = cachedHT;
+        } else {
+          htResult = await transformHandoffTodo(combined);
+          setCachedResult(combined, 'handoff_todo', htResult);
+        }
         setSimStep(4);
 
         const r = htResult.handoff;
@@ -342,7 +402,14 @@ export function useTransform(params: UseTransformParams) {
         setSimStep(0);
         setTimeout(() => setSimStep(1), 800);
         setTimeout(() => setSimStep(2), 2500);
-        const todoResult = await transformTodoOnly(combined);
+        let todoResult: TodoOnlyResult;
+        const cachedTodo = getCachedResult<TodoOnlyResult>(combined, 'todo_only');
+        if (cachedTodo) {
+          todoResult = cachedTodo;
+        } else {
+          todoResult = await transformTodoOnly(combined);
+          setCachedResult(combined, 'todo_only', todoResult);
+        }
         setSimStep(4);
 
         // Save as a minimal log entry (handoff body empty, worklog fields empty)

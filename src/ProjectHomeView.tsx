@@ -39,6 +39,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
   const [editDraft, setEditDraft] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Reset pagination when search changes — setState-in-effect is intentional here
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setPhVisibleCount(PH_PAGE_SIZE); }, [searchQuery]);
 
@@ -97,7 +98,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
   const handleDownloadJson = (log: LogEntry) => {
     const date = new Date(log.createdAt).toISOString().slice(0, 10);
     const type = log.outputMode === 'handoff' ? 'handoff' : 'worklog';
-    const { sourceText: _sourceText, ...exportData } = log; // eslint-disable-line @typescript-eslint/no-unused-vars
+    const { sourceText: _sourceText, ...exportData } = log; // omit sourceText from export
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

@@ -74,6 +74,7 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
         items.sort((a, b) => b.note.updatedAt - a.note.updatedAt);
     }
     return items;
+    // `logs` is an intentional reactive trigger for countUnreflectedHandoffs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [withSummaryRaw, sortKey, filterUnreflected, logs]);
 

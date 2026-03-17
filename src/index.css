@@ -43,8 +43,8 @@
   --text-primary: #111;
   --text-secondary: #1a1a1a;
   --text-body: #374151;
-  --text-muted: #5c6370;
-  --text-subtle: #64748b;
+  --text-muted: #4d5260; /* WCAG AAA 7.27:1 on --bg-app */
+  --text-subtle: #4b5563; /* WCAG AAA 7.56:1 on --bg-surface */
   --text-placeholder: #707070;
   --accent: #6544e0;
   --accent-hover: #7455f0;
@@ -135,7 +135,7 @@
   --text-secondary: #e0e0e0;
   --text-body: #b0b0b0;
   --text-muted: #a0a0a0;
-  --text-subtle: #999999;
+  --text-subtle: #aaaaaa; /* WCAG AAA 7.49:1 on --bg-surface */
   --text-placeholder: #a8a8a8;
   --accent: #9b8ff8;
   --accent-hover: #a99df9;
@@ -443,6 +443,10 @@ h4 {
   background: var(--accent);
   color: #fff;
   font-weight: 600;
+}
+.mode-selector-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .btn-danger {
@@ -2991,11 +2995,20 @@ textarea.input:focus {
   cursor: pointer;
   transition: background 0.15s, width 0.15s;
   border-right: 1px solid var(--border-default);
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  padding: 0;
+  appearance: none;
 }
 .sidebar-reveal-bar:hover {
   width: 10px;
   background: var(--accent);
   opacity: 0.5;
+}
+.sidebar-reveal-bar:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 /* ===== Stale TODO Banner ===== */
@@ -3338,6 +3351,10 @@ textarea.input:focus {
 .bottom-nav-item.active {
   color: var(--accent);
 }
+.bottom-nav-item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
 .bottom-nav-overlay {
   display: none;
   position: fixed;
@@ -3495,6 +3512,30 @@ button:focus-visible,
 }
 .view-fade-in {
   animation: view-fade-in 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Directional slide transitions */
+@keyframes slide-forward {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-back {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.view-slide-forward {
+  animation: slide-forward 0.2s ease-out;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.view-slide-back {
+  animation: slide-back 0.2s ease-out;
   width: 100%;
   height: 100%;
   display: flex;

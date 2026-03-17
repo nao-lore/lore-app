@@ -26,7 +26,6 @@ function downloadFile(content: string, fileName: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lang, projects, onRefresh, showToast, onTagFilter, allLogs, onOpenMasterNote }: { id: string; onDeleted: () => void; onOpenLog: (id: string) => void; onBack: () => void; prevView: string; lang: Lang; projects: Project[]; onRefresh: () => void; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onTagFilter?: (tag: string) => void; allLogs: LogEntry[]; onOpenMasterNote?: (projectId: string) => void }) {
   const log = allLogs.find((l) => l.id === id);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -139,7 +138,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
     if (format === 'md') {
       downloadFile(logToMarkdown(log), `threadlog-${date}-${type}.md`, 'text/markdown');
     } else {
-      const { sourceText: _sourceText, ...exportData } = log; // eslint-disable-line @typescript-eslint/no-unused-vars
+      const { sourceText: _sourceText, ...exportData } = log; // omit sourceText from export
       downloadFile(JSON.stringify(exportData, null, 2), `threadlog-${date}-${type}.json`, 'application/json');
     }
     setMenuOpen(false);

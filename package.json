@@ -3,7 +3,18 @@
   "private": true,
   "version": "0.1.0",
   "description": "Structured context for every AI session — paste an AI conversation, get a project snapshot with status, decisions, and next actions",
-  "keywords": ["ai", "handoff", "context", "chatgpt", "claude", "gemini", "productivity", "pwa", "react", "typescript"],
+  "keywords": [
+    "ai",
+    "handoff",
+    "context",
+    "chatgpt",
+    "claude",
+    "gemini",
+    "productivity",
+    "pwa",
+    "react",
+    "typescript"
+  ],
   "author": "Lore",
   "homepage": "https://lore-app.vercel.app",
   "repository": {
@@ -40,8 +51,11 @@
     ]
   },
   "devDependencies": {
+    "@axe-core/react": "^4.11.1",
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.58.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
@@ -51,6 +65,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "husky": "^9.1.7",
+    "jsdom": "^29.0.0",
     "lint-staged": "^16.3.3",
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",

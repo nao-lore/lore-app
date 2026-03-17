@@ -92,12 +92,13 @@ function downloadFile(content: string, fileName: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, pendingTodosCount, lastLogCreatedAt }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void; onDirtyChange?: (dirty: boolean) => void; pendingTodosCount: number; lastLogCreatedAt: string | null }) {
+function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, pendingTodosCount, lastLogCreatedAt }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onDirtyChange?: (dirty: boolean) => void; pendingTodosCount: number; lastLogCreatedAt: string | null }) {
   const [text, setText] = useState('');
   const [copied, setCopied] = useState(false);
   const [pasteFeedback, setPasteFeedback] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(activeProjectId ?? undefined);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const undoTextRef = useRef<string>('');
 
   // File state is lifted here so both hooks can access it without circular deps
   const [files, setFiles] = useState<ImportedFile[]>([]);
@@ -160,6 +161,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     if (isDemoMode() && !text && files.length === 0) {
       loadDemoData().then(({ getDemoConversation }) => setText(getDemoConversation(lang)));
     }
+  // Intentionally mount-only: pre-fill demo data once, not on every lang change
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -313,9 +315,18 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             <button
               className="btn"
               onClick={() => {
+                const prev = text;
+                const prevFiles = files;
+                undoTextRef.current = prev;
                 resetTransformState();
                 setText('');
                 setFiles([]);
+                if (prev.trim() || prevFiles.length > 0) {
+                  showToast?.(t('inputCleared', lang) || 'Cleared', 'default', {
+                    label: t('undo', lang) || 'Undo',
+                    onClick: () => { setText(prev); setFiles(prevFiles); },
+                  });
+                }
               }}
             >
               {t('startNewLog', lang)}
@@ -366,7 +377,18 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         {/* Clear text button */}
         {text.trim() && !loading && (
           <button
-            onClick={() => { setText(''); textareaRef.current?.focus(); }}
+            onClick={() => {
+              const prev = text;
+              undoTextRef.current = prev;
+              setText('');
+              textareaRef.current?.focus();
+              if (prev.trim()) {
+                showToast?.(t('inputCleared', lang) || 'Cleared', 'default', {
+                  label: t('undo', lang) || 'Undo',
+                  onClick: () => setText(prev),
+                });
+              }
+            }}
             style={{
               position: 'absolute', top: 10, right: 14, zIndex: 5,
               background: 'none', border: 'none', cursor: 'pointer',
@@ -525,7 +547,16 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           </button>
 
           {files.length > 0 && (
-            <button className="btn-link" onClick={() => setFiles([])} disabled={loading} style={{ fontSize: 11, color: 'var(--error-text)', flexShrink: 0 }}>
+            <button className="btn-link" onClick={() => {
+              const prevFiles = files;
+              setFiles([]);
+              if (prevFiles.length > 0) {
+                showToast?.(t('inputCleared', lang) || 'Cleared', 'default', {
+                  label: t('undo', lang) || 'Undo',
+                  onClick: () => setFiles(prevFiles),
+                });
+              }
+            }} disabled={loading} style={{ fontSize: 11, color: 'var(--error-text)', flexShrink: 0 }}>
               {t('clearAllFiles', lang)}
             </button>
           )}
