@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { LayoutDashboard, BarChart2, CheckSquare, ScrollText, MoreHorizontal, FolderOpen, Clock, FileBarChart, BookOpen, Settings } from 'lucide-react';
 import { t } from './i18n';
 import type { Lang } from './i18n';
@@ -24,7 +24,7 @@ const MORE_ITEMS = [
   { view: 'settings', icon: Settings, labelKey: 'settings' as const },
 ];
 
-export default function BottomNav({ activeView, onNavigate, lang }: BottomNavProps) {
+function BottomNav({ activeView, onNavigate, lang }: BottomNavProps) {
   const [moreOpen, setMoreOpen] = useState(false);
 
   const closeMore = useCallback(() => setMoreOpen(false), []);
@@ -96,3 +96,5 @@ export default function BottomNav({ activeView, onNavigate, lang }: BottomNavPro
     </>
   );
 }
+
+export default memo(BottomNav);

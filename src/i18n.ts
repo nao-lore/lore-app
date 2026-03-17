@@ -1091,6 +1091,7 @@ const labels = {
   ariaMasterNote: { ja: 'マスターノートを開く', en: 'Open master note', es: 'Abrir nota maestra', fr: 'Ouvrir la note principale', de: 'Masternotiz öffnen', zh: '打开主笔记', ko: '마스터 노트 열기', pt: 'Abrir nota principal' },
   ariaShowSidebar: { ja: 'サイドバーを表示', en: 'Show sidebar', es: 'Mostrar barra lateral', fr: 'Afficher la barre latérale', de: 'Seitenleiste einblenden', zh: '显示侧边栏', ko: '사이드바 표시', pt: 'Mostrar barra lateral' },
   ariaHideSidebar: { ja: 'サイドバーを隠す', en: 'Hide sidebar', es: 'Ocultar barra lateral', fr: 'Masquer la barre latérale', de: 'Seitenleiste ausblenden', zh: '隐藏侧边栏', ko: '사이드바 숨기기', pt: 'Ocultar barra lateral' },
+  ariaTransformMode: { ja: '変換モード', en: 'Transform mode', es: 'Modo de transformación', fr: 'Mode de transformation', de: 'Transformationsmodus', zh: '转换模式', ko: '변환 모드', pt: 'Modo de transformação' },
   ariaCardView: { ja: 'カード表示', en: 'Card view', es: 'Vista de tarjetas', fr: 'Vue en cartes', de: 'Kartenansicht', zh: '卡片视图', ko: '카드 보기', pt: 'Visualização em cartão' },
   ariaListView: { ja: 'リスト表示', en: 'List view', es: 'Vista de lista', fr: 'Vue en liste', de: 'Listenansicht', zh: '列表视图', ko: '목록 보기', pt: 'Visualização em lista' },
 

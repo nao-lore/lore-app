@@ -1055,7 +1055,7 @@ export default function InputView({ onSaved, onOpenLog, lang, activeProjectId, p
       {/* Toolbar: mode tabs + project + import — single row */}
       {!savedResult && (<div style={{ maxWidth: 760, margin: '10px auto 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <div className="mode-selector" role="radiogroup" aria-label="Transform mode">
+          <div className="mode-selector" role="radiogroup" aria-label={t('ariaTransformMode', lang)}>
             {(['handoff', 'handoff_todo', 'todo_only'] as TransformAction[]).map((a) => {
               const isActive = transformAction === a;
               const label = t(

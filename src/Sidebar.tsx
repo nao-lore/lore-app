@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
-import { FileText, ScrollText, FolderOpen, CheckSquare, MoreHorizontal, Settings, Trash2, HelpCircle, LogOut, ChevronUp, ChevronDown, ChevronRight, BookOpen, Clock, BarChart2, FileBarChart, LayoutDashboard, MessageSquare, Menu, CreditCard, User } from 'lucide-react';
+import { FileText, ScrollText, FolderOpen, Folder, CheckSquare, MoreHorizontal, Settings, Trash2, HelpCircle, LogOut, ChevronUp, ChevronDown, ChevronRight, BookOpen, Clock, BarChart2, FileBarChart, LayoutDashboard, MessageSquare, Menu, CreditCard, User } from 'lucide-react';
 import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { t } from './i18n';
 import type { Lang } from './i18n';
-import { updateLog, trashLog, getMasterNote } from './storage';
+import { updateLog, trashLog } from './storage';
 import ContextMenu from './ContextMenu';
 import type { MenuItem } from './ContextMenu';
 import ConfirmDialog from './ConfirmDialog';
@@ -112,12 +112,15 @@ interface SidebarProps {
 
 const MAX_PINNED = 5;
 
-export default function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSelect, onNewLog, onOpenSettings, onOpenHistory, onOpenProjects, onOpenTodos, onOpenProjectSummaryList, onOpenDashboard, onOpenTimeline, onOpenWeeklyReport, onOpenTrash, onOpenHelp, onOpenPricing, onCollapse, onSelectProject, onOpenMasterNote, onRefresh, onDeleted, lang, showToast, todos, masterNotes }: SidebarProps) {
+function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSelect, onNewLog, onOpenSettings, onOpenHistory, onOpenProjects, onOpenTodos, onOpenProjectSummaryList, onOpenDashboard, onOpenTimeline, onOpenWeeklyReport, onOpenTrash, onOpenHelp, onOpenPricing, onCollapse, onSelectProject, onOpenMasterNote, onRefresh, onDeleted, lang, showToast, todos, masterNotes }: SidebarProps) {
   const [menuState, setMenuState] = useState<{ logId: string; rect: DOMRect } | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [confirmTrashId, setConfirmTrashId] = useState<string | null>(null);
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  const [changingProjectLogId, setChangingProjectLogId] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(() => {
     try { return localStorage.getItem('threadlog_sidebar_more') === 'open'; } catch { return false; }
   });
@@ -214,40 +217,20 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
       },
     });
 
-    // Rename
+    // Rename (inline editing)
     items.push({
       label: t('ctxRename', lang),
       onClick: () => {
-        const newName = prompt(t('ctxRenamePrompt', lang), log.title);
-        if (newName && newName.trim() && newName.trim() !== log.title) {
-          updateLog(log.id, { title: newName.trim() });
-          onRefresh();
-        }
+        setEditingLogId(log.id);
+        setEditDraft(log.title);
       },
     });
 
-    // Change project
+    // Change project (inline picker)
     items.push({
       label: t('ctxChangeProject', lang),
       onClick: () => {
-        const choice = prompt(
-          projects.map((p, i) => `${i + 1}. ${p.name}`).join('\n') + '\n\n' + t('ctxChangeProjectPrompt', lang),
-          ''
-        );
-        if (choice) {
-          const idx = parseInt(choice, 10) - 1;
-          if (idx >= 0 && idx < projects.length) {
-            updateLog(log.id, { projectId: projects[idx].id });
-            onRefresh();
-          } else {
-            // Try matching by name
-            const match = projects.find((p) => p.name.toLowerCase() === choice.toLowerCase());
-            if (match) {
-              updateLog(log.id, { projectId: match.id });
-              onRefresh();
-            }
-          }
-        }
+        setChangingProjectLogId(log.id);
       },
     });
 
@@ -401,7 +384,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
             <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
               {pinnedProjects.map((p) => {
                 const pColor = getProjectColor(p.color);
-                const mn = getMasterNote(p.id);
+                const mn = masterNotes.find(n => n.projectId === p.id);
                 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
                 const isStale = mn && (Date.now() - mn.updatedAt > SEVEN_DAYS);
                 const hasUnreflected = mn && logs.some(
@@ -418,7 +401,7 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
                     {p.icon ? (
                       <span style={{ fontSize: 14, flexShrink: 0, marginRight: 4, lineHeight: 1 }}>{p.icon}</span>
                     ) : (
-                      <span style={{ fontSize: 12, flexShrink: 0, marginRight: 4 }}>📁</span>
+                      <Folder size={16} style={{ flexShrink: 0, marginRight: 4, color: 'var(--text-muted)' }} />
                     )}
                     <span className="sidebar-item-title">{p.name}</span>
                     {showBadge && (
@@ -444,12 +427,37 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
                 <div
                   key={`pin-log-${log.id}`}
                   className={`sidebar-item sidebar-project-item${log.id === selectedId ? ' active' : ''}`}
-                  onClick={() => onSelect(log.id)}
+                  onClick={() => { if (editingLogId !== log.id) onSelect(log.id); }}
                 >
                   <span className={log.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} style={{ fontSize: 10, padding: '0 4px', lineHeight: '16px', minWidth: 16, textAlign: 'center' }}>
                     {log.outputMode === 'handoff' ? 'H' : 'W'}
                   </span>
-                  <span className="sidebar-item-title">{log.title}</span>
+                  {editingLogId === log.id ? (
+                    <input
+                      className="sidebar-item-title"
+                      value={editDraft}
+                      onChange={(e) => setEditDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const trimmed = editDraft.trim();
+                          if (trimmed && trimmed !== log.title) { updateLog(log.id, { title: trimmed }); onRefresh(); }
+                          setEditingLogId(null);
+                        } else if (e.key === 'Escape') {
+                          setEditingLogId(null);
+                        }
+                      }}
+                      onBlur={() => {
+                        const trimmed = editDraft.trim();
+                        if (trimmed && trimmed !== log.title) { updateLog(log.id, { title: trimmed }); onRefresh(); }
+                        setEditingLogId(null);
+                      }}
+                      autoFocus
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ fontSize: 13, padding: '1px 4px', border: '1px solid var(--border-default)', borderRadius: 4, background: 'var(--bg-surface)', color: 'var(--text-primary)', outline: 'none', width: '100%', minWidth: 0 }}
+                    />
+                  ) : (
+                    <span className="sidebar-item-title">{log.title}</span>
+                  )}
                   <div className="sidebar-project-actions" onClick={(e) => e.stopPropagation()}>
                     <button
                       className="sidebar-icon-btn"
@@ -556,6 +564,45 @@ export default function Sidebar({ logs, projects, selectedId, activeProjectId, a
         <FeedbackModal lang={lang} onClose={() => setFeedbackOpen(false)} />,
         document.body,
       )}
+      {changingProjectLogId && createPortal(
+        <div className="modal-overlay" onClick={() => setChangingProjectLogId(null)}>
+          <div
+            className="shortcuts-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('ctxChangeProject', lang)}
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 320 }}
+          >
+            <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>{t('ctxChangeProject', lang)}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {projects.map((p) => (
+                <button
+                  key={p.id}
+                  className="account-popover-item"
+                  style={{ justifyContent: 'flex-start', gap: 8 }}
+                  onClick={() => {
+                    updateLog(changingProjectLogId, { projectId: p.id });
+                    setChangingProjectLogId(null);
+                    onRefresh();
+                  }}
+                >
+                  {p.icon ? <span style={{ fontSize: 14 }}>{p.icon}</span> : <Folder size={14} style={{ color: 'var(--text-muted)' }} />}
+                  <span>{p.name}</span>
+                </button>
+              ))}
+            </div>
+            <div style={{ marginTop: 12, textAlign: 'right' }}>
+              <button className="btn" onClick={() => setChangingProjectLogId(null)} style={{ fontSize: 13 }}>
+                {t('cancel', lang)}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </nav>
   );
 }
+
+export default memo(Sidebar);
