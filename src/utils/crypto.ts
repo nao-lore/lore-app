@@ -11,6 +11,23 @@
 
 const ENCRYPTED_PREFIX = 'enc:v1:';
 
+// ---------------------------------------------------------------------------
+// Decrypted key cache — shared between provider.ts and storage/settings.ts
+// to avoid circular imports. Populated by initKeyCache() at app startup.
+// ---------------------------------------------------------------------------
+
+const decryptedKeyCache = new Map<string, string>();
+
+/** Get a cached decrypted key (returns undefined if not yet cached) */
+export function getCachedKey(slot: string): string | undefined {
+  return decryptedKeyCache.get(slot);
+}
+
+/** Set a cached decrypted key */
+export function setCachedKey(slot: string, value: string): void {
+  decryptedKeyCache.set(slot, value);
+}
+
 /** Check if a stored value is already encrypted */
 export function isEncrypted(value: string): boolean {
   return value.startsWith(ENCRYPTED_PREFIX);
@@ -42,7 +59,6 @@ async function deriveKey(): Promise<CryptoKey> {
   const encoder = new TextEncoder();
   const material = encoder.encode(getDeviceFingerprint());
 
-  // Import fingerprint as HMAC key, then derive via HKDF-like approach:
   // Use SHA-256 hash as raw key material for AES-GCM
   const hash = await crypto.subtle.digest('SHA-256', material);
 

@@ -3,14 +3,23 @@ import type { LogEntry, Project, Todo } from '../types';
 import { LANG_KEY, THEME_KEY, LOGS_KEY, PROJECTS_KEY, MASTER_NOTES_KEY, TODOS_KEY, LOG_SUMMARIES_KEY, MN_HISTORY_KEY, KNOWLEDGE_BASE_KEY, TRASH_RETENTION_MS, safeGetItem, safeSetItem, safeRemoveItem, invalidateLogsCache, invalidateProjectsCache, invalidateTodosCache, invalidateMasterNotesCache } from './core';
 import { deleteLog } from './logs';
 import { deleteProject } from './projects';
+import { isEncrypted, getCachedKey } from '../utils/crypto';
 
 // ─── Settings ───
 
-/** Returns the API key for the currently active provider */
+/** Returns the API key for the currently active provider.
+ *  Uses the shared decrypted cache for encrypted keys. */
 export function getApiKey(): string {
-  // Delegate to provider module (avoids circular import by reading directly)
   const provider = safeGetItem('threadlog_provider') || 'gemini';
-  return safeGetItem(`threadlog_api_key_${provider}`) || '';
+
+  // Check shared decrypted cache first (populated by initKeyCache in provider.ts)
+  const cached = getCachedKey(provider);
+  if (cached !== undefined) return cached;
+
+  const stored = safeGetItem(`threadlog_api_key_${provider}`) || '';
+  // Encrypted keys need the decrypted cache — return empty until initialized
+  if (isEncrypted(stored)) return '';
+  return stored;
 }
 
 /** @deprecated Use setProviderApiKey from provider.ts instead */
