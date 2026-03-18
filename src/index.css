@@ -490,7 +490,7 @@
 button.history-group-label-btn { background: none; border: none; padding: 0; margin: 0; font: inherit; cursor: pointer; text-align: left; }
 button.history-group-label-btn:hover { text-decoration: underline; }
 button.history-group-label-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
-.history-scroll-container { flex: 1; min-height: 0; overflow: auto; max-height: calc(100vh - 200px); }
+.history-scroll-container { flex: 1; min-height: 0; overflow: auto; }
 .bulk-bar { position: sticky; bottom: 0; background: var(--bg-primary); border-top: 1px solid var(--border-default); padding: 12px; gap: 8px; z-index: 100; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); }
 .bulk-bar-label { font-weight: 600; font-size: 13px; margin-right: auto; }
 .hint-card { gap: 8px; margin-bottom: 12px; padding: 8px 12px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-subtle); }
