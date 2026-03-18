@@ -12,6 +12,8 @@ import type { ProviderName } from './provider';
 import { t, tf, OUTPUT_LANGS } from './i18n';
 import type { Lang } from './i18n';
 import type { FontSize } from './types';
+import { checkProStatus } from './utils/proManager';
+import { STRIPE_CUSTOMER_PORTAL_URL } from './utils/stripe';
 
 interface SettingsPanelProps {
   onBack: () => void;
@@ -164,6 +166,28 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
       )}
 
       <div className="flex-col-gap-md">
+        {/* Pro Plan Status */}
+        {checkProStatus().isPro && (
+          <div className="content-card">
+            <div className="content-card-header">
+              {t('proActive', lang)} <span className="pro-badge-inline">{t('proBadge', lang)}</span>
+            </div>
+            {checkProStatus().expiresAt && (
+              <p className="meta meta-desc">
+                {tf('proExpires', lang, new Date(checkProStatus().expiresAt!).toLocaleDateString())}
+              </p>
+            )}
+            <a
+              href={STRIPE_CUSTOMER_PORTAL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn text-sm"
+            >
+              {t('manageSubscription', lang)}
+            </a>
+          </div>
+        )}
+
         {/* API Key (Gemini only) */}
         <div className="content-card">
           <div className="content-card-header">Gemini API {t('apiKeyLabel', lang)}</div>

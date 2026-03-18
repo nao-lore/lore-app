@@ -160,6 +160,7 @@ describe('i18n', () => {
       trialActive: [5],
       dailyLimitReached: [5, 5],
       transformsRemaining: [3],
+      proExpires: ['2026-12-31'],
     };
 
     it('all function labels return non-empty strings for ja', () => {

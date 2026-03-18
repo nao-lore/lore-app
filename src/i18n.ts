@@ -2034,6 +2034,24 @@ const labels = {
     pt: 'Feedback',
   },
 
+  // Stripe / Pro plan
+  proActive: { ja: 'Proプラン利用中', en: 'Pro plan active', es: 'Plan Pro activo', fr: 'Plan Pro actif', de: 'Pro-Plan aktiv', zh: 'Pro方案已激活', ko: 'Pro 플랜 활성', pt: 'Plano Pro ativo' },
+  proExpires: (date: string) => ({
+    ja: `有効期限: ${date}`,
+    en: `Expires: ${date}`,
+    es: `Expira: ${date}`,
+    fr: `Expire le : ${date}`,
+    de: `Läuft ab: ${date}`,
+    zh: `到期时间: ${date}`,
+    ko: `만료: ${date}`,
+    pt: `Expira em: ${date}`,
+  }),
+  checkoutSuccess: { ja: 'Proへようこそ！無制限の変換がアンロックされました。', en: 'Welcome to Pro! Unlimited transforms unlocked.', es: 'Bienvenido a Pro. Transformaciones ilimitadas desbloqueadas.', fr: 'Bienvenue sur Pro ! Transformations illimitées débloquées.', de: 'Willkommen bei Pro! Unbegrenzte Transformationen freigeschaltet.', zh: '欢迎加入Pro！无限转换已解锁。', ko: 'Pro에 오신 것을 환영합니다! 무제한 변환이 잠금 해제되었습니다.', pt: 'Bem-vindo ao Pro! Transformações ilimitadas desbloqueadas.' },
+  checkoutCancelled: { ja: 'チェックアウトがキャンセルされました', en: 'Checkout cancelled', es: 'Pago cancelado', fr: 'Paiement annulé', de: 'Checkout abgebrochen', zh: '结账已取消', ko: '결제가 취소되었습니다', pt: 'Checkout cancelado' },
+  manageSubscription: { ja: 'サブスクリプション管理', en: 'Manage subscription', es: 'Gestionar suscripción', fr: 'Gérer l\'abonnement', de: 'Abonnement verwalten', zh: '管理订阅', ko: '구독 관리', pt: 'Gerenciar assinatura' },
+  proBadge: { ja: 'PRO', en: 'PRO', es: 'PRO', fr: 'PRO', de: 'PRO', zh: 'PRO', ko: 'PRO', pt: 'PRO' },
+  upgrading: { ja: 'チェックアウトにリダイレクト中...', en: 'Redirecting to checkout...', es: 'Redirigiendo al pago...', fr: 'Redirection vers le paiement...', de: 'Weiterleitung zur Kasse...', zh: '正在跳转到结账页面...', ko: '결제 페이지로 이동 중...', pt: 'Redirecionando para o checkout...' },
+
 } as const;
 
 /** Exported for testing — do not use in application code. */

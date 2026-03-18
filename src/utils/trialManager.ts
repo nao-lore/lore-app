@@ -1,4 +1,5 @@
 import { safeGetItem, safeSetItem } from '../storage/core';
+import { isPro } from './proManager';
 
 // ─── Constants ───
 
@@ -89,8 +90,8 @@ export interface CanTransformResult {
 export function canTransform(): CanTransformResult {
   initTrial(); // ensure trial start is recorded
 
-  // Pro users — always allowed (placeholder for Stripe integration)
-  // if (isProUser()) return { allowed: true };
+  // Pro users bypass all limits
+  if (isPro()) return { allowed: true };
 
   if (isInTrialPeriod()) {
     const startStr = safeGetItem(TRIAL_START_KEY)!;
