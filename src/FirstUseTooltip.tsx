@@ -29,26 +29,17 @@ export default function FirstUseTooltip({ id, text, position = 'bottom', childre
       {children}
       {show && (
         <div
+          className="first-use-tooltip"
           onClick={dismiss}
           style={{
             position: 'absolute',
             [position === 'top' ? 'bottom' : position === 'bottom' ? 'top' : position === 'left' ? 'right' : 'left']: 'calc(100% + 8px)',
             left: position === 'top' || position === 'bottom' ? '50%' : undefined,
             transform: position === 'top' || position === 'bottom' ? 'translateX(-50%)' : undefined,
-            background: 'var(--accent)',
-            color: 'var(--button-text, #fff)',
-            padding: '6px 12px',
-            borderRadius: 8,
-            fontSize: 12,
-            fontWeight: 500,
-            whiteSpace: 'nowrap',
-            cursor: 'pointer',
-            zIndex: 1000,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            animation: 'fadeInUp 0.3s ease-out',
           }}
         >
-          {text}
+          <span>{text}</span>
+          <span className="first-use-tooltip-close" aria-label="Close">&times;</span>
         </div>
       )}
     </div>

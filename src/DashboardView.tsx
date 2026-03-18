@@ -232,7 +232,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
   if (handoffLogs.length === 0) {
     return (
       <div className="workspace-content-wide flex-col items-center">
-        <div className="text-center font-extrabold" style={{ fontSize: 28, color: 'var(--text-secondary)', marginTop: 80, marginBottom: 32 }}>
+        <div className="text-center font-extrabold" style={{ fontSize: 28, color: 'var(--text-secondary)', marginTop: 80, marginBottom: 16 }}>
           {getGreeting(lang)}
         </div>
         <div className="empty-state">
@@ -243,6 +243,20 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
           <p className="page-subtitle" style={{ maxWidth: 360, margin: '8px auto 0' }}>
             {t('dashboardEmptyDesc', lang)}
           </p>
+          <div className="dashboard-steps">
+            <div className="dashboard-step">
+              <span className="dashboard-step-num">1</span>
+              <span className="dashboard-step-text">{t('dashboardStep1', lang)}</span>
+            </div>
+            <div className="dashboard-step">
+              <span className="dashboard-step-num">2</span>
+              <span className="dashboard-step-text">{t('dashboardStep2', lang)}</span>
+            </div>
+            <div className="dashboard-step">
+              <span className="dashboard-step-num">3</span>
+              <span className="dashboard-step-text">{t('dashboardStep3', lang)}</span>
+            </div>
+          </div>
           <FirstUseTooltip id="dashboard" text={lang === 'ja' ? 'AIプロジェクトのスナップショットがここに表示されます' : 'Your AI project snapshots appear here'} position="top">
             <button className="btn btn-primary mt-lg" onClick={onNewLog} style={{ fontSize: 16, padding: '12px 28px' }}>
               <Plus size={18} />
