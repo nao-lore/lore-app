@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { CHAR_WARN, needsChunking } from './transform';
 import { getChunkTarget, getEngineConcurrency } from './chunkEngine';
-import { getStreak, isDemoMode } from './storage';
+import { getStreak, isDemoMode, safeGetItem } from './storage';
 import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
 import { canTransform, DAILY_LIMIT_FREE } from './utils/trialManager';
 const loadDemoData = () => import('./demoData');
@@ -336,6 +336,22 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           placeholder={t('inputPlaceholder', lang)}
           style={{ opacity: loading ? 0.6 : 1 }}
         />
+
+        {/* Try sample link — shown only for first-time users with empty input */}
+        {!text.trim() && files.length === 0 && !loading && !safeGetItem('lore_tip_transform') && (
+          <button
+            type="button"
+            className="try-sample-btn"
+            onClick={() => {
+              loadDemoData().then(({ getDemoConversation }) => {
+                setText(getDemoConversation(lang));
+                textareaRef.current?.focus();
+              });
+            }}
+          >
+            {t('trySampleConversation', lang)}
+          </button>
+        )}
 
         {/* Bottom bar: char count + keyboard hint */}
         <div className="flex-row justify-between input-bottom-bar">
