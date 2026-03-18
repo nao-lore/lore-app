@@ -4945,17 +4945,18 @@ button[disabled] {
   flex-wrap: wrap;
 }
 
-.lp-demo-placeholder {
-  max-width: 800px;
+.lp-demo-screenshot {
+  max-width: 900px;
   margin: 0 auto;
   border-radius: 12px;
-  background: var(--bg-elevated, var(--bg-surface-secondary));
-  aspect-ratio: 16 / 9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  font-size: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.lp-demo-screenshot img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 .lp-pricing-annual {
