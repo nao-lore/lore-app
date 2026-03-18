@@ -39,9 +39,10 @@ vi.mock('../../utils/dateFormat', () => ({
 }));
 
 import {
-  Highlight, buildPreview, isToday,
+  Highlight,
   HistoryCardItem, HistoryListItem, LogContextMenu,
 } from '../../components/HistoryCard';
+import { buildPreview, isToday } from '../../components/historyCardHelpers';
 import type { LogRenderContext } from '../../components/HistoryCard';
 import type { LogEntry, Project } from '../../types';
 

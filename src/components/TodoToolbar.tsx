@@ -4,7 +4,7 @@ import type { Todo } from '../types';
 import { t, tf } from '../i18n';
 import type { Lang } from '../i18n';
 import DropdownMenu from '../DropdownMenu';
-import { isOverdue, isDueToday } from './TodoItem';
+import { isOverdue, isDueToday } from './todoItemHelpers';
 
 export type SortKey = 'created' | 'title' | 'priority' | 'due';
 export type GroupKey = 'none' | 'date' | 'priority' | 'source';
@@ -166,7 +166,7 @@ export const ProgressSummary = memo(function ProgressSummary({ lang, todos, pend
       <div className="flex-1" />
       {snoozedCount > 0 && (
         <label className="snoozed-label">
-          <input type="checkbox" checked={showSnoozed} onChange={(e) => onShowSnoozedChange(e.target.checked)} />
+          <input type="checkbox" checked={showSnoozed} onChange={(e) => onShowSnoozedChange(e.target.checked)} aria-label={t('showSnoozed', lang)} />
           {t('showSnoozed', lang)} ({snoozedCount})
         </label>
       )}

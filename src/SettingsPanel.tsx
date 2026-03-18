@@ -26,10 +26,9 @@ interface SettingsPanelProps {
   onFontSizeChange: (size: FontSize) => void;
   showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void;
   onShowOnboarding?: () => void;
-  onResumeOnboarding?: () => void;
 }
 
-export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref, onThemeChange, fontSize, onFontSizeChange, showToast, onShowOnboarding, onResumeOnboarding }: SettingsPanelProps) {
+export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref, onThemeChange, fontSize, onFontSizeChange, showToast, onShowOnboarding }: SettingsPanelProps) {
   const [keys, setKeys] = useState<Record<ProviderName, string>>(() => ({
     anthropic: getProviderApiKey('anthropic'),
     gemini: getProviderApiKey('gemini'),
@@ -151,21 +150,6 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
         <h2>{t('settingsTitle', lang)}</h2>
       </div>
 
-      {/* Resume onboarding banner */}
-      {onResumeOnboarding && (
-        <div className="resume-banner">
-          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            {t('onboardingReturnToSetup', lang)}
-          </span>
-          <button
-            className="btn btn-primary btn-sm-save"
-            onClick={onResumeOnboarding}
-            style={{ borderRadius: 8, fontWeight: 600 }}
-          >
-            ← {t('onboardingReturnToSetup', lang)}
-          </button>
-        </div>
-      )}
 
       <div className="flex-col-gap-md">
         {/* Pro Plan Status */}

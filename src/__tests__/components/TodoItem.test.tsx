@@ -29,11 +29,14 @@ vi.mock('../../storage', async (importOriginal) => {
 });
 
 import {
-  isOverdue, isDueToday, isStaleTodo, STALE_DAYS,
-  priorityStyles, PRIORITY_ORDER,
-  TodoActionSheet, renderTodoItem,
+  TodoActionSheet,
 } from '../../components/TodoItem';
 import type { TodoRenderContext } from '../../components/TodoItem';
+import {
+  isOverdue, isDueToday, isStaleTodo, STALE_DAYS,
+  priorityStyles, PRIORITY_ORDER,
+} from '../../components/todoItemHelpers';
+import { renderTodoItem } from '../../components/renderTodoItem';
 import type { Todo } from '../../types';
 
 function makeTodo(overrides?: Partial<Todo>): Todo {

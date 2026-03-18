@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect, useRef, memo } from 'react';
 import { MoreHorizontal, Pin, FolderOpen, Pencil, Trash2, Copy, Download, ExternalLink, CopyPlus } from 'lucide-react';
 import type { LogEntry, Project } from '../types';
@@ -33,32 +32,8 @@ export const Highlight = memo(function Highlight({ text, query }: { text: string
   );
 });
 
-// ─── Helper functions ───
-function truncate(text: string, max: number): string {
-  return text.length > max ? text.slice(0, max) + '…' : text;
-}
-
-export function buildPreview(log: LogEntry): string {
-  const parts: string[] = [];
-  if (log.outputMode === 'handoff') {
-    const status = log.currentStatus || log.inProgress;
-    if (status && status.length > 0) parts.push(status[0]);
-    if (log.nextActions && log.nextActions.length > 0) parts.push('Next: ' + log.nextActions[0]);
-  } else {
-    if (log.today.length > 0) parts.push(log.today[0]);
-    if (log.decisions.length > 0) parts.push(log.decisions[0]);
-    if (log.todo.length > 0) parts.push('TODO: ' + log.todo[0]);
-  }
-  return truncate(parts.join(' / '), 140);
-}
-
-export function isToday(iso: string): boolean {
-  const d = new Date(iso);
-  const now = new Date();
-  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
-}
-
-export { downloadFile } from '../utils/downloadFile';
+// ─── Helper functions (extracted to historyCardHelpers.ts for fast-refresh compat) ───
+import { buildPreview, isToday } from './historyCardHelpers';
 
 // ─── Log Context Menu (inline dropdown) ───
 export const LogContextMenu = memo(function LogContextMenu({ log, lang, projects, onClose, onAction }: {
@@ -359,7 +334,7 @@ export const HistoryListItem = memo(function HistoryListItem({ log, ctx }: { log
       aria-label={t('ariaOpenLog', lang)}
     >
       {selectMode && (
-        <input type="checkbox" className="bulk-checkbox shrink-0" checked={isSelected} onChange={() => onToggleSelect(log.id)} onClick={(e) => e.stopPropagation()} />
+        <input type="checkbox" className="bulk-checkbox shrink-0" checked={isSelected} onChange={() => onToggleSelect(log.id)} onClick={(e) => e.stopPropagation()} aria-label={t('ariaBulkCheckbox', lang)} />
       )}
       {log.pinned && <Pin size={compact ? 8 : 10} className="shrink-0" style={{ color: 'var(--accent)', transform: 'rotate(45deg)' }} />}
       <span className={`${log.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} shrink-0`} style={compact ? { fontSize: 10 } : undefined}>
@@ -386,7 +361,7 @@ export const HistoryListItem = memo(function HistoryListItem({ log, ctx }: { log
       <span className="meta shrink-0 nowrap" style={{ fontSize: compact ? 10 : 11 }}>{formatRelativeTime(log.createdAt, lang === 'ja' ? 'ja' : 'en')}</span>
       {!selectMode && (
         <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
-          <button className="action-menu-btn" aria-label={t('ariaMenu', lang)} style={{ opacity: 0 }} onClick={() => onSetActionSheetLog(actionSheetLog?.id === log.id ? null : log)}>
+          <button className="action-menu-btn" aria-label={t('ariaMenu', lang)} style={{ visibility: 'hidden' }} onClick={() => onSetActionSheetLog(actionSheetLog?.id === log.id ? null : log)}>
             <MoreHorizontal size={14} />
           </button>
           {actionSheetLog?.id === log.id && (

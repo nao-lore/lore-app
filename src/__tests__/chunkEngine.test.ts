@@ -148,17 +148,17 @@ describe('splitIntoChunks', () => {
   });
 
   it('respects max chunk size even with very long input', () => {
-    // Create long text with line breaks (groupSegments splits at newlines)
-    const lines = Array.from({ length: 2000 }, (_, i) =>
-      `Line ${i}: ${'x'.repeat(40)}`
+    // Create long text with paragraph breaks (double newlines trigger paragraph splitting)
+    const paragraphs = Array.from({ length: 2000 }, (_, i) =>
+      `Paragraph ${i}: ${'x'.repeat(40)}`
     );
-    const longText = lines.join('\n');
+    const longText = paragraphs.join('\n\n');
     // Target 5000 chars — should produce multiple chunks
     const chunks = splitIntoChunks(longText, 5_000);
     expect(chunks.length).toBeGreaterThan(1);
-    // No chunk should exceed EXTRACT_MAX_CHARS (60_000)
+    // No chunk should exceed the provider's EXTRACT_MAX_CHARS (gemini = 120_000 in mock)
     for (const chunk of chunks) {
-      expect(chunk.length).toBeLessThanOrEqual(60_000);
+      expect(chunk.length).toBeLessThanOrEqual(120_000);
     }
   });
 

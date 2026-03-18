@@ -2,6 +2,7 @@ import type { LogEntry } from '../types';
 import { LOGS_KEY, MIGRATION_KEY, safeGetItem, safeSetItem, cache, invalidateLogsCache } from './core';
 import { deleteTodosForLog } from './todos';
 import { cleanMasterNoteSourceLogIds } from './masterNotes';
+import { safeJsonParse } from '../utils/safeJsonParse';
 
 // ─── Logs ───
 
@@ -168,10 +169,8 @@ import type { LogSummary } from '../types';
 export function loadLogSummaries(): LogSummary[] {
   const raw = safeGetItem(LOG_SUMMARIES_KEY);
   if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadLogSummaries', err); return []; }
+  const parsed = safeJsonParse<unknown>(raw, []);
+  return Array.isArray(parsed) ? parsed as LogSummary[] : [];
 }
 
 /** Save or update a log summary (replaces existing for same logId) */

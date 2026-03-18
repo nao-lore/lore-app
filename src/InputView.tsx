@@ -25,6 +25,13 @@ import PostGenerationPreview from './components/PostGenerationPreview';
 import InputToolbar from './components/InputToolbar';
 import ProgressDisplay from './components/ProgressDisplay';
 
+/** Strip BOM and normalize line endings before processing */
+function normalizeInput(text: string): string {
+  return text.replace(/\ufeff/g, '')  // Remove BOM
+    .replace(/\r\n/g, '\n')           // Normalize CRLF
+    .replace(/\r/g, '\n');            // Normalize lone CR
+}
+
 function buildCombinedText(pastedText: string, files: ImportedFile[]): string {
   const parts: string[] = [];
   if (pastedText.trim()) parts.push(pastedText.trim());
@@ -310,11 +317,17 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           onPaste={() => {
             setTimeout(() => {
               const ta = textareaRef.current;
-              if (ta && ta.value.trim()) {
-                const len = ta.value.length;
-                setPasteFeedback(tf('pasteFeedback', lang, len.toLocaleString()));
-                setTimeout(() => setPasteFeedback(null), 3000);
-                ta.scrollTop = 0;
+              if (ta) {
+                const normalized = normalizeInput(ta.value);
+                if (normalized !== ta.value) {
+                  setText(normalized);
+                }
+                if (normalized.trim()) {
+                  const len = normalized.length;
+                  setPasteFeedback(tf('pasteFeedback', lang, len.toLocaleString()));
+                  setTimeout(() => setPasteFeedback(null), 3000);
+                  ta.scrollTop = 0;
+                }
               }
             }, 0);
           }}

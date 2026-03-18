@@ -16,9 +16,11 @@ import { playComplete } from './sounds';
 
 // Extracted components
 import {
-  TodoActionSheet, renderTodoItem, isStaleTodo, isOverdue, isDueToday, PRIORITY_ORDER,
+  TodoActionSheet,
   type TodoRenderContext,
 } from './components/TodoItem';
+import { renderTodoItem } from './components/renderTodoItem';
+import { isStaleTodo, isOverdue, isDueToday, PRIORITY_ORDER } from './components/todoItemHelpers';
 import {
   TodoTabs, DueFilterBar, ProgressSummary, BulkActionBar, TodoHeaderActions,
   type SortKey, type GroupKey, type TabKey,
@@ -67,10 +69,10 @@ function SortableTodoItem({ id, disabled, children }: { id: string; disabled: bo
 // ─── Main TodoView ───
 function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
   const [todosVersion, setTodosVersion] = useState(0);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const todos = useMemo(() => loadTodos(), [todosVersion]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const archivedTodos = useMemo(() => loadArchivedTodos(), [todosVersion]);
+  // todosVersion is an intentional manual invalidation counter — loadTodos/loadArchivedTodos
+  // are stable storage readers and must NOT be in the dep array (would re-run on every render).
+  const todos = useMemo(() => loadTodos(), [todosVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+  const archivedTodos = useMemo(() => loadArchivedTodos(), [todosVersion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [activeTab, setActiveTab] = useState<TabKey>('pending');
   const [sortKey, setSortKey] = usePersistedState<SortKey>('threadlog_todos_sort', 'created');
@@ -345,6 +347,8 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
   }, [groupKey, sorted, lang, logMap]);
 
   // Virtual scrolling
+  // @tanstack/react-virtual is hooks-compatible but the lint rule doesn't recognize it
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: sorted.length,
     getScrollElement: useCallback(() => listParentRef.current, []),

@@ -1,5 +1,6 @@
 import type { Todo } from '../types';
 import { TODOS_KEY, safeGetItem, safeSetItem, cache, invalidateTodosCache } from './core';
+import { safeJsonParse } from '../utils/safeJsonParse';
 
 // ─── Todos ───
 
@@ -9,12 +10,10 @@ function loadAllTodos(): Todo[] {
   }
   const raw = safeGetItem(TODOS_KEY);
   if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    const data = Array.isArray(parsed) ? parsed : [];
-    cache.todosCache = { data, version: cache.todosCacheVersion };
-    return data;
-  } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadAllTodos', err); return []; }
+  const parsed = safeJsonParse<unknown>(raw, []);
+  const data = Array.isArray(parsed) ? parsed as Todo[] : [];
+  cache.todosCache = { data, version: cache.todosCacheVersion };
+  return data;
 }
 
 /** Load active (non-trashed, non-archived) todos */

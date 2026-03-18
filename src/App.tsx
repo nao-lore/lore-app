@@ -291,7 +291,7 @@ export default function App() {
   );
 
   const viewRouteMap: Partial<Record<View, () => React.ReactElement | null>> = {
-    settings: () => <SettingsPanel onBack={backTo('settings')} lang={s.lang} onUiLangChange={s.handleUiLangChange} themePref={s.themePref} onThemeChange={s.handleThemeChange} fontSize={s.fontSize} onFontSizeChange={s.handleFontSizeChange} showToast={s.showToast} onShowOnboarding={() => s.setShowOnboarding(true)} onResumeOnboarding={s.onboardingPausedForSettings ? () => { s.setOnboardingPausedForSettings(false); s.setShowOnboarding(true); } : undefined} />,
+    settings: () => <SettingsPanel onBack={backTo('settings')} lang={s.lang} onUiLangChange={s.handleUiLangChange} themePref={s.themePref} onThemeChange={s.handleThemeChange} fontSize={s.fontSize} onFontSizeChange={s.handleFontSizeChange} showToast={s.showToast} onShowOnboarding={() => s.setShowOnboarding(true)} />,
     help: () => <HelpView onBack={backTo('help')} lang={s.lang} onShowOnboarding={() => s.setShowOnboarding(true)} onFeedback={() => s.setHelpFeedbackOpen(true)} />,
     pricing: () => <PricingView onBack={backTo('pricing')} lang={s.lang} showToast={s.showToast} />,
     history: () => <HistoryView logs={s.logs} onSelect={s.handleSelect} onBack={s.handleGoToInput} showBack={false} onRefresh={s.refreshLogs} lang={s.lang} activeProjectId={s.activeProjectId} projects={s.projects} showToast={s.showToast} onOpenMasterNote={s.handleOpenMasterNote} onOpenProject={s.handleOpenProjectLogs} tagFilter={s.tagFilter} onClearTagFilter={() => s.setTagFilter(null)} onTagFilter={s.setTagFilter} onDuplicate={(newId: string) => { s.refreshLogs(); s.handleSelect(newId); }} />,
@@ -525,11 +525,6 @@ export default function App() {
           lang={s.lang}
           onLangChange={s.handleUiLangChange}
           onClose={s.handleOnboardingClose}
-          onPauseForSettings={() => {
-            s.setShowOnboarding(false);
-            s.setOnboardingPausedForSettings(true);
-            s.goTo('settings');
-          }}
           initialStep={(() => {
             return parseInt(safeGetItem('threadlog_onboarding_step') || '0', 10);
           })()}

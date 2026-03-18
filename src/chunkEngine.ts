@@ -1,7 +1,7 @@
 /**
  * ChunkEngine — orchestrates chunked AI processing for large inputs.
  *
- * Splitting logic is in chunkSplitter.ts, merging logic in chunkMerger.ts.
+ * Splitting logic is co-located here, merging logic in chunkMerger.ts.
  * This file contains the engine class, mode config, and API call coordination.
  */
 
@@ -60,7 +60,8 @@ function isCJK(code: number): boolean {
     (code >= 0x3400 && code <= 0x4DBF) ||   // CJK Unified Ideographs Extension A
     (code >= 0x3040 && code <= 0x309F) ||   // Hiragana
     (code >= 0x30A0 && code <= 0x30FF) ||   // Katakana
-    (code >= 0xAC00 && code <= 0xD7AF)      // Hangul Syllables
+    (code >= 0xAC00 && code <= 0xD7AF) ||    // Hangul Syllables
+    (code >= 0x20000 && code <= 0x2A6DF)    // CJK Unified Ideographs Extension B
   );
 }
 
@@ -94,7 +95,7 @@ function tokenTargetToCharLimit(text: string, tokenTarget: number): number {
   return Math.ceil(tokenTarget * charsPerToken);
 }
 
-function splitIntoChunks(text: string, chunkTarget: number): string[] {
+export function splitIntoChunks(text: string, chunkTarget: number): string[] {
   // Convert token target to character limit based on the text's language mix
   const charLimit = tokenTargetToCharLimit(text, chunkTarget);
 
@@ -109,21 +110,37 @@ function splitIntoChunks(text: string, chunkTarget: number): string[] {
   return groupSegments(paragraphs.map((p) => p + '\n\n'), charLimit);
 }
 
-/** Hard cap: no single chunk may exceed this in extract phase */
-const EXTRACT_MAX_CHARS = 60_000;
+/**
+ * Hard cap: no single chunk may exceed this in extract phase.
+ * Provider-dependent because context windows differ significantly:
+ * - Anthropic: ~100K input tokens but needs room for prompt + response → 40K chars
+ * - Gemini: 1M+ context → 120K chars for fewer API calls
+ * - OpenAI: 128K context → 80K chars as a balanced middle ground
+ */
+const EXTRACT_MAX_CHARS_BY_PROVIDER = {
+  anthropic: 40_000,
+  gemini:    120_000,
+  openai:    80_000,
+} as const;
+
+function getExtractMaxChars(): number {
+  const provider = getActiveProvider();
+  return EXTRACT_MAX_CHARS_BY_PROVIDER[provider] ?? 60_000;
+}
 
 function groupSegments(segments: string[], target: number): string[] {
+  const maxChars = getExtractMaxChars();
   // First pass: split any oversized segment at line boundaries
   const split: string[] = [];
   for (const seg of segments) {
-    if (seg.length <= EXTRACT_MAX_CHARS) {
+    if (seg.length <= maxChars) {
       split.push(seg);
     } else {
       // Force-split at newlines to stay under the cap
       const lines = seg.split('\n');
       let buf = '';
       for (const line of lines) {
-        if (buf.length + line.length + 1 > EXTRACT_MAX_CHARS && buf.length > 0) {
+        if (buf.length + line.length + 1 > maxChars && buf.length > 0) {
           split.push(buf);
           buf = line + '\n';
         } else {
@@ -511,11 +528,12 @@ export class ChunkEngine {
     maxTokens = 8192,
     skipReformat = false,
   ): Promise<PartialResult> {
-    let effectiveMaxTokens = maxTokens;
+    let effectiveUserMessage = userMessage;
+    const effectiveMaxTokens = maxTokens;
     const label = `[Chunk ${current}/${total}]`;
     for (let attempt = 0; attempt <= RETRY_MAX; attempt++) {
       try {
-        const result = await callApiRaw(apiKey, system, userMessage, effectiveMaxTokens, skipReformat, this._onStream);
+        const result = await callApiRaw(apiKey, system, effectiveUserMessage, effectiveMaxTokens, skipReformat, this._onStream);
         if (this._chunkDelay > 3) {
           this._chunkDelay = Math.max(3, this._chunkDelay * 0.7);
         }
@@ -534,9 +552,14 @@ export class ChunkEngine {
         const isRetryable = isRateLimit || isTruncated || isParseError || isNonJson;
 
         if (isTruncated && attempt < 2) {
-          const prev = effectiveMaxTokens;
-          effectiveMaxTokens = Math.min(Math.ceil(effectiveMaxTokens * 1.5), 8192);
-          if (import.meta.env.DEV) console.warn(`${label} retry #${attempt + 1} after Truncated (maxTokens: ${prev}->${effectiveMaxTokens})`);
+          // Truncation is an input length problem, not output limit — reduce
+          // the chunk by re-splitting into two smaller pieces and retrying only
+          // the first half. The second half will be handled in a subsequent call.
+          const halfLen = Math.ceil(effectiveUserMessage.length / 2);
+          const splitIdx = effectiveUserMessage.lastIndexOf('\n', halfLen);
+          const cutPoint = splitIdx > effectiveUserMessage.length * 0.25 ? splitIdx : halfLen;
+          effectiveUserMessage = effectiveUserMessage.slice(0, cutPoint);
+          if (import.meta.env.DEV) console.warn(`${label} retry #${attempt + 1} after Truncated (reduced input to ${effectiveUserMessage.length} chars)`);
           await this.waitInterruptible(2000);
           continue;
         }

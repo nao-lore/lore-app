@@ -2,6 +2,7 @@ import type { LogEntry, Project, WeeklyReport, KnowledgeBase } from '../types';
 import { PROJECTS_KEY, KNOWLEDGE_BASE_KEY, safeGetItem, safeSetItem, safeRemoveItem, cache, invalidateProjectsCache } from './core';
 import { saveLogs, loadAllLogs } from './logs';
 import { deleteMasterNote, deleteMasterNoteHistory } from './masterNotes';
+import { safeJsonParse } from '../utils/safeJsonParse';
 
 // ─── Projects ───
 
@@ -14,12 +15,10 @@ function loadAllProjects(): Project[] {
   }
   const raw = safeGetItem(PROJECTS_KEY);
   if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    const data = Array.isArray(parsed) ? parsed : [];
-    cache.projectsCache = { data, version: cache.projectsCacheVersion };
-    return data;
-  } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadAllProjects', err); return []; }
+  const parsed = safeJsonParse<unknown>(raw, []);
+  const data = Array.isArray(parsed) ? parsed as Project[] : [];
+  cache.projectsCache = { data, version: cache.projectsCacheVersion };
+  return data;
 }
 
 export function loadProjects(): Project[] {
@@ -95,7 +94,7 @@ export function updateProject(id: string, patch: Partial<Project>): void {
 export function loadWeeklyReports(): WeeklyReport[] {
   const raw = safeGetItem(WEEKLY_REPORTS_KEY);
   if (!raw) return [];
-  try { return JSON.parse(raw); } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadWeeklyReports', err); return []; }
+  return safeJsonParse<WeeklyReport[]>(raw, []);
 }
 
 export function saveWeeklyReport(report: WeeklyReport): void {
@@ -129,7 +128,7 @@ function deleteWeeklyReportsForProject(projectId: string): void {
 export function loadKnowledgeBases(): KnowledgeBase[] {
   const raw = safeGetItem(KNOWLEDGE_BASE_KEY);
   if (!raw) return [];
-  try { return JSON.parse(raw); } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadKnowledgeBases', err); return []; }
+  return safeJsonParse<KnowledgeBase[]>(raw, []);
 }
 
 export function getKnowledgeBase(projectId: string): KnowledgeBase | undefined {

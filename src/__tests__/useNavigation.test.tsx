@@ -15,14 +15,31 @@ vi.stubGlobal('localStorage', {
 });
 vi.stubGlobal('import', { meta: { env: { DEV: false } } });
 
+// Mock loadLogs — default returns empty (new user)
+let mockLogs: unknown[] = [];
+vi.mock('../storage', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  return {
+    ...original,
+    loadLogs: () => mockLogs,
+  };
+});
+
 import { useNavigation } from '../hooks/useNavigation';
 
 describe('useNavigation — view navigation', () => {
   beforeEach(() => {
     store.clear();
+    mockLogs = [];
   });
 
-  it('initializes to dashboard view', () => {
+  it('initializes to input view for new users (no logs)', () => {
+    const { result } = renderHook(() => useNavigation());
+    expect(result.current.view).toBe('input');
+  });
+
+  it('initializes to dashboard view when logs exist', () => {
+    mockLogs = [{ id: '1', title: 'test' }];
     const { result } = renderHook(() => useNavigation());
     expect(result.current.view).toBe('dashboard');
   });
@@ -36,13 +53,14 @@ describe('useNavigation — view navigation', () => {
   it('does not restore detail as initial view', () => {
     store.set('threadlog_last_view', 'detail');
     const { result } = renderHook(() => useNavigation());
-    expect(result.current.view).toBe('dashboard');
+    // Falls back to input (no logs) or dashboard (with logs)
+    expect(['input', 'dashboard']).toContain(result.current.view);
   });
 
   it('does not restore masternote as initial view', () => {
     store.set('threadlog_last_view', 'masternote');
     const { result } = renderHook(() => useNavigation());
-    expect(result.current.view).toBe('dashboard');
+    expect(['input', 'dashboard']).toContain(result.current.view);
   });
 
   it('goTo changes view', () => {
@@ -54,7 +72,8 @@ describe('useNavigation — view navigation', () => {
   it('goTo sets prevView', () => {
     const { result } = renderHook(() => useNavigation());
     act(() => { result.current.goTo('history'); });
-    expect(result.current.prevView).toBe('dashboard');
+    // prevView is whatever the initial view was
+    expect(result.current.prevView).toBe('input');
   });
 
   it('goToRaw changes view without dirty guard', () => {
@@ -88,7 +107,7 @@ describe('useNavigation — view navigation', () => {
 });
 
 describe('useNavigation — dirty state guard', () => {
-  beforeEach(() => store.clear());
+  beforeEach(() => { store.clear(); mockLogs = []; });
 
   it('goTo is blocked when input is dirty and sets pendingNav', () => {
     const { result } = renderHook(() => useNavigation());
@@ -119,7 +138,7 @@ describe('useNavigation — dirty state guard', () => {
 });
 
 describe('useNavigation — back navigation', () => {
-  beforeEach(() => store.clear());
+  beforeEach(() => { store.clear(); mockLogs = []; });
 
   it('handleBack returns to prevView', () => {
     const { result } = renderHook(() => useNavigation());

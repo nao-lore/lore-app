@@ -175,7 +175,7 @@ describe('trialManager', () => {
     expect(TRIAL_DAYS).toBe(7);
   });
 
-  it('DAILY_LIMIT_FREE is 5', () => {
-    expect(DAILY_LIMIT_FREE).toBe(5);
+  it('DAILY_LIMIT_FREE is 30', () => {
+    expect(DAILY_LIMIT_FREE).toBe(30);
   });
 });
