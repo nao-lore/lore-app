@@ -29,15 +29,9 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
     }
   }, [lang, showToast]);
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = (plan: 'monthly' | 'annual' = 'monthly') => {
     setLoading(true);
-    try {
-      await redirectToCheckout();
-    } catch (err) {
-      if (import.meta.env.DEV) console.error('[PricingView] checkout error:', err);
-      showToast?.(t('somethingWentWrong', lang), 'error');
-      setLoading(false);
-    }
+    redirectToCheckout(plan);
   };
 
   const proStatus = checkProStatus();

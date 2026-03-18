@@ -139,7 +139,7 @@ describe('App', () => {
   it('shows landing page for first-time users (no logs, onboarding not done)', async () => {
     vi.mocked(isOnboardingDone).mockReturnValue(false);
     render(<App />);
-    expect(await screen.findByText('Your AI forgot everything from yesterday.')).toBeInTheDocument();
+    expect(await screen.findByText('Paste a conversation. Get a project briefing in 30 seconds.')).toBeInTheDocument();
   });
 
   it('shows main UI when onboarding is done', () => {

@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Clipboard, Zap, LayoutDashboard, ArrowRight, Globe, Key, Wifi } from 'lucide-react';
+import { Clipboard, Zap, LayoutDashboard, ArrowRight, Globe, MessageSquare, Github } from 'lucide-react';
 import { t } from './i18n';
 import type { Lang } from './i18n';
 
@@ -33,14 +33,9 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
             {t('lpCtaTryFree', lang)}
             <ArrowRight size={16} aria-hidden="true" />
           </button>
-          <a
-            href={CHROME_EXTENSION_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn lp-cta-secondary"
-          >
-            {t('lpCtaChromeExtension', lang)}
-          </a>
+        </div>
+        <div className="lp-demo-placeholder">
+          {t('lpDemoPlaceholder', lang)}
         </div>
       </section>
 
@@ -109,12 +104,12 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
             <span>{t('lpStat8Languages', lang)}</span>
           </div>
           <div className="lp-stat">
-            <Key size={20} aria-hidden="true" className="lp-stat-icon" />
-            <span>{t('lpStatNoApiKey', lang)}</span>
+            <MessageSquare size={20} aria-hidden="true" className="lp-stat-icon" />
+            <span>{t('lpStatWorksWithAnyAi', lang)}</span>
           </div>
           <div className="lp-stat">
-            <Wifi size={20} aria-hidden="true" className="lp-stat-icon" />
-            <span>{t('lpStatOffline', lang)}</span>
+            <Github size={20} aria-hidden="true" className="lp-stat-icon" />
+            <span>{t('lpStatOpenSource', lang)}</span>
           </div>
         </div>
       </section>
@@ -132,6 +127,7 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
           <div className="lp-pricing-card lp-pricing-card-pro">
             <h3 className="lp-pricing-plan">{t('lpPricingPro', lang)}</h3>
             <p className="lp-pricing-price">{t('lpPricingProPrice', lang)}</p>
+            <p className="lp-pricing-annual">{t('lpPricingAnnual', lang)}</p>
             <p className="lp-pricing-desc">{t('lpPricingProDesc', lang)}</p>
           </div>
         </div>

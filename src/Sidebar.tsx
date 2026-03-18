@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
-import { FileText, ScrollText, FolderOpen, Folder, CheckSquare, MoreHorizontal, Settings, Trash2, HelpCircle, ChevronUp, ChevronDown, ChevronRight, BookOpen, Clock, BarChart2, FileBarChart, MessageSquare, Menu, CreditCard, User } from 'lucide-react';
+import { FileText, ScrollText, Folder, CheckSquare, MoreHorizontal, Settings, Trash2, HelpCircle, ChevronUp, ChevronDown, ChevronRight, BarChart2, MessageSquare, Menu, CreditCard, User, LayoutDashboard, PenSquare, FolderKanban } from 'lucide-react';
 import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { t } from './i18n';
 import type { Lang } from './i18n';
@@ -115,11 +115,10 @@ interface SidebarProps {
 }
 
 const MAX_PINNED = 5;
-const SIDEBAR_MORE_KEY = 'threadlog_sidebar_more';
 const SIDEBAR_PINNED_KEY = 'threadlog_sidebar_pinned';
 const NOTIFICATION_DISMISSALS_KEY = 'threadlog_notification_dismissals';
 
-function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSelect, onNewLog, onOpenSettings, onOpenHistory, onOpenProjects, onOpenTodos, onOpenProjectSummaryList, onOpenDashboard, onOpenTimeline, onOpenWeeklyReport, onOpenTrash, onOpenHelp, onOpenPricing, onCollapse, onSelectProject, onOpenMasterNote, onRefresh, onDeleted, lang, showToast, todos, masterNotes }: SidebarProps) {
+function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSelect, onNewLog, onOpenSettings, onOpenHistory, onOpenProjects, onOpenTodos, onOpenProjectSummaryList: _onOpenProjectSummaryList, onOpenDashboard, onOpenTimeline: _onOpenTimeline, onOpenWeeklyReport: _onOpenWeeklyReport, onOpenTrash, onOpenHelp, onOpenPricing, onCollapse, onSelectProject, onOpenMasterNote, onRefresh, onDeleted, lang, showToast, todos, masterNotes }: SidebarProps) {
   const [menuState, setMenuState] = useState<{ logId: string; rect: DOMRect } | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
@@ -129,18 +128,10 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
   const [editDraft, setEditDraft] = useState('');
   const [changingProjectLogId, setChangingProjectLogId] = useState<string | null>(null);
   const changeProjectTrapRef = useFocusTrap<HTMLDivElement>(!!changingProjectLogId);
-  const [moreOpen, setMoreOpen] = useState(() => {
-    return safeGetItem(SIDEBAR_MORE_KEY) === 'open';
-  });
   const [pinnedOpen, setPinnedOpen] = useState(() => {
     return safeGetItem(SIDEBAR_PINNED_KEY) !== 'closed';
   });
 
-  const toggleMore = () => {
-    const next = !moreOpen;
-    setMoreOpen(next);
-    safeSetItem(SIDEBAR_MORE_KEY, next ? 'open' : 'closed');
-  };
   const togglePinned = () => {
     const next = !pinnedOpen;
     setPinnedOpen(next);
@@ -281,20 +272,41 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
         </button>
       </div>
 
-      {/* Navigation — Primary */}
+      {/* Navigation — Tier 1 (Primary) */}
       <div className="sidebar-nav-section">
         <div className="border-top sidebar-nav-divider" />
         <button
-          className={`sidebar-nav-item${activeView === 'dashboard' || activeView === 'input' ? ' active' : ''}`}
+          className={`sidebar-nav-item${activeView === 'dashboard' ? ' active' : ''}`}
           onClick={onOpenDashboard}
           title={t('navDashboardTitle', lang)}
           aria-current={activeView === 'dashboard' ? 'page' : undefined}
         >
-          <BarChart2 size={15} />
+          <LayoutDashboard size={15} />
           <span>{t('navDashboard', lang)}</span>
         </button>
         <button
-          className={`sidebar-nav-item${activeView === 'history' ? ' active' : ''}`}
+          className={`sidebar-nav-item${activeView === 'input' || activeView === 'detail' ? ' active' : ''}`}
+          onClick={onNewLog}
+          title={t('createHandoff', lang)}
+          aria-current={activeView === 'input' ? 'page' : undefined}
+        >
+          <PenSquare size={15} />
+          <span>{t('navInput', lang)}</span>
+        </button>
+        <button
+          className={`sidebar-nav-item${activeView === 'projects' || activeView === 'projecthome' ? ' active' : ''}`}
+          onClick={onOpenProjects}
+          title={t('navProjectsTitle', lang)}
+          aria-current={activeView === 'projects' || activeView === 'projecthome' ? 'page' : undefined}
+        >
+          <FolderKanban size={15} />
+          <span>{t('navProjects', lang)}</span>
+        </button>
+
+        {/* Tier 2 (Secondary) */}
+        <div className="sidebar-nav-secondary-divider" />
+        <button
+          className={`sidebar-nav-item sidebar-nav-item-secondary${activeView === 'history' ? ' active' : ''}`}
           onClick={onOpenHistory}
           title={t('navLogsTitle', lang)}
           aria-current={activeView === 'history' ? 'page' : undefined}
@@ -304,16 +316,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
           {dots.unassignedLogs && <span className="nav-dot accent" role="status" aria-label={t('dotUnassignedLogs', lang)} title={t('dotUnassignedLogs', lang)} />}
         </button>
         <button
-          className={`sidebar-nav-item${activeView === 'projects' || activeView === 'projecthome' ? ' active' : ''}`}
-          onClick={onOpenProjects}
-          title={t('navProjectsTitle', lang)}
-          aria-current={activeView === 'projects' || activeView === 'projecthome' ? 'page' : undefined}
-        >
-          <FolderOpen size={15} />
-          <span>{t('navProjects', lang)}</span>
-        </button>
-        <button
-          className={`sidebar-nav-item${activeView === 'todos' ? ' active' : ''}`}
+          className={`sidebar-nav-item sidebar-nav-item-secondary${activeView === 'todos' ? ' active' : ''}`}
           onClick={onOpenTodos}
           title={t('navTodoTitle', lang)}
           aria-current={activeView === 'todos' ? 'page' : undefined}
@@ -322,52 +325,24 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
           <span>{t('navTodo', lang)}</span>
           {dots.overdueTodos && <span className="nav-dot warning" role="status" aria-label={t('dotOverdueTodos', lang)} title={t('dotOverdueTodos', lang)} />}
         </button>
-
-        {/* Collapsible "More" section */}
         <button
-          type="button"
-          className="flex-row cursor-pointer sidebar-more-toggle select-none sidebar-toggle-btn"
-          onClick={toggleMore}
-          aria-label={t('ariaToggleMore', lang)}
-          aria-expanded={moreOpen}
+          className={`sidebar-nav-item sidebar-nav-item-secondary${activeView === 'settings' ? ' active' : ''}`}
+          onClick={onOpenSettings}
+          title={t('settings', lang)}
+          aria-current={activeView === 'settings' ? 'page' : undefined}
         >
-          {moreOpen ? <ChevronDown size={12} className="sidebar-chevron-icon" /> : <ChevronRight size={12} className="sidebar-chevron-icon" />}
-          <span className="text-xs-muted font-semibold">{t('more', lang)}</span>
+          <Settings size={15} />
+          <span>{t('settings', lang)}</span>
         </button>
-        {moreOpen && (
-          <div style={{ marginTop: 2 }}>
-            <button
-              className={`sidebar-nav-item${activeView === 'timeline' ? ' active' : ''}`}
-              onClick={onOpenTimeline}
-              title={t('navTimelineTitle', lang)}
-              aria-current={activeView === 'timeline' ? 'page' : undefined}
-            >
-              <Clock size={15} />
-              <span>{t('navTimeline', lang)}</span>
-            </button>
-            {onOpenWeeklyReport && (
-              <button
-                className={`sidebar-nav-item${activeView === 'weeklyreport' ? ' active' : ''}`}
-                onClick={onOpenWeeklyReport}
-                title={t('navWeeklyReportTitle', lang)}
-                aria-current={activeView === 'weeklyreport' ? 'page' : undefined}
-              >
-                <FileBarChart size={15} />
-                <span>{t('navWeeklyReport', lang)}</span>
-              </button>
-            )}
-            <button
-              className={`sidebar-nav-item${activeView === 'summarylist' || activeView === 'masternote' ? ' active' : ''}`}
-              onClick={onOpenProjectSummaryList}
-              title={t('navProjectSummaryTitle', lang)}
-              aria-current={activeView === 'summarylist' || activeView === 'masternote' ? 'page' : undefined}
-            >
-              <BookOpen size={15} />
-              <span>{t('navProjectSummary', lang)}</span>
-              {dots.staleSummary && <span className="nav-dot warning" role="status" aria-label={t('dotStaleSummary', lang)} title={t('dotStaleSummary', lang)} />}
-            </button>
-          </div>
-        )}
+        <button
+          className={`sidebar-nav-item sidebar-nav-item-secondary${activeView === 'help' ? ' active' : ''}`}
+          onClick={onOpenHelp}
+          title={t('accountMenuHelp', lang)}
+          aria-current={activeView === 'help' ? 'page' : undefined}
+        >
+          <HelpCircle size={15} />
+          <span>{t('accountMenuHelp', lang)}</span>
+        </button>
       </div>
 
       {/* Pinned section (projects + logs combined) */}
