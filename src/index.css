@@ -4755,6 +4755,7 @@ button[disabled] {
 .pricing-feature-text { font-size: 14px; line-height: 1.5; color: var(--text-body); }
 .pricing-btn-full { width: 100%; padding: 10px 0; font-size: 14px; font-weight: 600; border-radius: 8px; }
 .pricing-coming-soon { margin-left: 6px; font-size: 11px; font-weight: 600; color: var(--accent); background: rgba(99, 102, 241, 0.12); padding: 1px 6px; border-radius: 4px; }
+.pro-badge-inline { display: inline-block; font-size: 10px; font-weight: 700; color: var(--button-text, #fff); background: linear-gradient(135deg, var(--accent), #a855f7); padding: 1px 6px; border-radius: 4px; letter-spacing: 0.5px; vertical-align: middle; line-height: 16px; }
 .faq-question { font-weight: 600; font-size: 14px; color: var(--text-secondary); margin-bottom: 4px; }
 .faq-answer { font-size: 13px; line-height: 1.6; color: var(--text-muted); }
 .faq-item-bordered { padding: 12px 0; border-bottom: 1px solid var(--border-divider); }
