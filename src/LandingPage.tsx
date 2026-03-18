@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { Clipboard, Zap, LayoutDashboard, ArrowRight, Globe, MessageSquare, Github } from 'lucide-react';
 import { t } from './i18n';
 import type { Lang } from './i18n';
@@ -13,6 +13,20 @@ const GITHUB_URL = 'https://github.com/yo-ban/lore-pwa';
 const FEEDBACK_URL = 'https://github.com/yo-ban/lore-pwa/issues';
 
 function LandingPage({ lang, onGetStarted }: LandingPageProps) {
+  // Override #root overflow:hidden so LP can scroll
+  useEffect(() => {
+    const root = document.getElementById('root');
+    if (root) {
+      root.style.height = 'auto';
+      root.style.overflow = 'visible';
+    }
+    return () => {
+      if (root) {
+        root.style.height = '100vh';
+        root.style.overflow = 'hidden';
+      }
+    };
+  }, []);
   return (
     <div className="lp-root">
       {/* Header */}
