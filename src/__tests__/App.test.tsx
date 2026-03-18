@@ -136,10 +136,10 @@ describe('App', () => {
     expect(container).toBeTruthy();
   });
 
-  it('shows onboarding for first-time users (no logs, onboarding not done)', () => {
+  it('shows landing page for first-time users (no logs, onboarding not done)', async () => {
     vi.mocked(isOnboardingDone).mockReturnValue(false);
     render(<App />);
-    expect(screen.getByTestId('onboarding')).toBeInTheDocument();
+    expect(await screen.findByText('Your AI forgot everything from yesterday.')).toBeInTheDocument();
   });
 
   it('shows main UI when onboarding is done', () => {
