@@ -47,11 +47,12 @@ interface WeeklyReportViewProps {
   projects: Project[];
   todos: Todo[];
   onBack: () => void;
+  onNewLog?: () => void;
   lang: Lang;
   showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void;
 }
 
-export default function WeeklyReportView({ logs, projects, todos, onBack, lang, showToast }: WeeklyReportViewProps) {
+export default function WeeklyReportView({ logs, projects, todos, onBack, onNewLog, lang, showToast }: WeeklyReportViewProps) {
   // Week navigation: default to this week
   const [weekOffset, setWeekOffset] = useState(0);
   const [projectFilter, setProjectFilter] = useState<string>('');
@@ -374,6 +375,11 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, lang, 
           <div className="empty-state-icon">&#128202;</div>
           <p>{t('weeklyReportNoLogs', lang)}</p>
           <p className="page-subtitle">{t('weeklyReportNoLogsHint', lang)}</p>
+          {onNewLog && (
+            <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={onNewLog}>
+              {t('weeklyReportCreateLog', lang)}
+            </button>
+          )}
         </div>
       )}
 

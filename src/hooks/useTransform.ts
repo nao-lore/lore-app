@@ -3,8 +3,8 @@ import { transformText, transformHandoff, transformBoth, transformTodoOnly, tran
 import type { TransformBothOptions, HandoffTodoResult, TodoOnlyResult } from '../transform';
 import { ChunkEngine } from '../chunkEngine';
 import type { EngineProgress } from '../chunkEngine';
-import { addLog, getLog, addTodosFromLog, addTodosFromLogWithMeta, loadLogs, updateLog, getApiKey, getFeatureEnabled, getMasterNote, isDemoMode, safeGetItem, safeSetItem } from '../storage';
-import { shouldUseBuiltinApi } from '../provider';
+import { addLog, getLog, addTodosFromLog, addTodosFromLogWithMeta, loadLogs, updateLog, getApiKey, getFeatureEnabled, getMasterNote, isDemoMode, safeGetItem, safeSetItem, getLang } from '../storage';
+import { shouldUseBuiltinApi, getActiveProvider } from '../provider';
 const loadDemoData = () => import('../demoData');
 import { classifyLog, saveCorrection } from '../classify';
 import { playSuccess } from '../sounds';
@@ -29,7 +29,9 @@ const aiResultCache = new Map<string, unknown>();
 
 function hashCacheKey(text: string, action: string): string {
   const prefix = text.slice(0, 1000);
-  return `${action}:${text.length}:${prefix}`;
+  const provider = getActiveProvider() || 'default';
+  const lang = getLang() || 'auto';
+  return `${action}:${provider}:${lang}:${text.length}:${prefix}`;
 }
 
 function getCachedResult<T>(text: string, action: string): T | undefined {

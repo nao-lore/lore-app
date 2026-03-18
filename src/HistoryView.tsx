@@ -494,6 +494,11 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
           {!debouncedQuery.trim() && modeFilter === 'all' && <EmptyLogs />}
           <p>{debouncedQuery.trim() || modeFilter !== 'all' ? t('noMatchingLogs', lang) : t('noLogsYet', lang)}</p>
           {!debouncedQuery.trim() && modeFilter === 'all' && !activeProjectId && <p className="page-subtitle">{t('noLogsYetDesc', lang)}</p>}
+          {!debouncedQuery.trim() && modeFilter === 'all' && !activeProjectId && (
+            <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={onBack}>
+              {t('createFirstLog', lang)}
+            </button>
+          )}
           {!debouncedQuery.trim() && modeFilter === 'all' && activeProjectId && (
             <>
               <p className="page-subtitle">{t('addLogsEmptyHint', lang)}</p>
@@ -512,13 +517,17 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
               <div key={group.key}>
                 {group.label && (
                   <div className="history-group-header">
-                    <span
-                      className="history-group-label"
-                      style={groupKey === 'project' && group.key !== '_none' ? { cursor: 'pointer' } : undefined}
-                      onClick={groupKey === 'project' && group.key !== '_none' ? () => onOpenProject?.(group.key) : undefined}
-                    >
-                      {group.label}
-                    </span>
+                    {groupKey === 'project' && group.key !== '_none' ? (
+                      <button
+                        type="button"
+                        className="history-group-label history-group-label-btn"
+                        onClick={() => onOpenProject?.(group.key)}
+                      >
+                        {group.label}
+                      </button>
+                    ) : (
+                      <span className="history-group-label">{group.label}</span>
+                    )}
                     <span className="meta text-sm">{tf('logCount', lang, group.items.length)}</span>
                   </div>
                 )}
@@ -551,21 +560,26 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
                       }}
                     >
                       <div className="history-group-header-virtual">
-                        <span
-                          className="history-group-label"
-                          style={groupKey === 'project' && flatItem.key !== '_none' ? { cursor: 'pointer' } : undefined}
-                          onClick={groupKey === 'project' && flatItem.key !== '_none' ? () => onOpenProject?.(flatItem.key) : undefined}
-                        >
-                          {flatItem.label}
-                        </span>
+                        {groupKey === 'project' && flatItem.key !== '_none' ? (
+                          <button
+                            type="button"
+                            className="history-group-label history-group-label-btn"
+                            onClick={() => onOpenProject?.(flatItem.key)}
+                          >
+                            {flatItem.label}
+                          </button>
+                        ) : (
+                          <span className="history-group-label">{flatItem.label}</span>
+                        )}
                         <span className="meta text-sm">{tf('logCount', lang, flatItem.count)}</span>
                         {groupKey === 'project' && flatItem.key !== '_none' && onOpenMasterNote && (
-                          <span
+                          <button
+                            type="button"
                             className="summary-link"
                             onClick={() => onOpenMasterNote(flatItem.key)}
                           >
                             {t('viewSummaryLink', lang)}
-                          </span>
+                          </button>
                         )}
                       </div>
                     </div>

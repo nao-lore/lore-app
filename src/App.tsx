@@ -248,11 +248,12 @@ export default function App() {
     const positions = scrollPositionRef.current;
     requestAnimationFrame(() => {
       if (scrollEl) {
-        const saved = positions[s.view];
+        const scrollKey = s.view === 'detail' && s.selectedId ? `detail:${s.selectedId}` : s.view;
+        const saved = positions[scrollKey];
         scrollEl.scrollTo(0, saved || 0);
       }
     });
-  }, [s.view, scrollRef, scrollPositionRef]);
+  }, [s.view, s.selectedId, scrollRef, scrollPositionRef]);
 
   const backTo = (v: View) => () => s.goTo(s.prevView === v ? 'input' : s.prevView);
   const activeProject = useMemo(
@@ -268,7 +269,7 @@ export default function App() {
     todos: () => <TodoView logs={s.logs} onBack={backTo('todos')} onOpenLog={s.handleSelect} lang={s.lang} showToast={s.showToast} />,
     dashboard: () => <DashboardView logs={s.logs} projects={s.projects} todos={s.todos} masterNotes={s.masterNotes} lang={s.lang} onOpenLog={s.handleSelect} onOpenProject={s.handleOpenProjectLogs} onOpenTodos={s.handleGoToTodos} onOpenSummaryList={s.handleGoToSummaryList} onOpenHistory={s.handleGoToHistory} onNewLog={s.handleGoToInput} onToggleAction={s.handleDashboardToggleAction} />,
     timeline: () => <TimelineView logs={s.logs} projects={s.projects} todos={s.todos} masterNotes={s.masterNotes} onBack={backTo('timeline')} onOpenLog={s.handleSelect} onOpenProject={s.handleOpenProjectLogs} onOpenSummary={s.handleOpenMasterNote} onNewLog={() => s.goTo('input')} lang={s.lang} />,
-    weeklyreport: () => <WeeklyReportView logs={s.logs} projects={s.projects} todos={s.todos} onBack={backTo('weeklyreport')} lang={s.lang} showToast={s.showToast} />,
+    weeklyreport: () => <WeeklyReportView logs={s.logs} projects={s.projects} todos={s.todos} onBack={backTo('weeklyreport')} onNewLog={s.handleGoToInput} lang={s.lang} showToast={s.showToast} />,
     trash: () => <TrashView onBack={backTo('trash')} onRefresh={s.refreshLogs} lang={s.lang} showToast={s.showToast} />,
     summarylist: () => <ProjectSummaryListView projects={s.projects} logs={s.logs} onBack={backTo('summarylist')} onOpenSummary={s.handleOpenMasterNote} lang={s.lang} />,
     projects: () => <ProjectsView projects={s.projects} logs={s.logs} onBack={backTo('projects')} onSelectProject={s.handleOpenProjectLogs} onOpenMasterNote={s.handleOpenMasterNote} onRefresh={s.refreshLogs} lang={s.lang} showToast={s.showToast} />,

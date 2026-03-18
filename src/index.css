@@ -382,11 +382,16 @@
 .history-group-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; padding: 0 4px; }
 .history-group-header-virtual { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; padding: 10px 4px 0; }
 .history-group-label { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+button.history-group-label-btn { background: none; border: none; padding: 0; margin: 0; font: inherit; cursor: pointer; text-align: left; }
+button.history-group-label-btn:hover { text-decoration: underline; }
+button.history-group-label-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .history-scroll-container { flex: 1; min-height: 0; overflow: auto; max-height: calc(100vh - 200px); }
 .bulk-bar { position: sticky; bottom: 0; background: var(--bg-primary); border-top: 1px solid var(--border-default); padding: 12px; gap: 8px; z-index: 100; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); }
 .bulk-bar-label { font-weight: 600; font-size: 13px; margin-right: auto; }
 .hint-card { gap: 8px; margin-bottom: 12px; padding: 8px 12px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-subtle); }
-.summary-link { font-size: 11px; color: var(--accent-text); cursor: pointer; margin-left: auto; }
+.summary-link { font-size: 11px; color: var(--accent-text); cursor: pointer; margin-left: auto; background: none; border: none; padding: 0; font: inherit; }
+.summary-link:hover { text-decoration: underline; }
+.summary-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .project-picker-item { justify-content: flex-start; gap: 8px; }
 
 /* ─── Component inline-to-CSS: TodoItem / TodoToolbar / HistoryCard / CardSection / etc ─── */
@@ -4041,6 +4046,37 @@ button:focus-visible,
   transition: height 0.2s;
 }
 
+/* ===== Swipe-to-action on list items ===== */
+.swipe-action-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.swipe-action-bg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 16px;
+}
+
+.swipe-action-bg-left {
+  right: 0;
+  background: var(--error-bg, #fee2e2);
+  color: var(--error-text, #dc2626);
+}
+
+.swipe-action-bg-right {
+  left: 0;
+  background: var(--success-bg, #dcfce7);
+  color: var(--success-text, #16a34a);
+}
+
 /* ===== Swipe-back visual indicator ===== */
 .swipe-indicator {
   position: fixed;
@@ -4612,3 +4648,81 @@ button:focus-visible,
 .btn-sm-trash { font-size: 12px; padding: 3px 10px; min-height: 24px; }
 .import-mode-btn { text-align: left; padding: 10px 14px; }
 .import-mode-title { font-weight: 600; font-size: 14px; }
+
+/* ─── RTL Support ─── */
+[dir="rtl"] .sidebar {
+  border-right: none;
+  border-left: 1px solid var(--border-default);
+}
+
+[dir="rtl"] .btn-back {
+  direction: rtl;
+}
+
+[dir="rtl"] .sidebar-item {
+  text-align: right;
+}
+
+[dir="rtl"] .card {
+  text-align: right;
+}
+
+[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .page-header-row {
+  flex-direction: row-reverse;
+}
+
+/* Flip directional margins/paddings */
+[dir="rtl"] .ml-auto {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir="rtl"] .sidebar-item-title {
+  text-align: right;
+}
+
+[dir="rtl"] .todo-item {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .breadcrumb-sep {
+  transform: scaleX(-1);
+}
+
+/* Flip directional properties for common layout elements */
+[dir="rtl"] .skip-link {
+  left: auto;
+  right: 0;
+}
+
+[dir="rtl"] .onboarding-desc-left {
+  text-align: right;
+}
+
+[dir="rtl"] .import-mode-btn {
+  text-align: right;
+}
+
+[dir="rtl"] .saved-report-item {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .shortcuts-row {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .demo-banner {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .toolbar-card-mb {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .feedback-header {
+  flex-direction: row-reverse;
+}

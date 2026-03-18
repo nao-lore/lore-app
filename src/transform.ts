@@ -8,6 +8,7 @@ import { SYSTEM_PROMPT, HANDOFF_PROMPT, BOTH_PROMPT, TODO_ONLY_PROMPT } from './
 import { parseJsonInWorker } from './workers/parseHelper';
 import { safeParse, WorklogResultSchema, HandoffResultSchema, TodoOnlyResultSchema } from './schemas';
 import { AIError } from './errors';
+import { parseJsonWithRepair } from './utils/jsonRepair';
 
 // Prompts (SYSTEM_PROMPT, HANDOFF_PROMPT, BOTH_PROMPT, TODO_ONLY_PROMPT) are
 // defined in ./prompts.ts with PROMPT_VERSION for tracking.
@@ -227,7 +228,31 @@ async function extractAndParse(rawText: string): Promise<Record<string, unknown>
     return parseJsonInWorker(rawText) as Promise<Record<string, unknown>>;
   }
   const jsonText = extractJson(rawText);
-  return JSON.parse(jsonText) as Record<string, unknown>;
+  try {
+    return JSON.parse(jsonText) as Record<string, unknown>;
+  } catch {
+    // Attempt JSON repair before giving up
+    return parseJsonWithRepair(jsonText) as Record<string, unknown>;
+  }
+}
+
+/**
+ * Retry wrapper for transform calls.
+ * Retries once on PARSE_ERROR to handle transient AI JSON issues.
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  label: string,
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof AIError && err.code === 'PARSE_ERROR') {
+      if (import.meta.env.DEV) console.warn(`[${label}] Parse failed, retrying...`);
+      return await fn(); // One retry
+    }
+    throw err;
+  }
 }
 
 // =============================================================================
@@ -274,6 +299,10 @@ function getLangInstruction(lang: string): string {
 
 // Single-call transform for texts ≤ CHUNK_THRESHOLD
 export async function transformText(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<TransformResult> {
+  return withRetry(() => transformTextOnce(sourceText, opts), 'transformText');
+}
+
+async function transformTextOnce(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<TransformResult> {
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) {
     throw new AIError('API_KEY_MISSING', '[API Key] Not set. Go to Settings and enter your API key.');
@@ -507,6 +536,10 @@ export function buildHandoffLogEntry(
 }
 
 export async function transformHandoff(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<HandoffResult> {
+  return withRetry(() => transformHandoffOnce(sourceText, opts), 'transformHandoff');
+}
+
+async function transformHandoffOnce(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<HandoffResult> {
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) {
     throw new AIError('API_KEY_MISSING', '[API Key] Not set. Go to Settings and enter your API key.');
@@ -573,6 +606,10 @@ export interface TodoOnlyResult {
 
 
 export async function transformTodoOnly(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<TodoOnlyResult> {
+  return withRetry(() => transformTodoOnlyOnce(sourceText, opts), 'transformTodoOnly');
+}
+
+async function transformTodoOnlyOnce(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<TodoOnlyResult> {
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) {
     throw new AIError('API_KEY_MISSING', '[API Key] Not set. Go to Settings and enter your API key.');

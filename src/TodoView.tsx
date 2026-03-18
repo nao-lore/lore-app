@@ -383,6 +383,12 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
     onSetEditDraft: setEditDraft,
     onRefresh: refresh,
     onOpenLog,
+    onDelete: (id: string) => {
+      trashTodo(id);
+      refresh();
+      showToast?.(t('moveToTrash', lang), 'success');
+    },
+    onToggleDone: handleToggle,
   };
 
   const showSourcePerItem = groupKey !== 'source';

@@ -597,9 +597,8 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>{t('dataImportConfirmMerge', lang)}</div>
               </button>
               <button
-                className={`btn${pendingImport.mode === 'overwrite' ? ' btn-primary' : ''}`}
+                className={`btn import-mode-btn${pendingImport.mode === 'overwrite' ? ' btn-primary' : ''}`}
                 onClick={() => setPendingImport({ ...pendingImport, mode: 'overwrite' })}
-                className="import-mode-btn"
               >
                 <div className="import-mode-title">{t('dataImportOverwrite', lang)}</div>
                 <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>{t('dataImportConfirmOverwrite', lang)}</div>

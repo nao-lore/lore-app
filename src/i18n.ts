@@ -1653,6 +1653,10 @@ const labels = {
     pt: `Etapa ${step} / ${total}`,
   }),
 
+  // Empty state CTAs
+  createFirstLog: { ja: '最初のログを作成する', en: 'Create your first log', es: 'Cree su primer registro', fr: 'Créez votre premier log', de: 'Erstellen Sie Ihren ersten Log', zh: '创建您的第一条日志', ko: '첫 번째 로그 만들기', pt: 'Crie seu primeiro registro' },
+  weeklyReportCreateLog: { ja: 'ログを作成する', en: 'Create a log', es: 'Crear un registro', fr: 'Créer un log', de: 'Log erstellen', zh: '创建日志', ko: '로그 만들기', pt: 'Criar um registro' },
+
 } as const;
 
 /** Exported for testing — do not use in application code. */

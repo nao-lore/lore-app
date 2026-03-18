@@ -26,14 +26,15 @@ export function useNavigation() {
   // Navigation core
   const goToRaw = useCallback((next: View) => {
     if (scrollRef.current) {
-      scrollPositionRef.current[view] = scrollRef.current.scrollTop;
+      const scrollKey = view === 'detail' && selectedId ? `detail:${selectedId}` : view;
+      scrollPositionRef.current[scrollKey] = scrollRef.current.scrollTop;
     }
     startTransition(() => {
       setPrevView(view);
       setView(next);
     });
     requestAnimationFrame(() => scrollRef.current?.focus());
-  }, [view]);
+  }, [view, selectedId]);
 
   // Navigation with dirty-input guard
   const goTo = useCallback((next: View) => {

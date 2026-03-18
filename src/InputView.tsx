@@ -4,11 +4,9 @@ import { getChunkTarget, getEngineConcurrency } from './chunkEngine';
 import { getStreak, isDemoMode, safeSetItem } from './storage';
 import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
 const loadDemoData = () => import('./demoData');
-import { Copy, Check, X, Share2 } from 'lucide-react';
+import { Copy, Check, X } from 'lucide-react';
 import { getGreeting } from './greeting';
-import ProgressPanel from './ProgressPanel';
 import type { ProgressStep } from './ProgressPanel';
-import SkeletonLoader from './SkeletonLoader';
 import { logToMarkdown, handoffResultToMarkdown } from './markdown';
 import type { TransformResult, HandoffResult, SourceReference, Project } from './types';
 import { t, tf } from './i18n';
@@ -23,6 +21,9 @@ import { useTransform } from './hooks/useTransform';
 import type { TransformAction } from './hooks/useTransform';
 import { useFileImport } from './hooks/useFileImport';
 import type { ImportedFile } from './hooks/useFileImport';
+import PostGenerationPreview from './components/PostGenerationPreview';
+import InputToolbar from './components/InputToolbar';
+import ProgressDisplay from './components/ProgressDisplay';
 
 function buildCombinedText(pastedText: string, files: ImportedFile[]): string {
   const parts: string[] = [];
@@ -208,6 +209,20 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     : progress.phase === 'paused' ? (progress.autoPaused ? t('autoPaused', lang) : t('paused', lang))
     : t('transforming', lang);
 
+  const handleStartNew = () => {
+    const prev = text;
+    const prevFiles = files;
+    undoTextRef.current = prev;
+    resetTransformState();
+    setText('');
+    setFiles([]);
+    if (prev.trim() || prevFiles.length > 0) {
+      showToast?.(t('inputCleared', lang) || 'Cleared', 'default', {
+        label: t('undo', lang) || 'Undo',
+        onClick: () => { setText(prev); setFiles(prevFiles); },
+      });
+    }
+  };
 
   return (
     <div
@@ -231,99 +246,18 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           </p>
         ) : null;
       })()}
-      {/* TODO: Extract to PostGenerationPreview component */}
+
       {/* Post-generation preview panel */}
       {savedResult && (
-        <div className="input-preview">
-          <h3 className="mb-md result-heading">{wasFirstTransform ? `🎉 ${t('logSaved', lang)}` : t('logSaved', lang)}</h3>
-
-          {/* Rich formatted preview */}
-          <div className="mb-lg input-preview-result">
-            <HandoffResultDisplay result={{
-              title: savedResult.log.title,
-              currentStatus: savedResult.log.currentStatus ?? [],
-              nextActions: savedResult.log.nextActions ?? [],
-              nextActionItems: savedResult.log.nextActionItems,
-              actionBacklog: savedResult.log.actionBacklog,
-              completed: savedResult.log.completed ?? [],
-              blockers: savedResult.log.blockers ?? [],
-              decisions: savedResult.log.decisions ?? [],
-              decisionRationales: savedResult.log.decisionRationales,
-              constraints: savedResult.log.constraints ?? [],
-              resumeContext: savedResult.log.resumeContext ?? [],
-              resumeChecklist: savedResult.log.resumeChecklist,
-              handoffMeta: savedResult.log.handoffMeta,
-              tags: savedResult.log.tags ?? [],
-            }} lang={lang} />
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-wrap gap-sm">
-            {savedResult.fullContext ? (
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  const text = savedResult.fullContext + '\n\n---\n\n' + savedResult.markdown;
-                  try { navigator.clipboard.writeText(text); } catch (err) { if (import.meta.env.DEV) console.warn('[InputView] clipboard write:', err); }
-                  showToast?.(t('copiedToClipboard', lang), 'success');
-                }}
-              >
-                <Copy size={14} /> {t('copyAiContext', lang)}
-              </button>
-            ) : (
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  try { navigator.clipboard.writeText(savedResult.markdown); } catch (err) { if (import.meta.env.DEV) console.warn('[InputView] clipboard write:', err); }
-                  showToast?.(t('copiedToClipboard', lang), 'success');
-                }}
-              >
-                <Copy size={14} /> {t('copyHandoff', lang)}
-              </button>
-            )}
-            <button
-              className="btn"
-              onClick={() => {
-                const prev = text;
-                const prevFiles = files;
-                undoTextRef.current = prev;
-                resetTransformState();
-                setText('');
-                setFiles([]);
-                if (prev.trim() || prevFiles.length > 0) {
-                  showToast?.(t('inputCleared', lang) || 'Cleared', 'default', {
-                    label: t('undo', lang) || 'Undo',
-                    onClick: () => { setText(prev); setFiles(prevFiles); },
-                  });
-                }
-              }}
-            >
-              {t('startNewLog', lang)}
-            </button>
-            {typeof navigator.share === 'function' && (
-              <button className="btn" onClick={async () => {
-                try {
-                  await navigator.share({
-                    title: 'Lore Handoff',
-                    text: savedResult.fullContext || savedResult.markdown,
-                  });
-                } catch (err) { if (import.meta.env.DEV) console.warn('[InputView] share:', err); }
-              }}>
-                <Share2 size={14} /> {t('share', lang)}
-              </button>
-            )}
-          </div>
-
-          {/* Subtitle explaining the buttons */}
-          {savedResult.fullContext && (
-            <p className="text-xs-muted mt-sm">
-              {t('copyAiContextTitle', lang)}
-            </p>
-          )}
-        </div>
+        <PostGenerationPreview
+          savedResult={savedResult}
+          lang={lang}
+          showToast={showToast}
+          onStartNew={handleStartNew}
+          wasFirstTransform={wasFirstTransform}
+        />
       )}
 
-      {/* TODO: Extract to InputCard component (textarea + clear button + char count + transform button) */}
       {/* Input Card — hidden when preview panel is shown */}
       {!savedResult && (<div
         className="input-card-hero relative"
@@ -374,7 +308,6 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             }
           }}
           onPaste={() => {
-            // Show paste feedback and scroll to top after state updates
             setTimeout(() => {
               const ta = textareaRef.current;
               if (ta && ta.value.trim()) {
@@ -446,72 +379,23 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         </div>
       </div>)}
 
-      {/* TODO: Extract to InputToolbar component (mode tabs, project selector, file import) */}
-      {/* Toolbar: mode tabs + project + import — single row */}
-      {!savedResult && (<div className="flex-col input-toolbar">
-        <div className="flex-row flex-wrap gap-10">
-          <div className="mode-selector" role="radiogroup" aria-label={t('ariaTransformMode', lang)}>
-            {(['handoff', 'handoff_todo', 'todo_only'] as TransformAction[]).map((a) => {
-              const isActive = transformAction === a;
-              const label = t(
-                a === 'handoff_todo' ? 'modeLabelHandoffTodo'
-                : a === 'handoff' ? 'modeLabelHandoff'
-                : 'modeLabelTodoOnly',
-                lang
-              );
-              const tooltip = t(
-                a === 'handoff_todo' ? 'tooltipHandoffTodo'
-                : a === 'handoff' ? 'tooltipHandoff'
-                : 'tooltipTodoOnly',
-                lang
-              );
-              return (
-                <button
-                  key={a}
-                  className={`mode-selector-btn${isActive ? ' active' : ''}`}
-                  role="radio"
-                  aria-checked={isActive}
-                  title={tooltip}
-                  onClick={() => { setTransformAction(a); safeSetItem('threadlog_transform_action', a); }}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-
-          <select
-            className="input input-sm input-select-compact"
-            value={selectedProjectId ?? ''}
-            onChange={(e) => setSelectedProjectId(e.target.value || undefined)}
-            disabled={loading}
-            aria-label={t('selectProject', lang)}
-          >
-            <option value="">{t('selectProject', lang)}</option>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-
-          <input ref={fileImportRef} type="file" accept=".txt,.md,.docx,.json" multiple onChange={fileImportHandlers.handleFiles} aria-label={t('ariaSelectFile', lang)} style={{ display: 'none' }} />
-          <button className="input input-sm input-import-btn" onClick={() => fileImportRef.current?.click()} disabled={loading}>
-            + {files.length === 0 ? t('importFiles', lang) : t('addMoreFiles', lang)}
-          </button>
-
-          {files.length > 0 && (
-            <button className="btn-link clear-files-link" onClick={() => {
-              const prevFiles = files;
-              setFiles([]);
-              if (prevFiles.length > 0) {
-                showToast?.(t('inputCleared', lang) || 'Cleared', 'default', {
-                  label: t('undo', lang) || 'Undo',
-                  onClick: () => setFiles(prevFiles),
-                });
-              }
-            }} disabled={loading}>
-              {t('clearAllFiles', lang)}
-            </button>
-          )}
-        </div>
-      </div>)}
+      {/* Toolbar: mode tabs + project + import */}
+      {!savedResult && (
+        <InputToolbar
+          transformAction={transformAction}
+          setTransformAction={setTransformAction}
+          selectedProjectId={selectedProjectId}
+          setSelectedProjectId={setSelectedProjectId}
+          loading={loading}
+          files={files}
+          setFiles={setFiles}
+          fileImportRef={fileImportRef}
+          handleFiles={fileImportHandlers.handleFiles}
+          lang={lang}
+          projects={projects}
+          showToast={showToast}
+        />
+      )}
 
       {/* Capture banner — shown when data arrives from Chrome extension */}
       {fileImportHandlers.captureInfo && (
@@ -566,7 +450,6 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         </div>
       )}
 
-
       {/* Warnings — compact inline pills */}
       {(overLimit || isLargeInput) && !loading && (
         <div className="flex flex-wrap gap-sm input-warnings">
@@ -583,72 +466,19 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         </div>
       )}
 
-      {/* TODO: Extract to ProgressDisplay component (single + chunked progress cards) */}
-      {/* Progress card — single transform (simulated steps) */}
-      {loading && !progress && (
-        <div aria-live="polite">
-          <ProgressPanel
-            steps={singleSteps}
-            state={{ stepIndex: simStep, detail: streamDetail || undefined }}
-            lang={lang}
-            heading={undefined}
-          />
-          <SkeletonLoader lang={lang} />
-        </div>
-      )}
-
-      {/* Progress card — chunked transform (real progress) */}
-      {loading && progress && (
-        <div aria-live="polite">
-        <ProgressPanel
-          heading={undefined}
-          steps={[{ label: progress.phase === 'extract' ? tf('processing', lang, progress.current, progress.total)
-            : progress.phase === 'merge' ? t('combiningResults', lang)
-            : progress.phase === 'completed' ? t('phaseCollectingCompleted', lang)
-            : progress.phase === 'consistency' ? t('phaseConsistencyCheck', lang)
-            : progress.phase === 'waiting' ? tf('waitingRetry', lang, progress.retryIn ?? 0, progress.retryAttempt ?? 0, progress.retryMax ?? 0)
-            : progress.autoPaused ? t('autoPaused', lang)
-            : t('paused', lang) }]}
-          state={{
-            stepIndex: 0,
-            percent: progressPct,
-            detail: progress.phase === 'extract' ? (
-              [
-                progress.savedCount > 0 ? tf('itemsSaved', lang, progress.savedCount) : '',
-                progress.total - progress.current > 0 ? tf('remaining', lang, progress.total - progress.current) : t('lastItem', lang),
-                estMinutes > 0 ? tf('estimatedTime', lang, estMinutes) : '',
-              ].filter(Boolean).join(' · ')
-            ) : progress.phase === 'merge' ? tf('combiningGroups', lang, progress.current, progress.total)
-            : progress.phase === 'completed' ? t('phaseCollectingCompletedDetail', lang)
-            : progress.phase === 'consistency' ? t('phaseConsistencyCheckDetail', lang)
-            : progress.phase === 'waiting' ? `${tf('waitingForApi', lang, progress.retryIn ?? 0)} · ${tf('itemsSaved', lang, progress.savedCount)}`
-            : progress.autoPaused ? t('autoPausedDesc', lang)
-            : `${tf('itemsSaved', lang, progress.savedCount)} · ${t('clickResumeHint', lang)}`,
-          }}
-          lang={lang}
-          dotColor={
-            progress.phase === 'waiting' ? 'var(--warning-dot)'
-            : progress.phase === 'paused' ? 'var(--progress-paused)'
-            : undefined
-          }
-          dotAnimate={progress.phase !== 'paused'}
-          barColor={
-            progress.phase === 'waiting' ? 'var(--warning-dot)'
-            : progress.phase === 'paused' ? 'var(--progress-paused)'
-            : undefined
-          }
-          actions={<>
-            <button className="btn btn-xs" onClick={handlePauseResume}>
-              {progress.phase === 'paused' ? t('btnResume', lang) : t('btnPause', lang)}
-            </button>
-            <button className="btn btn-danger btn-xs" onClick={handleCancel}>
-              {t('btnCancel', lang)}
-            </button>
-          </>}
-        />
-        <SkeletonLoader lang={lang} />
-        </div>
-      )}
+      {/* Progress display (single + chunked) */}
+      <ProgressDisplay
+        loading={loading}
+        progress={progress}
+        simStep={simStep}
+        streamDetail={streamDetail}
+        lang={lang}
+        singleSteps={singleSteps}
+        estMinutes={estMinutes}
+        progressPct={progressPct}
+        onPauseResume={handlePauseResume}
+        onCancel={handleCancel}
+      />
 
       {error && (
         <ErrorRetryBanner

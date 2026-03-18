@@ -5,6 +5,7 @@ import type { Todo, LogEntry } from '../types';
 import { t } from '../i18n';
 import type { Lang } from '../i18n';
 import { updateTodo } from '../storage';
+import { useSwipeAction } from '../hooks/useSwipeAction';
 
 // ─── Helper functions ───
 export function isOverdue(dueDate?: string): boolean {
@@ -294,6 +295,42 @@ export interface TodoRenderContext {
   onSetEditDraft: (draft: string) => void;
   onRefresh: () => void;
   onOpenLog: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onToggleDone?: (id: string, done: boolean) => void;
+}
+
+// ─── Swipeable wrapper (uses hook) ───
+function SwipeableTodoItem({ todo, lang, selectMode, onDelete, onToggleDone, children }: {
+  todo: Todo;
+  lang: Lang;
+  selectMode: boolean;
+  onDelete?: (id: string) => void;
+  onToggleDone?: (id: string, done: boolean) => void;
+  children: React.ReactNode;
+}) {
+  const swipe = useSwipeAction({
+    onSwipeLeft: !selectMode && onDelete ? () => onDelete(todo.id) : undefined,
+    onSwipeRight: !selectMode && onToggleDone ? () => onToggleDone(todo.id, todo.done) : undefined,
+    threshold: 100,
+    leftLabel: t('moveToTrash', lang),
+    rightLabel: t('todoMarkDone', lang),
+    leftColor: 'var(--error-bg, #fee2e2)',
+    rightColor: 'var(--success-bg, #dcfce7)',
+  });
+
+  if (selectMode || (!onDelete && !onToggleDone)) {
+    return <>{children}</>;
+  }
+
+  return (
+    <div className="swipe-action-container" style={swipe.containerStyle} {...swipe.handlers}>
+      {swipe.rightBg && <div className="swipe-action-bg swipe-action-bg-right" style={swipe.rightBg.style}>{swipe.rightBg.label}</div>}
+      {swipe.leftBg && <div className="swipe-action-bg swipe-action-bg-left" style={swipe.leftBg.style}>{swipe.leftBg.label}</div>}
+      <div style={swipe.itemStyle}>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 // ─── TodoItem renderer ───
@@ -306,12 +343,14 @@ export function renderTodoItem(
   const {
     lang, logMap, selectMode, selectedIds, dragEnabled, editingTodoId, editDraft, now,
     onToggle, onToggleSelect, onSetActionSheetTodo, onSetEditingTodoId, onSetEditDraft, onRefresh, onOpenLog,
+    onDelete, onToggleDone,
   } = ctx;
 
   const logTitle = todo.logId ? logMap.get(todo.logId)?.title : undefined;
   const ps = priorityStyles(todo.priority);
   const isSelected = selectedIds.has(todo.id);
-  return (
+
+  const inner = (
     <div
       key={todo.id}
       className="todo-item"
@@ -433,5 +472,18 @@ export function renderTodoItem(
         </div>
       )}
     </div>
+  );
+
+  return (
+    <SwipeableTodoItem
+      key={todo.id}
+      todo={todo}
+      lang={lang}
+      selectMode={selectMode}
+      onDelete={onDelete}
+      onToggleDone={onToggleDone}
+    >
+      {inner}
+    </SwipeableTodoItem>
   );
 }

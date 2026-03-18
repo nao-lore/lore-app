@@ -430,7 +430,7 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
   return (
     <div className="workspace-content-wide">
       <div className="page-header">
-        <button className="btn-back" onClick={onBack} className="btn-back-mb">
+        <button className="btn-back btn-back-mb" onClick={onBack}>
           ← {t('back', lang)}
         </button>
         <div>
@@ -440,7 +440,7 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
       </div>
 
       {/* Filter tabs + date nav */}
-      <div className="content-card" className="toolbar-card-mb" style={{ marginBottom: 12 }}>
+      <div className="content-card toolbar-card-mb" style={{ marginBottom: 12 }}>
         <div className="seg-control">
           {filterOptions.map((opt) => (
             <button
@@ -455,27 +455,27 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
       </div>
 
       {/* Date navigation */}
-      <div className="content-card" className="toolbar-card-mb" style={{ gap: 8 }}>
-        <button className="btn btn-ghost" onClick={handlePrevDay} className="nav-btn-sm" style={{ padding: '4px 6px' }} title={t('timelinePrevDay', lang)}>
+      <div className="content-card toolbar-card-mb" style={{ gap: 8 }}>
+        <button className="btn btn-ghost nav-btn-sm" onClick={handlePrevDay} style={{ padding: '4px 6px' }} title={t('timelinePrevDay', lang)}>
           <ChevronLeft size={16} />
         </button>
         <div className="relative flex items-center">
           <Calendar size={14} className="absolute" style={{ left: 8, color: 'var(--text-muted)', pointerEvents: 'none' }} />
           <input
             type="date"
-            className="input"
+            className="input text-sm"
             value={jumpDate ? dateKeyToInput(jumpDate) : dateKeyToInput(todayKey())}
             onChange={(e) => handleDateInput(e.target.value)}
-            className="text-sm" style={{ padding: '4px 8px 4px 28px', minHeight: 28, maxWidth: 160, width: 'auto' }}
+            style={{ padding: '4px 8px 4px 28px', minHeight: 28, maxWidth: 160, width: 'auto' }}
           />
         </div>
-        <button className="btn btn-ghost" onClick={handleNextDay} className="nav-btn-sm" style={{ padding: '4px 6px' }} title={t('timelineNextDay', lang)}>
+        <button className="btn btn-ghost nav-btn-sm" onClick={handleNextDay} style={{ padding: '4px 6px' }} title={t('timelineNextDay', lang)}>
           <ChevronRight size={16} />
         </button>
         <button
-          className="btn"
+          className="btn btn-sm-action"
           onClick={handleToday}
-          className="btn-sm-action" style={{ minHeight: 28 }}
+          style={{ minHeight: 28 }}
         >
           {t('timelineToday', lang)}
         </button>
@@ -500,7 +500,7 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
           <p>{t('timelineEmpty', lang)}</p>
           <p className="page-subtitle">{t('timelineEmptyHint', lang)}</p>
           {onNewLog && (
-            <button className="btn btn-primary" className="mt-md" onClick={onNewLog}>
+            <button className="btn btn-primary mt-md" onClick={onNewLog}>
               {t('createHandoff', lang)}
             </button>
           )}
