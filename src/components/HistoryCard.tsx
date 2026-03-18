@@ -204,7 +204,7 @@ export function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
   const isSelected = selected.has(log.id);
   const projectColor = log.projectId ? getProjectColor(projects.find((p) => p.id === log.projectId)?.color) : undefined;
   return (
-    <div key={log.id} className={`card${isSelected ? ' card-selected' : ''}`} role="button" tabIndex={0} onClick={() => onCardClick(log.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCardClick(log.id); } }} style={{ position: 'relative', display: 'flex', gap: selectMode ? 12 : 0, ...(projectColor ? { borderLeft: `3px solid ${projectColor}` } : {}), ...(compact ? { padding: '4px 8px', fontSize: 12, lineHeight: 1.3 } : {}) }}>
+    <button type="button" key={log.id} className={`card card-btn${isSelected ? ' card-selected' : ''}`} onClick={() => onCardClick(log.id)} aria-label={t('ariaOpenLog', lang)} style={{ position: 'relative', display: 'flex', gap: selectMode ? 12 : 0, ...(projectColor ? { borderLeft: `3px solid ${projectColor}` } : {}), ...(compact ? { padding: '4px 8px', fontSize: 12, lineHeight: 1.3 } : {}) }}>
       {selectMode && (
         <div className="shrink-0 mt-2">
           <input type="checkbox" className="bulk-checkbox" checked={isSelected} onChange={() => onToggleSelect(log.id)} onClick={(e) => e.stopPropagation()} aria-label={t('ariaBulkCheckbox', lang)} />
@@ -256,6 +256,7 @@ export function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
               className="input w-full"
               style={{ fontSize: 'inherit', fontWeight: 'inherit' }}
               value={editDraft}
+              aria-label={t('ariaRenameInput', lang)}
               onChange={(e) => onSetEditDraft(e.target.value)}
               onBlur={() => { if (editDraft.trim() && editDraft.trim() !== log.title) { updateLog(log.id, { title: editDraft.trim() }); onRefresh(); } onSetEditingLogId(null); }}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } if (e.key === 'Escape') { onSetEditingLogId(null); } }}
@@ -332,7 +333,7 @@ export function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
           </div>
         )}
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -349,14 +350,13 @@ export function HistoryListItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
   const isSelected = selected.has(log.id);
   const projectColor = log.projectId ? getProjectColor(projects.find((p) => p.id === log.projectId)?.color) : undefined;
   return (
-    <div
+    <button
+      type="button"
       key={log.id}
-      className={`list-row${isSelected ? ' list-row-selected' : ''}`}
-      role="button"
-      tabIndex={0}
+      className={`list-row list-row-btn${isSelected ? ' list-row-selected' : ''}`}
       style={{ ...(projectColor ? { borderLeft: `3px solid ${projectColor}` } : {}), ...(compact ? { padding: '2px 8px', fontSize: 12, lineHeight: 1.3, minHeight: 28 } : {}) }}
       onClick={() => onCardClick(log.id)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCardClick(log.id); } }}
+      aria-label={t('ariaOpenLog', lang)}
     >
       {selectMode && (
         <input type="checkbox" className="bulk-checkbox shrink-0" checked={isSelected} onChange={() => onToggleSelect(log.id)} onClick={(e) => e.stopPropagation()} />
@@ -371,6 +371,7 @@ export function HistoryListItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
             className="input w-full"
             style={{ fontSize: 'inherit', fontWeight: 'inherit' }}
             value={editDraft}
+            aria-label={t('ariaRenameInput', lang)}
             onChange={(e) => onSetEditDraft(e.target.value)}
             onBlur={() => { if (editDraft.trim() && editDraft.trim() !== log.title) { updateLog(log.id, { title: editDraft.trim() }); onRefresh(); } onSetEditingLogId(null); }}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } if (e.key === 'Escape') { onSetEditingLogId(null); } }}
@@ -399,6 +400,6 @@ export function HistoryListItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
           )}
         </div>
       )}
-    </div>
+    </button>
   );
 }

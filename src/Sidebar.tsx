@@ -331,18 +331,16 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
         </button>
 
         {/* Collapsible "More" section */}
-        <div
-          className="flex-row cursor-pointer sidebar-more-toggle select-none"
+        <button
+          type="button"
+          className="flex-row cursor-pointer sidebar-more-toggle select-none sidebar-toggle-btn"
           onClick={toggleMore}
-          role="button"
-          tabIndex={0}
-          aria-label={t('more', lang)}
+          aria-label={t('ariaToggleMore', lang)}
           aria-expanded={moreOpen}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMore(); } }}
         >
           {moreOpen ? <ChevronDown size={12} className="sidebar-chevron-icon" /> : <ChevronRight size={12} className="sidebar-chevron-icon" />}
           <span className="text-xs-muted font-semibold">{t('more', lang)}</span>
-        </div>
+        </button>
         {moreOpen && (
           <div style={{ marginTop: 2 }}>
             <button
@@ -383,18 +381,16 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
       {(pinnedProjects.length > 0 || pinnedLogs.length > 0) && (
         <div className="flex-col sidebar-pinned-section">
           <div className="border-top sidebar-pinned-divider" />
-          <div
-            className="flex-row cursor-pointer sidebar-pinned-toggle select-none"
+          <button
+            type="button"
+            className="flex-row cursor-pointer sidebar-pinned-toggle select-none sidebar-toggle-btn"
             onClick={togglePinned}
-            role="button"
-            tabIndex={0}
-            aria-label={t('pinned', lang)}
+            aria-label={t('ariaTogglePinned', lang)}
             aria-expanded={pinnedOpen}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePinned(); } }}
           >
             {pinnedOpen ? <ChevronDown size={12} className="sidebar-chevron-icon" /> : <ChevronRight size={12} className="sidebar-chevron-icon" />}
             <span className="sidebar-section-label">{t('pinned', lang)}</span>
-          </div>
+          </button>
           {pinnedOpen && (
             <div className="sidebar-pinned-list">
               {pinnedProjects.map((p) => {
@@ -450,6 +446,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
                     <input
                       className="sidebar-item-title sidebar-inline-edit"
                       value={editDraft}
+                      aria-label={t('ariaRenameInput', lang)}
                       onChange={(e) => setEditDraft(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {

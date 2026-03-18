@@ -215,6 +215,7 @@ export function HistoryFiltersToolbar({
                 type="date"
                 className="input input-sm date-input-sm"
                 value={dateFrom}
+                aria-label={t('ariaDateFrom', lang)}
                 onChange={(e) => { onDateFromChange(e.target.value); onDatePresetChange('custom'); }}
               />
               <label className="date-label">{t('dateFilterTo', lang)}</label>
@@ -222,6 +223,7 @@ export function HistoryFiltersToolbar({
                 type="date"
                 className="input input-sm date-input-sm"
                 value={dateTo}
+                aria-label={t('ariaDateTo', lang)}
                 onChange={(e) => { onDateToChange(e.target.value); onDatePresetChange('custom'); }}
               />
             </div>
@@ -291,17 +293,16 @@ export function KeywordsBar({ logs, debouncedQuery, tagFilter, modeFilter, lang,
         {t('topKeywords', lang)}:
       </span>
       {keywords.map((kw) => (
-        <span
+        <button
+          type="button"
           key={kw.word}
-          className="tag cursor-pointer fs-12"
-          role="button"
-          tabIndex={0}
+          className="tag cursor-pointer fs-12 tag-btn"
           onClick={() => onSetQuery(kw.word)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSetQuery(kw.word); } }}
+          aria-label={`${t('ariaFilterByKeyword', lang)}: ${kw.word}`}
         >
           {kw.word}
           <span className="ml-auto" style={{ fontSize: 10, opacity: 0.6 }}>{kw.count}</span>
-        </span>
+        </button>
       ))}
     </div>
   );

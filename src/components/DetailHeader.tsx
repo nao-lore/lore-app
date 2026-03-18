@@ -42,29 +42,33 @@ export default function DetailHeader({
   return (
     <div className="page-header">
       <nav className="flex-row flex-wrap mb-md detail-breadcrumb">
-        <span
-          className="text-muted cursor-pointer"
+        <button
+          type="button"
+          className="text-muted cursor-pointer breadcrumb-btn"
           onClick={onBack}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onBack(); } }}
+          aria-label={t('ariaGoBack', lang)}
         >
           {t('logs', lang)}
-        </span>
+        </button>
         {project && (
           <>
             <span className="breadcrumb-sep">{' › '}</span>
-            <span
-              className="text-muted"
-              style={{ cursor: onOpenMasterNote ? 'pointer' : 'default' }}
-              onClick={() => onOpenMasterNote?.(project.id)}
-              role={onOpenMasterNote ? 'button' : undefined}
-              tabIndex={onOpenMasterNote ? 0 : undefined}
-              onKeyDown={onOpenMasterNote ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenMasterNote(project.id); } } : undefined}
-            >
-              {project.icon && <span style={{ marginRight: 3 }}>{project.icon}</span>}
-              {project.name}
-            </span>
+            {onOpenMasterNote ? (
+              <button
+                type="button"
+                className="text-muted cursor-pointer breadcrumb-btn"
+                onClick={() => onOpenMasterNote(project.id)}
+                aria-label={t('ariaOpenSummary', lang)}
+              >
+                {project.icon && <span style={{ marginRight: 3 }}>{project.icon}</span>}
+                {project.name}
+              </button>
+            ) : (
+              <span className="text-muted">
+                {project.icon && <span style={{ marginRight: 3 }}>{project.icon}</span>}
+                {project.name}
+              </span>
+            )}
           </>
         )}
         <span className="breadcrumb-sep">{' › '}</span>
@@ -124,6 +128,7 @@ export default function DetailHeader({
               <input
                 className="input detail-title-input"
                 value={titleDraft}
+                aria-label={t('ariaEditTitle', lang)}
                 onChange={(e) => setTitleDraft(e.target.value)}
                 onBlur={onTitleSave}
                 onKeyDown={(e) => {

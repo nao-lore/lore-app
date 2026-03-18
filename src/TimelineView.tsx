@@ -466,6 +466,7 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
             className="input text-sm"
             value={jumpDate ? dateKeyToInput(jumpDate) : dateKeyToInput(todayKey())}
             onChange={(e) => handleDateInput(e.target.value)}
+            aria-label={t('ariaDateFrom', lang)}
             style={{ padding: '4px 8px 4px 28px', minHeight: 28, maxWidth: 160, width: 'auto' }}
           />
         </div>

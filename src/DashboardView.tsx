@@ -272,19 +272,18 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
               {nudges.map((n) => {
                 const IconComponent = n.icon;
                 return (
-                <div
+                <button
+                  type="button"
                   key={n.key}
-                  role="button"
-                  tabIndex={0}
                   aria-label={n.label}
                   onClick={() => { n.onClick(); }}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); n.onClick(); } }}
                   style={{
                     flex: '1 1 160px', minWidth: 140, padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
                     background: `color-mix(in srgb, ${n.color} 6%, var(--card-bg))`,
                     border: `1px solid color-mix(in srgb, ${n.color} 15%, transparent)`,
                     borderLeft: `4px solid ${n.borderColor}`,
                     transition: 'all 0.15s ease', position: 'relative',
+                    textAlign: 'left',
                   }}
                   className="nudge-card"
                 >
@@ -307,7 +306,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                       opacity: 0, transition: 'opacity 0.15s',
                     }}
                   >×</button>
-                </div>
+                </button>
                 );
               })}
             </div>
@@ -327,17 +326,15 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
               {projectSnapshots.slice(0, 5).map((snap) => {
                 const pct = snap.totalCount > 0 ? ((snap.totalCount - snap.pendingCount) / snap.totalCount) * 100 : 0;
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={snap.project.id}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={snap.project.name}
+                    aria-label={`${t('ariaOpenProject', lang)}: ${snap.project.name}`}
                     onClick={() => onOpenProject(snap.project.id)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenProject(snap.project.id); } }}
                     style={{
                       flex: '1 1 160px', minWidth: 160, maxWidth: 280, padding: '16px 20px', borderRadius: 12, cursor: 'pointer',
                       background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
-                      transition: 'all 0.15s ease', flexShrink: 0,
+                      transition: 'all 0.15s ease', flexShrink: 0, textAlign: 'left',
                     }}
                     className="project-snap-card"
                   >
@@ -353,15 +350,13 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                         <span className="shrink-0" style={{ fontSize: 10, color: 'var(--text-placeholder)' }}>{snap.totalCount - snap.pendingCount}/{snap.totalCount}</span>
                       </div>
                     )}
-                  </div>
+                  </button>
                 );
               })}
               {/* New log card */}
-              <div
-                role="button"
-                tabIndex={0}
+              <button
+                type="button"
                 onClick={onNewLog}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNewLog(); } }}
                 aria-label={t('ariaCreateNewLog', lang)}
                 style={{
                   minWidth: 100, padding: '16px 20px', borderRadius: 12, cursor: 'pointer',
@@ -373,7 +368,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
               >
                 <Plus size={20} />
                 <span className="fs-11 font-semibold">{t('dashboardNew', lang)}</span>
-              </div>
+              </button>
             </div>
           </div>
         )}
@@ -397,18 +392,16 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
             </div>
             <div className="flex-col gap-xs">
               {focusTasks.map((action) => (
-                <div
+                <button
+                  type="button"
                   key={`${action.logId}-${action.index}`}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={action.text}
+                  aria-label={`${t('ariaToggleAction', lang)}: ${action.text}`}
                   onClick={() => onToggleAction(action.logId, action.index)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleAction(action.logId, action.index); } }}
                   style={{
                     gap: 10, padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
                     fontSize: 13, lineHeight: 1.5,
                     background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
-                    userSelect: 'none', transition: 'all 0.12s ease',
+                    userSelect: 'none', transition: 'all 0.12s ease', textAlign: 'left', width: '100%',
                   }}
                   className="focus-task-item flex-row"
                 >
@@ -419,7 +412,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                       {action.projectName}
                     </span>
                   )}
-                </div>
+                </button>
               ))}
             </div>
             {uncheckedActions.length > 5 && (
@@ -435,19 +428,17 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
             {moreTasksOpen && (
               <div className="flex-col" style={{ gap: 3, marginTop: 6 }}>
                 {uncheckedActions.slice(5, 25).map((action) => (
-                  <div
+                  <button
+                    type="button"
                     key={`${action.logId}-${action.index}`}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={action.text}
+                    aria-label={`${t('ariaToggleAction', lang)}: ${action.text}`}
                     onClick={() => onToggleAction(action.logId, action.index)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleAction(action.logId, action.index); } }}
                     className="flex-row text-sm-muted cursor-pointer select-none"
-                    style={{ gap: 8, padding: '6px 14px', borderRadius: 8 }}
+                    style={{ gap: 8, padding: '6px 14px', borderRadius: 8, background: 'none', border: 'none', textAlign: 'left', width: '100%', fontFamily: 'inherit' }}
                   >
                     <Square size={12} className="shrink-0" style={{ color: 'var(--text-placeholder)' }} />
                     <span className="flex-1">{action.text}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -485,19 +476,17 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
             </div>
             <div className="flex-col gap-xs">
               {projectSnapshots.filter((s) => s.blockers.length > 0).slice(0, 3).map((snap) => (
-                <div
+                <button
+                  type="button"
                   key={snap.project.id}
-                  role="button"
-                  tabIndex={0}
                   aria-label={`${snap.project.name}: ${snap.blockers[0]}`}
                   onClick={() => onOpenProject(snap.project.id)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenProject(snap.project.id); } }}
-                  className="cursor-pointer" style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', background: 'color-mix(in srgb, var(--error-text, #ef4444) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--error-text, #ef4444) 10%, transparent)' }}
+                  className="cursor-pointer" style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', background: 'color-mix(in srgb, var(--error-text, #ef4444) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--error-text, #ef4444) 10%, transparent)', textAlign: 'left', width: '100%', fontFamily: 'inherit' }}
                 >
                   <span className="font-semibold text-secondary">{snap.project.icon || '📂'} {snap.project.name}</span>
                   <span style={{ margin: '0 6px', opacity: 0.3 }}>—</span>
                   {snap.blockers[0]}
-                </div>
+                </button>
               ))}
             </div>
           </div>
