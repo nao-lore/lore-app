@@ -9,8 +9,8 @@ interface LandingPageProps {
 }
 
 const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/lore-ai-conversation-snap/opkdpjpgkjcjpkahbljjnhnahliedmkc';
-const GITHUB_URL = 'https://github.com/yo-ban/lore-pwa';
-const FEEDBACK_URL = 'https://github.com/yo-ban/lore-pwa/issues';
+const GITHUB_URL = 'https://github.com/nao-lore/lore-app';
+const FEEDBACK_URL = 'https://github.com/nao-lore/lore-app/issues';
 
 function LandingPage({ lang, onGetStarted }: LandingPageProps) {
   // Override body + #root overflow:hidden so LP can scroll

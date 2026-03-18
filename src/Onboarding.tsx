@@ -31,7 +31,7 @@ const LANG_OPTIONS: { code: Lang; label: string; flag: string }[] = [
 ];
 
 // Chrome Web Store URL — update when published
-const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/lore-capture/ioaccmbgjkaklailnmgklmipccmbneen';
+const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/lore-ai-conversation-snap/opkdpjpgkjcjpkahbljjnhnahliedmkc';
 
 export default function Onboarding({ lang, onLangChange, onClose, initialStep = 0 }: OnboardingProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(true);

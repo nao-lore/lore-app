@@ -8,7 +8,7 @@
 - **Pricing:** Free (20/day) + Pro ($12/mo)
 - **Website:** [LP URL]
 - **Chrome Extension:** https://chromewebstore.google.com/detail/lore-ai-conversation-snap/opkdpjpgkjcjpkahbljjnhnahliedmkc
-- **GitHub:** https://github.com/yo-ban/lore-pwa
+- **GitHub:** https://github.com/nao-lore/lore-app
 
 ---
 
