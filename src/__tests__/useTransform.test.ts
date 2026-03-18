@@ -157,7 +157,7 @@ vi.mock('../transform', async (importOriginal) => {
   };
 });
 
-import { useTransform } from '../hooks/useTransform';
+import { useTransform, djb2Hash } from '../hooks/useTransform';
 import type { Project } from '../types';
 import * as storage from '../storage';
 
@@ -176,6 +176,41 @@ function makeParams(overrides: Partial<Parameters<typeof useTransform>[0]> = {})
     ...overrides,
   };
 }
+
+describe('djb2Hash', () => {
+  it('returns a string', () => {
+    const hash = djb2Hash('hello world');
+    expect(typeof hash).toBe('string');
+  });
+
+  it('returns consistent results for same input', () => {
+    expect(djb2Hash('test')).toBe(djb2Hash('test'));
+  });
+
+  it('returns different results for different inputs', () => {
+    expect(djb2Hash('hello')).not.toBe(djb2Hash('world'));
+  });
+
+  it('handles empty string', () => {
+    const hash = djb2Hash('');
+    expect(typeof hash).toBe('string');
+    expect(hash.length).toBeGreaterThan(0);
+  });
+
+  it('handles long strings efficiently', () => {
+    const longStr = 'a'.repeat(100000);
+    const hash = djb2Hash(longStr);
+    expect(typeof hash).toBe('string');
+    // Hash should be short (base36 encoded 32-bit integer)
+    expect(hash.length).toBeLessThan(10);
+  });
+
+  it('produces base36 output', () => {
+    const hash = djb2Hash('test string');
+    // base36 only uses [0-9a-z]
+    expect(hash).toMatch(/^[0-9a-z]+$/);
+  });
+});
 
 describe('useTransform', () => {
   beforeEach(() => {
