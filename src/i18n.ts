@@ -1657,6 +1657,40 @@ const labels = {
   createFirstLog: { ja: '最初のログを作成する', en: 'Create your first log', es: 'Cree su primer registro', fr: 'Créez votre premier log', de: 'Erstellen Sie Ihren ersten Log', zh: '创建您的第一条日志', ko: '첫 번째 로그 만들기', pt: 'Crie seu primeiro registro' },
   weeklyReportCreateLog: { ja: 'ログを作成する', en: 'Create a log', es: 'Crear un registro', fr: 'Créer un log', de: 'Log erstellen', zh: '创建日志', ko: '로그 만들기', pt: 'Criar um registro' },
 
+  // Trial / usage limits
+  trialActive: (days: number) => ({
+    ja: `無料トライアル: 残り${days}日`,
+    en: `Free trial: ${days} days remaining`,
+    es: `Prueba gratuita: ${days} días restantes`,
+    fr: `Essai gratuit : ${days} jours restants`,
+    de: `Kostenlose Testphase: ${days} Tage verbleibend`,
+    zh: `免费试用：剩余${days}天`,
+    ko: `무료 체험: ${days}일 남음`,
+    pt: `Teste gratuito: ${days} dias restantes`,
+  }),
+  trialEnded: { ja: '無料トライアル終了', en: 'Free trial ended', es: 'Prueba gratuita finalizada', fr: 'Essai gratuit terminé', de: 'Kostenlose Testphase beendet', zh: '免费试用已结束', ko: '무료 체험 종료', pt: 'Teste gratuito encerrado' },
+  dailyLimitReached: (used: number, limit: number) => ({
+    ja: `1日の上限に達しました (${used}/${limit})。Proにアップグレードで無制限に。`,
+    en: `Daily limit reached (${used}/${limit}). Upgrade to Pro for unlimited.`,
+    es: `Límite diario alcanzado (${used}/${limit}). Actualice a Pro para ilimitado.`,
+    fr: `Limite quotidienne atteinte (${used}/${limit}). Passez à Pro pour un accès illimité.`,
+    de: `Tageslimit erreicht (${used}/${limit}). Upgrade auf Pro für unbegrenzte Nutzung.`,
+    zh: `已达每日上限 (${used}/${limit})。升级Pro版无限使用。`,
+    ko: `일일 한도에 도달했습니다 (${used}/${limit}). Pro로 업그레이드하면 무제한 사용 가능합니다.`,
+    pt: `Limite diário atingido (${used}/${limit}). Atualize para Pro para uso ilimitado.`,
+  }),
+  transformsRemaining: (remaining: number) => ({
+    ja: `本日残り${remaining}回`,
+    en: `${remaining} transforms remaining today`,
+    es: `${remaining} transformaciones restantes hoy`,
+    fr: `${remaining} transformations restantes aujourd'hui`,
+    de: `${remaining} Transformationen heute verbleibend`,
+    zh: `今日剩余${remaining}次转换`,
+    ko: `오늘 ${remaining}회 변환 남음`,
+    pt: `${remaining} transformações restantes hoje`,
+  }),
+  unlimitedTrial: { ja: '無制限（トライアル中）', en: 'Unlimited transforms (trial)', es: 'Transformaciones ilimitadas (prueba)', fr: 'Transformations illimitées (essai)', de: 'Unbegrenzte Transformationen (Testphase)', zh: '无限次转换（试用中）', ko: '무제한 변환 (체험)', pt: 'Transformações ilimitadas (teste)' },
+
 } as const;
 
 /** Exported for testing — do not use in application code. */

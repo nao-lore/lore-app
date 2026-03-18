@@ -4395,6 +4395,10 @@ button:focus-visible,
   white-space: nowrap;
 }
 
+.input-usage-counter--exhausted {
+  color: var(--error-text);
+}
+
 /* InputView — select/import compact controls */
 .input-select-compact {
   min-width: 140px;
