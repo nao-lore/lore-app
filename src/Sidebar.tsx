@@ -283,16 +283,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
       <div className="sidebar-nav-section">
         <div className="border-top sidebar-nav-divider" />
         <button
-          className={`sidebar-nav-item${activeView === 'input' ? ' active' : ''}`}
-          onClick={onNewLog}
-          title={t('navHomeTitle', lang)}
-          aria-current={activeView === 'input' ? 'page' : undefined}
-        >
-          <LayoutDashboard size={15} />
-          <span>{t('navHome', lang)}</span>
-        </button>
-        <button
-          className={`sidebar-nav-item${activeView === 'dashboard' ? ' active' : ''}`}
+          className={`sidebar-nav-item${activeView === 'dashboard' || activeView === 'input' ? ' active' : ''}`}
           onClick={onOpenDashboard}
           title={t('navDashboardTitle', lang)}
           aria-current={activeView === 'dashboard' ? 'page' : undefined}
