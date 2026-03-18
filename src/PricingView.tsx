@@ -195,7 +195,7 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
             ) : (
               <button
                 className="btn btn-primary pricing-btn-full"
-                onClick={handleUpgrade}
+                onClick={() => handleUpgrade()}
                 disabled={loading}
                 style={{ background: 'linear-gradient(135deg, var(--accent), #a855f7)', border: 'none', color: 'var(--button-text, #fff)', cursor: loading ? 'wait' : 'pointer' }}
               >
