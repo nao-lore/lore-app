@@ -113,7 +113,8 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const parsed = JSON.parse(reader.result as string);
+        if (typeof reader.result !== 'string') return;
+        const parsed = JSON.parse(reader.result);
         if (!validateBackup(parsed)) {
           setImportError(t('dataImportError', lang));
           return;
@@ -171,13 +172,12 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
           </p>
           <div className="flex-row-gap-sm">
             <input
-              className="input"
+              className="input settings-flex-max"
               type="password"
               value={keys.gemini}
               onChange={(e) => { handleKeyChange('gemini', e.target.value); setKeyErrors((prev) => ({ ...prev, gemini: '' })); }}
               onBlur={() => { const err = validateApiKey('gemini', keys.gemini); setKeyErrors((prev) => ({ ...prev, gemini: err })); }}
               placeholder={PROVIDER_KEY_PLACEHOLDER.gemini}
-              className="input settings-flex-max"
             />
             <button
               className="btn btn-primary btn-sm-save shrink-0"
@@ -390,13 +390,12 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 {t('slackWebhookUrl', lang)}
               </div>
               <input
-                className="input input-settings"
+                className="input input-settings max-w-480"
                 type="password"
                 value={slackWebhook}
                 onChange={(e) => { setSlackWebhookState(e.target.value); setSlackError(''); }}
                 onBlur={() => { if (slackWebhook.trim() && !slackWebhook.startsWith('https://hooks.slack.com')) setSlackError(t('slackWebhookError', lang)); }}
                 placeholder={t('slackWebhookPlaceholder', lang)}
-                style={{ maxWidth: 480 }}
               />
               {slackError && (
                 <p className="error-text-sm">{slackError}</p>
@@ -457,7 +456,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                   <div className="feature-toggle-title">
                     {t(labelKey as Parameters<typeof t>[0], lang)}
                   </div>
-                  <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>
+                  <div className="meta fs-12" style={{ marginTop: 2 }}>
                     {t(descKey as Parameters<typeof t>[0], lang)}
                   </div>
                 </div>
@@ -478,7 +477,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 <div className="feature-toggle-title">
                   {t('autoWeeklyReport', lang)}
                 </div>
-                <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>
+                <div className="meta fs-12" style={{ marginTop: 2 }}>
                   {t('autoWeeklyReportDesc', lang)}
                 </div>
               </div>
@@ -527,18 +526,18 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
           })()}
 
           {/* Export */}
-          <div style={{ marginBottom: 16 }}>
-            <p className="meta" style={{ marginBottom: 8, fontSize: 13 }}>
+          <div className="mb-lg">
+            <p className="meta mb-8 fs-13">
               {t('dataExportDesc', lang)}
             </p>
-            <button className="btn btn-primary" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button className="btn btn-primary flex-row gap-6" onClick={handleExport}>
               <Download size={14} /> {t('dataExport', lang)}
             </button>
           </div>
 
           {/* Import */}
           <div>
-            <p className="meta" style={{ marginBottom: 8, fontSize: 13 }}>
+            <p className="meta mb-8 fs-13">
               {t('dataImportDesc', lang)}
             </p>
             <input
@@ -549,7 +548,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
               style={{ display: 'none' }}
               aria-label={t('dataImport', lang)}
             />
-            <button className="btn" onClick={() => fileInputRef.current?.click()} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button className="btn flex-row gap-6" onClick={() => fileInputRef.current?.click()}>
               <Upload size={14} /> {t('dataImport', lang)}
             </button>
             {importError && (
@@ -562,11 +561,10 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
 
         {/* Show onboarding again */}
         {onShowOnboarding && (
-          <div style={{ textAlign: 'center', paddingTop: 4 }}>
+          <div className="text-center" style={{ paddingTop: 4 }}>
             <button
-              className="btn"
+              className="btn fs-13"
               onClick={() => { resetOnboarding(); onShowOnboarding(); }}
-              style={{ fontSize: 13 }}
             >
               {t('showOnboardingAgain', lang)}
             </button>
@@ -577,22 +575,22 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
       {/* Import confirmation dialog */}
       {pendingImport && (
         <div className="modal-overlay" role="presentation" onClick={() => setPendingImport(null)}>
-          <div className="modal-card" role="dialog" aria-modal="true" aria-label={t('dataImport', lang)} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
-            <h3 style={{ marginBottom: 12 }}>{t('dataImport', lang)}</h3>
-            <div className="flex-col-gap-md" style={{ gap: 10, marginBottom: 16 }}>
+          <div className="modal-card max-w-420" role="dialog" aria-modal="true" aria-label={t('dataImport', lang)} onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-md">{t('dataImport', lang)}</h3>
+            <div className="flex-col-gap-md gap-10 mb-lg">
               <button
                 className={`btn import-mode-btn${pendingImport.mode === 'merge' ? ' btn-primary' : ''}`}
                 onClick={() => setPendingImport({ ...pendingImport, mode: 'merge' })}
               >
                 <div className="import-mode-title">{t('dataImportMerge', lang)}</div>
-                <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>{t('dataImportConfirmMerge', lang)}</div>
+                <div className="meta fs-12" style={{ marginTop: 2 }}>{t('dataImportConfirmMerge', lang)}</div>
               </button>
               <button
                 className={`btn import-mode-btn${pendingImport.mode === 'overwrite' ? ' btn-primary' : ''}`}
                 onClick={() => setPendingImport({ ...pendingImport, mode: 'overwrite' })}
               >
                 <div className="import-mode-title">{t('dataImportOverwrite', lang)}</div>
-                <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>{t('dataImportConfirmOverwrite', lang)}</div>
+                <div className="meta fs-12" style={{ marginTop: 2 }}>{t('dataImportConfirmOverwrite', lang)}</div>
               </button>
             </div>
             <div className="flex justify-end gap-3">

@@ -50,14 +50,14 @@ function ProjectContextMenu({ project, logCount, lang, onClose, onAction }: {
   }, [onClose]);
 
   return (
-    <div ref={menuRef} className="dropdown-menu" style={{ top: '100%', right: 0, minWidth: 200 }}>
+    <div ref={menuRef} className="dropdown-menu min-w-200" style={{ top: '100%', right: 0 }}>
       <button className="mn-export-item" onClick={() => { onAction('viewLogs'); onClose(); }}>
         <FolderOpen size={14} />
         <span>{t('projectOpenLogs', lang)}</span>
         <span className="ml-auto" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{tf('logCount', lang, logCount)}</span>
       </button>
       <button className="mn-export-item" onClick={() => { onAction('pin'); onClose(); }}>
-        <Pin size={14} style={{ transform: 'rotate(45deg)' }} />
+        <Pin size={14} className="pin-rotate" />
         <span>{project.pinned ? t('unpinProject', lang) : t('pinProject', lang)}</span>
       </button>
       <div className="mn-export-divider" />
@@ -227,7 +227,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
           options={sortOptions}
           onChange={(k) => setSortKey(k as SortKey)}
         />
-        <label className="flex-row-gap-2 text-sm text-muted cursor-pointer select-none" style={{ whiteSpace: 'nowrap' }}>
+        <label className="flex-row-gap-2 text-sm text-muted cursor-pointer select-none nowrap">
           <input
             type="checkbox"
             checked={hideEmpty === 'true'}
@@ -240,7 +240,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
 
       {/* Add project form */}
       {addingProject && (
-        <div className="content-card flex-row-gap-sm flex-wrap" style={{ marginBottom: 16 }}>
+        <div className="content-card flex-row-gap-sm flex-wrap mb-lg">
           <input
             className="input flex-1"
             value={newProjectName}

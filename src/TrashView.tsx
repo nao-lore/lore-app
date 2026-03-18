@@ -125,7 +125,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
   const typeBadge = (type: TrashItem['type']) => {
     const typeLabels = { log: t('trashTypeLog', lang), project: t('trashTypeProject', lang), todo: t('trashTypeTodo', lang) };
     const classes = { log: 'badge-worklog', project: 'badge-project', todo: 'badge-todo' };
-    return <span className={classes[type] || 'badge-worklog'} style={{ fontSize: 10, padding: '1px 6px' }}>{typeLabels[type]}</span>;
+    return <span className={`${classes[type] || 'badge-worklog'} trash-badge`}>{typeLabels[type]}</span>;
   };
 
   return (
@@ -144,7 +144,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
             </p>
           </div>
           {totalCount > 0 && (
-            <button className="btn btn-danger btn-sm-trash" style={{ padding: '4px 12px' }} onClick={handleEmptyAll}>
+            <button className="btn btn-danger btn-sm-trash pad-4-12" onClick={handleEmptyAll}>
               <Trash2 size={12} /> {t('trashEmptyAll', lang)}
             </button>
           )}
@@ -171,13 +171,12 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
             ))}
           </div>
           <input
-            className="input input-sm flex-1"
+            className="input input-sm flex-1 min-w-120"
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('searchLogs', lang)}
             maxLength={200}
-            style={{ minWidth: 120 }}
           />
         </div>
       )}
@@ -194,12 +193,12 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
           <p className="page-subtitle">{t('trashEmptyDesc', lang)}</p>
         </div>
       ) : (
-        <div className="flex-col" style={{ gap: 6 }}>
+        <div className="flex-col gap-6">
           {filteredItems.slice(0, visibleCount).map((item) => {
             const days = daysLeft(item.trashedAt);
             return (
-              <div key={`${item.type}-${item.id}`} className="card flex-row" style={{ gap: 10 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
+              <div key={`${item.type}-${item.id}`} className="card flex-row gap-10">
+                <div className="flex-1">
                   <div className="flex-row-gap-sm" style={{ marginBottom: 2 }}>
                     {typeBadge(item.type)}
                     <span className="trash-item-title">
@@ -222,7 +221,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
             );
           })}
           {filteredItems.length > visibleCount && (
-            <div className="text-center" style={{ padding: '16px 0' }}>
+            <div className="text-center trash-load-more">
               <button className="btn text-sm" onClick={() => setVisibleCount((v) => v + TRASH_PAGE_SIZE)}>
                 {tf('loadMore', lang, filteredItems.length - visibleCount)}
               </button>

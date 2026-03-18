@@ -146,7 +146,7 @@ export function HistoryFiltersToolbar({
   ];
 
   return (
-    <div className="content-card flex-row flex-wrap mb-xl" style={{ gap: 10 }}>
+    <div className="content-card flex-row flex-wrap mb-xl gap-10">
       <div className="seg-control">
         {(['all', 'pinned', 'worklog', 'handoff'] as const).map((v) => (
           <button
@@ -159,14 +159,13 @@ export function HistoryFiltersToolbar({
         ))}
       </div>
       <input
-        className="input input-sm flex-1"
+        className="input input-sm flex-1 min-w-120"
         type="text"
         value={rawQuery}
         onChange={(e) => onRawQueryChange(e.target.value)}
         aria-label={t('ariaSearchLogs', lang)}
         placeholder={t('searchLogs', lang)}
         maxLength={200}
-        style={{ minWidth: 120 }}
       />
       <DropdownMenu
         label={t('sortLabel', lang)}
@@ -210,7 +209,7 @@ export function HistoryFiltersToolbar({
                 </button>
               ))}
             </div>
-            <div className="flex-row text-sm" style={{ gap: 6 }}>
+            <div className="flex-row text-sm gap-6">
               <label className="date-label">{t('dateFilterFrom', lang)}</label>
               <input
                 type="date"
@@ -248,20 +247,18 @@ export function HistoryFiltersToolbar({
       </button>
       <div className="seg-control">
         <button
-          className={`seg-control-btn${viewMode === 'card' ? ' active-worklog' : ''}`}
+          className={`seg-control-btn pad-4-8${viewMode === 'card' ? ' active-worklog' : ''}`}
           onClick={() => onViewModeChange('card')}
           title={t('viewCard', lang)}
           aria-label={t('ariaCardView', lang)}
-          style={{ padding: '4px 8px' }}
         >
           <LayoutGrid size={14} />
         </button>
         <button
-          className={`seg-control-btn${viewMode === 'list' ? ' active-worklog' : ''}`}
+          className={`seg-control-btn pad-4-8${viewMode === 'list' ? ' active-worklog' : ''}`}
           onClick={() => onViewModeChange('list')}
           title={t('viewList', lang)}
           aria-label={t('ariaListView', lang)}
-          style={{ padding: '4px 8px' }}
         >
           <List size={14} />
         </button>
@@ -288,18 +285,17 @@ export function KeywordsBar({ logs, debouncedQuery, tagFilter, modeFilter, lang,
   }
 
   return (
-    <div className="flex-row flex-wrap mb-md" style={{ gap: 8 }}>
-      <span className="flex-row text-sm-muted" style={{ gap: 4 }}>
+    <div className="flex-row flex-wrap mb-md gap-8">
+      <span className="flex-row text-sm-muted gap-4">
         <TrendingUp size={12} />
         {t('topKeywords', lang)}:
       </span>
       {keywords.map((kw) => (
         <span
           key={kw.word}
-          className="tag cursor-pointer"
+          className="tag cursor-pointer fs-12"
           role="button"
           tabIndex={0}
-          style={{ fontSize: 12 }}
           onClick={() => onSetQuery(kw.word)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSetQuery(kw.word); } }}
         >
