@@ -19,6 +19,7 @@ import { useBootstrapEffects } from './hooks/useBootstrapEffects';
 import { useSwipeNavigation } from './hooks/useSwipeNavigation';
 import type { View } from './hooks/useAppState';
 import { isOnboardingDone } from './onboardingState';
+import { setProFromCheckout } from './utils/proManager';
 
 const LandingPage = lazy(() => import('./LandingPage'));
 
@@ -97,6 +98,28 @@ export default function App() {
 
   // Mobile swipe-back gesture
   useSwipeNavigation(s.handleBack);
+
+  // Handle Stripe checkout success/cancelled URL params (mount-only via ref guard)
+  const checkoutHandledRef = React.useRef(false);
+  useEffect(() => {
+    if (checkoutHandledRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get('checkout');
+    if (!checkout) return;
+    checkoutHandledRef.current = true;
+    if (checkout === 'success') {
+      const sessionId = params.get('session_id') || `checkout_${Date.now()}`;
+      setProFromCheckout(sessionId);
+      s.showToast(t('checkoutSuccess', s.lang), 'success');
+    } else if (checkout === 'cancelled') {
+      s.showToast(t('checkoutCancelled', s.lang), 'default');
+    }
+    // Clean up URL params
+    const url = new URL(window.location.href);
+    url.searchParams.delete('checkout');
+    url.searchParams.delete('session_id');
+    window.history.replaceState({}, '', url.pathname);
+  }, [s, s.lang]);
 
   // Cache isDemoMode to avoid reading localStorage every render
   const [demoMode, setDemoModeState] = useState(() => isDemoMode());
