@@ -3,7 +3,7 @@ import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { useFocusTrap } from './useFocusTrap';
 import { markOnboardingDone } from './onboardingState';
-import { safeSetItem } from './storage';
+import { safeSetItem, addProject } from './storage';
 
 interface OnboardingProps {
   lang: Lang;
@@ -19,7 +19,7 @@ interface StepDef {
   action?: { labelKey: string; handler: () => void };
   final?: boolean;
   descAlign?: 'left';
-  custom?: 'lang' | 'extension';
+  custom?: 'lang' | 'extension' | 'project';
 }
 
 const LANG_OPTIONS: { code: Lang; label: string; flag: string }[] = [
@@ -39,6 +39,15 @@ const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/lore-capt
 export default function Onboarding({ lang, onLangChange, onClose, onPauseForSettings, initialStep = 0 }: OnboardingProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(true);
   const [step, setStep] = useState(initialStep);
+  const [projectName, setProjectName] = useState('');
+  const [projectCreated, setProjectCreated] = useState(false);
+
+  const handleCreateProject = useCallback(() => {
+    const name = projectName.trim();
+    if (!name || projectCreated) return;
+    addProject(name);
+    setProjectCreated(true);
+  }, [projectName, projectCreated]);
 
   const finish = useCallback(() => {
     markOnboardingDone();
@@ -74,6 +83,11 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
       titleKey: 'onboardingAssetTitle',
       descKey: 'onboardingAssetDesc',
       descAlign: 'left',
+    },
+    {
+      titleKey: 'onboardingProjectTitle',
+      descKey: 'onboardingProjectDesc',
+      custom: 'project',
     },
     {
       titleKey: 'onboardingApiKeyTitle',
@@ -122,7 +136,40 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
         </h2>
 
         {/* Language selector (custom step) */}
-        {current.custom === 'lang' ? (
+        {current.custom === 'project' ? (
+          <div className="flex-col gap-10" style={{ margin: '0 0 28px' }}>
+            <p className="onboarding-desc">
+              {t(current.descKey as Parameters<typeof t>[0], lang)}
+            </p>
+            <div className="flex justify-center">
+              <input
+                type="text"
+                className="input"
+                value={projectName}
+                onChange={(e) => { setProjectName(e.target.value); setProjectCreated(false); }}
+                placeholder={t('onboardingProjectPlaceholder', lang)}
+                maxLength={60}
+                disabled={projectCreated}
+                style={{ maxWidth: 320, width: '100%' }}
+              />
+            </div>
+            {projectCreated && (
+              <p className="text-sm text-center" style={{ color: 'var(--success-text, #22c55e)' }}>
+                {t('onboardingProjectCreated', lang)}
+              </p>
+            )}
+            {!projectCreated && projectName.trim() && (
+              <div className="flex justify-center">
+                <button
+                  className="btn btn-primary btn-onboarding"
+                  onClick={handleCreateProject}
+                >
+                  {t('onboardingProjectTitle', lang)}
+                </button>
+              </div>
+            )}
+          </div>
+        ) : current.custom === 'lang' ? (
           <div className="onboarding-lang-grid">
             {LANG_OPTIONS.map((opt) => (
               <button

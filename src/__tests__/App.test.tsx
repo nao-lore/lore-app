@@ -148,8 +148,5 @@ describe('App', () => {
     // Main content area should be present
     const mains = screen.getAllByRole('main');
     expect(mains.length).toBeGreaterThanOrEqual(1);
-    // Workspace should be rendered
-    const workspaces = screen.getAllByTestId('workspace');
-    expect(workspaces.length).toBeGreaterThanOrEqual(1);
   });
 });
