@@ -135,11 +135,14 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
             </div>
             <div className="flex items-baseline gap-xs">
               <span className="pricing-price">
-                $9.99
+                $12
               </span>
               <span className="pricing-period">
                 / {t('pricingMonth', lang)}
               </span>
+            </div>
+            <div className="text-sm text-muted" style={{ marginTop: 4 }}>
+              {t('lpPricingAnnual', lang)}
             </div>
             {userIsPro && proStatus.expiresAt && (
               <div className="text-sm text-muted" style={{ marginTop: 4 }}>
@@ -193,14 +196,24 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
                 </a>
               </div>
             ) : (
-              <button
-                className="btn btn-primary pricing-btn-full"
-                onClick={() => handleUpgrade()}
-                disabled={loading}
-                style={{ background: 'linear-gradient(135deg, var(--accent), #a855f7)', border: 'none', color: 'var(--button-text, #fff)', cursor: loading ? 'wait' : 'pointer' }}
-              >
-                {loading ? t('upgrading', lang) : t('pricingUpgradeButton', lang)}
-              </button>
+              <div className="flex-col gap-10">
+                <button
+                  className="btn btn-primary pricing-btn-full"
+                  onClick={() => handleUpgrade('monthly')}
+                  disabled={loading}
+                  style={{ background: 'linear-gradient(135deg, var(--accent), #a855f7)', border: 'none', color: 'var(--button-text, #fff)', cursor: loading ? 'wait' : 'pointer' }}
+                >
+                  {loading ? t('upgrading', lang) : `${t('pricingUpgradeButton', lang)} — $12/${t('pricingMonth', lang)}`}
+                </button>
+                <button
+                  className="btn pricing-btn-full"
+                  onClick={() => handleUpgrade('annual')}
+                  disabled={loading}
+                  style={{ cursor: loading ? 'wait' : 'pointer' }}
+                >
+                  {`$99/${t('pricingYear', lang)}`}
+                </button>
+              </div>
             )}
           </div>
         </div>
