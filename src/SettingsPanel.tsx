@@ -140,7 +140,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
   return (
     <div className="workspace-content">
       <div className="page-header">
-        <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
+        <button className="btn-back" onClick={onBack} className="btn-back-mb">
           ← {t('back', lang)}
         </button>
         <h2>{t('settingsTitle', lang)}</h2>
@@ -148,33 +148,28 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
 
       {/* Resume onboarding banner */}
       {onResumeOnboarding && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '10px 16px', marginBottom: 12, borderRadius: 10,
-          background: 'var(--accent-bg, rgba(99,102,241,0.08))',
-          border: '1px solid var(--accent, #7c5cfc)',
-        }}>
-          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+        <div className="resume-banner">
+          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             {t('onboardingReturnToSetup', lang)}
           </span>
           <button
             className="btn btn-primary"
             onClick={onResumeOnboarding}
-            style={{ fontSize: 12, padding: '5px 14px', borderRadius: 8, fontWeight: 600 }}
+            className="btn-sm-save" style={{ borderRadius: 8, fontWeight: 600 }}
           >
             ← {t('onboardingReturnToSetup', lang)}
           </button>
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="flex-col-gap-md">
         {/* API Key (Gemini only) */}
         <div className="content-card">
           <div className="content-card-header">Gemini API {t('apiKeyLabel', lang)}</div>
-          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+          <p className="meta meta-desc">
             {t('apiKeyDesc', lang)}
           </p>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="flex-row-gap-sm">
             <input
               className="input"
               type="password"
@@ -187,22 +182,22 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
             <button
               className="btn btn-primary"
               onClick={() => handleSaveKey('gemini')}
-              style={{ fontSize: 12, padding: '5px 12px', minHeight: 28, flexShrink: 0 }}
+              className="btn-sm-save shrink-0"
             >
               {t('saveKey', lang)}
             </button>
             {savedProvider === 'gemini' && (
-              <span style={{ color: 'var(--success-text)', fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span className="saved-indicator">
                 <Check size={14} /> {t('saved', lang)}
               </span>
             )}
           </div>
           {keyErrors.gemini && (
-            <p style={{ color: 'var(--error-text)', fontSize: 12, margin: '4px 0 0' }}>{keyErrors.gemini}</p>
+            <p className="error-text-sm">{keyErrors.gemini}</p>
           )}
 
           {/* Built-in API usage */}
-          <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 8, background: 'var(--bg-subtle, rgba(255,255,255,0.03))' }}>
+          <div className="subtle-panel">
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
               {t('builtinApiUsage', lang)}
             </div>
@@ -216,7 +211,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                     <span>{used} / {limit}</span>
                     <span>{remaining} {lang === 'ja' ? '回残り' : 'remaining'}</span>
                   </div>
-                  <div style={{ height: 6, borderRadius: 3, background: 'var(--border-default)', overflow: 'hidden' }}>
+                  <div className="progress-bar-track">
                     <div style={{ height: '100%', width: `${pct}%`, borderRadius: 3, background: barColor, transition: 'width 0.3s' }} />
                   </div>
                 </>
@@ -232,7 +227,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
         {/* Theme */}
         <div className="content-card">
           <div className="content-card-header">{t('themeLabel', lang)}</div>
-          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+          <p className="meta meta-desc">
             {t('themeDesc', lang)}
           </p>
           <div className="seg-control">
@@ -251,7 +246,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
         {/* Font Size */}
         <div className="content-card">
           <div className="content-card-header">{t('fontSizeLabel', lang)}</div>
-          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+          <p className="meta meta-desc">
             {t('fontSizeDesc', lang)}
           </p>
           <div className="seg-control">
@@ -270,16 +265,16 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
         {/* UI Language */}
         <div className="content-card">
           <div className="content-card-header">{t('uiLanguageLabel', lang)}</div>
-          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+          <p className="meta meta-desc">
             {t('uiLanguageDesc', lang)}
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <div className="flex-wrap-gap-2">
             {OUTPUT_LANGS.map((opt) => (
               <button
                 key={opt.code}
                 className={`seg-control-btn${currentUiLang === opt.code ? ' active-worklog' : ''}`}
                 onClick={() => handleUiLangChange(opt.code as Lang)}
-                style={{ padding: '6px 12px', fontSize: 13 }}
+                className="btn-pill"
               >
                 {opt.flag} {opt.label}
               </button>
@@ -290,13 +285,13 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
         {/* Output Language */}
         <div className="content-card">
           <div className="content-card-header">{t('outputLanguageLabel', lang)}</div>
-          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+          <p className="meta meta-desc">
             {t('outputLanguageDesc', lang)}
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <div className="flex-wrap-gap-2">
             <button
               className={`seg-control-btn${currentOutputLang === 'auto' ? ' active-worklog' : ''}`}
-              style={{ padding: '6px 12px', fontSize: 12, borderRadius: 6, border: '1px solid var(--border-default)' }}
+              className="btn-pill-sm"
               onClick={() => handleOutputLangChange('auto')}
             >
               {t('langAuto', lang)}
@@ -314,7 +309,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
               <button
                 key={v.code}
                 className={`seg-control-btn${currentOutputLang === v.code ? ' active-worklog' : ''}`}
-                style={{ padding: '6px 12px', fontSize: 12, borderRadius: 6, border: '1px solid var(--border-default)' }}
+                className="btn-pill-sm"
                 onClick={() => handleOutputLangChange(v.code)}
               >
                 {v.label}
@@ -326,12 +321,12 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
         {/* Notion Integration */}
         <div className="content-card">
           <div className="content-card-header">{t('notionLabel', lang)}</div>
-          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+          <p className="meta meta-desc">
             {t('notionDesc', lang)}
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="flex-col-gap-md">
             <div>
-              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
+              <div className="field-label">
                 {t('notionApiKey', lang)}
               </div>
               <input
@@ -341,14 +336,14 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 onChange={(e) => { setNotionKeyState(e.target.value); setNotionError(''); }}
                 onBlur={() => { if (notionKey.trim() && !notionKey.startsWith('ntn_') && !notionKey.startsWith('secret_')) setNotionError(t('notionApiKeyError', lang)); }}
                 placeholder={t('notionApiKeyPlaceholder', lang)}
-                style={{ maxWidth: 420, fontSize: 13 }}
+                className="input-settings"
               />
               {notionError && (
-                <p style={{ color: 'var(--error-text)', fontSize: 12, margin: '4px 0 0' }}>{notionError}</p>
+                <p className="error-text-sm">{notionError}</p>
               )}
             </div>
             <div>
-              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
+              <div className="field-label">
                 {t('notionDatabaseId', lang)}
               </div>
               <input
@@ -358,13 +353,13 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 onChange={(e) => setNotionDbIdState(e.target.value)}
                 placeholder={t('notionDatabaseIdPlaceholder', lang)}
                 maxLength={200}
-                style={{ maxWidth: 420, fontSize: 13 }}
+                className="input-settings"
               />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="flex-row-gap-sm">
               <button
                 className="btn btn-primary"
-                style={{ fontSize: 12, padding: '5px 12px', minHeight: 28 }}
+                className="btn-sm-save"
                 onClick={() => {
                   if (notionKey.trim() && !notionKey.startsWith('ntn_') && !notionKey.startsWith('secret_')) {
                     setNotionError(t('notionApiKeyError', lang));
@@ -382,7 +377,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 {t('saveKey', lang)}
               </button>
               {notionSaved && (
-                <span style={{ color: 'var(--success-text)', fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span className="saved-indicator">
                   <Check size={14} /> {t('saved', lang)}
                 </span>
               )}
@@ -393,12 +388,12 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
         {/* Slack Integration */}
         <div className="content-card">
           <div className="content-card-header">{t('slackLabel', lang)}</div>
-          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+          <p className="meta meta-desc">
             {t('slackDesc', lang)}
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="flex-col-gap-md">
             <div>
-              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
+              <div className="field-label">
                 {t('slackWebhookUrl', lang)}
               </div>
               <input
@@ -408,16 +403,16 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 onChange={(e) => { setSlackWebhookState(e.target.value); setSlackError(''); }}
                 onBlur={() => { if (slackWebhook.trim() && !slackWebhook.startsWith('https://hooks.slack.com')) setSlackError(t('slackWebhookError', lang)); }}
                 placeholder={t('slackWebhookPlaceholder', lang)}
-                style={{ maxWidth: 480, fontSize: 13 }}
+                className="input-settings" style={{ maxWidth: 480 }}
               />
               {slackError && (
-                <p style={{ color: 'var(--error-text)', fontSize: 12, margin: '4px 0 0' }}>{slackError}</p>
+                <p className="error-text-sm">{slackError}</p>
               )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="flex-row-gap-sm">
               <button
                 className="btn btn-primary"
-                style={{ fontSize: 12, padding: '5px 12px', minHeight: 28 }}
+                className="btn-sm-save"
                 onClick={() => {
                   if (slackWebhook.trim() && !slackWebhook.startsWith('https://hooks.slack.com')) {
                     setSlackError(t('slackWebhookError', lang));
@@ -434,7 +429,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 {t('saveKey', lang)}
               </button>
               {slackSaved && (
-                <span style={{ color: 'var(--success-text)', fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span className="saved-indicator">
                   <Check size={14} /> {t('saved', lang)}
                 </span>
               )}
@@ -445,10 +440,10 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
         {/* Feature Toggles */}
         <div className="content-card">
           <div className="content-card-header">{t('featuresLabel', lang)}</div>
-          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+          <p className="meta meta-desc">
             {t('featuresDesc', lang)}
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="flex-col-gap-md" style={{ gap: 14 }}>
             {([
               { key: 'streaming', labelKey: 'featureStreaming', descKey: 'featureStreamingDesc', default: true },
               { key: 'auto_classify', labelKey: 'featureAutoClassify', descKey: 'featureAutoClassifyDesc', default: true },
@@ -459,15 +454,15 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
               { key: 'keyboard_shortcuts', labelKey: 'featureKeyboardShortcuts', descKey: 'featureKeyboardShortcutsDesc', default: true },
               { key: 'sounds', labelKey: 'featureSounds', descKey: 'featureSoundsDesc', default: true },
             ] as const).map(({ key, labelKey, descKey, default: def }) => (
-              <label key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+              <label key={key} className="feature-toggle-label">
                 <input
                   type="checkbox"
                   checked={getFeatureEnabled(key, def)}
                   onChange={(e) => { setFeatureEnabled(key, e.target.checked); setAutoReport((v) => v); /* force re-render */ }}
-                  style={{ width: 18, height: 18, accentColor: 'var(--accent)', cursor: 'pointer', marginTop: 2, flexShrink: 0 }}
+                  className="feature-toggle-checkbox"
                 />
                 <div>
-                  <div style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>
+                  <div className="feature-toggle-title">
                     {t(labelKey as Parameters<typeof t>[0], lang)}
                   </div>
                   <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>
@@ -476,7 +471,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 </div>
               </label>
             ))}
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+            <label className="feature-toggle-label">
               <input
                 type="checkbox"
                 checked={autoReport}
@@ -485,10 +480,10 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                   setAutoReport(v);
                   setAutoReportSetting(v);
                 }}
-                style={{ width: 18, height: 18, accentColor: 'var(--accent)', cursor: 'pointer', marginTop: 2, flexShrink: 0 }}
+                className="feature-toggle-checkbox"
               />
               <div>
-                <div style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>
+                <div className="feature-toggle-title">
                   {t('autoWeeklyReport', lang)}
                 </div>
                 <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>
@@ -502,7 +497,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
         {/* Data Management */}
         <div className="content-card">
           <div className="content-card-header">{t('dataLabel', lang)}</div>
-          <p className="meta" style={{ marginBottom: 14, fontSize: 13 }}>
+          <p className="meta meta-desc">
             {t('dataStorageNotice', lang)}
           </p>
 
@@ -512,7 +507,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
             const barColor = usage.percentage >= 100 ? 'var(--error-text)' : usage.percentage >= 80 ? 'var(--warning-text, #f59e0b)' : 'var(--accent)';
             const isWarning = usage.percentage >= 80;
             return (
-              <div style={{ marginBottom: 16, padding: '12px 14px', background: 'var(--sidebar-hover)', borderRadius: 8 }}>
+              <div className="data-usage-box">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
                     {t('dataUsageLabel', lang)}
@@ -521,7 +516,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                     {formatBytes(usage.usedBytes)} / {formatBytes(usage.limitBytes)}
                   </span>
                 </div>
-                <div style={{ height: 6, borderRadius: 3, background: 'var(--border-default)', overflow: 'hidden' }}>
+                <div className="progress-bar-track">
                   <div style={{
                     height: '100%',
                     width: `${Math.min(usage.percentage, 100)}%`,
@@ -592,25 +587,25 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
         <div className="modal-overlay" role="presentation" onClick={() => setPendingImport(null)}>
           <div className="modal-card" role="dialog" aria-modal="true" aria-label={t('dataImport', lang)} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
             <h3 style={{ marginBottom: 12 }}>{t('dataImport', lang)}</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+            <div className="flex-col-gap-md" style={{ gap: 10, marginBottom: 16 }}>
               <button
                 className={`btn${pendingImport.mode === 'merge' ? ' btn-primary' : ''}`}
                 onClick={() => setPendingImport({ ...pendingImport, mode: 'merge' })}
-                style={{ textAlign: 'left', padding: '10px 14px' }}
+                className="import-mode-btn"
               >
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{t('dataImportMerge', lang)}</div>
+                <div className="import-mode-title">{t('dataImportMerge', lang)}</div>
                 <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>{t('dataImportConfirmMerge', lang)}</div>
               </button>
               <button
                 className={`btn${pendingImport.mode === 'overwrite' ? ' btn-primary' : ''}`}
                 onClick={() => setPendingImport({ ...pendingImport, mode: 'overwrite' })}
-                style={{ textAlign: 'left', padding: '10px 14px' }}
+                className="import-mode-btn"
               >
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{t('dataImportOverwrite', lang)}</div>
+                <div className="import-mode-title">{t('dataImportOverwrite', lang)}</div>
                 <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>{t('dataImportConfirmOverwrite', lang)}</div>
               </button>
             </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <div className="flex justify-end gap-3">
               <button className="btn" onClick={() => setPendingImport(null)}>{t('cancel', lang)}</button>
               <button className="btn btn-primary" onClick={handleImportConfirm}>
                 {pendingImport.mode === 'overwrite' ? t('dataImportOverwrite', lang) : t('dataImportMerge', lang)}

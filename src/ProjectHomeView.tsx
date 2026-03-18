@@ -135,27 +135,27 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
     <div className="workspace-content">
       {/* Header */}
       <div className="page-header">
-        <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
+        <button className="btn-back" onClick={onBack} className="btn-back-mb">
           ← {t('back', lang)}
         </button>
         <div className="page-header-row">
           <div className="ph-header-info">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="flex-row-gap-sm">
               {project.icon && <span style={{ fontSize: 24 }}>{project.icon}</span>}
               {!project.icon && project.color && (
                 <div style={{ width: 6, height: 28, borderRadius: 3, background: getProjectColor(project.color), flexShrink: 0 }} />
               )}
               <h2 className="ph-title" style={{ margin: 0 }}>{project.name}</h2>
             </div>
-            <span className="meta" style={{ fontSize: 12 }}>
+            <span className="meta" className="text-sm">
               {tf('logCount', lang, projectLogs.length)}
             </span>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn" onClick={() => setShowAddLogs(true)} style={{ fontSize: 13 }}>
+          <div className="flex gap-3">
+            <button className="btn" onClick={() => setShowAddLogs(true)} className="text-sm">
               {t('addLogsToProject', lang)}
             </button>
-            <button className="btn btn-primary" onClick={onNewLog} style={{ fontSize: 13 }}>
+            <button className="btn btn-primary" onClick={onNewLog} className="text-sm">
               {t('createHandoff', lang)}
             </button>
           </div>
@@ -226,7 +226,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
           <div className="empty-state-icon">&#128221;</div>
           <p>{t('noLogsYet', lang)}</p>
           <p className="page-subtitle">{t('noLogsYetDesc', lang)}</p>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+          <div className="flex justify-center gap-3">
             <button className="btn" onClick={() => setShowAddLogs(true)}>
               {t('addLogsToProject', lang)}
             </button>
@@ -240,7 +240,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
         const displayLogs = q ? projectLogs.filter((l) => l.title.toLowerCase().includes(q)) : projectLogs;
         return (
         <div className="ph-log-list">
-          <div className="ph-section-label" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="ph-section-label" className="flex-row" style={{ gap: 10 }}>
             <span>{t('logs', lang)}</span>
             <input
               className="input input-sm"
@@ -250,7 +250,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
               aria-label={t('ariaSearchLogs', lang)}
               placeholder={t('searchLogs', lang)}
               maxLength={200}
-              style={{ flex: 1, minWidth: 100 }}
+              className="flex-1" style={{ minWidth: 100 }}
             />
           </div>
           {displayLogs.length === 0 ? (
@@ -340,12 +340,12 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
                   <p className="ph-log-preview">{preview}</p>
                 )}
                 {log.outputMode === 'handoff' && log.nextActions && log.nextActions.length > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, fontSize: 12, color: 'var(--text-placeholder)' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <div className="flex-row-gap-sm text-sm text-placeholder" style={{ marginTop: 4 }}>
+                    <span className="flex-row" style={{ display: 'inline-flex', gap: 4 }}>
                       ☑ {log.checkedActions?.length || 0}/{log.nextActions.length}
                     </span>
-                    <div style={{ flex: 1, height: 3, background: 'var(--border-subtle)', borderRadius: 2, overflow: 'hidden', maxWidth: 80 }}>
-                      <div style={{ height: '100%', background: 'var(--accent)', borderRadius: 2, width: `${((log.checkedActions?.length || 0) / log.nextActions.length) * 100}%`, transition: 'width 0.2s' }} />
+                    <div className="progress-bar-mini" style={{ maxWidth: 80 }}>
+                      <div className="progress-bar-mini-fill" style={{ background: 'var(--accent)', width: `${((log.checkedActions?.length || 0) / log.nextActions.length) * 100}%` }} />
                     </div>
                   </div>
                 )}
@@ -353,8 +353,8 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
             );
           })}
           {displayLogs.length > phVisibleCount && (
-            <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <button className="btn" onClick={() => setPhVisibleCount((v) => v + PH_PAGE_SIZE)} style={{ fontSize: 13 }}>
+            <div className="text-center" style={{ padding: '16px 0' }}>
+              <button className="btn" onClick={() => setPhVisibleCount((v) => v + PH_PAGE_SIZE)} className="text-sm">
                 {tf('loadMore', lang, displayLogs.length - phVisibleCount)}
               </button>
             </div>
@@ -471,7 +471,7 @@ function AddLogsModal({ projectId, logs, lang, onClose, onAdded }: {
                     {modeLabel}
                   </span>
                   <span className="modal-list-title">{log.title}</span>
-                  <span className="meta" style={{ fontSize: 11, marginLeft: 'auto', flexShrink: 0 }}>{formatDateShort(log.createdAt)}</span>
+                  <span className="meta" className="ml-auto shrink-0" style={{ fontSize: 11 }}>{formatDateShort(log.createdAt)}</span>
                 </label>
               );
             })

@@ -223,20 +223,30 @@ async function callApiRaw(
 // Result converters
 // =============================================================================
 
+/** Safely extract a string from unknown */
+function asString(v: unknown, fallback = ''): string {
+  return typeof v === 'string' ? v : fallback;
+}
+
+/** Safely extract a string[] from unknown */
+function asStringArray(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+}
+
 function toWorklog(raw: PartialResult): TransformResult {
   return {
-    title: (raw.title as string) || 'Untitled',
-    today: (raw.today as string[]) || [],
-    decisions: (raw.decisions as string[]) || [],
-    todo: (raw.todo as string[]) || [],
-    relatedProjects: (raw.relatedProjects as string[]) || [],
-    tags: (raw.tags as string[]) || [],  // may be empty from simplified schema
+    title: asString(raw.title) || 'Untitled',
+    today: asStringArray(raw.today),
+    decisions: asStringArray(raw.decisions),
+    todo: asStringArray(raw.todo),
+    relatedProjects: asStringArray(raw.relatedProjects),
+    tags: asStringArray(raw.tags),
   };
 }
 
 function toHandoff(raw: PartialResult): HandoffResult {
-  const completed = (raw.completed as string[]) || [];
-  const { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta } = normalizeHandoffFields(raw as unknown as Record<string, unknown>);
+  const completed = asStringArray(raw.completed);
+  const { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta } = normalizeHandoffFields(raw);
   // resumeContext: derived from resumeChecklist, fallback to raw
   let resumeContext: string[];
   if (resumeChecklist.length > 0) {
@@ -244,25 +254,25 @@ function toHandoff(raw: PartialResult): HandoffResult {
   } else if (typeof raw.resumeContext === 'string') {
     resumeContext = raw.resumeContext.trim() ? [raw.resumeContext.trim()] : [];
   } else if (Array.isArray(raw.resumeContext)) {
-    resumeContext = raw.resumeContext as string[];
+    resumeContext = asStringArray(raw.resumeContext);
   } else {
     resumeContext = [];
   }
   return {
-    title: (raw.title as string) || 'Untitled',
+    title: asString(raw.title) || 'Untitled',
     handoffMeta,
-    currentStatus: (raw.currentStatus as string[]) || [],
+    currentStatus: asStringArray(raw.currentStatus),
     resumeChecklist,
     resumeContext,
     nextActions,
     nextActionItems,
     actionBacklog: actionBacklog.length > 0 ? actionBacklog : undefined,
     completed,
-    blockers: filterResolvedBlockers((raw.blockers as string[]) || [], completed, decisions),
+    blockers: filterResolvedBlockers(asStringArray(raw.blockers), completed, decisions),
     decisions,
     decisionRationales,
-    constraints: (raw.constraints as string[]) || [],
-    tags: (raw.tags as string[]) || [],
+    constraints: asStringArray(raw.constraints),
+    tags: asStringArray(raw.tags),
   };
 }
 
@@ -305,7 +315,7 @@ function collectStrings(partials: PartialResult[], key: string): string[] {
     // Coerce non-string items (e.g. {text:"..."} objects from AI) to strings
     return v.map((item) =>
       typeof item === 'string' ? item
-      : typeof item === 'object' && item !== null && 'text' in item ? String((item as Record<string, unknown>).text)
+      : typeof item === 'object' && item !== null && 'text' in item ? String((item as { text: unknown }).text)
       : String(item)
     ).filter((s) => s && s !== 'undefined' && s !== 'null' && s !== '[object Object]');
   });
@@ -335,7 +345,7 @@ function flattenBothPartials(partials: PartialResult[]): PartialResult[] {
 function collectLastChunk(partials: PartialResult[], key: string): string[] {
   for (let i = partials.length - 1; i >= 0; i--) {
     const v = partials[i][key];
-    if (Array.isArray(v) && v.length > 0) return v as string[];
+    if (Array.isArray(v) && v.length > 0) return v.filter((x): x is string => typeof x === 'string');
     if (typeof v === 'string' && v.trim()) return [v];
   }
   return [];
@@ -378,14 +388,18 @@ function localMerge(partials: PartialResult[], isBothMode = false): PartialResul
     // Check explicit decisionRationales first
     const dr = chunk.decisionRationales;
     if (Array.isArray(dr)) {
-      allRationales.push(...(dr as DecisionWithRationale[]));
+      for (const r of dr) {
+        if (typeof r === 'object' && r !== null && 'decision' in r) {
+          allRationales.push(r as DecisionWithRationale);
+        }
+      }
     }
     // Also check decisions array — may contain {decision, rationale} objects from chunk prompts
     const decs = chunk.decisions;
     if (Array.isArray(decs)) {
       for (const item of decs) {
-        if (typeof item === 'object' && item !== null && 'decision' in (item as Record<string, unknown>)) {
-          const obj = item as Record<string, unknown>;
+        if (typeof item === 'object' && item !== null && 'decision' in item) {
+          const obj = item as { decision: unknown; rationale?: unknown };
           allRationales.push({
             decision: String(obj.decision || ''),
             rationale: typeof obj.rationale === 'string' ? obj.rationale : null,
@@ -394,10 +408,11 @@ function localMerge(partials: PartialResult[], isBothMode = false): PartialResul
       }
     }
   }
-  merged.decisionRationales = dedupDecisions(allRationales);
+  const dedupedRationales = dedupDecisions(allRationales);
+  merged.decisionRationales = dedupedRationales;
   // Backward compat: populate legacy decisions from merged decisionRationales
   if (allRationales.length > 0) {
-    merged.decisions = (merged.decisionRationales as DecisionWithRationale[]).map(dr => dr.decision);
+    merged.decisions = dedupedRationales.map(dr => dr.decision);
   }
 
   // Merge nextActionItems across chunks: action-level merge, latest chunk order wins
@@ -407,7 +422,7 @@ function localMerge(partials: PartialResult[], isBothMode = false): PartialResul
     for (let ci = 0; ci < flat.length; ci++) {
       const raw = flat[ci].nextActions;
       if (Array.isArray(raw) && raw.length > 0) {
-        const { nextActionItems: items } = normalizeNextActions(raw as unknown[]);
+        const { nextActionItems: items } = normalizeNextActions(raw);
         allChunkItems.push({ items, chunkIndex: ci });
       }
     }
@@ -811,8 +826,8 @@ export class ChunkEngine {
     this._onStream = undefined;
 
     // raw contains { worklog: {...}, handoff: {...} } from combined prompt
-    const w = (raw as Record<string, unknown>).worklog as Record<string, unknown> | undefined;
-    const h = (raw as Record<string, unknown>).handoff as Record<string, unknown> | undefined;
+    const w = raw.worklog as PartialResult | undefined;
+    const h = raw.handoff as PartialResult | undefined;
 
     const result = {
       worklog: toWorklog(w || raw),
@@ -967,10 +982,11 @@ export class ChunkEngine {
                 4096,
                 true,
               );
-              const cItems = (cResult as Record<string, unknown>).completed;
+              const cItems = cResult.completed;
               if (Array.isArray(cItems) && cItems.length > 0) {
                 const MAX_COMPLETED = 50;
-                return cItems.length > MAX_COMPLETED ? (cItems.slice(-MAX_COMPLETED) as string[]) : (cItems as string[]);
+                const strings = cItems.filter((x): x is string => typeof x === 'string');
+                return strings.length > MAX_COMPLETED ? strings.slice(-MAX_COMPLETED) : strings;
               }
               return [];
             } catch (err) {
@@ -986,13 +1002,13 @@ export class ChunkEngine {
               message: 'summarization:final',
             });
             try {
-              const handoffData = mode === 'both'
-                ? (partial as Record<string, unknown>).handoff as PartialResult | undefined ?? partial
+              const handoffData: PartialResult = mode === 'both'
+                ? (partial.handoff as PartialResult | undefined) ?? partial
                 : partial;
               const summaryInput: Record<string, unknown> = {};
               for (const key of ['currentStatus', 'nextActions', 'nextActionItems', 'actionBacklog', 'blockers', 'completed', 'decisions', 'decisionRationales', 'constraints', 'title'] as const) {
-                if ((handoffData as Record<string, unknown>)[key] != null) {
-                  summaryInput[key] = (handoffData as Record<string, unknown>)[key];
+                if (handoffData[key] != null) {
+                  summaryInput[key] = handoffData[key];
                 }
               }
               const inputJson = JSON.stringify(summaryInput);
@@ -1019,23 +1035,23 @@ export class ChunkEngine {
           if (completedItems.length > 0) {
             allPartials[0].completed = completedItems;
             if (mode === 'both') {
-              const h = (allPartials[0] as Record<string, unknown>).handoff as PartialResult | undefined;
+              const h = allPartials[0].handoff as PartialResult | undefined;
               if (h) h.completed = completedItems;
             }
           }
 
           // Apply final summarization
           if (finalSummary) {
-            const fs = finalSummary as Record<string, unknown>;
-            const meta = normalizeHandoffMeta(fs.handoffMeta);
-            const checklist = normalizeResumeChecklist(fs.resumeChecklist);
+            const meta = normalizeHandoffMeta(finalSummary.handoffMeta);
+            const checklist = normalizeResumeChecklist(finalSummary.resumeChecklist);
             const derivedResumeContext = checklist.map(item => item.action);
 
             let activeDecisions: DecisionWithRationale[] | undefined;
-            if (Array.isArray(fs.activeDecisions) && fs.activeDecisions.length > 0) {
+            const rawActiveDecisions = finalSummary.activeDecisions;
+            if (Array.isArray(rawActiveDecisions) && rawActiveDecisions.length > 0) {
               activeDecisions = dedupDecisions(
-                (fs.activeDecisions as Record<string, unknown>[])
-                  .filter(d => typeof d === 'object' && d !== null && 'decision' in d)
+                rawActiveDecisions
+                  .filter((d): d is Record<string, unknown> => typeof d === 'object' && d !== null && 'decision' in d)
                   .map(d => ({
                     decision: String(d.decision || ''),
                     rationale: typeof d.rationale === 'string' ? d.rationale : null,
@@ -1055,7 +1071,7 @@ export class ChunkEngine {
 
             applyToTarget(allPartials[0]);
             if (mode === 'both') {
-              const h = (allPartials[0] as Record<string, unknown>).handoff as PartialResult | undefined;
+              const h = allPartials[0].handoff as PartialResult | undefined;
               if (h) applyToTarget(h);
             }
 
@@ -1114,9 +1130,9 @@ export class ChunkEngine {
               4096,
               true,
             );
-            const items = (result as Record<string, unknown>).completed;
+            const items = result.completed;
             if (Array.isArray(items) && items.length > 0) {
-              return items as string[];
+              return items.filter((x): x is string => typeof x === 'string');
             }
             return [];
           } catch (err) {
@@ -1132,15 +1148,15 @@ export class ChunkEngine {
             message: 'consistency:check',
           });
           try {
-            const handoffData = mode === 'both'
-              ? (mergedResult as Record<string, unknown>).handoff as PartialResult | undefined
+            const handoffData: PartialResult | undefined = mode === 'both'
+              ? mergedResult.handoff as PartialResult | undefined
               : mergedResult;
 
             if (handoffData) {
               // Trim decisions to latest 10 to reduce output size and avoid token limit truncation
               const MAX_DECISIONS_FOR_CHECK = 10;
-              const fullDecisions = (handoffData as PartialResult).decisions;
-              let trimmedDecisions: string[] | undefined;
+              const fullDecisions = handoffData.decisions;
+              let trimmedDecisions: unknown[] | undefined;
               if (Array.isArray(fullDecisions) && fullDecisions.length > MAX_DECISIONS_FOR_CHECK) {
                 trimmedDecisions = fullDecisions.slice(-MAX_DECISIONS_FOR_CHECK);
               }
@@ -1170,15 +1186,15 @@ export class ChunkEngine {
             message: 'summarization:final',
           });
           try {
-            const handoffData = mode === 'both'
-              ? (mergedResult as Record<string, unknown>).handoff as PartialResult | undefined
+            const handoffData: PartialResult | undefined = mode === 'both'
+              ? mergedResult.handoff as PartialResult | undefined
               : mergedResult;
             if (!handoffData) return null;
             // Build compact payload: only fields needed for summarization
             const summaryInput: Record<string, unknown> = {};
             for (const key of ['currentStatus', 'nextActions', 'nextActionItems', 'actionBacklog', 'blockers', 'completed', 'decisions', 'decisionRationales', 'constraints', 'title'] as const) {
-              if ((handoffData as Record<string, unknown>)[key] != null) {
-                summaryInput[key] = (handoffData as Record<string, unknown>)[key];
+              if (handoffData[key] != null) {
+                summaryInput[key] = handoffData[key];
               }
             }
             const inputJson = JSON.stringify(summaryInput);
@@ -1205,15 +1221,15 @@ export class ChunkEngine {
         if (checkedRaw) {
           const originalDecisions = mergedResult.decisions;
           if (mode === 'both') {
-            (mergedResult as Record<string, unknown>).handoff = checkedRaw;
-            mergedResult.currentStatus = (checkedRaw as PartialResult).currentStatus;
-            mergedResult.nextActions = (checkedRaw as PartialResult).nextActions;
-            mergedResult.blockers = (checkedRaw as PartialResult).blockers;
-            mergedResult.constraints = (checkedRaw as PartialResult).constraints;
-            mergedResult.resumeContext = (checkedRaw as PartialResult).resumeContext;
+            mergedResult.handoff = checkedRaw;
+            mergedResult.currentStatus = checkedRaw.currentStatus;
+            mergedResult.nextActions = checkedRaw.nextActions;
+            mergedResult.blockers = checkedRaw.blockers;
+            mergedResult.constraints = checkedRaw.constraints;
+            mergedResult.resumeContext = checkedRaw.resumeContext;
             // Restore original full decisions (not the trimmed version from consistency check)
             mergedResult.decisions = originalDecisions;
-            const handoffRef = (mergedResult as Record<string, unknown>).handoff as PartialResult | undefined;
+            const handoffRef = mergedResult.handoff as PartialResult | undefined;
             if (handoffRef) handoffRef.decisions = originalDecisions;
           } else {
             mergedResult = checkedRaw;
@@ -1231,7 +1247,7 @@ export class ChunkEngine {
             : completedItems;
           mergedResult.completed = trimmed;
           if (mode === 'both') {
-            const handoff = (mergedResult as Record<string, unknown>).handoff as PartialResult | undefined;
+            const handoff = mergedResult.handoff as PartialResult | undefined;
             if (handoff) handoff.completed = trimmed;
           }
         }
@@ -1241,18 +1257,18 @@ export class ChunkEngine {
           console.log('[FinalSummarization] raw result:', finalSummary ? JSON.stringify(finalSummary).slice(0, 500) : 'null');
         }
         if (finalSummary) {
-          const fs = finalSummary as Record<string, unknown>;
-          const meta = normalizeHandoffMeta(fs.handoffMeta);
-          const checklist = normalizeResumeChecklist(fs.resumeChecklist);
+          const meta = normalizeHandoffMeta(finalSummary.handoffMeta);
+          const checklist = normalizeResumeChecklist(finalSummary.resumeChecklist);
           // Derive resumeContext from resumeChecklist
           const derivedResumeContext = checklist.map(item => item.action);
 
           // Compress decisions: use activeDecisions from final summarization (max 6)
           let activeDecisions: DecisionWithRationale[] | undefined;
-          if (Array.isArray(fs.activeDecisions) && fs.activeDecisions.length > 0) {
+          const rawActiveDecisions = finalSummary.activeDecisions;
+          if (Array.isArray(rawActiveDecisions) && rawActiveDecisions.length > 0) {
             activeDecisions = dedupDecisions(
-              (fs.activeDecisions as Record<string, unknown>[])
-                .filter(d => typeof d === 'object' && d !== null && 'decision' in d)
+              rawActiveDecisions
+                .filter((d): d is Record<string, unknown> => typeof d === 'object' && d !== null && 'decision' in d)
                 .map(d => ({
                   decision: String(d.decision || ''),
                   rationale: typeof d.rationale === 'string' ? d.rationale : null,
@@ -1273,7 +1289,7 @@ export class ChunkEngine {
 
           applyToTarget(mergedResult);
           if (mode === 'both') {
-            const handoff = (mergedResult as Record<string, unknown>).handoff as PartialResult | undefined;
+            const handoff = mergedResult.handoff as PartialResult | undefined;
             if (handoff) applyToTarget(handoff);
           }
           if (import.meta.env.DEV) {

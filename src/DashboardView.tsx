@@ -66,7 +66,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
     try {
       const saved = safeGetItem(DISMISS_KEY);
       if (saved) {
-        const entries = JSON.parse(saved) as Record<string, number>;
+        const entries: Record<string, number> = JSON.parse(saved);
         return new Set(Object.keys(entries));
       }
     } catch (err) { if (import.meta.env.DEV) console.warn('[DashboardView] dismissed parse:', err); }
@@ -232,19 +232,19 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
   if (handoffLogs.length === 0) {
     return (
       <div className="workspace-content-wide flex-col items-center">
-        <div className="text-center" style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-secondary)', marginTop: 80, marginBottom: 32 }}>
+        <div className="text-center" className="font-extrabold" style={{ fontSize: 28, color: 'var(--text-secondary)', marginTop: 80, marginBottom: 32 }}>
           {getGreeting(lang)}
         </div>
         <div className="empty-state">
           <div className="empty-state-icon"><EmptyDashboard /></div>
-          <p style={{ fontWeight: 600 }}>
+          <p className="font-semibold">
             {t('dashboardWelcome', lang)}
           </p>
           <p className="page-subtitle">
             {t('dashboardWelcomeDesc', lang)}
           </p>
           <FirstUseTooltip id="dashboard" text={lang === 'ja' ? 'AIプロジェクトのスナップショットがここに表示されます' : 'Your AI project snapshots appear here'} position="top">
-            <button className="btn btn-primary" onClick={onNewLog} style={{ marginTop: 16 }}>
+            <button className="btn btn-primary" onClick={onNewLog} className="mt-lg">
               <Plus size={16} />
               {t('dashboardCreateFirstLog', lang)}
             </button>
@@ -259,8 +259,8 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
     <div className="workspace-content-wide">
 
         {/* ── Greeting (centered, Notion-style) ── */}
-        <div className="text-center" style={{ marginTop: 24, marginBottom: 36 }}>
-          <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text-secondary)', lineHeight: 1.2 }}>
+        <div className="text-center" className="mt-xl" style={{ marginBottom: 36 }}>
+          <div className="font-extrabold" style={{ fontSize: 32, color: 'var(--text-secondary)', lineHeight: 1.2 }}>
             {getGreeting(lang)}
           </div>
         </div>
@@ -291,7 +291,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                   <div className="flex-row" style={{ fontSize: 20, marginBottom: 8, gap: 6 }}>
                     <IconComponent size={20} style={{ color: n.borderColor }} />
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>{n.label}</div>
+                  <div className="font-bold text-secondary text-sm">{n.label}</div>
                   <div className="text-xs-muted" style={{ marginTop: 2 }}>{n.sub}</div>
                   {/* dismiss tap target */}
                   <button
@@ -342,13 +342,13 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                     className="project-snap-card"
                   >
                     <div style={{ fontSize: 24, marginBottom: 10, lineHeight: 1 }}>{snap.project.icon || '📂'}</div>
-                    <div className="truncate font-semibold" style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                    <div className="truncate font-semibold" className="text-sm text-secondary" style={{ marginBottom: 4 }}>
                       {snap.project.name}
                     </div>
                     {snap.totalCount > 0 && (
                       <div className="flex-row" style={{ gap: 6, marginTop: 6 }}>
-                        <div style={{ flex: 1, height: 3, background: 'var(--border-subtle)', borderRadius: 2, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', background: pct === 100 ? 'var(--success-text)' : 'var(--accent)', borderRadius: 2, width: `${pct}%`, transition: 'width 0.3s ease' }} />
+                        <div className="progress-bar-mini">
+                          <div className="progress-bar-mini-fill" style={{ background: pct === 100 ? 'var(--success-text)' : 'var(--accent)', width: `${pct}%` }} />
                         </div>
                         <span className="shrink-0" style={{ fontSize: 10, color: 'var(--text-placeholder)' }}>{snap.totalCount - snap.pendingCount}/{snap.totalCount}</span>
                       </div>
@@ -385,12 +385,12 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
               <Square size={14} style={{ opacity: 0.5 }} />
               {t('dashboardTodayFocus', lang)}
               {uncheckedActions.length > 0 && (
-                <span className="badge badge-accent" style={{ fontWeight: 700, fontSize: 11, marginLeft: 4 }}>
+                <span className="badge badge-accent" className="font-bold" style={{ fontSize: 11, marginLeft: 4 }}>
                   {uncheckedActions.length}
                 </span>
               )}
               {totalActions > 0 && (
-                <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-placeholder)' }}>
+                <span className="ml-auto" style={{ fontSize: 11, color: 'var(--text-placeholder)' }}>
                   {checkedCount}/{totalActions}
                 </span>
               )}
@@ -443,7 +443,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                     onClick={() => onToggleAction(action.logId, action.index)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleAction(action.logId, action.index); } }}
                     className="flex-row text-sm-muted"
-                    style={{ gap: 8, padding: '6px 14px', borderRadius: 8, cursor: 'pointer', userSelect: 'none' }}
+                    className="cursor-pointer select-none" style={{ gap: 8, padding: '6px 14px', borderRadius: 8 }}
                   >
                     <Square size={12} className="shrink-0" style={{ color: 'var(--text-placeholder)' }} />
                     <span className="flex-1">{action.text}</span>
@@ -492,9 +492,9 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                   aria-label={`${snap.project.name}: ${snap.blockers[0]}`}
                   onClick={() => onOpenProject(snap.project.id)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenProject(snap.project.id); } }}
-                  style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', background: 'color-mix(in srgb, var(--error-text, #ef4444) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--error-text, #ef4444) 10%, transparent)' }}
+                  className="cursor-pointer" style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', background: 'color-mix(in srgb, var(--error-text, #ef4444) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--error-text, #ef4444) 10%, transparent)' }}
                 >
-                  <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{snap.project.icon || '📂'} {snap.project.name}</span>
+                  <span className="font-semibold text-secondary">{snap.project.icon || '📂'} {snap.project.name}</span>
                   <span style={{ margin: '0 6px', opacity: 0.3 }}>—</span>
                   {snap.blockers[0]}
                 </div>
@@ -572,33 +572,33 @@ function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]
         }}
       >
         <div className="flex-row justify-between mb-md">
-          <div className="section-title font-semibold" style={{ fontWeight: 700 }}>
+          <div className="section-title font-semibold" className="font-bold">
             {isJa ? 'あなたのアクティビティ' : 'Your Activity'}
           </div>
           {streak > 0 && (
             <div className="flex-row" style={{ gap: 4, fontSize: 13, color: 'var(--warning-text, #f59e0b)' }}>
               <span style={{ fontSize: 16 }}>🔥</span>
-              <span style={{ fontSize: 20, fontWeight: 800 }}>{streak}</span>
-              <span style={{ fontWeight: 600 }}>{isJa ? '日連続' : `day${streak > 1 ? 's' : ''} streak`}</span>
+              <span className="font-extrabold" style={{ fontSize: 20 }}>{streak}</span>
+              <span className="font-semibold">{isJa ? '日連続' : `day${streak > 1 ? 's' : ''} streak`}</span>
             </div>
           )}
         </div>
 
         {/* Row 1: headline stats */}
-        <div className="flex flex-wrap" style={{ alignItems: 'baseline', gap: 6, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.8 }}>
-          <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-secondary)' }}>{stats.totalLogs}</span>
+        <div className="flex flex-wrap" className="items-baseline" style={{ gap: 6, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.8 }}>
+          <span className="font-extrabold text-secondary" style={{ fontSize: 22 }}>{stats.totalLogs}</span>
           <span>{isJa ? 'ログ' : 'logs'}</span>
           <span style={{ color: 'var(--text-placeholder)', margin: '0 2px' }}>&middot;</span>
-          <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-secondary)' }}>{stats.todosDone}</span>
+          <span className="font-extrabold text-secondary" style={{ fontSize: 22 }}>{stats.todosDone}</span>
           <span>{isJa ? 'TODO完了' : 'TODOs done'}</span>
           <span style={{ color: 'var(--text-placeholder)', margin: '0 2px' }}>&middot;</span>
-          <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-secondary)' }}>{stats.activeProjects}</span>
+          <span className="font-extrabold text-secondary" style={{ fontSize: 22 }}>{stats.activeProjects}</span>
           <span>{isJa ? 'プロジェクト' : 'projects'}</span>
         </div>
 
         {/* Row 2: this week comparison */}
-        <div className="mt-sm" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-          {isJa ? '今週' : 'This week'}: <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>{stats.thisWeekLogs}</span> {isJa ? 'ログ' : 'logs'}
+        <div className="mt-sm" className="text-sm text-muted">
+          {isJa ? '今週' : 'This week'}: <span className="font-bold text-secondary">{stats.thisWeekLogs}</span> {isJa ? 'ログ' : 'logs'}
           {' '}
           <span style={{ color: diffColor, fontWeight: 600 }}>
             ({diffLabel} {isJa ? '先週比' : 'from last week'})
@@ -608,7 +608,7 @@ function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]
         {/* Row 3: most active project */}
         {stats.topProjectName && (
           <div className="text-xs-placeholder" style={{ marginTop: 6 }}>
-            {isJa ? '最も活発:' : 'Most active:'} <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{stats.topProjectName}</span>
+            {isJa ? '最も活発:' : 'Most active:'} <span className="text-muted font-semibold">{stats.topProjectName}</span>
             <span style={{ opacity: 0.6 }}> ({stats.topCount} {isJa ? 'ログ' : 'logs'})</span>
           </div>
         )}
@@ -736,7 +736,7 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
       {/* Key metrics row */}
       <div className="flex flex-wrap" style={{ gap: 12 }}>
         {/* This week vs last week */}
-        <div className="stat-card p-card" style={{ flex: '1 1 200px', borderRadius: 12, borderColor: 'var(--border-subtle)' }}>
+        <div className="stat-card p-card" className="stat-card-flex">
           <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
             {t('vsLastWeek', lang)}
           </div>
@@ -746,7 +746,7 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
         </div>
 
         {/* Average logs per week */}
-        <div className="stat-card p-card" style={{ flex: '1 1 200px', borderRadius: 12, borderColor: 'var(--border-subtle)' }}>
+        <div className="stat-card p-card" className="stat-card-flex">
           <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
             {t('avgPerWeek', lang)}
           </div>
@@ -756,7 +756,7 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
         </div>
 
         {/* TODO completion rate */}
-        <div className="stat-card p-card" style={{ flex: '1 1 200px', borderRadius: 12, borderColor: 'var(--border-subtle)' }}>
+        <div className="stat-card p-card" className="stat-card-flex">
           <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
             {t('completionRate', lang)}
           </div>

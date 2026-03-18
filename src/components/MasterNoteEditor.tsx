@@ -52,7 +52,7 @@ export function ReadOnlyText({ label, value }: { label: string; value: string })
   return (
     <div className="content-card">
       <div className="content-card-header">{label}</div>
-      <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0, color: 'var(--text-body)' }}>
+      <p className="text-body" style={{ lineHeight: 1.7, margin: 0 }}>
         {value || '\u00a0'}
       </p>
     </div>
@@ -74,7 +74,7 @@ export function ReadOnlyList({
   return (
     <div className="content-card">
       <div className="content-card-header">{label}</div>
-      <ul style={{ margin: 0, paddingLeft: 20 }}>
+      <ul className="list-disc">
         {items.map((item, i) => {
           const validSources = item.sourceLogIds
             .map((id) => ({ id, log: logs.find((l) => l.id === id) }))
@@ -234,7 +234,7 @@ export function RelatedLogs({ logIds, logs, onOpenLog, lang }: { logIds: string[
   return (
     <div className="content-card">
       <div className="content-card-header">{t('mnRelatedLogs', lang)}</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div className="flex-col-gap-sm">
         {logIds.map((logId) => {
           const log = logs.find((l) => l.id === logId);
           if (!log) return null;
@@ -319,7 +319,7 @@ export function OverflowMenu({
   };
 
   return (
-    <div ref={menuRef} style={{ position: 'relative' }}>
+    <div ref={menuRef} className="relative">
       <button
         className="btn btn-ghost mn-export-trigger"
         onClick={() => setOpen(!open)}
@@ -360,7 +360,7 @@ export function OverflowMenu({
               <button className="mn-export-item" onClick={() => { setOpen(false); onHistory(); }}>
                 <History size={14} />
                 <span>{t('mnHistory', lang)}</span>
-                <span className="meta" style={{ marginLeft: 'auto', fontSize: 11 }}>{historyCount}</span>
+                <span className="meta ml-auto" style={{ fontSize: 11 }}>{historyCount}</span>
               </button>
             </>
           )}
@@ -401,14 +401,14 @@ export function renderSimpleMarkdown(text: string): React.ReactNode[] {
     const line = lines[i];
 
     if (line.trim() === '') {
-      result.push(<div key={`blank-${i}`} style={{ height: 6 }} />);
+      result.push(<div key={`blank-${i}`} className="md-blank" />);
       i++;
       continue;
     }
 
     if (/^## /.test(line)) {
       result.push(
-        <div key={`h2-${i}`} style={{ fontWeight: 700, fontSize: 14, marginTop: 8, marginBottom: 2 }}>
+        <div key={`h2-${i}`} className="md-h2">
           {inlineBold(line.replace(/^## /, ''), `h2-${i}`)}
         </div>
       );
@@ -418,7 +418,7 @@ export function renderSimpleMarkdown(text: string): React.ReactNode[] {
 
     if (/^### /.test(line)) {
       result.push(
-        <div key={`h3-${i}`} style={{ fontWeight: 700, fontSize: 13, marginTop: 6, marginBottom: 2 }}>
+        <div key={`h3-${i}`} className="md-h3">
           {inlineBold(line.replace(/^### /, ''), `h3-${i}`)}
         </div>
       );
@@ -428,8 +428,8 @@ export function renderSimpleMarkdown(text: string): React.ReactNode[] {
 
     if (/^[-*] /.test(line)) {
       result.push(
-        <div key={`li-${i}`} style={{ display: 'flex', gap: 6, paddingLeft: 8 }}>
-          <span style={{ flexShrink: 0 }}>{'\u2022'}</span>
+        <div key={`li-${i}`} className="md-li">
+          <span className="shrink-0">{'\u2022'}</span>
           <span>{inlineBold(line.replace(/^[-*] /, ''), `li-${i}`)}</span>
         </div>
       );

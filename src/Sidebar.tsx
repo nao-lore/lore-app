@@ -58,26 +58,22 @@ function StatsModal({ stats, lang, onClose, onOpenHistory, onOpenProjects, onOpe
         aria-label={t('statsTitle', lang)}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-lg" style={{ margin: 0, fontSize: 16 }}>{t('statsTitle', lang)}</h3>
+        <h3 className="mb-lg modal-heading-md">{t('statsTitle', lang)}</h3>
         <div className="flex-col">
           {rows.map((row) => (
             <div
               key={row.label}
-              style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '8px 0',
-                borderBottom: '1px solid var(--border-divider)',
-                cursor: row.onClick ? 'pointer' : undefined,
-              }}
+              className="stats-row"
+              style={row.onClick ? { cursor: 'pointer' } : undefined}
               onClick={row.onClick ? () => { onClose(); row.onClick!(); } : undefined}
             >
-              <span style={{ fontSize: 14, color: row.indent ? 'var(--text-muted)' : 'var(--text-body)', paddingLeft: row.indent ? 12 : 0 }}>{row.label}</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{row.value}</span>
+              <span className="text-md" style={{ color: row.indent ? 'var(--text-muted)' : 'var(--text-body)', paddingLeft: row.indent ? 12 : 0 }}>{row.label}</span>
+              <span className="stats-value">{row.value}</span>
             </div>
           ))}
         </div>
-        <div className="text-center" style={{ marginTop: 16, textAlign: 'right' }}>
-          <button className="btn" onClick={onClose} style={{ fontSize: 13 }}>
+        <div className="mb-lg text-right">
+          <button className="btn modal-close-sm" onClick={onClose}>
             {t('close', lang)}
           </button>
         </div>
@@ -268,23 +264,23 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
   const menuLog = menuState ? logs.find((l) => l.id === menuState.logId) : null;
 
   return (
-    <nav className="sidebar flex-col" aria-label={t('appName', lang)} style={{ width: 260, minWidth: 260, height: '100%', borderRight: '1px solid var(--border-default)', background: 'var(--bg-sidebar)' }}>
+    <nav className="sidebar flex-col h-full" aria-label={t('appName', lang)}>
       {/* Header */}
-      <div style={{ padding: '16px 14px 12px' }}>
+      <div className="sidebar-header">
         <div className="flex-row justify-between mb-md">
-          <button className="cursor-pointer" onClick={onNewLog} type="button" style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', letterSpacing: '-0.3px', background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}>{t('appName', lang)}</button>
+          <button className="sidebar-app-name cursor-pointer" onClick={onNewLog} type="button">{t('appName', lang)}</button>
           <div className="flex gap-xs">
             <button className="toggle-btn" onClick={onCollapse} title={t('hideSidebar', lang)} aria-label={t('ariaHideSidebar', lang)}><Menu size={18} /></button>
           </div>
         </div>
-        <button className="btn btn-primary w-full" onClick={onNewLog} style={{ marginBottom: 0 }}>
+        <button className="btn btn-primary w-full" onClick={onNewLog}>
           {t('createHandoff', lang)}
         </button>
       </div>
 
       {/* Navigation — Primary */}
-      <div style={{ padding: '4px 10px 0' }}>
-        <div className="border-top" style={{ margin: '0 4px 4px', paddingTop: 8 }} />
+      <div className="sidebar-nav-section">
+        <div className="border-top sidebar-nav-divider" />
         <button
           className={`sidebar-nav-item${activeView === 'input' ? ' active' : ''}`}
           onClick={onNewLog}
@@ -335,8 +331,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
 
         {/* Collapsible "More" section */}
         <div
-          className="flex-row cursor-pointer"
-          style={{ padding: '0 4px', marginTop: 4, userSelect: 'none' }}
+          className="flex-row cursor-pointer sidebar-more-toggle select-none"
           onClick={toggleMore}
           role="button"
           tabIndex={0}
@@ -344,7 +339,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
           aria-expanded={moreOpen}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMore(); } }}
         >
-          {moreOpen ? <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 4 }} /> : <ChevronRight size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 4 }} />}
+          {moreOpen ? <ChevronDown size={12} className="sidebar-chevron-icon" /> : <ChevronRight size={12} className="sidebar-chevron-icon" />}
           <span className="text-xs-muted font-semibold">{t('more', lang)}</span>
         </div>
         {moreOpen && (
@@ -385,11 +380,10 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
 
       {/* Pinned section (projects + logs combined) */}
       {(pinnedProjects.length > 0 || pinnedLogs.length > 0) && (
-        <div className="flex-col" style={{ padding: '4px 10px 0', flex: 1, minHeight: 0 }}>
-          <div className="border-top" style={{ margin: '4px 4px 8px' }} />
+        <div className="flex-col sidebar-pinned-section">
+          <div className="border-top sidebar-pinned-divider" />
           <div
-            className="flex-row cursor-pointer"
-            style={{ padding: '0 4px', marginBottom: 4, userSelect: 'none' }}
+            className="flex-row cursor-pointer sidebar-pinned-toggle select-none"
             onClick={togglePinned}
             role="button"
             tabIndex={0}
@@ -397,11 +391,11 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
             aria-expanded={pinnedOpen}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePinned(); } }}
           >
-            {pinnedOpen ? <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 4 }} /> : <ChevronRight size={12} style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: 4 }} />}
+            {pinnedOpen ? <ChevronDown size={12} className="sidebar-chevron-icon" /> : <ChevronRight size={12} className="sidebar-chevron-icon" />}
             <span className="sidebar-section-label">{t('pinned', lang)}</span>
           </div>
           {pinnedOpen && (
-            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+            <div className="sidebar-pinned-list">
               {pinnedProjects.map((p) => {
                 const pColor = getProjectColor(p.color);
                 const mn = masterNotes.find(n => n.projectId === p.id);
@@ -418,9 +412,9 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
                     style={pColor ? { borderLeft: `3px solid ${pColor}`, paddingLeft: 7 } : undefined}
                   >
                     {p.icon ? (
-                      <span style={{ fontSize: 14, flexShrink: 0, marginRight: 4, lineHeight: 1 }}>{p.icon}</span>
+                      <span className="sidebar-project-icon">{p.icon}</span>
                     ) : (
-                      <Folder size={16} style={{ flexShrink: 0, marginRight: 4, color: 'var(--text-muted)' }} />
+                      <Folder size={16} className="sidebar-folder-icon" />
                     )}
                     <span className="sidebar-item-title">{p.name}</span>
                     {showBadge && (
@@ -448,12 +442,12 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
                   className={`sidebar-item sidebar-project-item${log.id === selectedId ? ' active' : ''}`}
                   onClick={() => { if (editingLogId !== log.id) onSelect(log.id); }}
                 >
-                  <span className={log.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} style={{ fontSize: 10, padding: '0 4px', lineHeight: '16px', minWidth: 16, textAlign: 'center' }}>
+                  <span className={`${log.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} sidebar-badge-sm`}>
                     {log.outputMode === 'handoff' ? 'H' : 'W'}
                   </span>
                   {editingLogId === log.id ? (
                     <input
-                      className="sidebar-item-title"
+                      className="sidebar-item-title sidebar-inline-edit"
                       value={editDraft}
                       onChange={(e) => setEditDraft(e.target.value)}
                       onKeyDown={(e) => {
@@ -472,7 +466,6 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
                       }}
                       autoFocus
                       onClick={(e) => e.stopPropagation()}
-                      style={{ fontSize: 13, padding: '1px 4px', border: '1px solid var(--border-default)', borderRadius: 4, background: 'var(--bg-surface)', color: 'var(--text-primary)', outline: 'none', width: '100%', minWidth: 0 }}
                     />
                   ) : (
                     <span className="sidebar-item-title">{log.title}</span>
@@ -506,7 +499,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
         <div className="account-avatar"><User size={16} /></div>
         <div className="account-info">
           <span className="account-name">{t('accountMenuUser', lang)}</span>
-          <button className="account-plan" onClick={(e) => { e.stopPropagation(); onOpenPricing?.(); }} type="button" style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'inherit', textAlign: 'inherit' }}>{t('accountMenuPlan', lang)}</button>
+          <button className="account-plan sidebar-plan-link" onClick={(e) => { e.stopPropagation(); onOpenPricing?.(); }} type="button">{t('accountMenuPlan', lang)}</button>
         </div>
         <ChevronUp size={14} className="account-menu-chevron" />
       </button>
@@ -582,33 +575,31 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
       {changingProjectLogId && createPortal(
         <div className="modal-overlay" role="presentation" onClick={() => setChangingProjectLogId(null)}>
           <div
-            className="shortcuts-modal"
+            className="shortcuts-modal modal-narrow"
             role="dialog"
             aria-modal="true"
             aria-label={t('ctxChangeProject', lang)}
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: 320 }}
           >
-            <h3 className="mb-md" style={{ margin: 0, fontSize: 15 }}>{t('ctxChangeProject', lang)}</h3>
-            <div className="flex-col gap-xs" style={{ gap: 2 }}>
+            <h3 className="mb-md modal-heading-sm">{t('ctxChangeProject', lang)}</h3>
+            <div className="flex-col" style={{ gap: 2 }}>
               {projects.map((p) => (
                 <button
                   key={p.id}
-                  className="account-popover-item"
-                  style={{ justifyContent: 'flex-start', gap: 8 }}
+                  className="account-popover-item project-picker-item"
                   onClick={() => {
                     updateLog(changingProjectLogId, { projectId: p.id });
                     setChangingProjectLogId(null);
                     onRefresh();
                   }}
                 >
-                  {p.icon ? <span style={{ fontSize: 14 }}>{p.icon}</span> : <Folder size={14} style={{ color: 'var(--text-muted)' }} />}
+                  {p.icon ? <span className="text-md">{p.icon}</span> : <Folder size={14} className="text-muted" />}
                   <span>{p.name}</span>
                 </button>
               ))}
             </div>
-            <div className="mt-md" style={{ textAlign: 'right' }}>
-              <button className="btn" onClick={() => setChangingProjectLogId(null)} style={{ fontSize: 13 }}>
+            <div className="mt-md text-right">
+              <button className="btn modal-close-sm" onClick={() => setChangingProjectLogId(null)}>
                 {t('cancel', lang)}
               </button>
             </div>

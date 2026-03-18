@@ -217,7 +217,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       onDragLeave={fileImportHandlers.handleDragLeave}
     >
       {/* Greeting + Project Switcher */}
-      <h1 className="text-center" style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', margin: '0 0 8px', color: 'var(--text-primary)' }}>
+      <h1 className="text-center input-greeting">
         {getGreeting(lang)}{(() => { const streak = getStreak(); return streak > 1 ? ` 🔥 ${streak}` : ''; })()}
       </h1>
       {/* Quick stats */}
@@ -226,7 +226,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         if (pendingTodosCount > 0) parts.push(lang === 'ja' ? `未完了TODO ${pendingTodosCount}件` : `${pendingTodosCount} pending TODO${pendingTodosCount !== 1 ? 's' : ''}`);
         if (lastLogCreatedAt) parts.push((lang === 'ja' ? '最終変換: ' : 'Last: ') + formatRelativeTime(lastLogCreatedAt, lang as 'en' | 'ja'));
         return parts.length > 0 ? (
-          <p className="text-center" style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 12px', fontWeight: 400 }}>
+          <p className="text-center input-stats">
             {parts.join(' · ')}
           </p>
         ) : null;
@@ -234,20 +234,11 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       {/* TODO: Extract to PostGenerationPreview component */}
       {/* Post-generation preview panel */}
       {savedResult && (
-        <div style={{ maxWidth: 760, margin: '0 auto', padding: 20 }}>
-          <h3 className="mb-md" style={{ fontSize: 18, fontWeight: 700 }}>{wasFirstTransform ? `🎉 ${t('logSaved', lang)}` : t('logSaved', lang)}</h3>
+        <div className="input-preview">
+          <h3 className="mb-md result-heading">{wasFirstTransform ? `🎉 ${t('logSaved', lang)}` : t('logSaved', lang)}</h3>
 
           {/* Rich formatted preview */}
-          <div className="mb-lg" style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-default)',
-            borderRadius: 8,
-            padding: 16,
-            maxHeight: 400,
-            overflow: 'auto',
-            fontSize: 13,
-            lineHeight: 1.6,
-          }}>
+          <div className="mb-lg input-preview-result">
             <HandoffResultDisplay result={{
               title: savedResult.log.title,
               currentStatus: savedResult.log.currentStatus ?? [],
@@ -325,7 +316,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
           {/* Subtitle explaining the buttons */}
           {savedResult.fullContext && (
-            <p className="text-xs-muted" style={{ marginTop: 8 }}>
+            <p className="text-xs-muted mt-sm">
               {t('copyAiContextTitle', lang)}
             </p>
           )}
@@ -340,13 +331,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       >
         {/* Drag & drop overlay */}
         {fileImportHandlers.dragging && (
-          <div className="flex-center" style={{
-            position: 'absolute', inset: 0, zIndex: 10,
-            background: 'var(--accent-bg, rgba(99,102,241,0.08))',
-            borderRadius: 'inherit',
-            pointerEvents: 'none',
-          }}>
-            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--accent)', pointerEvents: 'none' }}>
+          <div className="flex-center input-drag-overlay">
+            <span className="input-drag-label">
               {t('dropFilesHere', lang)}
             </span>
           </div>
@@ -355,6 +341,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         {/* Clear text button */}
         {text.trim() && !loading && (
           <button
+            className="input-clear-btn"
             onClick={() => {
               const prev = text;
               undoTextRef.current = prev;
@@ -367,14 +354,6 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                 });
               }
             }}
-            style={{
-              position: 'absolute', top: 10, right: 14, zIndex: 5,
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--text-muted)', padding: 4, lineHeight: 1,
-              borderRadius: 4, transition: 'color 0.12s',
-            }}
-            onMouseOver={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
-            onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
             title={t('clearText', lang)}
             aria-label={t('clearText', lang)}
           >
@@ -413,7 +392,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
         />
 
         {/* Bottom bar: char count + keyboard hint */}
-        <div className="flex-row justify-between" style={{ padding: '0 24px 6px' }}>
+        <div className="flex-row justify-between input-bottom-bar">
           <div>
             {combined.length > 0 && (
               <span className="meta" style={{ fontSize: 11, color: overLimit ? 'var(--error-text)' : overWarn || willChunk ? 'var(--error-text)' : undefined }}>
@@ -429,43 +408,36 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             )}
           </div>
           {combined.length > 0 && !loading && (
-            <span className="meta" style={{ fontSize: 11, opacity: 0.5 }}>
+            <span className="meta text-xs" style={{ opacity: 0.5 }}>
               {navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Enter
             </span>
           )}
         </div>
 
         {/* Transform button — bottom right inside card */}
-        <div className="flex-row gap-xs" style={{ position: 'absolute', right: 14, bottom: 12 }}>
+        <div className="flex-row gap-xs input-transform-area">
           {!loading && shouldUseBuiltinApi() && (() => {
             const { used, limit } = getBuiltinUsage();
             return (
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+              <span className="input-usage-counter">
                 {used}/{limit}
               </span>
             );
           })()}
           {loading ? (
             <button
-              className="btn btn-primary"
+              className="btn btn-primary btn-transform"
               disabled
-              style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, borderRadius: 10 }}
             >
               {progressLabel}
             </button>
           ) : (
             <FirstUseTooltip id="transform" text={lang === 'ja' ? 'AI会話を上に貼り付けて、ここをクリック！' : 'Paste an AI conversation above, then click here!'}>
               <button
-                className="btn btn-primary"
+                className="btn btn-primary btn-transform"
                 onClick={() => runTransform(transformAction)}
                 disabled={!combined.trim() || overLimit}
-                style={{
-                  padding: '8px 20px',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  borderRadius: 10,
-                  opacity: (!combined.trim() || overLimit) ? 0.35 : 1,
-                }}
+                style={{ opacity: (!combined.trim() || overLimit) ? 0.35 : 1 }}
               >
                 {t(transformAction === 'handoff_todo' ? 'createBtnHandoffTodo' : transformAction === 'todo_only' ? 'createBtnTodoOnly' : 'createBtnHandoff', lang)}
               </button>
@@ -476,8 +448,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
       {/* TODO: Extract to InputToolbar component (mode tabs, project selector, file import) */}
       {/* Toolbar: mode tabs + project + import — single row */}
-      {!savedResult && (<div className="flex-col" style={{ maxWidth: 760, margin: '10px auto 0', gap: 6 }}>
-        <div className="flex-row flex-wrap" style={{ gap: 10 }}>
+      {!savedResult && (<div className="flex-col input-toolbar">
+        <div className="flex-row flex-wrap gap-10">
           <div className="mode-selector" role="radiogroup" aria-label={t('ariaTransformMode', lang)}>
             {(['handoff', 'handoff_todo', 'todo_only'] as TransformAction[]).map((a) => {
               const isActive = transformAction === a;
@@ -509,24 +481,23 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           </div>
 
           <select
-            className="input input-sm"
+            className="input input-sm input-select-compact"
             value={selectedProjectId ?? ''}
             onChange={(e) => setSelectedProjectId(e.target.value || undefined)}
             disabled={loading}
             aria-label={t('selectProject', lang)}
-            style={{ minWidth: 140, padding: '4px 8px', fontSize: 12, minHeight: 0, width: 'auto', flexShrink: 0 }}
           >
             <option value="">{t('selectProject', lang)}</option>
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
 
           <input ref={fileImportRef} type="file" accept=".txt,.md,.docx,.json" multiple onChange={fileImportHandlers.handleFiles} aria-label={t('ariaSelectFile', lang)} style={{ display: 'none' }} />
-          <button className="input input-sm" onClick={() => fileImportRef.current?.click()} disabled={loading} style={{ minWidth: 'auto', padding: '4px 8px', fontSize: 12, minHeight: 0, width: 'auto', flexShrink: 0, cursor: 'pointer', textAlign: 'left' }}>
+          <button className="input input-sm input-import-btn" onClick={() => fileImportRef.current?.click()} disabled={loading}>
             + {files.length === 0 ? t('importFiles', lang) : t('addMoreFiles', lang)}
           </button>
 
           {files.length > 0 && (
-            <button className="btn-link" onClick={() => {
+            <button className="btn-link clear-files-link" onClick={() => {
               const prevFiles = files;
               setFiles([]);
               if (prevFiles.length > 0) {
@@ -535,7 +506,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                   onClick: () => setFiles(prevFiles),
                 });
               }
-            }} disabled={loading} style={{ fontSize: 11, color: 'var(--error-text)', flexShrink: 0 }}>
+            }} disabled={loading}>
               {t('clearAllFiles', lang)}
             </button>
           )}
@@ -544,9 +515,9 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
       {/* Capture banner — shown when data arrives from Chrome extension */}
       {fileImportHandlers.captureInfo && (
-        <div className="capture-banner" style={{ maxWidth: 760, margin: '12px auto 0' }}>
+        <div className="capture-banner input-section-margin">
           <div className="capture-banner-icon">✓</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="flex-1">
             <div className="capture-banner-title">
               {tf('capturedFrom', lang, captureSourceLabel(fileImportHandlers.captureInfo.source))}
             </div>
@@ -568,27 +539,25 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
       {/* File list — between card and options when files exist */}
       {files.length > 0 && !fileImportHandlers.captureInfo && !result && (
-        <div className="file-list" style={{ marginTop: 12, maxWidth: 760, margin: '12px auto 0' }}>
+        <div className="file-list input-section-margin">
           {files.map((f, i) => (
             <div key={i} className="file-list-item">
               <span className="text-muted flex-1 truncate">
                 {f.name}
               </span>
               {f.lastModified && (
-                <span className="meta" style={{ fontSize: 11, flexShrink: 0, color: 'var(--border-hover)' }}>
+                <span className="meta file-meta" style={{ color: 'var(--border-hover)' }}>
                   {formatFileDate(f.lastModified)}
                 </span>
               )}
-              <span className="meta" style={{ fontSize: 11, flexShrink: 0 }}>
+              <span className="meta file-meta">
                 {f.content.length.toLocaleString()}
               </span>
               <button
+                className="file-remove-btn"
                 onClick={() => fileImportHandlers.removeFile(i)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--border-hover)', fontSize: 16, padding: '0 4px', lineHeight: 1, transition: 'color 0.12s' }}
                 title={t('titleRemoveFile', lang)}
                 aria-label={tf('ariaRemoveFile', lang, f.name)}
-                onMouseOver={(e) => (e.currentTarget.style.color = 'var(--error-text)')}
-                onMouseOut={(e) => (e.currentTarget.style.color = 'var(--border-hover)')}
               >
                 ×
               </button>
@@ -600,7 +569,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
       {/* Warnings — compact inline pills */}
       {(overLimit || isLargeInput) && !loading && (
-        <div className="flex flex-wrap gap-sm" style={{ marginTop: 14, justifyContent: 'center' }}>
+        <div className="flex flex-wrap gap-sm input-warnings">
           {overLimit && (
             <span className="notice-pill notice-pill-error">
               {t('overLimitBlock', lang)}
@@ -669,10 +638,10 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             : undefined
           }
           actions={<>
-            <button className="btn" onClick={handlePauseResume} style={{ fontSize: 11, padding: '3px 10px', minHeight: 24 }}>
+            <button className="btn btn-xs" onClick={handlePauseResume}>
               {progress.phase === 'paused' ? t('btnResume', lang) : t('btnPause', lang)}
             </button>
-            <button className="btn btn-danger" onClick={handleCancel} style={{ fontSize: 11, padding: '3px 10px', minHeight: 24 }}>
+            <button className="btn btn-danger btn-xs" onClick={handleCancel}>
               {t('btnCancel', lang)}
             </button>
           </>}
@@ -694,22 +663,20 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       {result && (
         <div className="result-panel" aria-live="polite" style={{ marginTop: 28 }}>
           {savedId && (
-            <div className="alert-success flex-row flex-wrap justify-between mb-xl" style={{ gap: 8 }}>
+            <div className="alert-success flex-row flex-wrap justify-between mb-xl gap-sm">
               <span>{t('savedToLogs', lang)}</span>
               <div className="flex gap-sm">
                 {savedHandoffId && (
                   <button
-                    className="btn"
+                    className="btn btn-md-compact"
                     onClick={() => onOpenLog(savedHandoffId)}
-                    style={{ fontSize: 13, padding: '5px 14px', minHeight: 30 }}
                   >
                     {t('viewHandoff', lang)}
                   </button>
                 )}
                 <button
-                  className="btn"
+                  className="btn btn-md-compact"
                   onClick={() => onOpenLog(savedId)}
-                  style={{ fontSize: 13, padding: '5px 14px', minHeight: 30 }}
                 >
                   {savedHandoffId ? t('viewLog', lang) : t('openSavedLog', lang)}
                 </button>
@@ -717,47 +684,47 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             </div>
           )}
           {classifying && (
-            <div className="mb-lg" style={{ padding: '10px 14px', fontSize: 13, color: 'var(--text-secondary)', background: 'var(--bg-surface-secondary)', borderRadius: 8 }}>
+            <div className="mb-lg classifying-banner">
               {t('classifying', lang)}
             </div>
           )}
           {suggestion && (
-            <div className="flex-row flex-wrap mb-lg" style={{ padding: '10px 14px', fontSize: 13, background: 'var(--accent-bg)', border: '1px solid var(--accent-muted)', borderRadius: 8, gap: 10 }}>
+            <div className="flex-row flex-wrap mb-lg suggestion-banner">
               <span>{t('suggestedProject', lang)}: <strong>{suggestion.projectName}</strong></span>
-              <button className="btn btn-primary" onClick={handleAcceptSuggestion} style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }}>
+              <button className="btn btn-primary btn-sm-compact" onClick={handleAcceptSuggestion}>
                 {t('classifyAccept', lang)}
               </button>
-              <button className="btn" onClick={() => { handleDismissSuggestion(); setPostSavePickerOpen(true); }} style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }}>
+              <button className="btn btn-sm-compact" onClick={() => { handleDismissSuggestion(); setPostSavePickerOpen(true); }}>
                 {t('classifyPickOther', lang)}
               </button>
-              <button className="btn" onClick={handleDismissSuggestion} style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }}>
+              <button className="btn btn-sm-compact" onClick={handleDismissSuggestion}>
                 {t('classifyDismiss', lang)}
               </button>
             </div>
           )}
           {/* Post-save project picker — only when unassigned and no suggestion */}
           {savedId && !selectedProjectId && !suggestion && !classifying && projects.length > 0 && (
-            <div className="flex-row flex-wrap mb-lg" style={{ padding: '10px 14px', fontSize: 13, background: 'var(--bg-surface-secondary)', border: '1px solid var(--border-default)', borderRadius: 8, gap: 10 }}>
+            <div className="flex-row flex-wrap mb-lg post-save-picker">
               <span>{t('addToProject', lang)}</span>
               {postSavePickerOpen ? (
-                <div className="flex flex-wrap" style={{ gap: 6 }}>
+                <div className="flex flex-wrap gap-6">
                   {projects.map((p) => (
-                    <button key={p.id} className="btn" onClick={() => handlePostSaveAssign(p.id)} style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }}>
+                    <button key={p.id} className="btn btn-sm-compact" onClick={() => handlePostSaveAssign(p.id)}>
                       {p.name}
                     </button>
                   ))}
-                  <button className="btn" onClick={() => setPostSavePickerOpen(false)} style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }}>
+                  <button className="btn btn-sm-compact" onClick={() => setPostSavePickerOpen(false)}>
                     ×
                   </button>
                 </div>
               ) : (
-                <button className="btn btn-primary" onClick={() => setPostSavePickerOpen(true)} style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }}>
+                <button className="btn btn-primary btn-sm-compact" onClick={() => setPostSavePickerOpen(true)}>
                   {t('addToProject', lang)}
                 </button>
               )}
             </div>
           )}
-          <h3 style={{ fontSize: 18 }}>{result.title}</h3>
+          <h3 className="result-title">{result.title}</h3>
 
           {outputMode === 'handoff' ? (
             <HandoffResultDisplay result={result as HandoffResult} lang={lang} />
@@ -765,7 +732,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             <WorklogResultDisplay result={result as TransformResult} lang={lang} />
           )}
 
-          <div className="flex flex-wrap gap-sm border-top" style={{ marginTop: 20, paddingTop: 16 }}>
+          <div className="flex flex-wrap gap-sm border-top result-actions">
             <button className="btn" onClick={handleCopy} style={copied ? { color: 'var(--success-text)', borderColor: 'var(--success-border)' } : undefined}>
               {copied ? <><Check size={14} /> {t('copied', lang)}</> : <><Copy size={14} /> {t('copyMarkdown', lang)}</>}
             </button>

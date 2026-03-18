@@ -102,34 +102,28 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
     <div className="onboarding-overlay">
       <div ref={trapRef} className="onboarding-card" role="dialog" aria-modal="true" aria-label={t('ariaSetupWizard', lang)}>
         {/* Progress dots */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 24 }}>
+        <div className="onboarding-dots">
           {steps.map((_, i) => (
             <div
               key={i}
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: i === step ? 'var(--accent)' : 'var(--border-default)',
-                transition: 'background 0.2s',
-              }}
+              className="onboarding-dot" style={{ background: i === step ? 'var(--accent)' : 'var(--border-default)' }}
             />
           ))}
         </div>
 
         {/* Step counter */}
-        <div className="meta" style={{ textAlign: 'center', fontSize: 12, marginBottom: 8 }}>
+        <div className="meta" className="text-center text-sm" style={{ marginBottom: 8 }}>
           {tf('onboardingStepCounter', lang, step + 1, totalSteps)}
         </div>
 
         {/* Content */}
-        <h2 style={{ textAlign: 'center', fontSize: 20, fontWeight: 700, color: 'var(--text-secondary)', margin: '0 0 12px' }}>
+        <h2 className="onboarding-title">
           {t(current.titleKey as Parameters<typeof t>[0], lang)}
         </h2>
 
         {/* Language selector (custom step) */}
         {current.custom === 'lang' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, margin: '0 auto 28px', maxWidth: 340 }}>
+          <div className="onboarding-lang-grid">
             {LANG_OPTIONS.map((opt) => (
               <button
                 key={opt.code}
@@ -153,46 +147,46 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
                 {opt.label}
               </button>
             ))}
-            <p style={{ gridColumn: '1 / -1', textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>
+            <p className="text-sm text-muted text-center" style={{ gridColumn: '1 / -1', margin: '4px 0 0' }}>
               {t(current.descKey as Parameters<typeof t>[0], lang)}
             </p>
           </div>
         ) : current.custom === 'extension' ? (
           <>
-            <p style={{ textAlign: 'center', fontSize: 14, lineHeight: 1.7, color: 'var(--text-muted)', margin: '0 0 20px', maxWidth: 360, marginLeft: 'auto', marginRight: 'auto', whiteSpace: 'pre-line' }}>
+            <p className="onboarding-desc" style={{ margin: '0 0 20px' }}>
               {t(current.descKey as Parameters<typeof t>[0], lang)}
             </p>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+            <div className="flex justify-center" style={{ marginBottom: 28 }}>
               <a
                 href={CHROME_EXTENSION_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-primary"
-                style={{ padding: '8px 24px', fontSize: 14, fontWeight: 600, borderRadius: 10, textDecoration: 'none' }}
+                className="btn-onboarding" style={{ textDecoration: 'none' }}
               >
                 {t('onboardingExtensionInstall', lang)}
               </a>
             </div>
           </>
         ) : current.descAlign === 'left' ? (
-          <div style={{ display: 'flex', justifyContent: 'center', margin: '0 0 28px' }}>
-            <p style={{ textAlign: 'left', fontSize: 14, lineHeight: 1.7, color: 'var(--text-muted)', margin: 0, maxWidth: 360, whiteSpace: 'pre-line' }}>
+          <div className="flex justify-center" style={{ margin: '0 0 28px' }}>
+            <p className="onboarding-desc-left">
               {t(current.descKey as Parameters<typeof t>[0], lang)}
             </p>
           </div>
         ) : (
-          <p style={{ textAlign: 'center', fontSize: 14, lineHeight: 1.7, color: 'var(--text-muted)', margin: '0 0 28px', maxWidth: 360, marginLeft: 'auto', marginRight: 'auto', whiteSpace: 'pre-line' }}>
+          <p className="onboarding-desc">
             {t(current.descKey as Parameters<typeof t>[0], lang)}
           </p>
         )}
 
         {/* Action button (step-specific, not for extension which has its own) */}
         {current.action && current.custom !== 'extension' && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+          <div className="flex justify-center" style={{ marginBottom: 20 }}>
             <button
               className="btn btn-primary"
               onClick={current.action.handler}
-              style={{ padding: '8px 24px', fontSize: 14, fontWeight: 600, borderRadius: 10 }}
+              className="btn-onboarding"
             >
               {t(current.action.labelKey as Parameters<typeof t>[0], lang)}
             </button>
@@ -200,24 +194,24 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
         )}
 
         {/* Navigation */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="flex justify-between items-center">
           <div>
             {!isFirst && (
               <button
                 className="btn"
                 onClick={() => setStep((s) => s - 1)}
-                style={{ fontSize: 13, padding: '6px 14px' }}
+                className="btn-nav-sm"
               >
                 {t('onboardingBack', lang)}
               </button>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div className="flex flex-wrap gap-3">
             {!isLast && (
               <button
                 className="btn"
                 onClick={finish}
-                style={{ fontSize: 13, padding: '6px 14px', color: 'var(--text-muted)' }}
+                className="btn-nav-sm" style={{ color: 'var(--text-muted)' }}
               >
                 {t('onboardingSkip', lang)}
               </button>
@@ -226,7 +220,7 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
               <button
                 className="btn btn-primary"
                 onClick={finish}
-                style={{ fontSize: 13, padding: '6px 20px', fontWeight: 600, borderRadius: 8 }}
+                className="btn-md-action"
               >
                 {t('onboardingGetStarted', lang)}
               </button>
@@ -234,7 +228,7 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
               <button
                 className="btn btn-primary"
                 onClick={() => setStep((s) => s + 1)}
-                style={{ fontSize: 13, padding: '6px 20px', fontWeight: 600, borderRadius: 8 }}
+                className="btn-md-action"
               >
                 {t('onboardingNext', lang)}
               </button>

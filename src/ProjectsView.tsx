@@ -54,7 +54,7 @@ function ProjectContextMenu({ project, logCount, lang, onClose, onAction }: {
       <button className="mn-export-item" onClick={() => { onAction('viewLogs'); onClose(); }}>
         <FolderOpen size={14} />
         <span>{t('projectOpenLogs', lang)}</span>
-        <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>{tf('logCount', lang, logCount)}</span>
+        <span className="ml-auto" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{tf('logCount', lang, logCount)}</span>
       </button>
       <button className="mn-export-item" onClick={() => { onAction('pin'); onClose(); }}>
         <Pin size={14} style={{ transform: 'rotate(45deg)' }} />
@@ -196,7 +196,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
   return (
     <div className="workspace-content-wide">
       <div className="page-header page-header-sticky">
-        <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
+        <button className="btn-back" onClick={onBack} className="btn-back-mb">
           ← {t('back', lang)}
         </button>
         <div className="page-header-row">
@@ -211,7 +211,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
       </div>
 
       {/* Toolbar: search + sort */}
-      <div className="content-card" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div className="content-card" className="toolbar-card-mb">
         <input
           className="input input-sm"
           type="text"
@@ -219,7 +219,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t('searchProjects', lang)}
           maxLength={200}
-          style={{ flex: 1, minWidth: 140 }}
+          className="flex-1" style={{ minWidth: 140 }}
         />
         <DropdownMenu
           label={t('sortLabel', lang)}
@@ -227,7 +227,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
           options={sortOptions}
           onChange={(k) => setSortKey(k as SortKey)}
         />
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}>
+        <label className="flex-row-gap-2 text-sm text-muted cursor-pointer select-none" style={{ whiteSpace: 'nowrap' }}>
           <input
             type="checkbox"
             checked={hideEmpty === 'true'}
@@ -240,7 +240,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
 
       {/* Add project form */}
       {addingProject && (
-        <div className="content-card" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+        <div className="content-card" className="flex-row-gap-sm flex-wrap" style={{ marginBottom: 16 }}>
           <input
             className="input"
             value={newProjectName}
@@ -253,7 +253,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
             placeholder={t('projectNamePlaceholder', lang)}
             autoFocus
             maxLength={200}
-            style={{ flex: 1 }}
+            className="flex-1"
           />
           <button className="btn btn-primary" onClick={handleAddProject}>
             {t('addBtn', lang)}
@@ -262,7 +262,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
             {t('cancel', lang)}
           </button>
           {projectNameError && (
-            <p style={{ color: 'var(--error-text)', fontSize: 12, margin: 0, width: '100%' }}>{projectNameError}</p>
+            <p className="error-text-sm" style={{ margin: 0, width: '100%' }}>{projectNameError}</p>
           )}
         </div>
       )}
@@ -298,7 +298,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
                 }}
               >
                 {/* Three-dot menu — right side, fixed */}
-                <div style={{ position: 'absolute', top: 14, right: 14 }} onClick={(e) => e.stopPropagation()}>
+                <div className="absolute" style={{ top: 14, right: 14 }} onClick={(e) => e.stopPropagation()}>
                   <button
                     className="action-menu-btn"
                     onClick={() => setActionSheetProject(actionSheetProject?.id === p.id ? null : p)}
@@ -335,14 +335,14 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
                   />
                 ) : (
                   <>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, paddingRight: 48 }}>
+                    <div className="flex-row-gap-2" style={{ marginBottom: 4, paddingRight: 48 }}>
                       {p.icon && (
-                        <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1 }}>{p.icon}</span>
+                        <span className="shrink-0" style={{ fontSize: 18, lineHeight: 1 }}>{p.icon}</span>
                       )}
                       {p.pinned && (
                         <Pin size={12} style={{ color: 'var(--accent)', flexShrink: 0, transform: 'rotate(45deg)' }} />
                       )}
-                      <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.4 }}>{p.name}</span>
+                      <span className="font-semibold" style={{ fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.4 }}>{p.name}</span>
                     </div>
                     <div className="meta" style={{ fontSize: 12, paddingLeft: p.icon ? 30 : 0 }}>
                       {tf('logCount', lang, count)}

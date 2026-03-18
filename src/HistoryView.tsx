@@ -356,9 +356,9 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
   });
 
   return (
-    <div className="workspace-content-wide flex-col" style={{ height: '100%' }}>
+    <div className="workspace-content-wide flex-col h-full">
       <div className="page-header page-header-sticky">
-        <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
+        <button className="btn-back mb-md" onClick={onBack}>
           ← {t('back', lang)}
         </button>
         <div className="page-header-row">
@@ -367,7 +367,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
               {t('logs', lang)}
               {activeProjectId && (() => {
                 const proj = projects.find((p) => p.id === activeProjectId);
-                return proj ? <span className="page-subtitle" style={{ display: 'inline', marginLeft: 8 }}>— {proj.name}</span> : null;
+                return proj ? <span className="page-subtitle" style={{ display: 'inline', marginLeft: 8 }}>&#8212; {proj.name}</span> : null;
               })()}
             </h2>
             <p className="page-subtitle">{tf('logCount', lang, sorted.length)}</p>
@@ -377,8 +377,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
               const hasNote = !!getMasterNote(activeProjectId);
               return (
                 <button
-                  className="btn flex-row"
-                  style={{ fontSize: 12, padding: '4px 12px', minHeight: 26, gap: 4 }}
+                  className="btn flex-row btn-sm-compact gap-xs"
                   onClick={() => onOpenMasterNote(activeProjectId)}
                 >
                   <BookOpen size={12} />
@@ -387,17 +386,17 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
               );
             })()}
             {!selectMode && activeProjectId && (
-              <button className="btn btn-primary" style={{ fontSize: 12, padding: '4px 12px', minHeight: 26 }} onClick={() => setLogPickerOpen(true)}>
+              <button className="btn btn-primary btn-sm-compact" onClick={() => setLogPickerOpen(true)}>
                 {t('addLogsToProject', lang)}
               </button>
             )}
             {!selectMode && sorted.length > 0 && (
-              <button className="btn" style={{ fontSize: 12, padding: '4px 12px', minHeight: 26 }} onClick={() => setSelectMode(true)}>
+              <button className="btn btn-sm-compact" onClick={() => setSelectMode(true)}>
                 {t('selectMode', lang)}
               </button>
             )}
             {selectMode && (
-              <button className="btn" style={{ fontSize: 12, padding: '4px 12px', minHeight: 26 }} onClick={toggleAll}>
+              <button className="btn btn-sm-compact" onClick={toggleAll}>
                 {selected.size === sorted.length ? t('deselectAll', lang) : t('selectAll', lang)}
               </button>
             )}
@@ -432,12 +431,11 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
 
       {/* Tag filter indicator */}
       {tagFilter && (
-        <div className="flex-row mb-md" style={{ gap: 8, fontSize: 13, color: 'var(--text-muted)' }}>
+        <div className="flex-row mb-md filter-indicator">
           <span>{t('tagFilter', lang)}:</span>
-          <span className="tag" style={{ fontWeight: 600 }}>{tagFilter}</span>
+          <span className="tag font-semibold">{tagFilter}</span>
           <button
-            className="btn"
-            style={{ fontSize: 11, padding: '1px 8px', minHeight: 20, lineHeight: 1 }}
+            className="btn btn-xs-dismiss"
             onClick={onClearTagFilter}
           >
             ×
@@ -457,12 +455,11 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
 
       {/* Date filter indicator */}
       {(dateFrom || dateTo) && !dateFilterOpen && (
-        <div className="flex-row mb-md" style={{ gap: 8, fontSize: 13, color: 'var(--text-muted)' }}>
+        <div className="flex-row mb-md filter-indicator">
           <Calendar size={12} />
-          <span>{dateFrom || '...'} — {dateTo || '...'}</span>
+          <span>{dateFrom || '...'} &#8212; {dateTo || '...'}</span>
           <button
-            className="btn"
-            style={{ fontSize: 11, padding: '1px 8px', minHeight: 20, lineHeight: 1 }}
+            className="btn btn-xs-dismiss"
             onClick={() => { setDateFrom(''); setDateTo(''); setDatePreset(null); }}
           >
             ×
@@ -475,14 +472,14 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
         const unassigned = sorted.filter((l) => !l.projectId).length;
         if (unassigned === 0 || unassigned === sorted.length) return null;
         return (
-          <div className="flex-row text-sm-muted" style={{ gap: 8, marginBottom: 12, padding: '8px 12px', borderRadius: 8, background: 'var(--card-bg)', border: '1px solid var(--border-subtle)' }}>
+          <div className="flex-row text-sm-muted hint-card">
             <FolderOpen size={13} className="shrink-0" style={{ color: 'var(--accent)' }} />
             <span>
               {tf('unassignedLogsHint', lang, unassigned)}
             </span>
             <button
-              className="btn"
-              style={{ fontSize: 11, padding: '2px 10px', minHeight: 22, whiteSpace: 'nowrap', marginLeft: 'auto' }}
+              className="btn btn-xs-dismiss ml-auto"
+              style={{ padding: '2px 10px', minHeight: 22, whiteSpace: 'nowrap' }}
               onClick={() => { setSelectMode(true); setGroupKey('project'); }}
             >
               {t('organizeBtn', lang)}
@@ -500,7 +497,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
           {!debouncedQuery.trim() && modeFilter === 'all' && activeProjectId && (
             <>
               <p className="page-subtitle">{t('addLogsEmptyHint', lang)}</p>
-              <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={() => setLogPickerOpen(true)}>
+              <button className="btn btn-primary mt-md" onClick={() => setLogPickerOpen(true)}>
                 {t('addLogsToProject', lang)}
               </button>
             </>
@@ -514,14 +511,15 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
             {groups.map((group) => (
               <div key={group.key}>
                 {group.label && (
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10, padding: '0 4px' }}>
+                  <div className="history-group-header">
                     <span
-                      style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', cursor: groupKey === 'project' && group.key !== '_none' ? 'pointer' : undefined }}
+                      className="history-group-label"
+                      style={groupKey === 'project' && group.key !== '_none' ? { cursor: 'pointer' } : undefined}
                       onClick={groupKey === 'project' && group.key !== '_none' ? () => onOpenProject?.(group.key) : undefined}
                     >
                       {group.label}
                     </span>
-                    <span className="meta" style={{ fontSize: 12 }}>{tf('logCount', lang, group.items.length)}</span>
+                    <span className="meta text-sm">{tf('logCount', lang, group.items.length)}</span>
                   </div>
                 )}
                 <div role="list">
@@ -534,9 +532,9 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
       ) : (
         <div
           ref={scrollContainerRef}
-          style={{ flex: 1, minHeight: 0, overflow: 'auto', maxHeight: 'calc(100vh - 200px)' }}
+          className="history-scroll-container"
         >
-          <div role="list" style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+          <div role="list" className="virtual-list-container" style={{ height: virtualizer.getTotalSize() }}>
             {virtualizer.getVirtualItems().map((virtualItem) => {
               if (groupKey !== 'none') {
                 const flatItem = flatItems[virtualItem.index];
@@ -552,17 +550,18 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
                         height: virtualItem.size,
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10, padding: '10px 4px 0' }}>
+                      <div className="history-group-header-virtual">
                         <span
-                          style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', cursor: groupKey === 'project' && flatItem.key !== '_none' ? 'pointer' : undefined }}
+                          className="history-group-label"
+                          style={groupKey === 'project' && flatItem.key !== '_none' ? { cursor: 'pointer' } : undefined}
                           onClick={groupKey === 'project' && flatItem.key !== '_none' ? () => onOpenProject?.(flatItem.key) : undefined}
                         >
                           {flatItem.label}
                         </span>
-                        <span className="meta" style={{ fontSize: 12 }}>{tf('logCount', lang, flatItem.count)}</span>
+                        <span className="meta text-sm">{tf('logCount', lang, flatItem.count)}</span>
                         {groupKey === 'project' && flatItem.key !== '_none' && onOpenMasterNote && (
                           <span
-                            style={{ fontSize: 11, color: 'var(--accent-text)', cursor: 'pointer', marginLeft: 'auto' }}
+                            className="summary-link"
                             onClick={() => onOpenMasterNote(flatItem.key)}
                           >
                             {t('viewSummaryLink', lang)}
@@ -576,11 +575,8 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
                   <div
                     key={virtualItem.key}
                     role="listitem"
-                    style={{
-                      position: 'absolute',
-                      top: virtualItem.start,
-                      width: '100%',
-                    }}
+                    className="virtual-item"
+                    style={{ top: virtualItem.start }}
                   >
                     {renderLogCard(flatItem.log)}
                   </div>
@@ -591,11 +587,8 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
                 <div
                   key={virtualItem.key}
                   role="listitem"
-                  style={{
-                    position: 'absolute',
-                    top: virtualItem.start,
-                    width: '100%',
-                  }}
+                  className="virtual-item"
+                  style={{ top: virtualItem.start }}
                 >
                   {renderItem(log)}
                 </div>
@@ -634,28 +627,19 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
 
       {/* Floating bulk action bar (bottom) */}
       {selectMode && (
-        <div className="flex-row" style={{
-          position: 'sticky',
-          bottom: 0,
-          background: 'var(--bg-primary)',
-          borderTop: '1px solid var(--border-default)',
-          padding: 12,
-          gap: 8,
-          zIndex: 100,
-          boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
-        }}>
-          <span style={{ fontWeight: 600, fontSize: 13, marginRight: 'auto' }}>
+        <div className="flex-row bulk-bar">
+          <span className="bulk-bar-label">
             {selected.size > 0 ? tf('selectedCount', lang, selected.size) : t('selectItems', lang)}
           </span>
           {selected.size > 0 && (
             <>
-              <button className="btn btn-danger flex-row" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, gap: 4 }} onClick={handleBulkDelete}>
+              <button className="btn btn-danger flex-row btn-sm-compact gap-xs" onClick={handleBulkDelete}>
                 <Trash2 size={13} />
                 {t('bulkTrash', lang)}
               </button>
               {projects.length > 0 && (
-                <div style={{ position: 'relative' }}>
-                  <button className="btn flex-row" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, gap: 4 }} onClick={() => setProjectPickerOpen(!projectPickerOpen)}>
+                <div className="relative">
+                  <button className="btn flex-row btn-sm-compact gap-xs" onClick={() => setProjectPickerOpen(!projectPickerOpen)}>
                     <FolderOpen size={13} />
                     {t('bulkAssignProject', lang)}
                   </button>
@@ -664,7 +648,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
                       {projects.map((p) => (
                         <button key={p.id} className="card-menu-item" onClick={() => handleBulkAssignProject(p.id)}>{p.name}</button>
                       ))}
-                      <button className="card-menu-item" style={{ color: 'var(--text-placeholder)' }} onClick={() => handleBulkAssignProject('')}>
+                      <button className="card-menu-item text-placeholder" onClick={() => handleBulkAssignProject('')}>
                         {t('removeFromProject', lang)}
                       </button>
                     </div>
@@ -673,7 +657,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
               )}
             </>
           )}
-          <button className="btn" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26 }} onClick={exitSelectMode}>
+          <button className="btn btn-sm-compact" onClick={exitSelectMode}>
             {t('cancel', lang)}
           </button>
         </div>

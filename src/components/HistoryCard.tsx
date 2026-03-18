@@ -94,20 +94,20 @@ export function LogContextMenu({ log, lang, projects, onClose, onAction }: {
 
   if (subMenu === 'project') {
     return (
-      <div ref={menuRef} className="dropdown-menu" style={{ top: '100%', right: 0, minWidth: 200 }} onMouseDown={(e) => e.stopPropagation()}>
-        <div style={{ padding: '6px 12px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>{t('ctxChangeProject', lang)}</div>
+      <div ref={menuRef} className="dropdown-menu dropdown-anchor" style={{ minWidth: 200 }} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="dropdown-menu-header">{t('ctxChangeProject', lang)}</div>
         {projects.map((p) => (
           <button key={p.id} className="mn-export-item" onClick={() => { onAction('assignProject', p.id); onClose(); }}>
             <FolderOpen size={14} />
             <span>{p.name}</span>
-            {log.projectId === p.id && <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--accent-text)' }}>✓</span>}
+            {log.projectId === p.id && <span className="ml-auto text-xs" style={{ color: 'var(--accent-text)' }}>✓</span>}
           </button>
         ))}
         {log.projectId && (
           <>
             <div className="mn-export-divider" />
             <button className="mn-export-item" onClick={() => { onAction('removeProject'); onClose(); }}>
-              <span style={{ color: 'var(--text-placeholder)', width: 14, textAlign: 'center' }}>—</span>
+              <span className="text-placeholder text-center" style={{ width: 14 }}>—</span>
               <span>{t('ctxRemoveFromProject', lang)}</span>
             </button>
           </>
@@ -121,7 +121,7 @@ export function LogContextMenu({ log, lang, projects, onClose, onAction }: {
   }
 
   return (
-    <div ref={menuRef} className="dropdown-menu" style={{ top: '100%', right: 0, minWidth: 200 }}>
+    <div ref={menuRef} className="dropdown-menu dropdown-anchor" style={{ minWidth: 200 }}>
       <button className="mn-export-item" onClick={() => { onAction('pin'); onClose(); }}>
         <Pin size={14} style={{ transform: 'rotate(45deg)' }} />
         <span>{log.pinned ? t('ctxUnpin', lang) : t('ctxPin', lang)}</span>
@@ -135,7 +135,7 @@ export function LogContextMenu({ log, lang, projects, onClose, onAction }: {
         <button className="mn-export-item" onClick={() => setSubMenu('project')}>
           <FolderOpen size={14} />
           <span>{t('ctxChangeProject', lang)}</span>
-          <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)' }}>→</span>
+          <span className="action-meta">→</span>
         </button>
       )}
       <button className="mn-export-item" onClick={() => { onAction('copyMd'); onClose(); }}>
@@ -155,7 +155,7 @@ export function LogContextMenu({ log, lang, projects, onClose, onAction }: {
         <span>{t('duplicateLog', lang)}</span>
       </button>
       <div className="mn-export-divider" />
-      <button className="mn-export-item" onClick={() => { onAction('delete'); onClose(); }} style={{ color: 'var(--error-text)' }}>
+      <button className="mn-export-item text-error" onClick={() => { onAction('delete'); onClose(); }}>
         <Trash2 size={14} />
         <span>{t('moveToTrash', lang)}</span>
       </button>
@@ -207,13 +207,13 @@ export function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
   return (
     <div key={log.id} className={`card${isSelected ? ' card-selected' : ''}`} role="button" tabIndex={0} onClick={() => onCardClick(log.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCardClick(log.id); } }} style={{ position: 'relative', display: 'flex', gap: selectMode ? 12 : 0, ...(projectColor ? { borderLeft: `3px solid ${projectColor}` } : {}), ...(compact ? { padding: '4px 8px', fontSize: 12, lineHeight: 1.3 } : {}) }}>
       {selectMode && (
-        <div style={{ paddingTop: 2, flexShrink: 0 }}>
+        <div className="shrink-0 mt-2">
           <input type="checkbox" className="bulk-checkbox" checked={isSelected} onChange={() => onToggleSelect(log.id)} onClick={(e) => e.stopPropagation()} aria-label={t('ariaBulkCheckbox', lang)} />
         </div>
       )}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="flex-1">
         {!selectMode && (
-          <div style={{ position: 'absolute', top: 12, right: 12 }} onClick={(e) => e.stopPropagation()}>
+          <div className="card-action-pos" onClick={(e) => e.stopPropagation()}>
             <button className="action-menu-btn" aria-label={t('ariaMenu', lang)} onClick={() => onSetActionSheetLog(actionSheetLog?.id === log.id ? null : log)}>
               <MoreHorizontal size={16} />
             </button>
@@ -230,7 +230,7 @@ export function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
         )}
         <div className="flex-row" style={{ gap: compact ? 4 : 8, marginBottom: compact ? 2 : 6 }}>
           {log.pinned && (
-            <Pin size={compact ? 10 : 12} style={{ color: 'var(--accent)', flexShrink: 0, transform: 'rotate(45deg)' }} />
+            <Pin size={compact ? 10 : 12} className="shrink-0" style={{ color: 'var(--accent)', transform: 'rotate(45deg)' }} />
           )}
           <span className={log.outputMode === 'handoff' ? 'badge-handoff' : 'badge-worklog'}>{modeLabel}</span>
           <span className="meta" style={{ fontSize: 11, color: today ? 'var(--accent-text)' : undefined, fontWeight: today ? 500 : undefined }}>
@@ -240,8 +240,8 @@ export function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
             const proj = projects.find((p) => p.id === log.projectId);
             return proj ? (
               <span
-                className="tag"
-                style={{ fontSize: 10, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                className="tag cursor-pointer inline-flex-center"
+                style={{ fontSize: 10, gap: 3 }}
                 onClick={(e) => { e.stopPropagation(); onOpenProject?.(proj.id); }}
               >
                 {proj.icon && <span style={{ fontSize: 11 }}>{proj.icon}</span>}
@@ -253,8 +253,8 @@ export function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
         <div className="card-title-clamp" style={{ fontWeight: 600, fontSize: compact ? 13 : 15, color: 'var(--text-secondary)', lineHeight: compact ? 1.2 : 1.4, paddingRight: 48 }}>
           {editingLogId === log.id ? (
             <input
-              className="input"
-              style={{ fontSize: 'inherit', fontWeight: 'inherit', width: '100%' }}
+              className="input w-full"
+              style={{ fontSize: 'inherit', fontWeight: 'inherit' }}
               value={editDraft}
               onChange={(e) => onSetEditDraft(e.target.value)}
               onBlur={() => { if (editDraft.trim() && editDraft.trim() !== log.title) { updateLog(log.id, { title: editDraft.trim() }); onRefresh(); } onSetEditingLogId(null); }}
@@ -270,18 +270,18 @@ export function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
         {preview && <div className="meta" style={{ marginTop: compact ? 2 : 5, lineHeight: compact ? 1.3 : 1.55, fontSize: compact ? 11 : 12.5 }}><Highlight text={preview} query={debouncedQuery} /></div>}
         {log.outputMode === 'handoff' && log.nextActions && log.nextActions.length > 0 && (
           <div className="flex-row" style={{ gap: 8, marginTop: 5, fontSize: 12, color: 'var(--text-placeholder)' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span className="inline-flex-center" style={{ gap: 4 }}>
               ☑ {log.checkedActions?.length || 0}/{log.nextActions.length}
             </span>
-            <div style={{ flex: 1, height: 3, background: 'var(--border-subtle)', borderRadius: 2, overflow: 'hidden', maxWidth: 80 }}>
-              <div style={{ height: '100%', background: 'var(--accent)', borderRadius: 2, width: `${((log.checkedActions?.length || 0) / log.nextActions.length) * 100}%` }} />
+            <div className="handoff-progress-track">
+              <div className="handoff-progress-fill" style={{ width: `${((log.checkedActions?.length || 0) / log.nextActions.length) * 100}%` }} />
             </div>
           </div>
         )}
         {!activeProjectId && !log.projectId && projects.length > 0 && (
           <div
-            className="flex-row"
-            style={{ marginTop: 6, position: 'relative', gap: 4 }}
+            className="flex-row relative"
+            style={{ marginTop: 6, gap: 4 }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -299,8 +299,7 @@ export function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
                 {projects.map((p) => (
                   <button
                     key={p.id}
-                    className="tag"
-                    style={{ cursor: 'pointer', fontSize: 10, padding: '1px 8px', border: '1px solid var(--border-subtle)', background: 'var(--card-bg)' }}
+                    className="tag inline-project-tag"
                     onClick={() => {
                       updateLog(log.id, { projectId: p.id });
                       onSetInlinePickerLogId(null);
@@ -317,18 +316,18 @@ export function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
           </div>
         )}
         {log.tags.length > 0 && (
-          <div style={{ marginTop: compact ? 3 : 8, display: 'flex', flexWrap: 'wrap', gap: compact ? 2 : 4 }}>
+          <div className="flex flex-wrap" style={{ marginTop: compact ? 3 : 8, gap: compact ? 2 : 4 }}>
             {log.tags.slice(0, 5).map((tg, i) => (
               <span
                 key={i}
-                className="tag"
-                style={{ cursor: 'pointer', ...(compact ? { fontSize: 10, padding: '0px 6px' } : {}) }}
+                className="tag cursor-pointer"
+                style={compact ? { fontSize: 10, padding: '0px 6px' } : undefined}
                 onClick={(e) => { e.stopPropagation(); onTagFilter?.(tg); }}
               >
                 <Highlight text={tg} query={debouncedQuery} />
               </span>
             ))}
-            {log.tags.length > 5 && <span className="meta" style={{ fontSize: 11, alignSelf: 'center' }}>+{log.tags.length - 5}</span>}
+            {log.tags.length > 5 && <span className="meta text-xs-muted" style={{ alignSelf: 'center' }}>+{log.tags.length - 5}</span>}
           </div>
         )}
       </div>
@@ -359,17 +358,17 @@ export function HistoryListItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCardClick(log.id); } }}
     >
       {selectMode && (
-        <input type="checkbox" className="bulk-checkbox" checked={isSelected} onChange={() => onToggleSelect(log.id)} onClick={(e) => e.stopPropagation()} style={{ flexShrink: 0 }} />
+        <input type="checkbox" className="bulk-checkbox shrink-0" checked={isSelected} onChange={() => onToggleSelect(log.id)} onClick={(e) => e.stopPropagation()} />
       )}
-      {log.pinned && <Pin size={compact ? 8 : 10} style={{ color: 'var(--accent)', flexShrink: 0, transform: 'rotate(45deg)' }} />}
-      <span className={log.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} style={{ flexShrink: 0, ...(compact ? { fontSize: 10 } : {}) }}>
+      {log.pinned && <Pin size={compact ? 8 : 10} className="shrink-0" style={{ color: 'var(--accent)', transform: 'rotate(45deg)' }} />}
+      <span className={`${log.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} shrink-0`} style={compact ? { fontSize: 10 } : undefined}>
         {modeLabel}
       </span>
       <span className="list-row-title" style={compact ? { fontSize: 12 } : undefined}>
         {editingLogId === log.id ? (
           <input
-            className="input"
-            style={{ fontSize: 'inherit', fontWeight: 'inherit', width: '100%' }}
+            className="input w-full"
+            style={{ fontSize: 'inherit', fontWeight: 'inherit' }}
             value={editDraft}
             onChange={(e) => onSetEditDraft(e.target.value)}
             onBlur={() => { if (editDraft.trim() && editDraft.trim() !== log.title) { updateLog(log.id, { title: editDraft.trim() }); onRefresh(); } onSetEditingLogId(null); }}
@@ -382,9 +381,9 @@ export function HistoryListItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
           <Highlight text={log.title} query={debouncedQuery} />
         )}
       </span>
-      <span className="meta" style={{ fontSize: compact ? 10 : 11, flexShrink: 0, whiteSpace: 'nowrap' }}>{formatRelativeTime(log.createdAt, lang === 'ja' ? 'ja' : 'en')}</span>
+      <span className="meta shrink-0 nowrap" style={{ fontSize: compact ? 10 : 11 }}>{formatRelativeTime(log.createdAt, lang === 'ja' ? 'ja' : 'en')}</span>
       {!selectMode && (
-        <div style={{ position: 'relative', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+        <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
           <button className="action-menu-btn" aria-label={t('ariaMenu', lang)} style={{ opacity: 0 }} onClick={() => onSetActionSheetLog(actionSheetLog?.id === log.id ? null : log)}>
             <MoreHorizontal size={14} />
           </button>

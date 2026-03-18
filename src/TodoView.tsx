@@ -390,7 +390,7 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
   return (
     <div className="workspace-content-wide">
       <div className="page-header page-header-sticky">
-        <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
+        <button className="btn-back mb-md" onClick={onBack}>
           ← {t('back', lang)}
         </button>
         <div className="page-header-row">
@@ -492,12 +492,11 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
 
       {/* Stale filter indicator */}
       {staleFilter && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 13, color: 'var(--warning-text, #b45309)' }}>
+        <div className="filter-indicator-warning">
           <AlertTriangle size={12} />
           <span>{t('todoFilterStale', lang)}: {staleTodos.length}</span>
           <button
-            className="btn"
-            style={{ fontSize: 11, padding: '1px 8px', minHeight: 20, lineHeight: 1 }}
+            className="btn btn-xs-dismiss"
             onClick={() => setStaleFilter(false)}
           >
             ×
@@ -508,10 +507,10 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
       {/* Add TODO form */}
       {addOpen && (
         <div className="content-card" style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="form-row">
             <input
               ref={inputRef}
-              className="input"
+              className="input flex-1"
               type="text"
               value={newText}
               onChange={(e) => { setNewText(e.target.value); setTodoError(''); }}
@@ -519,26 +518,24 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
               onKeyDown={handleKeyDown}
               placeholder={t('todoAddPlaceholder', lang)}
               maxLength={200}
-              style={{ flex: 1 }}
             />
-            <button className="btn btn-primary" onClick={handleAdd} disabled={!newText.trim()} style={{ flexShrink: 0 }}>
+            <button className="btn btn-primary shrink-0" onClick={handleAdd} disabled={!newText.trim()}>
               {t('todoAddBtn', lang)}
             </button>
-            <button className="btn" onClick={() => { setAddOpen(false); setNewText(''); setTodoError(''); }} style={{ flexShrink: 0 }}>
+            <button className="btn shrink-0" onClick={() => { setAddOpen(false); setNewText(''); setTodoError(''); }}>
               ×
             </button>
           </div>
           {todoError && (
-            <p style={{ color: 'var(--error-text)', fontSize: 12, margin: '4px 0 0' }}>{todoError}</p>
+            <p className="error-text-sm">{todoError}</p>
           )}
-          <div style={{ display: 'flex', gap: 10, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }}>
+          <div className="form-options-row">
+            <label className="form-label-inline">
               {t('todoSortPriority', lang)}:
               <select
-                className="input input-sm"
+                className="input input-sm input-sm-compact"
                 value={newPriority}
                 onChange={(e) => setNewPriority(e.target.value as '' | 'high' | 'medium' | 'low')}
-                style={{ fontSize: 12, padding: '2px 6px', minHeight: 24 }}
               >
                 <option value="">{t('todoPriorityNone', lang)}</option>
                 <option value="high">{t('todoPriorityHigh', lang)}</option>
@@ -546,14 +543,13 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
                 <option value="low">{t('todoPriorityLow', lang)}</option>
               </select>
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }}>
+            <label className="form-label-inline">
               {t('todoDueDate', lang)}:
               <input
-                className="input input-sm"
+                className="input input-sm input-sm-compact"
                 type="date"
                 value={newDueDate}
                 onChange={(e) => setNewDueDate(e.target.value)}
-                style={{ fontSize: 12, padding: '2px 6px', minHeight: 24 }}
               />
             </label>
           </div>
@@ -570,8 +566,7 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
           {activeTab === 'archived' && <p className="page-subtitle">{t('todoNoArchivedDesc', lang)}</p>}
           {activeTab === 'pending' && (
             <button
-              className="btn btn-primary"
-              style={{ marginTop: 12 }}
+              className="btn btn-primary mt-md"
               onClick={() => { setAddOpen(true); setTimeout(() => inputRef.current?.focus(), 50); }}
             >
               {t('todoAdd', lang)}
@@ -584,7 +579,7 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
             {dragEnabled ? (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={sorted.slice(0, todoVisibleCount).map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                  <div role="list" style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div role="list" className="todo-list-col">
                     {sorted.slice(0, todoVisibleCount).map((todo) => (
                       <SortableTodoItem key={todo.id} id={todo.id} disabled={false}>
                         {({ handleProps }) => renderTodoItem(todo, true, todoCtx, handleProps)}
@@ -597,9 +592,9 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
               <div
                 ref={listParentRef}
                 role="list"
-                style={{ maxHeight: 'min(70vh, 600px)', overflowY: 'auto', position: 'relative' }}
+                className="virtual-list-scroll"
               >
-                <div style={{ height: virtualizer.getTotalSize(), width: '100%', position: 'relative' }}>
+                <div className="virtual-list-container w-full" style={{ height: virtualizer.getTotalSize() }}>
                   {virtualizer.getVirtualItems().map((virtualRow) => {
                     const todo = sorted[virtualRow.index];
                     return (
@@ -607,13 +602,8 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
                         key={todo.id}
                         data-index={virtualRow.index}
                         ref={virtualizer.measureElement}
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          transform: `translateY(${virtualRow.start}px)`,
-                        }}
+                        className="virtual-item"
+                        style={{ transform: `translateY(${virtualRow.start}px)` }}
                       >
                         {renderTodoItem(todo, true, todoCtx)}
                       </div>
@@ -625,23 +615,22 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
           </div>
         </>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="group-container">
           {groups.map((group) => (
             <div key={group.key} className="content-card">
               {group.label && (
-                <div style={{ marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid var(--border-divider)' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                <div className="group-header">
+                  <span className="group-label">
                     {group.label}
                   </span>
-                  <span className="meta" style={{ marginLeft: 8, fontSize: 11 }}>
+                  <span className="meta text-xs-muted" style={{ marginLeft: 8 }}>
                     {group.items.length}
                   </span>
                   {groupKey === 'source' && group.key !== '_manual' && (() => {
                     const log = logMap.get(group.key);
                     return log ? (
                       <button
-                        className="btn-link"
-                        style={{ fontSize: 11, marginLeft: 8 }}
+                        className="btn-link text-xs-muted" style={{ marginLeft: 8 }}
                         onClick={() => onOpenLog(group.key)}
                       >
                         {t('todoFromLog', lang)} →
@@ -650,7 +639,7 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
                   })()}
                 </div>
               )}
-              <div role="list" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div role="list" className="todo-list-col">
                 {group.items.map((todo) => renderTodoItem(todo, showSourcePerItem, todoCtx))}
               </div>
             </div>

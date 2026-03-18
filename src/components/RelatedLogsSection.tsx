@@ -73,55 +73,45 @@ function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; 
 
   return (
     <div className="content-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showSection ? 8 : 0 }}>
+      <div className="flex justify-between items-center" style={{ marginBottom: showSection ? 8 : 0 }}>
         <div className="content-card-header" style={{ margin: 0 }}>{t('relatedLogs', lang)}</div>
-        <div style={{ position: 'relative' }} data-related-search>
+        <div className="relative" data-related-search>
           <button
-            className="btn"
-            style={{ fontSize: 12, padding: '2px 10px', minHeight: 24, display: 'flex', alignItems: 'center', gap: 4 }}
+            className="btn btn-toolbar"
+            style={{ minHeight: 24 }}
             onClick={() => { setSearchOpen(!searchOpen); setSearchQuery(''); }}
           >
             <Link size={12} />
             {t('linkLog', lang)}
           </button>
           {searchOpen && (
-            <div style={{
-              position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 100,
-              background: 'var(--card-bg)', border: '1px solid var(--border-default)',
-              borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', width: 'min(320px, calc(100vw - 40px))', maxHeight: 300, overflow: 'hidden',
-            }}>
+            <div className="search-dropdown-panel">
               <div style={{ padding: 8 }}>
                 <input
                   ref={searchInputRef}
-                  className="input"
+                  className="input w-full"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('searchLogs', lang)}
-                  style={{ width: '100%', fontSize: 13, padding: '6px 10px' }}
+                  style={{ fontSize: 13, padding: '6px 10px' }}
                 />
               </div>
               <div style={{ maxHeight: 240, overflowY: 'auto' }}>
                 {searchQuery.trim() && searchCandidates.length === 0 && (
-                  <div style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-placeholder)' }}>
+                  <div className="text-placeholder" style={{ padding: '12px 16px', fontSize: 13 }}>
                     {t('noMatches', lang)}
                   </div>
                 )}
                 {searchCandidates.map((c) => (
                   <button
                     key={c.id}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px',
-                      background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-                      fontSize: 13, color: 'var(--text-body)',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--sidebar-hover)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                    className="search-candidate-btn"
                     onClick={() => handleLink(c.id)}
                   >
-                    <span className={c.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} style={{ flexShrink: 0 }}>
+                    <span className={`${c.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} shrink-0`}>
                       {c.outputMode === 'handoff' ? 'H' : 'L'}
                     </span>
-                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</span>
+                    <span className="truncate flex-1">{c.title}</span>
                   </button>
                 ))}
               </div>
@@ -132,22 +122,14 @@ function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; 
 
       {/* Explicitly linked logs */}
       {hasLinked && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: hasProject ? 12 : 0 }}>
+        <div className="flex flex-wrap" style={{ gap: 6, marginBottom: hasProject ? 12 : 0 }}>
           {linkedLogs.map((r) => (
-            <span
-              key={r.id}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '4px 10px', borderRadius: 16,
-                background: 'var(--accent-bg, #f3f0ff)', fontSize: 13,
-                border: '1px solid var(--border-default)',
-              }}
-            >
+            <span key={r.id} className="linked-log-chip">
               <span className={r.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'}>
                 {r.outputMode === 'handoff' ? 'H' : 'L'}
               </span>
               <span
-                style={{ cursor: 'pointer', color: 'var(--accent-text)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                className="linked-log-chip-title"
                 onClick={() => onOpenLog(r.id)}
                 title={r.title}
               >
@@ -156,13 +138,7 @@ function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; 
               <button
                 onClick={() => handleUnlink(r.id)}
                 title={t('unlink', lang)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  color: 'var(--text-placeholder)', borderRadius: '50%', width: 18, height: 18,
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--danger-text, #e53e3e)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-placeholder)')}
+                className="unlink-btn"
               >
                 <X size={12} />
               </button>
@@ -173,7 +149,7 @@ function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; 
 
       {/* Same-project logs */}
       {hasProject && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div className="flex-col-gap-sm" style={{ gap: 2 }}>
           {projectLogs.map((r) => (
             <button
               key={r.id}
@@ -184,10 +160,10 @@ function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; 
                 {r.outputMode === 'handoff' ? '🔁' : '📝'}
               </span>
               <span className="log-link-title">{r.title}</span>
-              <span className="meta" style={{ fontSize: 11, flexShrink: 0 }}>
+              <span className="meta shrink-0" style={{ fontSize: 11 }}>
                 {formatDateUnified(r.createdAt)}
               </span>
-              <ExternalLink size={11} style={{ color: 'var(--text-placeholder)', flexShrink: 0 }} />
+              <ExternalLink size={11} className="text-placeholder shrink-0" />
             </button>
           ))}
         </div>

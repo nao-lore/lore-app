@@ -302,7 +302,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100%' }}>
+    <div className="app-root">
       <a href="#main-content" className="skip-link">Skip to content</a>
       <div
         aria-live="polite"
@@ -312,7 +312,7 @@ export default function App() {
         {viewAnnouncement}
       </div>
       {!s.sidebarOpen && !s.sidebarHidden && (
-        <div style={{ width: 48, minWidth: 48, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 14, gap: 4, background: 'transparent' }}>
+        <div className="sidebar-collapsed-strip">
           <button className="toggle-btn" onClick={() => { s.setSidebarOpen(true); safeSetItem(s.SIDEBAR_KEY, 'open'); }} title={t('showSidebar', s.lang)} aria-label={t('ariaShowSidebar', s.lang)}>
             <Menu size={18} />
           </button>
@@ -364,21 +364,21 @@ export default function App() {
           masterNotes={s.masterNotes}
         /></aside>
       )}
-      <main id="main-content" tabIndex={-1} ref={scrollRef} data-main-scroll style={{ flex: 1, overflowY: 'auto', minHeight: 0, background: 'var(--bg-app)', outline: 'none' }}>
+      <main id="main-content" tabIndex={-1} ref={scrollRef} data-main-scroll className="main-content">
         {demoMode && (
-          <div style={{ background: 'var(--accent-bg, rgba(99,102,241,0.08))', borderBottom: '1px solid var(--accent)', padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, fontSize: 13 }}>
+          <div className="demo-banner">
             <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{t('demoBadge', s.lang)}</span>
-            <span style={{ color: 'var(--text-muted)' }}>{t('demoModeBanner', s.lang)}</span>
+            <span className="text-muted">{t('demoModeBanner', s.lang)}</span>
             <button
               className="btn"
               onClick={() => { setDemoMode(false); setDemoModeState(false); s.setLogsVersion((v: number) => v + 1); }}
-              style={{ fontSize: 12, padding: '2px 10px', color: 'var(--accent)', minHeight: 44 }}
+              className="text-sm" style={{ padding: '2px 10px', color: 'var(--accent)', minHeight: 44 }}
             >
               {t('exitDemoMode', s.lang)}
             </button>
           </div>
         )}
-        <div style={{ height: '100%' }}>
+        <div className="h-full">
           <Suspense fallback={<SkeletonLoader lang={s.lang} variant={s.view === 'dashboard' ? 'card' : s.view === 'detail' ? 'detail' : 'list'} />}>
             <div className={navDirection === 'back' ? 'view-slide-back' : 'view-slide-forward'} key={s.view}>
               {renderWorkspace()}
@@ -444,24 +444,16 @@ export default function App() {
         lang={s.lang}
       />
       {s.offlineStatus !== 'online' && !s.offlineDismissed && (
-        <div role="alert" aria-live="assertive" style={{
-          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+        <div role="alert" aria-live="assertive" className="offline-banner" style={{
           background: s.offlineStatus === 'offline' ? 'var(--warning-bg, #f59e0b)' : 'var(--success-bg, #22c55e)',
           color: s.offlineStatus === 'offline' ? 'var(--warning-text, #78350f)' : 'var(--success-text, #052e16)',
-          textAlign: 'center', fontSize: 12, padding: '4px 0',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          transition: 'opacity 0.3s',
         }}>
           <span>{s.offlineStatus === 'offline' ? t('offline', s.lang) : t('backOnline', s.lang)}</span>
           {s.offlineStatus === 'offline' && (
             <button
               onClick={() => s.setOfflineDismissed(true)}
               aria-label={t('close', s.lang)}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'inherit', fontSize: 14, lineHeight: 1, padding: '0 4px',
-                minWidth: 44, minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              }}
+              className="offline-dismiss-btn"
             >
               x
             </button>
@@ -517,7 +509,7 @@ export default function App() {
         <div className="modal-overlay" role="presentation" onClick={() => s.setShortcutsOpen(false)}>
           <div ref={shortcutsTrapRef} className="shortcuts-modal" role="dialog" aria-modal="true" aria-label={t('shortcutsTitle', s.lang)} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 16px', fontSize: 16 }}>{t('shortcutsTitle', s.lang)}</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="flex-col" style={{ gap: 10 }}>
               {([
                 { keys: '\u2318 N', desc: t('shortcutNewLog', s.lang) },
                 { keys: '\u2318 K', desc: t('shortcutSearch', s.lang) },
@@ -526,18 +518,14 @@ export default function App() {
                 { keys: '?', desc: t('shortcutShortcuts', s.lang) },
                 { keys: 'Esc', desc: t('shortcutEscape', s.lang) },
               ]).map((item) => (
-                <div key={item.keys} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 14, color: 'var(--text-body)' }}>{item.desc}</span>
-                  <kbd style={{
-                    fontSize: 12, fontFamily: 'inherit', padding: '2px 8px',
-                    borderRadius: 4, background: 'var(--bg-sidebar)', border: '1px solid var(--border-default)',
-                    color: 'var(--text-secondary)', minWidth: 32, textAlign: 'center',
-                  }}>{item.keys}</kbd>
+                <div key={item.keys} className="shortcuts-row">
+                  <span className="text-md" style={{ color: 'var(--text-body)' }}>{item.desc}</span>
+                  <kbd className="kbd-key">{item.keys}</kbd>
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 16, textAlign: 'right' }}>
-              <button className="btn" onClick={() => s.setShortcutsOpen(false)} style={{ fontSize: 13 }}>
+            <div className="mt-lg text-right">
+              <button className="btn" onClick={() => s.setShortcutsOpen(false)} className="text-sm">
                 {t('close', s.lang)}
               </button>
             </div>

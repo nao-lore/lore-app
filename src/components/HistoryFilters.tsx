@@ -146,7 +146,7 @@ export function HistoryFiltersToolbar({
   ];
 
   return (
-    <div className="content-card flex-row flex-wrap" style={{ gap: 10, marginBottom: 20 }}>
+    <div className="content-card flex-row flex-wrap mb-xl" style={{ gap: 10 }}>
       <div className="seg-control">
         {(['all', 'pinned', 'worklog', 'handoff'] as const).map((v) => (
           <button
@@ -159,14 +159,14 @@ export function HistoryFiltersToolbar({
         ))}
       </div>
       <input
-        className="input input-sm"
+        className="input input-sm flex-1"
         type="text"
         value={rawQuery}
         onChange={(e) => onRawQueryChange(e.target.value)}
         aria-label={t('ariaSearchLogs', lang)}
         placeholder={t('searchLogs', lang)}
         maxLength={200}
-        style={{ flex: 1, minWidth: 120 }}
+        style={{ minWidth: 120 }}
       />
       <DropdownMenu
         label={t('sortLabel', lang)}
@@ -180,24 +180,22 @@ export function HistoryFiltersToolbar({
         options={groupOptions}
         onChange={(k) => onGroupKeyChange(k as GroupKey)}
       />
-      <div style={{ position: 'relative' }}>
+      <div className="relative">
         <button
-          className={`btn btn-sm flex-row${dateFrom || dateTo ? ' btn-active' : ''}`}
+          className={`btn btn-sm flex-row btn-toolbar${dateFrom || dateTo ? ' btn-active' : ''}`}
           onClick={() => onDateFilterOpenChange(!dateFilterOpen)}
-          style={{ gap: 4, fontSize: 12, padding: '4px 10px', minHeight: 26 }}
         >
           <Calendar size={12} />
           {t('dateFilterBtn', lang)}
-          {(dateFrom || dateTo) && <span style={{ marginLeft: 2, fontWeight: 600 }}>·</span>}
+          {(dateFrom || dateTo) && <span className="font-semibold" style={{ marginLeft: 2 }}>·</span>}
         </button>
         {dateFilterOpen && (
           <div className="date-filter-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="flex flex-wrap gap-xs" style={{ marginBottom: 8 }}>
+            <div className="flex flex-wrap gap-xs mb-sm">
               {(['today', 'week', 'month'] as DatePreset[]).map((p) => (
                 <button
                   key={p}
-                  className={`btn btn-sm${datePreset === p ? ' btn-active' : ''}`}
-                  style={{ fontSize: 11, padding: '2px 8px', minHeight: 22 }}
+                  className={`btn btn-sm date-preset-btn${datePreset === p ? ' btn-active' : ''}`}
                   onClick={() => {
                     if (datePreset === p) {
                       onDatePresetChange(null); onDateFromChange(''); onDateToChange('');
@@ -213,27 +211,24 @@ export function HistoryFiltersToolbar({
               ))}
             </div>
             <div className="flex-row text-sm" style={{ gap: 6 }}>
-              <label style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t('dateFilterFrom', lang)}</label>
+              <label className="date-label">{t('dateFilterFrom', lang)}</label>
               <input
                 type="date"
-                className="input input-sm"
+                className="input input-sm date-input-sm"
                 value={dateFrom}
                 onChange={(e) => { onDateFromChange(e.target.value); onDatePresetChange('custom'); }}
-                style={{ fontSize: 12, padding: '2px 4px', minHeight: 24, width: 130 }}
               />
-              <label style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t('dateFilterTo', lang)}</label>
+              <label className="date-label">{t('dateFilterTo', lang)}</label>
               <input
                 type="date"
-                className="input input-sm"
+                className="input input-sm date-input-sm"
                 value={dateTo}
                 onChange={(e) => { onDateToChange(e.target.value); onDatePresetChange('custom'); }}
-                style={{ fontSize: 12, padding: '2px 4px', minHeight: 24, width: 130 }}
               />
             </div>
             {(dateFrom || dateTo) && (
               <button
-                className="btn btn-sm"
-                style={{ fontSize: 11, marginTop: 6, padding: '2px 8px', minHeight: 22 }}
+                className="btn btn-sm date-preset-btn mt-sm"
                 onClick={() => { onDateFromChange(''); onDateToChange(''); onDatePresetChange(null); }}
               >
                 {t('dateFilterClear', lang)}
@@ -243,11 +238,10 @@ export function HistoryFiltersToolbar({
         )}
       </div>
       <button
-        className={`btn btn-sm flex-row${compact ? ' btn-active' : ''}`}
+        className={`btn btn-sm flex-row btn-toolbar ml-auto${compact ? ' btn-active' : ''}`}
         onClick={onToggleDensity}
         title={compact ? t('viewComfortable', lang) : t('viewCompact', lang)}
         aria-label={compact ? t('ariaSwitchToComfortable', lang) : t('ariaSwitchToCompact', lang)}
-        style={{ gap: 4, fontSize: 12, padding: '4px 10px', minHeight: 26, marginLeft: 'auto' }}
       >
         <AlignJustify size={12} />
         {compact ? t('viewCompact', lang) : t('viewComfortable', lang)}
@@ -302,15 +296,15 @@ export function KeywordsBar({ logs, debouncedQuery, tagFilter, modeFilter, lang,
       {keywords.map((kw) => (
         <span
           key={kw.word}
-          className="tag"
+          className="tag cursor-pointer"
           role="button"
           tabIndex={0}
-          style={{ cursor: 'pointer', fontSize: 12 }}
+          style={{ fontSize: 12 }}
           onClick={() => onSetQuery(kw.word)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSetQuery(kw.word); } }}
         >
           {kw.word}
-          <span style={{ marginLeft: 4, fontSize: 10, opacity: 0.6 }}>{kw.count}</span>
+          <span className="ml-auto" style={{ fontSize: 10, opacity: 0.6 }}>{kw.count}</span>
         </span>
       ))}
     </div>

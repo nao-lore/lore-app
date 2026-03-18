@@ -92,7 +92,7 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
           </button>
           <div className="page-header-row">
             <div>
-              <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h2 className="flex-row-gap-sm">
                 <BookOpen size={22} />
                 {t('kbTitle', lang)}
               </h2>
@@ -104,12 +104,12 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
           <div className="empty-state-icon">&#128218;</div>
           <p>{t('kbEmpty', lang)}</p>
           <p className="page-subtitle">{t('kbEmptyDesc', lang)}</p>
-          {error && <p style={{ color: 'var(--error-text)', fontSize: 13, marginTop: 8 }}>{error}</p>}
+          {error && <p className="text-sm text-error" style={{ marginTop: 8 }}>{error}</p>}
           <button
             className="btn btn-primary"
             onClick={handleGenerate}
             disabled={projectLogs.length === 0}
-            style={{ marginTop: 16 }}
+            className="mt-lg"
           >
             <BookOpen size={14} />
             {projectLogs.length === 0 ? t('kbNoLogs', lang) : t('kbGenerate', lang)}
@@ -123,23 +123,23 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
     <div className="workspace-content">
       {/* Header */}
       <div className="page-header">
-        <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
+        <button className="btn-back" onClick={onBack} className="btn-back-mb">
           ← {t('kbBack', lang)}
         </button>
         <div className="page-header-row">
           <div>
-            <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h2 className="flex-row-gap-sm">
               <BookOpen size={22} />
               {t('kbTitle', lang)}
             </h2>
             <p className="page-subtitle">{project.name}</p>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="flex-row-gap-sm">
             <button
               className="btn"
               onClick={handleGenerate}
               disabled={loading || projectLogs.length === 0}
-              style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}
+              className="text-sm flex-row" style={{ gap: 4 }}
             >
               <RefreshCw size={14} className={loading ? 'spin' : ''} />
               {loading ? progress : t('kbRegenerate', lang)}
@@ -147,7 +147,7 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
           </div>
         </div>
         {kb && (
-          <div className="meta" style={{ fontSize: 11, marginTop: 4, display: 'flex', gap: 12 }}>
+          <div className="meta" className="flex" style={{ fontSize: 11, marginTop: 4, gap: 12 }}>
             <span>{tf('kbUpdatedAt', lang, formatDate(kb.generatedAt, lang))}</span>
             <span>{tf('kbLogCount', lang, kb.logCount)}</span>
           </div>
@@ -167,7 +167,7 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
 
       {error && (
         <div className="content-card" style={{ background: 'var(--error-bg)', borderColor: 'var(--error-border)', marginBottom: 16 }}>
-          <p style={{ color: 'var(--error-text)', fontSize: 13 }}>{error}</p>
+          <p className="text-sm text-error">{error}</p>
         </div>
       )}
 
@@ -175,7 +175,7 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
         <>
           {/* Recurring Problems & Solutions */}
           {kb.patterns.length > 0 && (
-            <div className="content-card" style={{ marginBottom: 20 }}>
+            <div className="content-card" className="mb-lg" style={{ marginBottom: 20 }}>
               <h3 className="kb-section-title">
                 <AlertCircle size={16} />
                 {t('kbPatterns', lang)}
@@ -216,7 +216,7 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
 
           {/* Best Practices */}
           {kb.bestPractices.length > 0 && (
-            <div className="content-card" style={{ marginBottom: 20 }}>
+            <div className="content-card" className="mb-lg" style={{ marginBottom: 20 }}>
               <h3 className="kb-section-title">
                 <Lightbulb size={16} />
                 {t('kbBestPractices', lang)}
@@ -233,7 +233,7 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
 
           {/* Common Decisions */}
           {kb.commonDecisions.length > 0 && (
-            <div className="content-card" style={{ marginBottom: 20 }}>
+            <div className="content-card" className="mb-lg" style={{ marginBottom: 20 }}>
               <h3 className="kb-section-title">
                 <CheckCircle2 size={16} />
                 {t('kbCommonDecisions', lang)}

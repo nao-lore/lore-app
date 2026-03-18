@@ -10,7 +10,7 @@ export function WorklogResultDisplay({ result, lang }: { result: TransformResult
       <Section title={t('sectionTodo', lang)} items={result.todo} />
       <Section title={t('sectionRelatedProjects', lang)} items={result.relatedProjects} />
       {result.tags.length > 0 && (
-        <div style={{ marginTop: 16 }}>
+        <div className="mt-lg">
           {result.tags.map((tag, i) => <span key={i} className="tag">{tag}</span>)}
         </div>
       )}
@@ -23,7 +23,7 @@ export function HandoffResultDisplay({ result, lang }: { result: HandoffResult; 
     <>
       {/* Session Context (handoffMeta) */}
       {result.handoffMeta && (result.handoffMeta.sessionFocus || result.handoffMeta.whyThisSession || result.handoffMeta.timePressure) && (
-        <div className="resume-context-hero" style={{ marginBottom: 12 }}>
+        <div className="resume-context-hero" className="mb-md">
           <div className="resume-context-hero-label">{lang === 'ja' ? 'セッション概要' : 'Session Context'}</div>
           <div className="resume-context-hero-body">
             {[
@@ -63,7 +63,7 @@ export function HandoffResultDisplay({ result, lang }: { result: HandoffResult; 
       <Section title={t('sectionBlockers', lang)} items={result.blockers} />
       <Section title={t('sectionConstraints', lang)} items={result.constraints} />
       {result.tags.length > 0 && (
-        <div style={{ marginTop: 16 }}>
+        <div className="mt-lg">
           {result.tags.map((tag, i) => <span key={i} className="tag">{tag}</span>)}
         </div>
       )}

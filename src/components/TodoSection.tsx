@@ -18,18 +18,18 @@ function TodoSection({ logId, lang, todosVersion: _todosVersion, onToggle, allTo
   return (
     <div className="content-card">
       <div className="content-card-header">{t('sectionTodo', lang)}</div>
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+      <ul className="list-none">
         {todos.map((todo: Todo) => (
           <li
             key={todo.id}
             onClick={() => handleToggle(todo.id, todo.done)}
-            style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 6px', cursor: 'pointer', borderRadius: 8, transition: 'background 0.12s', margin: '0 -6px' }}
+            className="todo-section-item"
             onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--sidebar-hover)')}
             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
           >
             {todo.done
-              ? <CheckSquare size={18} style={{ color: 'var(--success-text)', flexShrink: 0, marginTop: 1 }} />
-              : <Square size={18} style={{ color: 'var(--text-placeholder)', flexShrink: 0, marginTop: 1 }} />
+              ? <CheckSquare size={18} className="shrink-0 mt-1" style={{ color: 'var(--success-text)' }} />
+              : <Square size={18} className="shrink-0 mt-1" style={{ color: 'var(--text-placeholder)' }} />
             }
             <span style={{
               color: todo.done ? 'var(--text-placeholder)' : 'var(--text-secondary)',

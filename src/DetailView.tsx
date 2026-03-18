@@ -145,7 +145,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
         text: markdown,
       });
     } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
+      if (!(err instanceof DOMException && err.name === 'AbortError')) {
         try { navigator.clipboard.writeText(markdown); } catch { /* non-critical */ }
         showToast?.(t('copiedToClipboard', lang), 'success');
       }
@@ -253,10 +253,9 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
   return (
     <div className="workspace-content">
       <div className="page-header">
-        <nav className="flex-row flex-wrap mb-md" style={{ fontSize: 12, gap: 2 }}>
+        <nav className="flex-row flex-wrap mb-md detail-breadcrumb">
           <span
             className="text-muted cursor-pointer"
-            style={{ textDecoration: 'none' }}
             onClick={onBack}
             role="button"
             tabIndex={0}
@@ -266,12 +265,10 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
           </span>
           {project && (
             <>
-              <span style={{ color: 'var(--text-muted)', margin: '0 2px' }}>{' › '}</span>
+              <span className="breadcrumb-sep">{' › '}</span>
               <span
-                style={{
-                  color: 'var(--text-muted)',
-                  cursor: onOpenMasterNote ? 'pointer' : 'default',
-                }}
+                className="text-muted"
+                style={{ cursor: onOpenMasterNote ? 'pointer' : 'default' }}
                 onClick={() => onOpenMasterNote?.(project.id)}
                 role={onOpenMasterNote ? 'button' : undefined}
                 tabIndex={onOpenMasterNote ? 0 : undefined}
@@ -282,16 +279,9 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
               </span>
             </>
           )}
-          <span style={{ color: 'var(--text-muted)', margin: '0 2px' }}>{' › '}</span>
+          <span className="breadcrumb-sep">{' › '}</span>
           <span
-            style={{
-              color: 'var(--text-secondary)',
-              fontWeight: 600,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              maxWidth: 'min(300px, 50vw)',
-            }}
+            className="breadcrumb-current"
             title={log.title}
           >
             {log.title}
@@ -299,33 +289,30 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
         </nav>
         <div className="page-header-row">
           <div className="flex-1">
-            <div className="flex-row" style={{ gap: 10 }}>
+            <div className="flex-row gap-10">
               {isHandoff ? <span className="badge-handoff">Handoff</span> : <span className="badge-worklog">Log</span>}
               {project && (
                 <span
-                  className="tag"
-                  style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+                  className="tag detail-project-tag"
                   onClick={() => onOpenMasterNote?.(project.id)}
                   title={t('viewProjectSummary', lang)}
                 >
-                  {project.icon && <span style={{ fontSize: 13 }}>{project.icon}</span>}
+                  {project.icon && <span className="detail-project-icon">{project.icon}</span>}
                   {project.name}
-                  <span style={{ fontSize: 10, opacity: 0.7 }}>→</span>
+                  <span className="detail-arrow-indicator">→</span>
                 </span>
               )}
             </div>
-            <div className="flex-row flex-wrap text-sm-muted mb-sm" style={{ gap: 12 }}>
+            <div className="flex-row flex-wrap text-sm-muted mb-sm gap-12">
               <span>{t('logCreatedAt', lang)}：{formatDateTimeFull(log.createdAt)}</span>
               {log.updatedAt && <span>{t('logUpdatedAt', lang)}：{formatDateTimeFull(log.updatedAt)}</span>}
               {/* Workload level */}
               {!getFeatureEnabled('workload', true) ? null : log.workloadLevel ? (
                 <span
+                  className="detail-workload-badge"
                   style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                    padding: '1px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600,
                     color: WORKLOAD_CONFIG[log.workloadLevel].color,
                     background: WORKLOAD_CONFIG[log.workloadLevel].bg,
-                    cursor: 'pointer',
                   }}
                   onClick={handleAnalyzeWorkload}
                   title={t('clickToReanalyze', lang)}
@@ -335,8 +322,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                 </span>
               ) : (
                 <button
-                  className="btn"
-                  style={{ fontSize: 11, padding: '1px 8px', minHeight: 20, display: 'flex', alignItems: 'center', gap: 4 }}
+                  className="btn detail-workload-btn"
                   onClick={handleAnalyzeWorkload}
                   disabled={analyzingWorkload}
                 >
@@ -345,10 +331,10 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                 </button>
               )}
             </div>
-            <div className="flex" style={{ alignItems: 'flex-start', gap: 8 }}>
+            <div className="flex detail-title-area">
               {editingTitle ? (
                 <input
-                  className="input"
+                  className="input detail-title-input"
                   value={titleDraft}
                   onChange={(e) => setTitleDraft(e.target.value)}
                   onBlur={handleTitleSave}
@@ -358,12 +344,10 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                   }}
                   autoFocus
                   maxLength={200}
-                  style={{ flex: 1, fontSize: 18, fontWeight: 700, padding: '2px 8px' }}
                 />
               ) : (
                 <h2
-                  className="flex-1 truncate"
-                  style={{ margin: 0, cursor: 'pointer' }}
+                  className="flex-1 truncate detail-title"
                   onClick={() => { setTitleDraft(log.title); setEditingTitle(true); }}
                   title={log.title}
                 >
@@ -371,13 +355,13 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                 </h2>
               )}
               {showSaved && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12, color: 'var(--success-text, #22c55e)', fontWeight: 500, flexShrink: 0, transition: 'opacity 0.3s', whiteSpace: 'nowrap' }}>
+                <span className="detail-saved-indicator">
                   <Check size={14} />
                   {t('detailSaved', lang)}
                 </span>
               )}
               <button
-                className="card-menu-btn"
+                className="card-menu-btn detail-pin-btn"
                 onClick={() => {
                   if (!log.pinned) {
                     const pinnedCount = loadLogs().filter((l) => l.pinned).length;
@@ -385,7 +369,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                   }
                   updateLog(id, { pinned: !log.pinned }); onRefresh();
                 }}
-                style={log.pinned ? { color: 'var(--accent)', flexShrink: 0, marginTop: 2 } : { flexShrink: 0, marginTop: 2 }}
+                style={log.pinned ? { color: 'var(--accent)' } : undefined}
                 title={log.pinned ? t('titleUnpin', lang) : t('titlePin', lang)}
                 aria-label={log.pinned ? t('ariaUnpin', lang) : t('ariaPin', lang)}
               >
@@ -396,9 +380,8 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
           {/* AI Context copy — primary action */}
           {isHandoff && log.projectId && (
             <button
-              className="btn btn-primary flex-row shrink-0"
+              className="btn btn-primary flex-row shrink-0 detail-ai-copy-btn"
               onClick={handleCopyWithContext}
-              style={{ fontSize: 12, padding: '6px 14px', gap: 6, whiteSpace: 'nowrap' }}
               title={t('copyAiContextTitle', lang)}
             >
               <Copy size={13} />
@@ -468,7 +451,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                     {p.name}
                   </button>
                 ))}
-                <button className="card-menu-item" style={{ color: 'var(--text-placeholder)' }} onClick={() => handleAssignProject('')}>
+                <button className="card-menu-item text-placeholder" onClick={() => handleAssignProject('')}>
                   {t('removeFromProject', lang)}
                 </button>
               </div>
@@ -478,7 +461,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
       </div>
 
       {log.tags.length > 0 && (
-        <div className="flex flex-wrap mb-lg" style={{ gap: 4 }}>
+        <div className="flex flex-wrap mb-lg gap-4">
           {log.tags.map((tag, i) => (
             <span
               key={i}
@@ -497,8 +480,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
         <>
           <div className="flex gap-sm mb-md">
             <button
-              className="btn flex-row"
-              style={{ gap: 6, fontSize: 13 }}
+              className="btn flex-row gap-6"
               onClick={async () => {
                 try {
                   const handoffMd = formatHandoffMarkdown(log);
@@ -514,8 +496,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
             </button>
             {log.projectId && projects.find(p => p.id === log.projectId) && (
               <button
-                className="btn btn-primary flex-row"
-                style={{ gap: 6, fontSize: 13 }}
+                className="btn btn-primary flex-row gap-6"
                 title={t('copyAiContextTitle', lang)}
                 onClick={async () => {
                   try {
@@ -540,7 +521,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
           </div>
           {/* Session Context (handoffMeta) */}
           {log.handoffMeta && (log.handoffMeta.sessionFocus || log.handoffMeta.whyThisSession || log.handoffMeta.timePressure) && (
-            <div className="resume-context-hero" style={{ marginBottom: 8 }}>
+            <div className="resume-context-hero resume-hero-mb-sm">
               <div className="resume-context-hero-label">{lang === 'ja' ? 'セッション概要' : 'Session Context'}</div>
               <div className="resume-context-hero-body">
                 {[
@@ -555,7 +536,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
           {(() => {
             if (log.resumeChecklist && log.resumeChecklist.length > 0) {
               return (
-                <div className="resume-context-hero" style={{ marginBottom: 16 }}>
+                <div className="resume-context-hero resume-hero-mb-md">
                   <div className="resume-context-hero-label">{t('sectionResumeContext', lang)}</div>
                   <div className="resume-context-hero-body">
                     {log.resumeChecklist.map((item, i) => {
@@ -570,7 +551,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
             }
             const resumeItems = log.resumeContext || (log.resumePoint ? [log.resumePoint] : []);
             return resumeItems.length > 0 ? (
-              <div className="resume-context-hero" style={{ marginBottom: 16 }}>
+              <div className="resume-context-hero resume-hero-mb-md">
                 <div className="resume-context-hero-label">{t('sectionResumeContext', lang)}</div>
                 <div className="resume-context-hero-body">{resumeItems.join('\n')}</div>
               </div>
@@ -584,8 +565,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
         <div className="flex flex-wrap gap-sm mb-md">
           {!!(safeGetItem('threadlog_notion_api_key') && safeGetItem('threadlog_notion_database_id')) && (
             <button
-              className="btn flex-row"
-              style={{ gap: 6, fontSize: 12, padding: '4px 12px', minHeight: 28 }}
+              className="btn flex-row detail-integration-btn"
               onClick={handleSendNotion}
               disabled={sendingNotion}
             >
@@ -595,8 +575,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
           )}
           {!!safeGetItem('threadlog_slack_webhook_url') && (
             <button
-              className="btn flex-row"
-              style={{ gap: 6, fontSize: 12, padding: '4px 12px', minHeight: 28 }}
+              className="btn flex-row detail-integration-btn"
               onClick={handleSendSlack}
               disabled={sendingSlack}
             >
@@ -641,7 +620,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
         )}
 
         {log.sourceReference && (
-          <div className="content-card flex flex-wrap" style={{ fontSize: 12, color: 'var(--text-subtle)', gap: '4px 16px' }}>
+          <div className="content-card flex flex-wrap detail-source-ref">
             {log.sourceReference.fileName && <span>{log.sourceReference.fileName}</span>}
             {log.sourceReference.charCount != null && <span>{log.sourceReference.charCount.toLocaleString()} {t('chars', lang)}</span>}
             {log.sourceReference.originalDate && <span>{log.sourceReference.originalDate}</span>}
@@ -659,11 +638,10 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
         {/* Memo section */}
         <div className="content-card">
           <div className="flex-row justify-between" style={{ marginBottom: editingMemo || log.memo ? 8 : 0 }}>
-            <div className="content-card-header" style={{ margin: 0 }}>{t('memoSection', lang)}</div>
+            <div className="content-card-header content-card-header-inline">{t('memoSection', lang)}</div>
             {!editingMemo && (
               <button
-                className="btn"
-                style={{ fontSize: 12, padding: '2px 10px', minHeight: 24 }}
+                className="btn detail-memo-edit-btn"
                 onClick={() => { setMemoDraft(log.memo || ''); setEditingMemo(true); }}
               >
                 {t('memoEdit', lang)}
@@ -673,26 +651,24 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
           {editingMemo ? (
             <div>
               <textarea
-                className="input"
+                className="input detail-memo-textarea"
                 value={memoDraft}
                 onChange={(e) => setMemoDraft(e.target.value)}
                 placeholder={t('memoPlaceholder', lang)}
                 autoFocus
                 rows={4}
                 maxLength={10000}
-                style={{ width: '100%', resize: 'vertical', fontSize: 14, lineHeight: 1.6 }}
               />
-              <div className="flex gap-sm mt-sm" style={{ justifyContent: 'flex-end' }}>
-                <button className="btn" style={{ fontSize: 12 }} onClick={() => setEditingMemo(false)}>{t('cancel', lang)}</button>
-                <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={handleMemoSave}>{t('memoSave', lang)}</button>
+              <div className="flex gap-sm mt-sm justify-end">
+                <button className="btn detail-memo-action-btn" onClick={() => setEditingMemo(false)}>{t('cancel', lang)}</button>
+                <button className="btn btn-primary detail-memo-action-btn" onClick={handleMemoSave}>{t('memoSave', lang)}</button>
               </div>
             </div>
           ) : log.memo ? (
-            <p className="text-body" style={{ lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word' }}>{log.memo}</p>
+            <p className="text-body detail-memo-text">{log.memo}</p>
           ) : (
             <p
-              className="meta"
-              style={{ fontSize: 13, cursor: 'pointer', margin: 0 }}
+              className="meta detail-memo-placeholder"
               onClick={() => { setMemoDraft(''); setEditingMemo(true); }}
             >
               {t('memoPlaceholder', lang)}
@@ -702,18 +678,18 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
       </div>
       {/* Prev/Next navigation */}
       {(prevLogId || nextLogId) && (
-        <div className="flex-row justify-between border-top" style={{ marginTop: 20, paddingTop: 16 }}>
+        <div className="flex-row justify-between border-top detail-nav-bar">
           <button
-            className="btn"
-            style={{ fontSize: 13, visibility: prevLogId ? 'visible' : 'hidden' }}
+            className="btn detail-nav-btn"
+            style={{ visibility: prevLogId ? 'visible' : 'hidden' }}
             disabled={!prevLogId}
             onClick={() => prevLogId && onOpenLog(prevLogId)}
           >
             {t('prevLog', lang)}
           </button>
           <button
-            className="btn"
-            style={{ fontSize: 13, visibility: nextLogId ? 'visible' : 'hidden' }}
+            className="btn detail-nav-btn"
+            style={{ visibility: nextLogId ? 'visible' : 'hidden' }}
             disabled={!nextLogId}
             onClick={() => nextLogId && onOpenLog(nextLogId)}
           >

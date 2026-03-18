@@ -24,16 +24,16 @@ export default function ErrorRetryBanner({ message, retryLabel, dismissLabel, on
 
   return (
     <div className="error-retry-banner" role="alert">
-      <span style={{ flex: 1 }}>{message}</span>
+      <span className="flex-1">{message}</span>
       {onRetry && (
         <button
           className="btn"
-          style={{ fontSize: 12, padding: '4px 12px', minHeight: 26, flexShrink: 0 }}
+          className="btn-sm-action shrink-0" style={{ padding: '4px 12px' }}
           onClick={handleRetry}
           disabled={retrying}
         >
           {retrying ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span className="flex-row" style={{ display: 'inline-flex', gap: 4 }}>
               <span className="spinner-sm" /> ...
             </span>
           ) : (
@@ -44,19 +44,7 @@ export default function ErrorRetryBanner({ message, retryLabel, dismissLabel, on
       {onDismiss && (
         <button
           onClick={onDismiss}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 2,
-            color: 'var(--text-muted)',
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minWidth: 44,
-            minHeight: 44,
-          }}
+          className="error-dismiss-btn"
           aria-label={dismissLabel || 'Dismiss'}
         >
           <X size={14} />

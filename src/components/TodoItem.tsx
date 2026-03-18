@@ -96,19 +96,19 @@ export function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
                 onClick={() => { onAction('priority', p); onClose(); }}
               >
                 <span className="action-sheet-icon">
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: priorityColor(p) }} />
+                  <span className="priority-dot" style={{ background: priorityColor(p) }} />
                 </span>
                 <span>{priorityLabel(p)}</span>
-                {todo.priority === p && <Check size={16} style={{ marginLeft: 'auto', color: 'var(--accent-text)' }} />}
+                {todo.priority === p && <Check size={16} className="ml-auto" style={{ color: 'var(--accent-text)' }} />}
               </button>
             ))}
             <button
               className="action-sheet-item"
               onClick={() => { onAction('priority', ''); onClose(); }}
             >
-              <span className="action-sheet-icon" style={{ color: 'var(--text-placeholder)' }}>—</span>
+              <span className="action-sheet-icon text-placeholder">—</span>
               <span>{t('todoPriorityNone', lang)}</span>
-              {!todo.priority && <Check size={16} style={{ marginLeft: 'auto', color: 'var(--accent-text)' }} />}
+              {!todo.priority && <Check size={16} className="ml-auto" style={{ color: 'var(--accent-text)' }} />}
             </button>
           </div>
           <button className="action-sheet-cancel" onClick={() => setSubMenu(null)}>
@@ -127,15 +127,14 @@ export function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
           <div className="action-sheet-header">
             <div className="action-sheet-header-title">{t('todoChangeDue', lang)}</div>
           </div>
-          <div className="action-sheet-group" style={{ padding: '16px 20px' }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="action-sheet-group action-sheet-due-form">
+            <div className="action-sheet-due-row">
               <input
-                className="input"
+                className="input flex-1"
                 type="date"
                 value={dueValue}
                 onChange={(e) => setDueValue(e.target.value)}
                 autoFocus
-                style={{ flex: 1 }}
               />
               <button className="btn btn-primary" onClick={() => { onAction('due', dueValue); onClose(); }}>
                 {t('todoDueSet', lang)}
@@ -143,8 +142,8 @@ export function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
             </div>
             {todo.dueDate && (
               <button
-                className="btn"
-                style={{ marginTop: 8, fontSize: 13, color: 'var(--error-text)' }}
+                className="btn mt-sm"
+                style={{ fontSize: 13, color: 'var(--error-text)' }}
                 onClick={() => { onAction('due', ''); onClose(); }}
               >
                 {t('todoDueRemove', lang)}
@@ -225,7 +224,7 @@ export function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
           <button className="action-sheet-item" onClick={() => setSubMenu('priority')}>
             <span className="action-sheet-icon"><Flag size={18} /></span>
             <span>{t('todoChangePriority', lang)}</span>
-            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
+            <span className="action-meta">
               {priorityLabel(todo.priority)}
             </span>
           </button>
@@ -233,7 +232,7 @@ export function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
             <span className="action-sheet-icon"><Calendar size={18} /></span>
             <span>{t('todoChangeDue', lang)}</span>
             {todo.dueDate && (
-              <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
+              <span className="action-meta">
                 {todo.dueDate}
               </span>
             )}
@@ -242,7 +241,7 @@ export function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
             <span className="action-sheet-icon"><Clock size={18} /></span>
             <span>{t('snooze', lang)}</span>
             {todo.snoozedUntil && todo.snoozedUntil > now && (
-              <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
+              <span className="action-meta">
                 {t('snoozed', lang)}
               </span>
             )}
@@ -335,22 +334,22 @@ export function renderTodoItem(
       }}
     >
       {dragEnabled && handleProps && (
-        <div {...handleProps} style={{ flexShrink: 0, marginTop: 2, cursor: todo.done ? 'default' : 'grab', color: 'var(--text-placeholder)', touchAction: 'none', opacity: todo.done ? 0.3 : 1, pointerEvents: todo.done ? 'none' : 'auto' }}>
+        <div {...handleProps} className="drag-handle" style={{ cursor: todo.done ? 'default' : 'grab', opacity: todo.done ? 0.3 : 1, pointerEvents: todo.done ? 'none' : 'auto' }}>
           <GripVertical size={16} />
         </div>
       )}
       {selectMode ? (
-        <div style={{ flexShrink: 0, marginTop: 1, padding: '2px' }}>
+        <div className="icon-check-wrap">
           {isSelected
             ? <CheckSquare size={17} style={{ color: 'var(--accent)' }} />
-            : <Square size={17} style={{ color: 'var(--text-placeholder)' }} />
+            : <Square size={17} className="text-placeholder" />
           }
         </div>
       ) : (
         <div
-          className="check-pop-target"
+          className="check-pop-target icon-check-wrap cursor-pointer"
           onClick={() => onToggle(todo.id, todo.done)}
-          style={{ flexShrink: 0, marginTop: 1, cursor: 'pointer', padding: '2px', transition: 'transform 0.15s ease' }}
+          style={{ transition: 'transform 0.15s ease' }}
           role="checkbox"
           aria-checked={todo.done}
           aria-label={todo.text}
@@ -358,18 +357,18 @@ export function renderTodoItem(
         >
           {todo.done
             ? <CheckSquare size={17} style={{ color: 'var(--success-text)' }} />
-            : <Square size={17} style={{ color: 'var(--text-placeholder)' }} />
+            : <Square size={17} className="text-placeholder" />
           }
         </div>
       )}
       {todo.pinned && (
         <Star size={10} fill="var(--warning-dot)" style={{ color: 'var(--warning-dot)', flexShrink: 0, marginTop: 5 }} />
       )}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="flex-1">
         {editingTodoId === todo.id ? (
           <input
-            className="input"
-            style={{ fontSize: 14, width: '100%' }}
+            className="input w-full"
+            style={{ fontSize: 14 }}
             value={editDraft}
             onChange={(e) => onSetEditDraft(e.target.value)}
             onBlur={() => { if (editDraft.trim() && editDraft.trim() !== todo.text) { updateTodo(todo.id, { text: editDraft.trim() }); onRefresh(); } onSetEditingTodoId(null); }}
@@ -379,47 +378,31 @@ export function renderTodoItem(
             maxLength={500}
           />
         ) : (
-          <span style={{
-            fontSize: 14,
-            lineHeight: 1.5,
+          <span className="todo-text" style={{
             color: todo.done || todo.archivedAt ? 'var(--text-subtle)' : 'var(--text-body)',
             textDecoration: todo.done ? 'line-through' : 'none',
-            overflowWrap: 'break-word',
-            wordBreak: 'break-word',
           }}>
             {todo.text}
           </span>
         )}
-        <div style={{ display: 'flex', gap: 8, marginTop: 2, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+        <div className="todo-meta-row">
           {todo.dueDate && (
-            <span style={{
+            <span className="inline-flex-center" style={{
               color: isOverdue(todo.dueDate) && !todo.done ? 'var(--error-text)' : isDueToday(todo.dueDate) ? 'var(--accent-text)' : undefined,
               fontWeight: isOverdue(todo.dueDate) && !todo.done ? 500 : undefined,
-              display: 'inline-flex', alignItems: 'center', gap: 4,
+              gap: 4,
             }}>
               {isOverdue(todo.dueDate) && !todo.done ? t('todoOverdue', lang) + ': ' : isDueToday(todo.dueDate) ? t('todoToday', lang) + ': ' : t('todoDueDate', lang) + ': '}
               {todo.dueDate}
               {isOverdue(todo.dueDate) && !todo.done && (
-                <span style={{
-                  color: 'var(--error-text, #ef4444)',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  padding: '0px 5px',
-                  borderRadius: 3,
-                  lineHeight: '16px',
-                }}>
+                <span className="overdue-badge">
                   {t('todoOverdueBadge', lang)}
                 </span>
               )}
             </span>
           )}
           {todo.snoozedUntil && todo.snoozedUntil > now && (
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 3,
-              fontSize: 10, padding: '1px 6px', borderRadius: 4,
-              background: 'var(--tint-priority-medium, #fef3c7)', color: 'var(--warning-text, #b45309)',
-            }}>
+            <span className="snooze-badge">
               <Clock size={10} />
               {t('snoozed', lang)}
             </span>
@@ -439,7 +422,7 @@ export function renderTodoItem(
         </div>
       </div>
       {!selectMode && (
-        <div style={{ flexShrink: 0, marginTop: 1 }}>
+        <div className="shrink-0 mt-1">
           <button
             className="action-menu-btn"
             aria-label={t('ariaMenu', lang)}

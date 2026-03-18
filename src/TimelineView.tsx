@@ -254,15 +254,15 @@ const TodoGroupItem = memo(function TodoGroupItem({ group, lang }: { group: Time
             {EVENT_ICON['todo-add']}
             {label}
           </span>
-          <span style={{ color: 'var(--text-muted)', fontSize: 12, display: 'inline-flex', alignItems: 'center', marginLeft: 4 }}>
+          <span className="text-sm text-muted" style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 4 }}>
             {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </span>
         </div>
       </div>
       {expanded && (
-        <div style={{ marginLeft: 52, paddingLeft: 16, borderLeft: '2px solid var(--border-divider)', display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 4, paddingBottom: 8 }}>
+        <div className="flex-col" style={{ marginLeft: 52, paddingLeft: 16, borderLeft: '2px solid var(--border-divider)', gap: 2, paddingTop: 4, paddingBottom: 8 }}>
           {group.map((ev) => (
-            <div key={ev.id} style={{ fontSize: 13, color: 'var(--text-body)', padding: '3px 0', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+            <div key={ev.id} className="flex items-start" style={{ fontSize: 13, color: 'var(--text-body)', padding: '3px 0', gap: 6 }}>
               <CheckSquare size={12} style={{ color: 'var(--text-placeholder)', flexShrink: 0, marginTop: 3 }} />
               <span>{ev.title}</span>
             </div>
@@ -430,7 +430,7 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
   return (
     <div className="workspace-content-wide">
       <div className="page-header">
-        <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
+        <button className="btn-back" onClick={onBack} className="btn-back-mb">
           ← {t('back', lang)}
         </button>
         <div>
@@ -440,7 +440,7 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
       </div>
 
       {/* Filter tabs + date nav */}
-      <div className="content-card" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+      <div className="content-card" className="toolbar-card-mb" style={{ marginBottom: 12 }}>
         <div className="seg-control">
           {filterOptions.map((opt) => (
             <button
@@ -455,32 +455,32 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
       </div>
 
       {/* Date navigation */}
-      <div className="content-card" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-        <button className="btn btn-ghost" onClick={handlePrevDay} style={{ padding: '4px 6px', minHeight: 28 }} title={t('timelinePrevDay', lang)}>
+      <div className="content-card" className="toolbar-card-mb" style={{ gap: 8 }}>
+        <button className="btn btn-ghost" onClick={handlePrevDay} className="nav-btn-sm" style={{ padding: '4px 6px' }} title={t('timelinePrevDay', lang)}>
           <ChevronLeft size={16} />
         </button>
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <Calendar size={14} style={{ position: 'absolute', left: 8, color: 'var(--text-muted)', pointerEvents: 'none' }} />
+        <div className="relative flex items-center">
+          <Calendar size={14} className="absolute" style={{ left: 8, color: 'var(--text-muted)', pointerEvents: 'none' }} />
           <input
             type="date"
             className="input"
             value={jumpDate ? dateKeyToInput(jumpDate) : dateKeyToInput(todayKey())}
             onChange={(e) => handleDateInput(e.target.value)}
-            style={{ fontSize: 13, padding: '4px 8px 4px 28px', minHeight: 28, maxWidth: 160, width: 'auto' }}
+            className="text-sm" style={{ padding: '4px 8px 4px 28px', minHeight: 28, maxWidth: 160, width: 'auto' }}
           />
         </div>
-        <button className="btn btn-ghost" onClick={handleNextDay} style={{ padding: '4px 6px', minHeight: 28 }} title={t('timelineNextDay', lang)}>
+        <button className="btn btn-ghost" onClick={handleNextDay} className="nav-btn-sm" style={{ padding: '4px 6px' }} title={t('timelineNextDay', lang)}>
           <ChevronRight size={16} />
         </button>
         <button
           className="btn"
           onClick={handleToday}
-          style={{ fontSize: 12, padding: '4px 10px', minHeight: 28 }}
+          className="btn-sm-action" style={{ minHeight: 28 }}
         >
           {t('timelineToday', lang)}
         </button>
         {jumpDate && (
-          <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 4 }}>
+          <span className="text-sm text-muted" style={{ marginLeft: 4 }}>
             {formatDateLabel(jumpDate, lang)}
             {!dateKeys.has(jumpDate) && jumpDate === noActivityDate && (
               <span style={{ marginLeft: 8, color: 'var(--warning-text, #b45309)' }}>
@@ -500,7 +500,7 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
           <p>{t('timelineEmpty', lang)}</p>
           <p className="page-subtitle">{t('timelineEmptyHint', lang)}</p>
           {onNewLog && (
-            <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={onNewLog}>
+            <button className="btn btn-primary" className="mt-md" onClick={onNewLog}>
               {t('createHandoff', lang)}
             </button>
           )}

@@ -105,7 +105,7 @@ export function OverflowMenu({
   };
 
   return (
-    <div ref={menuRef} style={{ position: 'relative' }}>
+    <div ref={menuRef} className="relative">
       <button
         className="btn btn-ghost mn-export-trigger"
         onClick={() => setOpen(!open)}
@@ -146,7 +146,7 @@ export function OverflowMenu({
               <button className="mn-export-item" onClick={() => { setOpen(false); onHistory(); }}>
                 <History size={14} />
                 <span>{t('mnHistory', lang)}</span>
-                <span className="meta" style={{ marginLeft: 'auto', fontSize: 11 }}>{historyCount}</span>
+                <span className="meta ml-auto" style={{ fontSize: 11 }}>{historyCount}</span>
               </button>
             </>
           )}
@@ -173,10 +173,10 @@ export function PendingNotePreview({ lang, saved, pendingNote, onAccept, onRejec
   ];
 
   return (
-    <div className="content-card" style={{ marginBottom: 20, border: '2px solid var(--accent)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h3 style={{ margin: 0, fontSize: 15 }}>{t('pendingUpdate', lang)}</h3>
-        <div style={{ display: 'flex', gap: 8 }}>
+    <div className="content-card mb-xl" style={{ border: '2px solid var(--accent)' }}>
+      <div className="flex justify-between items-center mb-md">
+        <h3 className="modal-heading-sm">{t('pendingUpdate', lang)}</h3>
+        <div className="flex" style={{ gap: 8 }}>
           <button className="btn btn-primary" onClick={onAccept}>
             {t('accept', lang)}
           </button>
@@ -186,16 +186,16 @@ export function PendingNotePreview({ lang, saved, pendingNote, onAccept, onRejec
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div className="diff-grid">
         <div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{t('current', lang)}</div>
-          <div style={{ background: 'var(--bg-surface)', padding: 12, borderRadius: 8, fontSize: 12, maxHeight: 300, overflow: 'auto', whiteSpace: 'pre-wrap' }}>
+          <div className="text-xs-muted" style={{ marginBottom: 4 }}>{t('current', lang)}</div>
+          <div className="diff-panel">
             {saved?.overview || t('empty', lang)}
           </div>
         </div>
         <div>
           <div style={{ fontSize: 11, color: 'var(--accent)', marginBottom: 4 }}>{t('proposed', lang)}</div>
-          <div style={{ background: 'var(--bg-surface)', padding: 12, borderRadius: 8, fontSize: 12, maxHeight: 300, overflow: 'auto', whiteSpace: 'pre-wrap', borderLeft: '3px solid var(--accent)' }}>
+          <div className="diff-panel" style={{ borderLeft: '3px solid var(--accent)' }}>
             {pendingNote.overview || t('empty', lang)}
           </div>
         </div>
@@ -207,13 +207,13 @@ export function PendingNotePreview({ lang, saved, pendingNote, onAccept, onRejec
         if (added.length === 0 && removed.length === 0) return null;
 
         return (
-          <div key={sec.label} style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>{sec.label}</div>
+          <div key={sec.label} className="mt-md">
+            <div className="text-sm font-semibold" style={{ marginBottom: 4 }}>{sec.label}</div>
             {added.map((item, i) => (
-              <div key={`a${i}`} style={{ fontSize: 12, color: 'var(--success-text, #22c55e)', paddingLeft: 8 }}>+ {item}</div>
+              <div key={`a${i}`} className="diff-added">+ {item}</div>
             ))}
             {removed.map((item, i) => (
-              <div key={`r${i}`} style={{ fontSize: 12, color: 'var(--error-text)', textDecoration: 'line-through', paddingLeft: 8 }}>- {item}</div>
+              <div key={`r${i}`} className="diff-removed">- {item}</div>
             ))}
           </div>
         );
@@ -253,14 +253,14 @@ export function renderSimpleMarkdown(text: string): React.ReactNode[] {
     const line = lines[i];
 
     if (line.trim() === '') {
-      result.push(<div key={`blank-${i}`} style={{ height: 6 }} />);
+      result.push(<div key={`blank-${i}`} className="md-blank" />);
       i++;
       continue;
     }
 
     if (/^## /.test(line)) {
       result.push(
-        <div key={`h2-${i}`} style={{ fontWeight: 700, fontSize: 14, marginTop: 8, marginBottom: 2 }}>
+        <div key={`h2-${i}`} className="md-h2">
           {inlineBold(line.replace(/^## /, ''), `h2-${i}`)}
         </div>
       );
@@ -270,7 +270,7 @@ export function renderSimpleMarkdown(text: string): React.ReactNode[] {
 
     if (/^### /.test(line)) {
       result.push(
-        <div key={`h3-${i}`} style={{ fontWeight: 700, fontSize: 13, marginTop: 6, marginBottom: 2 }}>
+        <div key={`h3-${i}`} className="md-h3">
           {inlineBold(line.replace(/^### /, ''), `h3-${i}`)}
         </div>
       );
@@ -280,8 +280,8 @@ export function renderSimpleMarkdown(text: string): React.ReactNode[] {
 
     if (/^[-*] /.test(line)) {
       result.push(
-        <div key={`li-${i}`} style={{ display: 'flex', gap: 6, paddingLeft: 8 }}>
-          <span style={{ flexShrink: 0 }}>{'\u2022'}</span>
+        <div key={`li-${i}`} className="md-li">
+          <span className="shrink-0">{'\u2022'}</span>
           <span>{inlineBold(line.replace(/^[-*] /, ''), `li-${i}`)}</span>
         </div>
       );

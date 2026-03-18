@@ -131,7 +131,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
   return (
     <div className="workspace-content-wide">
       <div className="page-header">
-        <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
+        <button className="btn-back" onClick={onBack} className="btn-back-mb">
           ← {t('back', lang)}
         </button>
         <div className="page-header-row">
@@ -144,7 +144,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
             </p>
           </div>
           {totalCount > 0 && (
-            <button className="btn btn-danger" style={{ fontSize: 12, padding: '4px 12px', minHeight: 26 }} onClick={handleEmptyAll}>
+            <button className="btn btn-danger" className="btn-sm-trash" style={{ padding: '4px 12px' }} onClick={handleEmptyAll}>
               <Trash2 size={12} /> {t('trashEmptyAll', lang)}
             </button>
           )}
@@ -153,7 +153,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
 
       {/* Filter tabs + search */}
       {totalCount > 0 && (
-        <div className="content-card" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
+        <div className="content-card" className="toolbar-card-mb">
           <div className="seg-control">
             {([
               { key: 'all', label: t('trashFilterAll', lang), count: totalCount },
@@ -177,7 +177,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('searchLogs', lang)}
             maxLength={200}
-            style={{ flex: 1, minWidth: 120 }}
+            className="flex-1" style={{ minWidth: 120 }}
           />
         </div>
       )}
@@ -194,27 +194,27 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
           <p className="page-subtitle">{t('trashEmptyDesc', lang)}</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div className="flex-col" style={{ gap: 6 }}>
           {filteredItems.slice(0, visibleCount).map((item) => {
             const days = daysLeft(item.trashedAt);
             return (
-              <div key={`${item.type}-${item.id}`} className="card" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div key={`${item.type}-${item.id}`} className="card" className="flex-row" style={{ gap: 10 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                  <div className="flex-row-gap-sm" style={{ marginBottom: 2 }}>
                     {typeBadge(item.type)}
-                    <span style={{ fontWeight: 500, fontSize: 14, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span className="trash-item-title">
                       {item.title}
                     </span>
                   </div>
-                  <span className="meta" style={{ fontSize: 11 }}>
+                  <span className="meta" className="text-xs">
                     {tf('trashDaysLeft', lang, days)}
                   </span>
                 </div>
-                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                  <button className="btn" style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }} onClick={() => handleRestore(item)}>
+                <div className="trash-actions">
+                  <button className="btn" className="btn-sm-compact" onClick={() => handleRestore(item)}>
                     <Undo2 size={12} /> {t('trashRestore', lang)}
                   </button>
-                  <button className="btn btn-danger" style={{ fontSize: 12, padding: '3px 10px', minHeight: 24 }} onClick={() => handleDeletePermanent(item)} aria-label={t('ariaDeletePermanently', lang)}>
+                  <button className="btn btn-danger" className="btn-sm-compact" onClick={() => handleDeletePermanent(item)} aria-label={t('ariaDeletePermanently', lang)}>
                     <Trash2 size={12} />
                   </button>
                 </div>
@@ -222,8 +222,8 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
             );
           })}
           {filteredItems.length > visibleCount && (
-            <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <button className="btn" onClick={() => setVisibleCount((v) => v + TRASH_PAGE_SIZE)} style={{ fontSize: 13 }}>
+            <div className="text-center" style={{ padding: '16px 0' }}>
+              <button className="btn" onClick={() => setVisibleCount((v) => v + TRASH_PAGE_SIZE)} className="text-sm">
                 {tf('loadMore', lang, filteredItems.length - visibleCount)}
               </button>
             </div>

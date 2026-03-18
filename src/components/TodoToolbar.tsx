@@ -46,7 +46,7 @@ export function TodoTabs({
   ];
 
   return (
-    <div className="content-card" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
+    <div className="content-card flex-row flex-wrap mb-xl" style={{ gap: 10 }}>
       <div className="seg-control">
         <button
           className={`seg-control-btn${activeTab === 'pending' ? ' active-worklog' : ''}`}
@@ -71,7 +71,7 @@ export function TodoTabs({
           {t('todoArchived', lang)} ({archivedCount})
         </button>
       </div>
-      <div style={{ flex: 1 }} />
+      <div className="flex-1" />
       <DropdownMenu
         label={t('todoSortLabel', lang)}
         value={sortKey}
@@ -86,8 +86,7 @@ export function TodoTabs({
       />
       {activeTab === 'pending' && staleTodos.length > 0 && (
         <button
-          className={`btn btn-sm${staleFilter ? ' btn-active' : ''}`}
-          style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, display: 'flex', alignItems: 'center', gap: 4 }}
+          className={`btn btn-sm btn-toolbar${staleFilter ? ' btn-active' : ''}`}
           onClick={() => onStaleFilterChange(!staleFilter)}
         >
           <AlertTriangle size={12} />
@@ -107,14 +106,13 @@ interface DueFilterBarProps {
 
 export function DueFilterBar({ lang, dueFilter, onDueFilterChange }: DueFilterBarProps) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-      <Calendar size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+    <div className="flex-row mb-md" style={{ gap: 6 }}>
+      <Calendar size={12} className="text-muted shrink-0" />
       <div className="seg-control" style={{ fontSize: 11 }}>
         {(['all', 'today', 'week', 'overdue'] as const).map((key) => (
           <button
             key={key}
-            className={`seg-control-btn${dueFilter === key ? ' active-worklog' : ''}`}
-            style={{ padding: '2px 8px', minHeight: 22, fontSize: 11 }}
+            className={`seg-control-btn due-filter-btn${dueFilter === key ? ' active-worklog' : ''}`}
             onClick={() => onDueFilterChange(key)}
           >
             {key === 'all' ? t('todoDueAll', lang) : key === 'today' ? t('todoDueToday', lang) : key === 'week' ? t('todoDueThisWeek', lang) : t('todoDueOverdue', lang)}
@@ -145,29 +143,29 @@ export function ProgressSummary({ lang, todos, pending, completed, snoozedCount,
   const progress = total > 0 ? doneCount / total : 0;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12, padding: '8px 14px', background: 'var(--bg-card, var(--sidebar-bg))', borderRadius: 8, border: '1px solid var(--border-default)' }}>
-      <svg width="50" height="50" style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
+    <div className="progress-summary">
+      <svg width="50" height="50" className="shrink-0" style={{ transform: 'rotate(-90deg)' }}>
         <circle cx="25" cy="25" r={radius} fill="none" stroke="var(--border-default)" strokeWidth="4" />
         <circle cx="25" cy="25" r={radius} fill="none" stroke="var(--success-text, #22c55e)" strokeWidth="4"
           strokeDasharray={circumference} strokeDashoffset={circumference * (1 - progress)}
           strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
       </svg>
-      <span style={{ fontSize: 14, fontWeight: 600 }}>
+      <span className="progress-label">
         {doneCount}/{total} {t('todoProgress', lang)}
       </span>
       {overdueCount > 0 && (
-        <span style={{ fontSize: 12, color: 'var(--error-text, #ef4444)', fontWeight: 500 }}>
+        <span className="progress-overdue">
           {overdueCount} {t('todoOverdue2', lang)}
         </span>
       )}
       {dueTodayCount > 0 && (
-        <span style={{ fontSize: 12, color: 'var(--warning-text, #f59e0b)', fontWeight: 500 }}>
+        <span className="progress-today">
           {dueTodayCount} {t('todoDueToday2', lang)}
         </span>
       )}
-      <div style={{ flex: 1 }} />
+      <div className="flex-1" />
       {snoozedCount > 0 && (
-        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none' }}>
+        <label className="snoozed-label">
           <input type="checkbox" checked={showSnoozed} onChange={(e) => onShowSnoozedChange(e.target.checked)} />
           {t('showSnoozed', lang)} ({snoozedCount})
         </label>
@@ -197,50 +195,35 @@ export function BulkActionBar({
   if (!selectMode) return null;
 
   return (
-    <div className="content-card" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 12, padding: '8px 14px' }}>
+    <div className="content-card flex-row flex-wrap mb-md" style={{ padding: '8px 14px' }}>
       <label
-        style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, userSelect: 'none' }}
+        className="flex-row cursor-pointer select-none"
+        style={{ gap: 6, fontSize: 12 }}
         onClick={onSelectAll}
       >
         {selectedIds.size === sorted.length ? <CheckSquare size={14} /> : <Square size={14} />}
         <span>{selectedIds.size === sorted.length ? t('todoBulkDeselectAll', lang) : t('todoBulkSelectAll', lang)}</span>
       </label>
-      <span className="meta" style={{ fontSize: 12 }}>
+      <span className="meta text-sm">
         {tf('todoSelectedCount', lang, selectedIds.size, sorted.length)}
       </span>
-      <div style={{ flex: 1 }} />
+      <div className="flex-1" />
       {selectedIds.size > 0 && (
-        <button
-          className="btn"
-          style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, display: 'flex', alignItems: 'center', gap: 4 }}
-          onClick={onBulkCopy}
-        >
+        <button className="btn btn-toolbar" onClick={onBulkCopy}>
           <Copy size={13} /> {t('todoBulkCopy', lang)}
         </button>
       )}
       {selectedIds.size > 0 && activeTab === 'pending' && (
-        <button
-          className="btn btn-primary"
-          style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, display: 'flex', alignItems: 'center', gap: 4 }}
-          onClick={onBulkDone}
-        >
+        <button className="btn btn-primary btn-toolbar" onClick={onBulkDone}>
           <Check size={13} /> {t('todoBulkDone', lang)}
         </button>
       )}
       {selectedIds.size > 0 && (
-        <button
-          className="btn"
-          style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, color: 'var(--error-text)', display: 'flex', alignItems: 'center', gap: 4 }}
-          onClick={onBulkDelete}
-        >
+        <button className="btn btn-toolbar text-error" onClick={onBulkDelete}>
           <Trash2 size={13} /> {t('todoBulkDelete', lang)}
         </button>
       )}
-      <button
-        className="btn"
-        style={{ fontSize: 12, padding: '4px 10px', minHeight: 26 }}
-        onClick={onCancel}
-      >
+      <button className="btn btn-toolbar" onClick={onCancel}>
         {t('todoBulkCancel', lang)}
       </button>
     </div>
@@ -274,19 +257,14 @@ export function TodoHeaderActions({ lang, selectMode, displayedCount, completedC
   }, [overflowOpen]);
 
   return (
-    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+    <div className="flex-row" style={{ gap: 6 }}>
       {!selectMode && (
         <>
-          <button
-            className="btn btn-primary"
-            style={{ fontSize: 13, padding: '5px 14px', minHeight: 44 }}
-            onClick={onAdd}
-          >
+          <button className="btn btn-primary btn-add" onClick={onAdd}>
             {t('todoAdd', lang)}
           </button>
           <button
-            className="btn"
-            style={{ fontSize: 13, padding: '5px 14px', minHeight: 44, display: 'flex', alignItems: 'center', gap: 4 }}
+            className="btn btn-add-flex"
             onClick={onStartSelect}
             disabled={displayedCount === 0}
           >
@@ -294,7 +272,7 @@ export function TodoHeaderActions({ lang, selectMode, displayedCount, completedC
           </button>
         </>
       )}
-      <div ref={overflowRef} style={{ position: 'relative' }}>
+      <div ref={overflowRef} className="relative">
         <button
           className="btn btn-ghost"
           style={{ padding: '5px 6px', minHeight: 44 }}

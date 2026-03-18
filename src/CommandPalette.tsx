@@ -186,16 +186,7 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
   const TypeBadge = ({ badgeKey }: { badgeKey: string }) => {
     const cfg = typeBadgeConfig[badgeKey] || typeBadgeConfig.log;
     return (
-      <span style={{
-        fontSize: 10,
-        color: cfg.color,
-        background: cfg.bg,
-        padding: '1px 6px',
-        borderRadius: 3,
-        flexShrink: 0,
-        lineHeight: '16px',
-        whiteSpace: 'nowrap',
-      }}>
+      <span className="cp-type-badge" style={{ color: cfg.color, background: cfg.bg }}>
         {cfg.label}
       </span>
     );
@@ -206,16 +197,7 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
     const proj = projectMap.get(projectId);
     if (!proj) return null;
     return (
-      <span style={{
-        fontSize: 10,
-        color: 'var(--text-muted)',
-        background: 'var(--bg-surface)',
-        padding: '1px 6px',
-        borderRadius: 3,
-        flexShrink: 0,
-        lineHeight: '16px',
-        whiteSpace: 'nowrap',
-      }}>
+      <span className="cp-type-badge" style={{ color: 'var(--text-muted)', background: 'var(--bg-surface)' }}>
         {proj.icon ? `${proj.icon} ` : ''}{proj.name}
       </span>
     );
@@ -232,7 +214,7 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
   const TypeIcon = ({ type, id }: { type: string; id: string }) => {
     if (type === 'project') {
       const proj = projectMap.get(id);
-      if (proj?.icon) return <span style={{ fontSize: 14, flexShrink: 0, lineHeight: 1 }}>{proj.icon}</span>;
+      if (proj?.icon) return <span className="shrink-0" style={{ fontSize: 14, lineHeight: 1 }}>{proj.icon}</span>;
       return <FolderOpen size={14} style={{ color: 'var(--accent-text)', flexShrink: 0 }} />;
     }
     if (type === 'todo') return <CheckSquare size={14} style={{ color: 'var(--success-text)', flexShrink: 0 }} />;
@@ -274,19 +256,10 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
                   onMouseEnter={() => setSelectedIndex(i)}
                 >
                   <Terminal size={14} style={{ color: 'var(--accent-text)', flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div className="flex-1 flex-col">
+                    <div className="flex-row-gap-2" style={{ gap: 6 }}>
                       <span className="palette-item-title">{cmd.label}</span>
-                      <span style={{
-                        fontSize: 10,
-                        color: 'var(--accent-text)',
-                        background: 'var(--bg-surface)',
-                        padding: '1px 6px',
-                        borderRadius: 3,
-                        flexShrink: 0,
-                        lineHeight: '16px',
-                        whiteSpace: 'nowrap',
-                      }}>
+                      <span className="cp-type-badge" style={{ color: 'var(--accent-text)', background: 'var(--bg-surface)' }}>
                         Command
                       </span>
                     </div>
@@ -308,8 +281,8 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
                 onMouseEnter={() => setSelectedIndex(i)}
               >
                 <TypeIcon type={r.type} id={r.id} />
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div className="flex-1 flex-col">
+                  <div className="flex-row-gap-2" style={{ gap: 6 }}>
                     <span className="palette-item-title">{r.title}</span>
                     <TypeBadge badgeKey={getTypeBadgeKey(r)} />
                     <ProjectLabel projectId={getProjectId(r)} />
@@ -323,15 +296,7 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
                     const preview = getContentPreview(log);
                     if (!preview || preview === r.snippet) return null;
                     return (
-                      <span style={{
-                        fontSize: 11,
-                        color: 'var(--text-muted)',
-                        overflow: 'hidden',
-                        whiteSpace: 'nowrap',
-                        textOverflow: 'ellipsis',
-                        maxWidth: '100%',
-                        display: 'block',
-                      }}>{preview}</span>
+                      <span className="cp-preview">{preview}</span>
                     );
                   })()}
                 </div>

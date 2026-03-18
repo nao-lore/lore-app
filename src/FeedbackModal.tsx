@@ -81,8 +81,8 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+        <div className="feedback-header">
+          <h2 className="feedback-title">
             {t('feedbackTitle', lang)}
           </h2>
           <button className="btn" onClick={onClose} style={{ padding: 4 }} aria-label={t('close', lang)}>
@@ -91,17 +91,17 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
         </div>
 
         {submitted ? (
-          <div style={{ textAlign: 'center', padding: '24px 0' }}>
-            <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>
+          <div className="text-center" style={{ padding: '24px 0' }}>
+            <p className="feedback-thanks-title">
               {t('feedbackThanks', lang)}
             </p>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            <p className="feedback-thanks-desc">
               {t('feedbackThanksDesc', lang)}
             </p>
             <button
               className="btn btn-primary"
               onClick={onClose}
-              style={{ marginTop: 16, padding: '8px 24px', fontSize: 14, borderRadius: 8 }}
+              className="btn-onboarding" style={{ marginTop: 16 }}
             >
               {t('close', lang)}
             </button>
@@ -109,17 +109,17 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
         ) : (
           <>
             {/* Category selector */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 8 }}>
+            <div className="mb-lg">
+              <label className="feedback-label">
                 {t('feedbackCategory', lang)}
               </label>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <div className="flex flex-wrap gap-2">
                 {categories.map((cat) => (
                   <button
                     key={cat}
                     className={`seg-control-btn${category === cat ? ' active-worklog' : ''}`}
                     onClick={() => setCategory(cat)}
-                    style={{ padding: '5px 12px', fontSize: 13 }}
+                    className="btn-pill" style={{ padding: '5px 12px' }}
                   >
                     {getCategoryLabel(cat, lang)}
                   </button>
@@ -128,8 +128,8 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
             </div>
 
             {/* Body */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 8 }}>
+            <div className="mb-lg">
+              <label className="feedback-label">
                 {t('feedbackBody', lang)}
               </label>
               <textarea
@@ -137,29 +137,17 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder={t('feedbackPlaceholder', lang)}
-                style={{
-                  width: '100%',
-                  minHeight: 120,
-                  padding: 12,
-                  fontSize: 14,
-                  lineHeight: 1.6,
-                  border: '1px solid var(--border-default)',
-                  borderRadius: 8,
-                  background: 'var(--bg-surface)',
-                  color: 'var(--text-primary)',
-                  resize: 'vertical',
-                  boxSizing: 'border-box',
-                }}
+                className="feedback-textarea"
               />
             </div>
 
             {/* Actions */}
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <div className="flex justify-end gap-3">
               <button
                 className="btn"
                 onClick={handleCopy}
                 disabled={!body.trim()}
-                style={{ fontSize: 13, padding: '6px 16px' }}
+                className="btn-nav-sm" style={{ padding: '6px 16px' }}
               >
                 {t('feedbackCopy', lang)}
               </button>
@@ -167,13 +155,13 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
                 className="btn btn-primary"
                 onClick={handleSubmit}
                 disabled={!body.trim()}
-                style={{ fontSize: 13, padding: '6px 20px', fontWeight: 600, borderRadius: 8 }}
+                className="btn-md-action"
               >
                 {t('feedbackSubmit', lang)}
               </button>
             </div>
 
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 12, textAlign: 'center' }}>
+            <p className="feedback-note">
               {t('feedbackNote', lang)}
             </p>
           </>
