@@ -25,6 +25,7 @@ interface HistoryViewProps {
   logs: LogEntry[];
   onSelect: (id: string) => void;
   onBack: () => void;
+  showBack?: boolean;
   onRefresh: () => void;
   lang: Lang;
   activeProjectId: string | null;
@@ -38,7 +39,7 @@ interface HistoryViewProps {
   onDuplicate?: (newId: string) => void;
 }
 
-function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId, projects, showToast, onOpenMasterNote, onOpenProject, tagFilter, onClearTagFilter, onTagFilter, onDuplicate }: HistoryViewProps) {
+function HistoryView({ logs, onSelect, onBack, showBack = true, onRefresh, lang, activeProjectId, projects, showToast, onOpenMasterNote, onOpenProject, tagFilter, onClearTagFilter, onTagFilter, onDuplicate }: HistoryViewProps) {
   const [rawQuery, setRawQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [modeFilter, setModeFilter] = usePersistedState<ModeFilter>('threadlog_logs_filter', 'all');
@@ -358,9 +359,11 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
   return (
     <div className="workspace-content-wide flex-col h-full">
       <div className="page-header page-header-sticky">
-        <button className="btn-back mb-md" onClick={onBack}>
-          ← {t('back', lang)}
-        </button>
+        {showBack && (
+          <button className="btn-back mb-md" onClick={onBack}>
+            ← {t('back', lang)}
+          </button>
+        )}
         <div className="page-header-row">
           <div>
             <h2>
