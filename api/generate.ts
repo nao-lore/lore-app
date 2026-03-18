@@ -13,12 +13,26 @@ export const config = { runtime: 'edge' };
 
 const DAILY_LIMIT_PER_IP = 20;
 const GLOBAL_DAILY_LIMIT = 500;
+const DEBOUNCE_WINDOW_MS = 2_000; // reject duplicate requests within 2s
 
 const ipCounts = new Map<string, { count: number; day: string }>();
 let globalCounter = { count: 0, day: '' };
 
+/** Track recent request hashes per IP to prevent rapid duplicate submissions */
+const recentRequests = new Map<string, number>();
+
 function today(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+/** Simple string hash (FNV-1a 32-bit) for deduplication */
+function fnv1a(str: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = (hash * 0x01000193) >>> 0;
+  }
+  return hash;
 }
 
 function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
@@ -48,6 +62,32 @@ function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
   entry.count++;
   globalCounter.count++;
   return { allowed: true, remaining: DAILY_LIMIT_PER_IP - entry.count };
+}
+
+/** Check if this is a duplicate request within the debounce window */
+function isDuplicateRequest(ip: string, bodyText: string): boolean {
+  const key = `${ip}:${fnv1a(bodyText)}`;
+  const now = Date.now();
+  const lastSeen = recentRequests.get(key);
+  if (lastSeen && now - lastSeen < DEBOUNCE_WINDOW_MS) {
+    return true;
+  }
+  recentRequests.set(key, now);
+  // Periodic cleanup: remove stale entries when map grows
+  if (recentRequests.size > 1000) {
+    for (const [k, ts] of recentRequests) {
+      if (now - ts > DEBOUNCE_WINDOW_MS) recentRequests.delete(k);
+    }
+  }
+  return false;
+}
+
+/** Build rate limit headers */
+function rateLimitHeaders(remaining: number): Record<string, string> {
+  return {
+    'X-RateLimit-Limit': String(DAILY_LIMIT_PER_IP),
+    'X-RateLimit-Remaining': String(remaining),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -102,26 +142,59 @@ export default async function handler(req: Request): Promise<Response> {
     );
   }
 
+  // Extract IP — x-forwarded-for may contain multiple IPs; use the leftmost (client)
+  // Also handle x-real-ip as fallback (some proxies use this instead)
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip')?.trim() ||
+    'unknown';
+
   // Rate limit
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   const { allowed, remaining } = checkRateLimit(ip);
+  const rlHeaders = rateLimitHeaders(remaining);
   if (!allowed) {
     return new Response(
       JSON.stringify({
         error: 'Daily limit reached. Set up your own free Gemini API key in Settings for unlimited use.',
       }),
-      { status: 429, headers: { ...cors, 'Content-Type': 'application/json' } },
+      {
+        status: 429,
+        headers: {
+          ...cors,
+          ...rlHeaders,
+          'Content-Type': 'application/json',
+          'Retry-After': '86400',
+        },
+      },
     );
   }
 
   // Parse body
+  let bodyText: string;
+  try {
+    bodyText = await req.text();
+  } catch {
+    return new Response(
+      JSON.stringify({ error: 'Failed to read request body' }),
+      { status: 400, headers: { ...cors, ...rlHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
+
+  // Debounce: reject rapid duplicate requests from the same IP
+  if (isDuplicateRequest(ip, bodyText)) {
+    return new Response(
+      JSON.stringify({ error: 'Duplicate request — please wait a moment before retrying.' }),
+      { status: 429, headers: { ...cors, ...rlHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
+
   let body: { system?: string; userMessage?: string; maxTokens?: number; stream?: boolean };
   try {
-    body = await req.json();
+    body = JSON.parse(bodyText);
   } catch {
     return new Response(
       JSON.stringify({ error: 'Invalid JSON body' }),
-      { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } },
+      { status: 400, headers: { ...cors, ...rlHeaders, 'Content-Type': 'application/json' } },
     );
   }
 
@@ -162,7 +235,7 @@ export default async function handler(req: Request): Promise<Response> {
       const text = await res.text().catch(() => '');
       return new Response(text, {
         status: res.status,
-        headers: { ...cors, 'Content-Type': 'application/json' },
+        headers: { ...cors, ...rlHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -171,9 +244,9 @@ export default async function handler(req: Request): Promise<Response> {
       return new Response(res.body, {
         headers: {
           ...cors,
+          ...rlHeaders,
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',
-          'X-RateLimit-Remaining': String(remaining),
         },
       });
     } else {
@@ -181,8 +254,8 @@ export default async function handler(req: Request): Promise<Response> {
       return new Response(JSON.stringify(data), {
         headers: {
           ...cors,
+          ...rlHeaders,
           'Content-Type': 'application/json',
-          'X-RateLimit-Remaining': String(remaining),
         },
       });
     }

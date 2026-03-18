@@ -28,3 +28,4 @@ test-results/
 .vercel
 .env*.local
 .claude/worktrees/
+lore-landing/
