@@ -22,9 +22,9 @@ describe('useNavigation — view navigation', () => {
     store.clear();
   });
 
-  it('initializes to input view', () => {
+  it('initializes to dashboard view', () => {
     const { result } = renderHook(() => useNavigation());
-    expect(result.current.view).toBe('input');
+    expect(result.current.view).toBe('dashboard');
   });
 
   it('initializes from saved last view', () => {
@@ -36,13 +36,13 @@ describe('useNavigation — view navigation', () => {
   it('does not restore detail as initial view', () => {
     store.set('threadlog_last_view', 'detail');
     const { result } = renderHook(() => useNavigation());
-    expect(result.current.view).toBe('input');
+    expect(result.current.view).toBe('dashboard');
   });
 
   it('does not restore masternote as initial view', () => {
     store.set('threadlog_last_view', 'masternote');
     const { result } = renderHook(() => useNavigation());
-    expect(result.current.view).toBe('input');
+    expect(result.current.view).toBe('dashboard');
   });
 
   it('goTo changes view', () => {
@@ -54,7 +54,7 @@ describe('useNavigation — view navigation', () => {
   it('goTo sets prevView', () => {
     const { result } = renderHook(() => useNavigation());
     act(() => { result.current.goTo('history'); });
-    expect(result.current.prevView).toBe('input');
+    expect(result.current.prevView).toBe('dashboard');
   });
 
   it('goToRaw changes view without dirty guard', () => {
@@ -92,6 +92,7 @@ describe('useNavigation — dirty state guard', () => {
 
   it('goTo is blocked when input is dirty and sets pendingNav', () => {
     const { result } = renderHook(() => useNavigation());
+    act(() => { result.current.goToRaw('input'); });
     act(() => { result.current.setInputDirty(true); });
     act(() => { result.current.goTo('history'); });
     // Should still be on input because dirty guard blocked
@@ -101,6 +102,7 @@ describe('useNavigation — dirty state guard', () => {
 
   it('clearInputDirty allows navigation after', () => {
     const { result } = renderHook(() => useNavigation());
+    act(() => { result.current.goToRaw('input'); });
     act(() => { result.current.setInputDirty(true); });
     act(() => { result.current.clearInputDirty(); });
     act(() => { result.current.goTo('history'); });
@@ -109,6 +111,7 @@ describe('useNavigation — dirty state guard', () => {
 
   it('goTo to input view is not blocked even when dirty', () => {
     const { result } = renderHook(() => useNavigation());
+    act(() => { result.current.goToRaw('input'); });
     act(() => { result.current.setInputDirty(true); });
     act(() => { result.current.goTo('input'); });
     expect(result.current.view).toBe('input');
