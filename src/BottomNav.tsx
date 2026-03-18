@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback, useRef, memo } from 'react';
-import { BarChart2, CheckSquare, ScrollText, MoreHorizontal, FolderOpen, Clock, FileBarChart, BookOpen, Settings } from 'lucide-react';
+import { memo } from 'react';
+import { LayoutDashboard, PenSquare, FolderKanban } from 'lucide-react';
 import { t } from './i18n';
 import type { Lang } from './i18n';
-import { useFocusTrap } from './useFocusTrap';
 import type { View } from './App';
 
 interface BottomNavProps {
@@ -11,102 +10,35 @@ interface BottomNavProps {
   lang: Lang;
 }
 
-const PRIMARY_TABS = [
-  { view: 'dashboard' as const, icon: BarChart2, labelKey: 'navDashboard' as const },
-  { view: 'history' as const, icon: ScrollText, labelKey: 'navLogs' as const },
-  { view: 'projects' as const, icon: FolderOpen, labelKey: 'navProjects' as const },
-];
-
-const MORE_ITEMS = [
-  { view: 'todos' as const, icon: CheckSquare, labelKey: 'navTodo' as const },
-  { view: 'timeline' as const, icon: Clock, labelKey: 'navTimeline' as const },
-  { view: 'weeklyreport' as const, icon: FileBarChart, labelKey: 'navWeeklyReport' as const },
-  { view: 'summarylist' as const, icon: BookOpen, labelKey: 'navProjectSummary' as const },
-  { view: 'settings' as const, icon: Settings, labelKey: 'settings' as const },
+const TABS = [
+  { view: 'dashboard' as const, icon: LayoutDashboard, labelKey: 'navDashboard' as const },
+  { view: 'input' as const, icon: PenSquare, labelKey: 'navInput' as const },
+  { view: 'projects' as const, icon: FolderKanban, labelKey: 'navProjects' as const },
 ];
 
 function BottomNav({ activeView, onNavigate, lang }: BottomNavProps) {
-  const [moreOpen, setMoreOpen] = useState(false);
-  const moreTriggerRef = useRef<HTMLButtonElement>(null);
-  const sheetTrapRef = useFocusTrap<HTMLDivElement>(moreOpen);
-
-  const closeMore = useCallback(() => {
-    setMoreOpen(false);
-    // Restore focus to the trigger element
-    setTimeout(() => moreTriggerRef.current?.focus(), 0);
-  }, []);
-
-  // Close on Escape
-  useEffect(() => {
-    if (!moreOpen) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') closeMore(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [moreOpen, closeMore]);
-
-  const isMoreActive = MORE_ITEMS.some((item) => item.view === activeView);
-
   return (
-    <>
-      {/* More sheet overlay */}
-      {moreOpen && (
-        <div className="bottom-nav-overlay" onClick={closeMore} role="presentation">
-          <div ref={sheetTrapRef} className="bottom-nav-sheet" role="dialog" aria-modal="true" aria-label={t('more', lang)} onClick={(e) => e.stopPropagation()}>
-            {MORE_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const active = activeView === item.view;
-              return (
-                <button
-                  key={item.view}
-                  className={`bottom-nav-sheet-item${active ? ' active' : ''}`}
-                  onClick={() => {
-                    setMoreOpen(false);
-                    onNavigate(item.view);
-                  }}
-                >
-                  <Icon size={18} />
-                  <span>{t(item.labelKey, lang)}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Bottom tab bar */}
-      <nav className="bottom-nav" aria-label={t('ariaBottomNav', lang)}>
-        <div className="bottom-nav-inner">
-          {PRIMARY_TABS.map((tab) => {
-            const Icon = tab.icon;
-            const active = activeView === tab.view ||
-              (tab.view === 'input' && (activeView === 'input' || activeView === 'detail'));
-            return (
-              <button
-                key={tab.view}
-                className={`bottom-nav-item${active ? ' active' : ''}`}
-                onClick={() => onNavigate(tab.view)}
-                aria-label={t(tab.labelKey, lang)}
-                aria-current={active ? 'page' : undefined}
-              >
-                <Icon size={20} />
-                <span>{t(tab.labelKey, lang)}</span>
-              </button>
-            );
-          })}
-          <button
-            ref={moreTriggerRef}
-            className={`bottom-nav-item${isMoreActive ? ' active' : ''}`}
-            onClick={() => setMoreOpen((v) => !v)}
-            aria-label={t('more', lang)}
-            aria-expanded={moreOpen}
-            aria-current={isMoreActive ? 'page' : undefined}
-          >
-            <MoreHorizontal size={20} />
-            <span>{t('more', lang)}</span>
-          </button>
-        </div>
-      </nav>
-    </>
+    <nav className="bottom-nav" aria-label={t('ariaBottomNav', lang)}>
+      <div className="bottom-nav-inner">
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          const active = activeView === tab.view ||
+            (tab.view === 'input' && (activeView === 'input' || activeView === 'detail'));
+          return (
+            <button
+              key={tab.view}
+              className={`bottom-nav-item${active ? ' active' : ''}`}
+              onClick={() => onNavigate(tab.view)}
+              aria-label={t(tab.labelKey, lang)}
+              aria-current={active ? 'page' : undefined}
+            >
+              <Icon size={20} />
+              <span>{t(tab.labelKey, lang)}</span>
+            </button>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 

@@ -57,26 +57,21 @@ describe('Sidebar', () => {
     vi.clearAllMocks();
   });
 
-  it('renders 4 primary nav items', () => {
+  it('renders 7 nav items in two tiers', () => {
     render(<Sidebar {...defaultProps} />);
-    // The 4 primary nav items: Dashboard, Logs, Projects, TODO
+    // Tier 1 (3): Dashboard, Input, Projects
+    // Tier 2 (4): Logs, TODO, Settings, Help
     const navItems = screen.getAllByRole('button').filter(
       (btn) => btn.classList.contains('sidebar-nav-item')
     );
-    expect(navItems.length).toBe(4);
+    expect(navItems.length).toBe(7);
   });
 
-  it('shows "More" section that can be toggled', () => {
-    render(<Sidebar {...defaultProps} />);
-    // "More" toggle exists — it uses aria-label and aria-expanded
-    const moreToggles = screen.getAllByRole('button', { name: 'Toggle more options' });
-    const moreToggle = moreToggles[0];
-    expect(moreToggle).toBeInTheDocument();
-    expect(moreToggle).toHaveAttribute('aria-expanded', 'false');
-
-    // Click to expand
-    fireEvent.click(moreToggle);
-    expect(moreToggle).toHaveAttribute('aria-expanded', 'true');
+  it('shows tier 2 secondary nav items', () => {
+    const { container } = render(<Sidebar {...defaultProps} />);
+    // Secondary items should be visible (no toggle needed)
+    const secondaryItems = container.querySelectorAll('.sidebar-nav-item-secondary');
+    expect(secondaryItems.length).toBe(4);
   });
 
   it('shows pinned section when pinned items exist', () => {
