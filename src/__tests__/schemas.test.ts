@@ -41,20 +41,26 @@ describe('WorklogResultSchema', () => {
 });
 
 describe('HandoffResultSchema', () => {
-  it('parses valid input', () => {
+  it('parses valid structured input', () => {
     const input = {
       title: 'Handoff',
       currentStatus: ['WIP'],
-      nextActions: ['Deploy'],
+      nextActions: [{ action: 'Deploy to staging', whyImportant: 'Blocks QA', priorityReason: 'First step', dueBy: null, dependsOn: null }],
       completed: ['Setup'],
       blockers: [],
-      decisions: [],
+      decisions: [{ decision: 'Use PostgreSQL', rationale: 'Better for our scale' }],
       constraints: [],
       tags: ['deploy'],
     };
     const result = HandoffResultSchema.parse(input);
     expect(result.title).toBe('Handoff');
     expect(result.currentStatus).toEqual(['WIP']);
+    expect(result.nextActions).toHaveLength(1);
+    expect(result.nextActions[0].action).toBe('Deploy to staging');
+    expect(result.nextActions[0].whyImportant).toBe('Blocks QA');
+    expect(result.decisions).toHaveLength(1);
+    expect(result.decisions[0].decision).toBe('Use PostgreSQL');
+    expect(result.decisions[0].rationale).toBe('Better for our scale');
   });
 
   it('applies nested defaults for handoffMeta', () => {
@@ -78,6 +84,62 @@ describe('HandoffResultSchema', () => {
     const result = HandoffResultSchema.parse(input);
     expect(result.resumeChecklist).toHaveLength(1);
     expect(result.resumeChecklist[0].action).toBe('Check tests');
+  });
+
+  it('defaults nextActions to empty array', () => {
+    const result = HandoffResultSchema.parse({});
+    expect(result.nextActions).toEqual([]);
+  });
+
+  it('defaults actionBacklog to empty array', () => {
+    const result = HandoffResultSchema.parse({});
+    expect(result.actionBacklog).toEqual([]);
+  });
+
+  it('defaults decisions to empty array', () => {
+    const result = HandoffResultSchema.parse({});
+    expect(result.decisions).toEqual([]);
+  });
+
+  it('applies defaults to partial nextAction objects', () => {
+    const input = {
+      nextActions: [{ action: 'Fix bug' }],
+    };
+    const result = HandoffResultSchema.parse(input);
+    expect(result.nextActions[0]).toEqual({
+      action: 'Fix bug',
+      whyImportant: null,
+      priorityReason: null,
+      dueBy: null,
+      dependsOn: null,
+    });
+  });
+
+  it('applies defaults to partial decision objects', () => {
+    const input = {
+      decisions: [{ decision: 'Use React' }],
+    };
+    const result = HandoffResultSchema.parse(input);
+    expect(result.decisions[0]).toEqual({
+      decision: 'Use React',
+      rationale: null,
+    });
+  });
+
+  it('parses actionBacklog with full structure', () => {
+    const input = {
+      actionBacklog: [{
+        action: 'Add tests',
+        whyImportant: 'Coverage gap',
+        priorityReason: 'Before release',
+        dueBy: '2026-04-01',
+        dependsOn: ['Fix bug'],
+      }],
+    };
+    const result = HandoffResultSchema.parse(input);
+    expect(result.actionBacklog).toHaveLength(1);
+    expect(result.actionBacklog[0].action).toBe('Add tests');
+    expect(result.actionBacklog[0].dependsOn).toEqual(['Fix bug']);
   });
 });
 
