@@ -24,7 +24,6 @@ import {
   CHUNK_WORKLOG_EXTRACT_PROMPT as WORKLOG_EXTRACT_PROMPT,
 } from './prompts';
 
-import { splitIntoChunks, getChunkTargets } from './chunkSplitter';
 import { asString, asStringArray, localMerge } from './chunkMerger';
 
 // Re-export for any external consumers
