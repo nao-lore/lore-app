@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { X } from 'lucide-react';
 
 interface ErrorRetryBannerProps {
@@ -9,7 +9,7 @@ interface ErrorRetryBannerProps {
   onDismiss?: () => void;
 }
 
-export default function ErrorRetryBanner({ message, retryLabel, dismissLabel, onRetry, onDismiss }: ErrorRetryBannerProps) {
+export default memo(function ErrorRetryBanner({ message, retryLabel, dismissLabel, onRetry, onDismiss }: ErrorRetryBannerProps) {
   const [retrying, setRetrying] = useState(false);
 
   const handleRetry = () => {
@@ -51,4 +51,4 @@ export default function ErrorRetryBanner({ message, retryLabel, dismissLabel, on
       )}
     </div>
   );
-}
+});

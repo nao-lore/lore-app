@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 interface DropdownMenuProps {
@@ -8,7 +8,7 @@ interface DropdownMenuProps {
   onChange: (key: string) => void;
 }
 
-export default function DropdownMenu({ label, value, options, onChange }: DropdownMenuProps) {
+export default memo(function DropdownMenu({ label, value, options, onChange }: DropdownMenuProps) {
   const [open, setOpenRaw] = useState(false);
   const [focusIdx, setFocusIdx] = useState(-1);
   const ref = useRef<HTMLDivElement>(null);
@@ -82,4 +82,4 @@ export default function DropdownMenu({ label, value, options, onChange }: Dropdo
       )}
     </div>
   );
-}
+});

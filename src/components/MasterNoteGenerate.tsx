@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo } from 'react';
 import type { MasterNote, SourcedItem } from '../types';
 import type { Lang } from '../i18n';
 import { t } from '../i18n';
@@ -60,7 +60,7 @@ interface OverflowMenuProps {
   historyCount: number;
 }
 
-export function OverflowMenu({
+export const OverflowMenu = memo(function OverflowMenu({
   note, projectName, lang, showToast,
   onEdit, onRefine, onRegenerate, onHistory,
   disabled, historyCount,
@@ -154,7 +154,7 @@ export function OverflowMenu({
       )}
     </div>
   );
-}
+});
 
 // ─── Pending note diff preview ───
 interface PendingNotePreviewProps {
@@ -165,7 +165,7 @@ interface PendingNotePreviewProps {
   onReject: () => void;
 }
 
-export function PendingNotePreview({ lang, saved, pendingNote, onAccept, onReject }: PendingNotePreviewProps) {
+export const PendingNotePreview = memo(function PendingNotePreview({ lang, saved, pendingNote, onAccept, onReject }: PendingNotePreviewProps) {
   const sections = [
     { label: t('mnDecisions', lang), current: saved?.decisions?.map((d) => d.text) || [], pending: pendingNote.decisions?.map((d) => d.text) || [] },
     { label: t('mnOpenIssues', lang), current: saved?.openIssues?.map((d) => d.text) || [], pending: pendingNote.openIssues?.map((d) => d.text) || [] },
@@ -220,7 +220,7 @@ export function PendingNotePreview({ lang, saved, pendingNote, onAccept, onRejec
       })}
     </div>
   );
-}
+});
 
 // ─── Inline markdown renderer ───
 export function renderSimpleMarkdown(text: string): React.ReactNode[] {
