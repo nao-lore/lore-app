@@ -24,7 +24,11 @@ export { CHUNK_HANDOFF_EXTRACT_LIGHT_PROMPT as HANDOFF_EXTRACT_LIGHT_PROMPT };
 // Chunk splitting — mode-aware
 // =============================================================================
 
-// Chunk targets per provider — Claude has strict input token limits
+// Chunk targets per provider (in estimated tokens).
+// Anthropic Claude: strict ~100K input token limit, but prompt + response overhead
+//   means we keep extract chunks small (10-12K tokens) for reliable JSON output.
+// Gemini: 1M+ context window — large chunks reduce API calls and merging overhead.
+// OpenAI: 128K context for gpt-4o-mini — moderate chunk size balances cost and quality.
 const CHUNK_TARGETS = {
   anthropic: { worklog: 12_000, handoff: 10_000 },
   gemini:    { worklog: 60_000, handoff: 50_000 },
@@ -36,16 +40,64 @@ function getChunkTargets() {
   return CHUNK_TARGETS[provider] ?? CHUNK_TARGETS.gemini;
 }
 
+// =============================================================================
+// Token estimation — more accurate than raw character count for mixed-language text
+// =============================================================================
+
+/** CJK Unicode range check (CJK Unified Ideographs + common ranges) */
+function isCJK(code: number): boolean {
+  return (
+    (code >= 0x4E00 && code <= 0x9FFF) ||   // CJK Unified Ideographs
+    (code >= 0x3400 && code <= 0x4DBF) ||   // CJK Unified Ideographs Extension A
+    (code >= 0x3040 && code <= 0x309F) ||   // Hiragana
+    (code >= 0x30A0 && code <= 0x30FF) ||   // Katakana
+    (code >= 0xAC00 && code <= 0xD7AF)      // Hangul Syllables
+  );
+}
+
+/**
+ * Estimate token count for a string.
+ * English/ASCII: ~4 chars per token (GPT-style BPE average).
+ * CJK characters: ~1-2 chars per token (each character is often its own token).
+ * This provides a more accurate estimate than raw character count,
+ * especially for Japanese/Chinese/Korean text which has higher token density.
+ */
+export function estimateTokens(text: string): number {
+  let asciiChars = 0;
+  let cjkChars = 0;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (isCJK(code)) {
+      cjkChars++;
+    } else {
+      asciiChars++;
+    }
+  }
+  // English: ~4 chars/token, CJK: ~1.5 chars/token (conservative)
+  return Math.ceil(asciiChars / 4 + cjkChars / 1.5);
+}
+
+/** Convert a token target to an approximate character limit for the given text */
+function tokenTargetToCharLimit(text: string, tokenTarget: number): number {
+  const totalTokens = estimateTokens(text);
+  if (totalTokens === 0) return tokenTarget * 4; // fallback
+  const charsPerToken = text.length / totalTokens;
+  return Math.ceil(tokenTarget * charsPerToken);
+}
+
 function splitIntoChunks(text: string, chunkTarget: number): string[] {
+  // Convert token target to character limit based on the text's language mix
+  const charLimit = tokenTargetToCharLimit(text, chunkTarget);
+
   const fileSeparator = /(?=--- FILE: .+ ---\n)/g;
   const segments = text.split(fileSeparator).filter((s) => s.trim());
 
   if (segments.length > 1) {
-    return groupSegments(segments, chunkTarget);
+    return groupSegments(segments, charLimit);
   }
 
   const paragraphs = text.split(/\n{2,}/);
-  return groupSegments(paragraphs.map((p) => p + '\n\n'), chunkTarget);
+  return groupSegments(paragraphs.map((p) => p + '\n\n'), charLimit);
 }
 
 /** Hard cap: no single chunk may exceed this in extract phase */
@@ -1334,4 +1386,6 @@ export const _testOnly = {
   splitIntoChunks,
   tryRepairJson,
   localMerge,
+  estimateTokens,
+  tokenTargetToCharLimit,
 };

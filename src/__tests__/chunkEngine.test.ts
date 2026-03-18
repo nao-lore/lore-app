@@ -45,9 +45,75 @@ vi.mock('../utils/decisions', () => ({
   dedupDecisions: vi.fn((arr: unknown[]) => arr),
 }));
 
-import { _testOnly } from '../chunkEngine';
+import { _testOnly, estimateTokens } from '../chunkEngine';
 
-const { splitIntoChunks, tryRepairJson, localMerge } = _testOnly;
+const { splitIntoChunks, tryRepairJson, localMerge, tokenTargetToCharLimit } = _testOnly;
+
+// =============================================================================
+// estimateTokens
+// =============================================================================
+describe('estimateTokens', () => {
+  it('estimates English text at ~4 chars per token', () => {
+    const text = 'Hello world this is a test string with some words';
+    const tokens = estimateTokens(text);
+    // 49 chars / 4 = ~12.25, ceil = 13
+    expect(tokens).toBeGreaterThan(10);
+    expect(tokens).toBeLessThan(20);
+  });
+
+  it('estimates CJK text at ~1.5 chars per token', () => {
+    const text = 'これはテストの日本語テキストです';
+    const tokens = estimateTokens(text);
+    // 15 CJK chars / 1.5 = 10
+    expect(tokens).toBeGreaterThan(5);
+    expect(tokens).toBeLessThan(20);
+  });
+
+  it('handles mixed language text', () => {
+    const text = 'React componentのテスト実装';
+    const tokens = estimateTokens(text);
+    // Mix of ASCII and CJK — should be higher than pure English estimate
+    const pureEnglishEstimate = Math.ceil(text.length / 4);
+    expect(tokens).toBeGreaterThan(pureEnglishEstimate);
+  });
+
+  it('returns 0 for empty string', () => {
+    expect(estimateTokens('')).toBe(0);
+  });
+
+  it('handles Korean text as CJK', () => {
+    const text = '안녕하세요 테스트입니다';
+    const tokens = estimateTokens(text);
+    // Korean chars should be counted as CJK (higher token density)
+    expect(tokens).toBeGreaterThan(3);
+  });
+});
+
+// =============================================================================
+// tokenTargetToCharLimit
+// =============================================================================
+describe('tokenTargetToCharLimit', () => {
+  it('returns higher char limit for English text', () => {
+    const englishText = 'This is a sample English text for testing purposes.';
+    const limit = tokenTargetToCharLimit(englishText, 1000);
+    // English: ~4 chars/token, so 1000 tokens ≈ 4000 chars
+    expect(limit).toBeGreaterThan(3000);
+    expect(limit).toBeLessThan(5000);
+  });
+
+  it('returns lower char limit for CJK text', () => {
+    const japaneseText = 'これはテストの日本語テキストです。開発作業の記録を整理します。';
+    const limit = tokenTargetToCharLimit(japaneseText, 1000);
+    // CJK: ~1.5 chars/token, so 1000 tokens ≈ 1500 chars
+    expect(limit).toBeGreaterThan(1000);
+    expect(limit).toBeLessThan(2500);
+  });
+
+  it('falls back for empty text', () => {
+    const limit = tokenTargetToCharLimit('', 1000);
+    expect(limit).toBe(4000); // fallback: tokenTarget * 4
+  });
+});
 
 // =============================================================================
 // splitIntoChunks

@@ -25,23 +25,45 @@ export type TransformAction = 'both' | 'handoff' | 'worklog' | 'todo_only' | 'wo
 // ---------------------------------------------------------------------------
 
 const AI_CACHE_MAX = 20;
-const aiResultCache = new Map<string, unknown>();
+/** TTL for cached results in milliseconds (30 minutes) */
+const AI_CACHE_TTL_MS = 30 * 60 * 1000;
+
+interface CacheEntry {
+  result: unknown;
+  timestamp: number;
+}
+
+const aiResultCache = new Map<string, CacheEntry>();
+
+/** djb2 hash — fast, low-collision string hash */
+export function djb2Hash(str: string): string {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash + str.charCodeAt(i)) & 0xffffffff;
+  }
+  return hash.toString(36);
+}
 
 function hashCacheKey(text: string, action: string): string {
-  const prefix = text.slice(0, 1000);
   const provider = getActiveProvider() || 'default';
   const lang = getLang() || 'auto';
-  return `${action}:${provider}:${lang}:${text.length}:${prefix}`;
+  const composite = `${action}:${provider}:${lang}:${text.length}:${text}`;
+  return djb2Hash(composite);
 }
 
 function getCachedResult<T>(text: string, action: string): T | undefined {
   const key = hashCacheKey(text, action);
-  const cached = aiResultCache.get(key);
-  if (cached !== undefined) {
+  const entry = aiResultCache.get(key);
+  if (entry !== undefined) {
+    // Check TTL expiration
+    if (Date.now() - entry.timestamp > AI_CACHE_TTL_MS) {
+      aiResultCache.delete(key);
+      return undefined;
+    }
     // Move to end for LRU behavior
     aiResultCache.delete(key);
-    aiResultCache.set(key, cached);
-    return cached as T;
+    aiResultCache.set(key, entry);
+    return entry.result as T;
   }
   return undefined;
 }
@@ -53,7 +75,7 @@ function setCachedResult(text: string, action: string, result: unknown): void {
     const oldest = aiResultCache.keys().next().value;
     if (oldest !== undefined) aiResultCache.delete(oldest);
   }
-  aiResultCache.set(key, result);
+  aiResultCache.set(key, { result, timestamp: Date.now() });
 }
 
 // ---------------------------------------------------------------------------

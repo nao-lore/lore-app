@@ -393,6 +393,80 @@ async function callAnthropicStream(req: ProviderRequest, onChunk: StreamCallback
 }
 
 // ---------------------------------------------------------------------------
+// OpenAI Streaming
+// ---------------------------------------------------------------------------
+
+async function callOpenAIStream(req: ProviderRequest, onChunk: StreamCallback): Promise<string> {
+  const body = {
+    model: OPENAI_MODEL,
+    max_tokens: req.maxTokens,
+    stream: true,
+    messages: [
+      { role: 'system', content: req.system },
+      { role: 'user', content: req.userMessage },
+    ],
+  };
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${req.apiKey}`,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      handleHttpError(res.status, text);
+    }
+
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error('[Stream] ReadableStream not supported');
+
+    const decoder = new TextDecoder();
+    let accumulated = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (!data || data === '[DONE]') continue;
+
+        try {
+          const event = JSON.parse(data);
+          const text = event.choices?.[0]?.delta?.content;
+          if (text) {
+            accumulated += text;
+            onChunk(text, accumulated);
+          }
+        } catch (e) {
+          if (e instanceof SyntaxError) continue;
+          throw e;
+        }
+      }
+    }
+
+    if (!accumulated) throw new Error('[AI Response] Empty streaming response from OpenAI. Try again.');
+    return accumulated;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Shared error handling
 // ---------------------------------------------------------------------------
 
@@ -706,11 +780,7 @@ export async function callProviderStream(req: ProviderRequest, onChunk: StreamCa
     if (provider === 'gemini') {
       return callGeminiStream(req, onChunk);
     }
-    // OpenAI fallback: non-streaming call, fire onChunk once with full result
-    // Call callOpenAI directly to avoid double-retry (callProviderStream already has retry wrapper)
-    return callOpenAI(req).then((result) => {
-      onChunk(result, result);
-      return result;
-    });
+    // OpenAI streaming via SSE
+    return callOpenAIStream(req, onChunk);
   });
 }
