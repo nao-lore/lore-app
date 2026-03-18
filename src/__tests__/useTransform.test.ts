@@ -158,7 +158,8 @@ vi.mock('../transform', async (importOriginal) => {
   };
 });
 
-import { useTransform, djb2Hash } from '../hooks/useTransform';
+import { useTransform } from '../hooks/useTransform';
+import { djb2Hash } from '../hooks/useTransformStrategies';
 import type { Project } from '../types';
 import * as storage from '../storage';
 

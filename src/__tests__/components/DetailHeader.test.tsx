@@ -113,16 +113,17 @@ describe('DetailHeader', () => {
   it('calls onBack when breadcrumb Logs is clicked', () => {
     const onBack = vi.fn();
     const { container } = render(<DetailHeader {...defaultProps} onBack={onBack} />);
-    const logsLink = container.querySelector('.detail-breadcrumb [role="button"]') as HTMLElement;
+    const logsLink = container.querySelector('.detail-breadcrumb button, .detail-breadcrumb .breadcrumb-btn') as HTMLElement;
     fireEvent.click(logsLink);
     expect(onBack).toHaveBeenCalled();
   });
 
-  it('calls onBack when Logs breadcrumb gets Enter key', () => {
+  it('calls onBack when Logs breadcrumb button is activated', () => {
     const onBack = vi.fn();
     const { container } = render(<DetailHeader {...defaultProps} onBack={onBack} />);
-    const logsLink = container.querySelector('.detail-breadcrumb [role="button"]') as HTMLElement;
-    fireEvent.keyDown(logsLink, { key: 'Enter' });
+    const logsLink = container.querySelector('.detail-breadcrumb button, .detail-breadcrumb .breadcrumb-btn') as HTMLElement;
+    // Native button handles Enter via click event
+    fireEvent.click(logsLink);
     expect(onBack).toHaveBeenCalled();
   });
 

@@ -200,8 +200,9 @@ describe('HistoryCardItem', () => {
     const log = makeLog();
     const ctx = makeContext({ onCardClick });
     const { container } = render(<HistoryCardItem log={log} ctx={ctx} />);
-    const card = container.querySelector('.card');
-    fireEvent.keyDown(card!, { key: 'Enter' });
+    const card = container.querySelector('.card') as HTMLElement;
+    // button elements handle Enter natively via click
+    fireEvent.click(card!);
     expect(onCardClick).toHaveBeenCalledWith('log-1');
   });
 
