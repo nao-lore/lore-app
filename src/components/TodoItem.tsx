@@ -370,6 +370,7 @@ export function renderTodoItem(
       onKeyDown={(e) => {
         if (e.key === 'Enter') { e.preventDefault(); if (selectMode) { onToggleSelect(todo.id); } else { onToggle(todo.id, todo.done); } }
         if (e.key === ' ') { e.preventDefault(); if (selectMode) { onToggleSelect(todo.id); } else { onToggle(todo.id, todo.done); } }
+        if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); onDelete?.(todo.id); }
       }}
     >
       {dragEnabled && handleProps && (
@@ -407,6 +408,7 @@ export function renderTodoItem(
         {editingTodoId === todo.id ? (
           <input
             className="input w-full fs-14"
+            aria-label={t('ariaRenameInput', lang)}
             value={editDraft}
             onChange={(e) => onSetEditDraft(e.target.value)}
             onBlur={() => { if (editDraft.trim() && editDraft.trim() !== todo.text) { updateTodo(todo.id, { text: editDraft.trim() }); onRefresh(); } onSetEditingTodoId(null); }}

@@ -88,6 +88,7 @@ export default function LogPickerModal({ allLogs, targetProjectId, projects, lan
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('addLogsSearchPlaceholder', lang)}
+            aria-label={t('ariaSearchLogs', lang)}
             autoFocus
             maxLength={200}
             className="input w-full"
@@ -105,13 +106,12 @@ export default function LogPickerModal({ allLogs, targetProjectId, projects, lan
               const isSelected = selected.has(log.id);
               const projectName = getProjectName(log.projectId);
               return (
-                <div
+                <button
+                  type="button"
                   key={log.id}
-                  className={`log-picker-item${isSelected ? ' selected' : ''}`}
-                  role="button"
-                  tabIndex={0}
+                  className={`log-picker-item log-picker-item-btn${isSelected ? ' selected' : ''}`}
                   onClick={() => toggleSelect(log.id)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelect(log.id); } }}
+                  aria-label={t('ariaSelectLogItem', lang)}
                 >
                   <input
                     type="checkbox"
@@ -136,7 +136,7 @@ export default function LogPickerModal({ allLogs, targetProjectId, projects, lan
                       )}
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })
           )}

@@ -136,6 +136,7 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder={t('feedbackPlaceholder', lang)}
+                aria-label={t('feedbackBody', lang)}
                 className="feedback-textarea"
               />
             </div>

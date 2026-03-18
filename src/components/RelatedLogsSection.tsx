@@ -93,6 +93,7 @@ const RelatedLogsSection = memo(function RelatedLogsSection({ log, onOpenLog, la
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('searchLogs', lang)}
+                  aria-label={t('ariaSearchLogs', lang)}
                 />
               </div>
               <div className="search-dropdown-scroll">

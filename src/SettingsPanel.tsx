@@ -178,6 +178,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
               onChange={(e) => { handleKeyChange('gemini', e.target.value); setKeyErrors((prev) => ({ ...prev, gemini: '' })); }}
               onBlur={() => { const err = validateApiKey('gemini', keys.gemini); setKeyErrors((prev) => ({ ...prev, gemini: err })); }}
               placeholder={PROVIDER_KEY_PLACEHOLDER.gemini}
+              aria-label={t('apiKeyLabel', lang)}
             />
             <button
               className="btn btn-primary btn-sm-save shrink-0"
@@ -332,6 +333,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 onChange={(e) => { setNotionKeyState(e.target.value); setNotionError(''); }}
                 onBlur={() => { if (notionKey.trim() && !notionKey.startsWith('ntn_') && !notionKey.startsWith('secret_')) setNotionError(t('notionApiKeyError', lang)); }}
                 placeholder={t('notionApiKeyPlaceholder', lang)}
+                aria-label={t('notionApiKey', lang)}
               />
               {notionError && (
                 <p className="error-text-sm">{notionError}</p>
@@ -347,6 +349,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 value={notionDbId}
                 onChange={(e) => setNotionDbIdState(e.target.value)}
                 placeholder={t('notionDatabaseIdPlaceholder', lang)}
+                aria-label={t('notionDatabaseId', lang)}
                 maxLength={200}
               />
             </div>
@@ -396,6 +399,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 onChange={(e) => { setSlackWebhookState(e.target.value); setSlackError(''); }}
                 onBlur={() => { if (slackWebhook.trim() && !slackWebhook.startsWith('https://hooks.slack.com')) setSlackError(t('slackWebhookError', lang)); }}
                 placeholder={t('slackWebhookPlaceholder', lang)}
+                aria-label={t('slackWebhookUrl', lang)}
               />
               {slackError && (
                 <p className="error-text-sm">{slackError}</p>
