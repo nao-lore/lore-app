@@ -620,6 +620,11 @@ body {
   height: 100vh;
   overflow: hidden;
 }
+/* Landing page needs scroll — override #root constraint */
+#root:has(.lp-root) {
+  height: auto;
+  overflow: visible;
+}
 
 /* ===== Typography ===== */
 h1 { font-size: 28px; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.6px; color: var(--text-primary); line-height: 1.2; }
@@ -4914,7 +4919,7 @@ button[disabled] {
 /* Hero */
 .lp-hero {
   text-align: center;
-  padding: 80px 24px 64px;
+  padding: 48px 24px 40px;
   max-width: 720px;
   margin: 0 auto;
 }
@@ -4929,10 +4934,10 @@ button[disabled] {
 }
 
 .lp-hero-subheadline {
-  font-size: 18px;
+  font-size: 17px;
   line-height: 1.6;
   color: var(--text-muted);
-  margin: 0 0 36px;
+  margin: 0 0 28px;
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;
@@ -4946,12 +4951,12 @@ button[disabled] {
 }
 
 .lp-demo-screenshot {
-  max-width: 900px;
-  margin: 0 auto;
+  max-width: 1000px;
+  margin: 32px auto 0;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 .lp-demo-screenshot img {
   width: 100%;
