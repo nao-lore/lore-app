@@ -271,7 +271,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
       {/* Project grid */}
       {sorted.length === 0 ? (
         <div className="empty-state">
-          {!query.trim() && <EmptyProjects />}
+          {!query.trim() && <EmptyProjects lang={lang} />}
           <p>{query.trim() ? t('noMatches', lang) : t('noProjects', lang)}</p>
           {!query.trim() && <p className="page-subtitle">{t('noProjectsDesc', lang)}</p>}
           {!query.trim() && (

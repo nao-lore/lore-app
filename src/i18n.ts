@@ -1499,12 +1499,13 @@ const labels = {
   pricingProTitle: { ja: 'Pro', en: 'Pro', es: 'Pro', fr: 'Pro', de: 'Pro', zh: 'Pro', ko: 'Pro', pt: 'Pro' },
   pricingMonth: { ja: '月', en: 'month', es: 'mes', fr: 'mois', de: 'Monat', zh: '月', ko: '월', pt: 'mês' },
   pricingRecommended: { ja: 'おすすめ', en: 'Recommended', es: 'Recomendado', fr: 'Recommandé', de: 'Empfohlen', zh: '推荐', ko: '추천', pt: 'Recomendado' },
-  pricingFreeAiTransforms: { ja: '1日20回のAI変換', en: '20 AI transforms per day', es: '20 transformaciones IA por día', fr: '20 transformations IA par jour', de: '20 KI-Transformationen pro Tag', zh: '每天20次AI转换', ko: '하루 20회 AI 변환', pt: '20 transformações IA por dia' },
+  pricingFreeAiTransforms: { ja: '無制限（7日間トライアル）、以降5回/日', en: 'Unlimited (7-day trial), then 5/day', es: 'Ilimitado (prueba 7 días), luego 5/día', fr: 'Illimité (essai 7 jours), puis 5/jour', de: 'Unbegrenzt (7-Tage-Test), dann 5/Tag', zh: '无限制（7天试用），之后5次/天', ko: '무제한 (7일 체험), 이후 5회/일', pt: 'Ilimitado (teste 7 dias), depois 5/dia' },
   pricingFreeCoreFeatures: { ja: '全コア機能（Snapshot・TODO・Project Summary）', en: 'All core features (Snapshot, TODO, Project Summary)', es: 'Todas las funciones principales', fr: 'Toutes les fonctionnalités principales', de: 'Alle Kernfunktionen', zh: '所有核心功能', ko: '모든 핵심 기능', pt: 'Todos os recursos principais' },
   pricingFreeLanguages: { ja: '8言語対応', en: '8 languages', es: '8 idiomas', fr: '8 langues', de: '8 Sprachen', zh: '8种语言', ko: '8개 언어', pt: '8 idiomas' },
   pricingFreeChromeExt: { ja: 'Chrome拡張', en: 'Chrome extension', es: 'Extensión de Chrome', fr: 'Extension Chrome', de: 'Chrome-Erweiterung', zh: 'Chrome扩展', ko: 'Chrome 확장', pt: 'Extensão Chrome' },
   pricingFreeExportImport: { ja: 'データエクスポート/インポート', en: 'Data export/import', es: 'Exportar/importar datos', fr: 'Export/import de données', de: 'Datenexport/-import', zh: '数据导出/导入', ko: '데이터 내보내기/가져오기', pt: 'Exportar/importar dados' },
   pricingFreeLocalStorage: { ja: 'ローカルストレージ保存', en: 'Local storage', es: 'Almacenamiento local', fr: 'Stockage local', de: 'Lokaler Speicher', zh: '本地存储', ko: '로컬 저장소', pt: 'Armazenamento local' },
+  pricingTrialActive: { ja: 'トライアル期間中（無制限）', en: 'Trial active (unlimited)', es: 'Prueba activa (ilimitado)', fr: 'Essai actif (illimité)', de: 'Testphase aktiv (unbegrenzt)', zh: '试用期（无限制）', ko: '체험 기간 (무제한)', pt: 'Teste ativo (ilimitado)' },
   pricingFreeButton: { ja: 'Free', en: 'Free', es: 'Free', fr: 'Free', de: 'Free', zh: 'Free', ko: 'Free', pt: 'Free' },
   pricingProUnlimitedAi: { ja: '無制限のAI変換', en: 'Unlimited AI transforms', es: 'Transformaciones IA ilimitadas', fr: 'Transformations IA illimitées', de: 'Unbegrenzte KI-Transformationen', zh: '无限AI转换', ko: '무제한 AI 변환', pt: 'Transformações IA ilimitadas' },
   pricingProPriorityAi: { ja: 'AI処理の優先実行', en: 'Priority AI processing', es: 'Procesamiento IA prioritario', fr: 'Traitement IA prioritaire', de: 'Priorisierte KI-Verarbeitung', zh: 'AI优先处理', ko: 'AI 우선 처리', pt: 'Processamento IA prioritário' },
@@ -1644,6 +1645,11 @@ const labels = {
   // A11y — BottomNav & Onboarding
   ariaBottomNav: { ja: 'ナビゲーション', en: 'Bottom navigation', es: 'Navegación inferior', fr: 'Navigation inférieure', de: 'Untere Navigation', zh: '底部导航', ko: '하단 탐색', pt: 'Navegação inferior' },
   ariaSetupWizard: { ja: 'セットアップウィザード', en: 'Setup wizard', es: 'Asistente de configuración', fr: "Assistant de configuration", de: 'Einrichtungsassistent', zh: '设置向导', ko: '설정 마법사', pt: 'Assistente de configuração' },
+  ariaEmptyLogs: { ja: 'ログなしイラスト', en: 'No logs illustration', es: 'Ilustración sin registros', fr: 'Illustration aucun journal', de: 'Keine Einträge Illustration', zh: '无日志插图', ko: '로그 없음 일러스트', pt: 'Ilustração sem registros' },
+  ariaEmptyTodos: { ja: 'TODOなしイラスト', en: 'No tasks illustration', es: 'Ilustración sin tareas', fr: 'Illustration aucune tâche', de: 'Keine Aufgaben Illustration', zh: '无任务插图', ko: '할 일 없음 일러스트', pt: 'Ilustração sem tarefas' },
+  ariaEmptyProjects: { ja: 'プロジェクトなしイラスト', en: 'No projects illustration', es: 'Ilustración sin proyectos', fr: 'Illustration aucun projet', de: 'Keine Projekte Illustration', zh: '无项目插图', ko: '프로젝트 없음 일러스트', pt: 'Ilustração sem projetos' },
+  ariaEmptyDashboard: { ja: 'ダッシュボード空イラスト', en: 'Empty dashboard illustration', es: 'Ilustración panel vacío', fr: 'Illustration tableau de bord vide', de: 'Leeres Dashboard Illustration', zh: '空仪表板插图', ko: '빈 대시보드 일러스트', pt: 'Ilustração painel vazio' },
+  ariaEmptyTimeline: { ja: 'タイムラインなしイラスト', en: 'No timeline illustration', es: 'Ilustración sin línea de tiempo', fr: 'Illustration aucune chronologie', de: 'Keine Zeitleiste Illustration', zh: '无时间线插图', ko: '타임라인 없음 일러스트', pt: 'Ilustração sem linha do tempo' },
 
   // Onboarding step counter
   onboardingStepCounter: (step: number, total: number) => ({
@@ -1691,6 +1697,16 @@ const labels = {
     pt: `Teste gratuito: ${days} dias restantes`,
   }),
   trialEnded: { ja: '無料トライアル終了', en: 'Free trial ended', es: 'Prueba gratuita finalizada', fr: 'Essai gratuit terminé', de: 'Kostenlose Testphase beendet', zh: '免费试用已结束', ko: '무료 체험 종료', pt: 'Teste gratuito encerrado' },
+  pricingUsedToday: (used: number, limit: number) => ({
+    ja: `${used}/${limit} 回使用済み（今日）`,
+    en: `${used}/${limit} used today`,
+    es: `${used}/${limit} usados hoy`,
+    fr: `${used}/${limit} utilisé(s) aujourd'hui`,
+    de: `${used}/${limit} heute genutzt`,
+    zh: `今天已用 ${used}/${limit}`,
+    ko: `오늘 ${used}/${limit} 사용됨`,
+    pt: `${used}/${limit} usados hoje`,
+  }),
   dailyLimitReached: (used: number, limit: number) => ({
     ja: `1日の上限に達しました (${used}/${limit})。Proにアップグレードで無制限に。`,
     en: `Daily limit reached (${used}/${limit}). Upgrade to Pro for unlimited.`,

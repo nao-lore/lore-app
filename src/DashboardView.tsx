@@ -236,7 +236,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
           {getGreeting(lang)}
         </div>
         <div className="empty-state">
-          <div className="empty-state-icon"><EmptyDashboard /></div>
+          <div className="empty-state-icon"><EmptyDashboard lang={lang} /></div>
           <p className="font-semibold">
             {t('dashboardWelcome', lang)}
           </p>
