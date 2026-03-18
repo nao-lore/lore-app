@@ -34,8 +34,8 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
             <ArrowRight size={16} aria-hidden="true" />
           </button>
         </div>
-        <div className="lp-demo-placeholder">
-          {t('lpDemoPlaceholder', lang)}
+        <div className="lp-demo-screenshot">
+          <img src="/hero-screenshot.png" alt="Lore structured snapshot — decisions, TODOs, blockers extracted from an AI conversation" loading="eager" />
         </div>
       </section>
 
