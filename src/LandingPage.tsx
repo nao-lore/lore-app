@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Clipboard, Zap, Layers, ArrowRight, Globe, Key, Wifi } from 'lucide-react';
+import { Clipboard, Zap, LayoutDashboard, ArrowRight, Globe, Key, Wifi } from 'lucide-react';
 import { t } from './i18n';
 import type { Lang } from './i18n';
 
@@ -68,7 +68,7 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
           </div>
           <div className="lp-step">
             <div className="lp-step-icon" aria-hidden="true">
-              <Layers size={24} />
+              <LayoutDashboard size={24} />
             </div>
             <div className="lp-step-number" aria-hidden="true">3</div>
             <h3 className="lp-step-title">{t('lpStep3Title', lang)}</h3>
