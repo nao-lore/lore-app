@@ -12,7 +12,7 @@ export const config = { runtime: 'edge' };
 // ---------------------------------------------------------------------------
 
 const DAILY_LIMIT_PER_IP = 20;
-const GLOBAL_DAILY_LIMIT = 500;
+const GLOBAL_DAILY_LIMIT = 5000;
 const DEBOUNCE_WINDOW_MS = 2_000; // reject duplicate requests within 2s
 
 const ipCounts = new Map<string, { count: number; day: string }>();
@@ -103,7 +103,7 @@ const GEMINI_MODELS = ['gemini-2.5-flash'];
 
 const ALLOWED_ORIGINS = [
   'https://lore-app.vercel.app',
-  'https://lore-app-r5dl.vercel.app',
+  'https://lore-lp-one.vercel.app',
   'http://localhost:5173',
   'http://localhost:4173',
 ];

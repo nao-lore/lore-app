@@ -5,7 +5,7 @@ Thanks for your interest in contributing! We welcome all contributions — bug r
 ## Dev Environment Setup
 
 ```bash
-git clone https://github.com/your-org/threadlog.git
+git clone https://github.com/nao-lore/lore-app.git
 cd threadlog
 npm install
 npm run dev

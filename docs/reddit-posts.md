@@ -20,7 +20,7 @@ So I built **Lore** — paste any AI conversation, and it auto-extracts decision
 
 **Free to use** — 20 transforms/day, no API key needed.
 
-https://lore-landing-vert.vercel.app
+https://lore-lp-one.vercel.app
 
 Would love honest feedback — what's useful, what's confusing, what would you change?
 
@@ -52,7 +52,7 @@ Every snapshot feeds into a project dashboard, so your context accumulates acros
 
 **Free to use** — no API key needed, 20 transforms/day. Built as a PWA (works offline too).
 
-https://lore-landing-vert.vercel.app
+https://lore-lp-one.vercel.app
 
 Would love feedback from the Claude community — what would make this more useful for your workflow?
 
@@ -66,7 +66,7 @@ Built a free tool called **Lore** that extracts structured project context from 
 
 Works with ChatGPT, Claude, and Gemini. No API key needed.
 
-https://lore-landing-vert.vercel.app
+https://lore-lp-one.vercel.app
 
 Would love feedback!
 
