@@ -46,11 +46,10 @@ export function TodoAddForm({ lang, onRefresh, onClose, showToast }: TodoAddForm
   };
 
   return (
-    <div className="content-card" style={{ marginBottom: 20 }}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+    <div className="content-card mb-20">
+      <div className="todo-add-row">
         <input
           ref={inputRef}
-          className="input"
           type="text"
           value={newText}
           onChange={(e) => { setNewText(e.target.value); setTodoError(''); }}
@@ -58,27 +57,26 @@ export function TodoAddForm({ lang, onRefresh, onClose, showToast }: TodoAddForm
           onKeyDown={handleKeyDown}
           placeholder={t('todoAddPlaceholder', lang)}
           maxLength={200}
-          style={{ flex: 1 }}
+          className="input flex-1"
           autoFocus
         />
-        <button className="btn btn-primary" onClick={handleAdd} disabled={!newText.trim()} style={{ flexShrink: 0 }}>
+        <button className="btn btn-primary shrink-0" onClick={handleAdd} disabled={!newText.trim()}>
           {t('todoAddBtn', lang)}
         </button>
-        <button className="btn" onClick={() => { onClose(); }} style={{ flexShrink: 0 }}>
+        <button className="btn shrink-0" onClick={() => { onClose(); }}>
           ×
         </button>
       </div>
       {todoError && (
-        <p style={{ color: 'var(--error-text)', fontSize: 12, margin: '4px 0 0' }}>{todoError}</p>
+        <p className="todo-error-msg">{todoError}</p>
       )}
-      <div style={{ display: 'flex', gap: 10, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }}>
+      <div className="todo-add-meta-row">
+        <label className="todo-add-label">
           {t('todoSortPriority', lang)}:
           <select
-            className="input input-sm"
             value={newPriority}
             onChange={(e) => setNewPriority(e.target.value as '' | 'high' | 'medium' | 'low')}
-            style={{ fontSize: 12, padding: '2px 6px', minHeight: 24 }}
+            className="input input-sm todo-add-input-sm"
           >
             <option value="">{t('todoPriorityNone', lang)}</option>
             <option value="high">{t('todoPriorityHigh', lang)}</option>
@@ -86,14 +84,13 @@ export function TodoAddForm({ lang, onRefresh, onClose, showToast }: TodoAddForm
             <option value="low">{t('todoPriorityLow', lang)}</option>
           </select>
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }}>
+        <label className="todo-add-label">
           {t('todoDueDate', lang)}:
           <input
-            className="input input-sm"
             type="date"
             value={newDueDate}
             onChange={(e) => setNewDueDate(e.target.value)}
-            style={{ fontSize: 12, padding: '2px 6px', minHeight: 24 }}
+            className="input input-sm todo-add-input-sm"
           />
         </label>
       </div>

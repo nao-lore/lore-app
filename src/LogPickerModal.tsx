@@ -73,25 +73,24 @@ export default function LogPickerModal({ allLogs, targetProjectId, projects, lan
       <div ref={trapRef} className="modal-content log-picker-modal" role="dialog" aria-modal="true" aria-labelledby="log-picker-title" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="log-picker-header">
-          <h3 id="log-picker-title" style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+          <h3 id="log-picker-title" className="log-picker-title">
             {t('addLogsTitle', lang)}
           </h3>
-          <button className="sidebar-icon-btn" onClick={onClose} style={{ flexShrink: 0 }} aria-label={t('ariaClose', lang)}>
+          <button className="sidebar-icon-btn shrink-0" onClick={onClose} aria-label={t('ariaClose', lang)}>
             <X size={18} />
           </button>
         </div>
 
         {/* Search */}
-        <div style={{ padding: '0 20px 12px' }}>
+        <div className="log-picker-search-pad">
           <input
-            className="input"
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('addLogsSearchPlaceholder', lang)}
             autoFocus
             maxLength={200}
-            style={{ width: '100%' }}
+            className="input w-full"
           />
         </div>
 
@@ -121,16 +120,16 @@ export default function LogPickerModal({ allLogs, targetProjectId, projects, lan
                     onChange={() => toggleSelect(log.id)}
                     onClick={(e) => e.stopPropagation()}
                   />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                  <div className="log-picker-item-detail">
+                    <div className="log-picker-item-header">
                       <span className={log.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'}>
                         {log.outputMode === 'handoff' ? 'H' : 'W'}
                       </span>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span className="log-picker-item-title">
                         {log.title}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', gap: 8, fontSize: 11, color: 'var(--text-muted)' }}>
+                    <div className="log-picker-item-meta">
                       <span>{formatDateOnly(log.createdAt)}</span>
                       {projectName && (
                         <span style={{ color: 'var(--accent-text)' }}>{projectName}</span>
@@ -142,8 +141,8 @@ export default function LogPickerModal({ allLogs, targetProjectId, projects, lan
             })
           )}
           {filtered.length > pickerVisibleCount && (
-            <div style={{ textAlign: 'center', padding: '12px 0' }}>
-              <button className="btn" onClick={() => setPickerVisibleCount((v) => v + PICKER_PAGE_SIZE)} style={{ fontSize: 13 }}>
+            <div className="log-picker-load-more">
+              <button className="btn fs-13" onClick={() => setPickerVisibleCount((v) => v + PICKER_PAGE_SIZE)}>
                 {tf('loadMore', lang, filtered.length - pickerVisibleCount)}
               </button>
             </div>

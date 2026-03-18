@@ -190,31 +190,30 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
     return (
       <div className="weekly-report-content" id="weekly-report-print">
         {/* Header */}
-        <div className="flex justify-between items-start" className="mb-lg">
+        <div className="flex justify-between items-start mb-lg">
           <div>
-            <h3 style={{ margin: '0 0 4px', fontSize: 18 }}>
+            <h3 className="report-h3">
               {formatWeekLabel(new Date(report.weekStart), lang)}
             </h3>
-            {pName && <span className="tag" className="text-sm">{pName}</span>}
+            {pName && <span className="tag text-sm">{pName}</span>}
           </div>
           <div className="flex gap-2">
-            <button className="btn" className="btn-sm-action" onClick={() => handleCopy(report)}>
+            <button className="btn btn-sm-action" onClick={() => handleCopy(report)}>
               <Copy size={12} /> {t('mnCopy', lang)}
             </button>
-            <button className="btn" className="btn-sm-action" onClick={handlePrint}>
+            <button className="btn btn-sm-action" onClick={handlePrint}>
               <Printer size={12} /> {t('weeklyReportPrint', lang)}
             </button>
             {!!safeGetItem('threadlog_slack_webhook_url') && (
               <button
-                className="btn"
-                className="btn-sm-action"
+                className="btn btn-sm-action"
                 onClick={() => handleSlackPost(report)}
                 disabled={sendingSlack}
               >
                 {sendingSlack ? t('slackSending', lang) : t('slackPost', lang)}
               </button>
             )}
-            <button className="btn" className="btn-sm-action" style={{ color: 'var(--error-text)' }} onClick={() => setConfirmDeleteId(report.id)}>
+            <button className="btn btn-sm-action" style={{ color: 'var(--error-text)' }} onClick={() => setConfirmDeleteId(report.id)}>
               <Trash2 size={12} />
             </button>
           </div>
@@ -297,7 +296,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
           </div>
         </ReportSection>
 
-        <div className="meta" className="text-right" style={{ marginTop: 16, fontSize: 11 }}>
+        <div className="meta text-right report-footer">
           {t('weeklyReportGeneratedAt', lang)}: {formatDateFull(new Date(report.generatedAt).toISOString())}
         </div>
       </div>
@@ -307,7 +306,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
   return (
     <div className="workspace-content-wide">
       <div className="page-header">
-        <button className="btn-back" onClick={onBack} className="btn-back-mb">
+        <button className="btn-back btn-back-mb" onClick={onBack}>
           ← {t('back', lang)}
         </button>
         <div className="page-header-row">
@@ -322,18 +321,18 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
       </div>
 
       {/* Week selector + project filter */}
-      <div className="content-card" className="toolbar-card-mb" style={{ gap: 12 }}>
+      <div className="content-card toolbar-card-mb gap-12">
         <div className="flex-row-gap-sm">
-          <button className="btn btn-sm" onClick={() => setWeekOffset((w) => w - 1)} className="nav-btn-sm">
+          <button className="btn btn-sm nav-btn-sm" onClick={() => setWeekOffset((w) => w - 1)}>
             <ChevronLeft size={16} />
           </button>
           <span className="week-label">
             {formatWeekLabel(weekStart, lang)}
           </span>
-          <button className="btn btn-sm" onClick={() => setWeekOffset((w) => w + 1)} className="nav-btn-sm" disabled={weekOffset >= 0}>
+          <button className="btn btn-sm nav-btn-sm" onClick={() => setWeekOffset((w) => w + 1)} disabled={weekOffset >= 0}>
             <ChevronRight size={16} />
           </button>
-          <button className="btn btn-sm" onClick={() => setWeekOffset(0)} className="btn-sm-action" style={{ minHeight: 28 }}>
+          <button className="btn btn-sm btn-sm-action" onClick={() => setWeekOffset(0)} style={{ minHeight: 28 }}>
             {t('timelineToday', lang)}
           </button>
         </div>
@@ -341,11 +340,11 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
         {/* Project filter */}
         {projects.length > 0 && (
           <select
-            className="input input-sm"
+            className="input input-sm text-sm"
             value={projectFilter}
             onChange={(e) => setProjectFilter(e.target.value)}
             aria-label={t('weeklyReportAllProjects', lang)}
-            className="text-sm" style={{ padding: '4px 8px', minHeight: 28, maxWidth: 200 }}
+            style={{ padding: '4px 8px', minHeight: 28, maxWidth: 200 }}
           >
             <option value="">{t('weeklyReportAllProjects', lang)}</option>
             {projects.map((p) => (
@@ -355,14 +354,13 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
         )}
 
         <div className="flex-row-gap-sm ml-auto">
-          <span className="meta" className="text-sm">
+          <span className="meta text-sm">
             {tf('weeklyReportLogCountInline', lang, weekLogs.length)}
           </span>
           <button
-            className="btn btn-primary"
+            className="btn btn-primary text-sm"
             onClick={handleGenerate}
             disabled={weekLogs.length === 0 || loading}
-            className="text-sm"
           >
             {loading ? progressPhase : (existingReport ? t('weeklyReportRegenerate', lang) : t('weeklyReportGenerate', lang))}
           </button>
@@ -371,12 +369,12 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
 
       {/* No logs message */}
       {weekLogs.length === 0 && !viewingReport && !showSaved && (
-        <div className="empty-state" className="mt-xl" style={{ marginTop: 32 }}>
+        <div className="empty-state mt-2xl">
           <div className="empty-state-icon">&#128202;</div>
           <p>{t('weeklyReportNoLogs', lang)}</p>
           <p className="page-subtitle">{t('weeklyReportNoLogsHint', lang)}</p>
           {onNewLog && (
-            <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={onNewLog}>
+            <button className="btn btn-primary mt-md" onClick={onNewLog}>
               {t('weeklyReportCreateLog', lang)}
             </button>
           )}
@@ -385,7 +383,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
 
       {/* Error */}
       {error && (
-        <div className="content-card" className="text-sm text-error" className="mb-lg">
+        <div className="content-card text-sm text-error mb-lg">
           {error}
         </div>
       )}
@@ -397,8 +395,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
       {!viewingReport && existingReport && (
         <div className="mb-lg">
           <button
-            className="btn"
-            className="text-sm"
+            className="btn text-sm"
             onClick={() => setViewingReport(existingReport)}
           >
             {t('weeklyReportViewSaved', lang)}
@@ -409,15 +406,14 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
       {/* Saved reports list */}
       <div style={{ marginTop: viewingReport ? 24 : 0 }}>
         <button
-          className="btn"
-          style={{ fontSize: 13, marginBottom: 12 }}
+          className="btn fs-13 mb-md"
           onClick={() => setShowSaved(!showSaved)}
         >
           {t('weeklyReportSavedReports', lang)} ({savedReports.length})
         </button>
 
         {showSaved && (
-          <div className="flex-col" style={{ gap: 8 }}>
+          <div className="flex-col-gap-8">
             {savedReports.length === 0 ? (
               <div className="empty-state">
                 <p>{t('weeklyReportNoSaved', lang)}</p>
@@ -429,25 +425,24 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
                 return (
                   <div
                     key={r.id}
-                    className="content-card content-card-clickable"
-                    className="saved-report-item"
+                    className="content-card content-card-clickable saved-report-item"
                     onClick={() => { setViewingReport(r); setShowSaved(false); }}
                   >
                     <FileBarChart size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="flex-1">
                       <div className="saved-report-title">
                         {formatWeekLabel(new Date(r.weekStart), lang)}
                       </div>
-                      <div className="meta" style={{ fontSize: 12, display: 'flex', gap: 8 }}>
+                      <div className="meta report-saved-meta">
                         {pName && <span>{pName}</span>}
                         <span>{r.stats.logCount} logs</span>
                       </div>
                     </div>
-                    <div className="flex" style={{ gap: 4 }} onClick={(e) => e.stopPropagation()}>
-                      <button className="btn btn-sm" className="btn-sm-compact" style={{ padding: '2px 6px' }} onClick={() => handleCopy(r)}>
+                    <div className="flex gap-4" onClick={(e) => e.stopPropagation()}>
+                      <button className="btn btn-sm btn-sm-compact pad-2-6" onClick={() => handleCopy(r)}>
                         <Copy size={12} />
                       </button>
-                      <button className="btn btn-sm" className="btn-sm-compact" style={{ padding: '2px 6px', color: 'var(--error-text)' }} onClick={() => setConfirmDeleteId(r.id)}>
+                      <button className="btn btn-sm btn-sm-compact pad-2-6" style={{ color: 'var(--error-text)' }} onClick={() => setConfirmDeleteId(r.id)}>
                         <Trash2 size={12} />
                       </button>
                     </div>
@@ -489,7 +484,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
 
 function ReportSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="content-card" className="mb-md">
+    <div className="content-card mb-md">
       <div className="content-card-header">{title}</div>
       {children}
     </div>

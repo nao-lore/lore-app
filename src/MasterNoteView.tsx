@@ -210,9 +210,8 @@ function RelatedLogs({ logIds, logs, onOpenLog, lang }: { logIds: string[]; logs
           return (
             <button
               key={logId}
-              className="btn-link"
+              className="btn-link text-sm text-left"
               onClick={() => onOpenLog(logId)}
-              className="text-sm text-left"
             >
               {log.title}
             </button>
@@ -412,7 +411,7 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
   return (
     <div className="workspace-content">
       <div className="page-header">
-        <button className="btn-back" onClick={onBack} className="btn-back-mb">
+        <button className="btn-back btn-back-mb" onClick={onBack}>
           ← {t('back', lang)}
         </button>
         <div className="flex items-start justify-between">
@@ -446,10 +445,9 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
           <div className="flex-row flex-wrap" style={{ marginBottom: 16, padding: '10px 14px', fontSize: 13, background: 'var(--accent-bg)', border: '1px solid var(--accent-muted)', borderRadius: 8, gap: 10 }}>
             <span>{tf('unreflectedHandoffs', lang, unreflected)}</span>
             <button
-              className="btn btn-primary"
+              className="btn btn-primary btn-sm-compact"
               onClick={handleGenerate}
               disabled={isProcessing}
-              className="btn-sm-compact"
             >
               {t('updateNow', lang)}
             </button>
@@ -467,7 +465,7 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
         <div className="empty-state"><p>{t('mnNoLogs', lang)}</p></div>
       ) : !current && !loading && !pendingNote ? (
         <div className="mn-empty-cta">
-          <div className="empty-state" className="mb-lg"><p>{t('mnEmpty', lang)}</p></div>
+          <div className="empty-state mb-lg"><p>{t('mnEmpty', lang)}</p></div>
           <button className="btn btn-primary" onClick={handleGenerate} disabled={isProcessing}>
             {t('mnGenerate', lang)}
           </button>
@@ -587,11 +585,11 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
 
               {/* AI Context section */}
               <div className="content-card">
-                <div className="content-card-header" className="flex items-center justify-between">
+                <div className="content-card-header flex items-center justify-between">
                   <span>{t('aiContextTitle', lang)}</span>
                   <button
-                    className="btn"
-                    className="btn-sm-compact" style={{ fontSize: 11, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}
+                    className="btn btn-sm-compact"
+                    style={{ fontSize: 11, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}
                     onClick={async () => {
                       try {
                         await navigator.clipboard.writeText(aiContext);
@@ -611,11 +609,11 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
                     {renderSimpleMarkdown(aiContext)}
                   </div>
                 ) : (
-                  <p className="meta" className="text-sm" style={{ margin: 0 }}>{t('aiContextEmpty', lang)}</p>
+                  <p className="meta text-sm" style={{ margin: 0 }}>{t('aiContextEmpty', lang)}</p>
                 )}
               </div>
 
-              <p className="meta" className="text-sm text-right">
+              <p className="meta text-sm text-right">
                 {tf('mnUpdatedAt', lang, new Date(current.updatedAt).toLocaleString())}
                 {' · '}
                 {tf('mnLogCount', lang, current.relatedLogIds.length)}

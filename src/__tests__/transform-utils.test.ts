@@ -1,7 +1,7 @@
 /**
  * transform-utils.test.ts — Unit tests for pure functions from transform.ts
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 // Mock localStorage
 const store = new Map<string, string>();
@@ -416,7 +416,7 @@ describe('buildHandoffLogEntry', () => {
   });
 
   it('includes sourceReference when provided', () => {
-    const ref = { type: 'file' as const, name: 'chat.txt', size: 1000 };
+    const ref = { fileName: 'chat.txt', sourceType: 'file', charCount: 1000 };
     const entry = buildHandoffLogEntry(baseHandoffResult, { sourceReference: ref });
     expect(entry.sourceReference).toEqual(ref);
   });

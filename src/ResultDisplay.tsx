@@ -23,7 +23,7 @@ export function HandoffResultDisplay({ result, lang }: { result: HandoffResult; 
     <>
       {/* Session Context (handoffMeta) */}
       {result.handoffMeta && (result.handoffMeta.sessionFocus || result.handoffMeta.whyThisSession || result.handoffMeta.timePressure) && (
-        <div className="resume-context-hero" className="mb-md">
+        <div className="resume-context-hero mb-md">
           <div className="resume-context-hero-label">{lang === 'ja' ? 'セッション概要' : 'Session Context'}</div>
           <div className="resume-context-hero-body">
             {[

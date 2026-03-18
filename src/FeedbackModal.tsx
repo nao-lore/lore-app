@@ -99,9 +99,9 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
               {t('feedbackThanksDesc', lang)}
             </p>
             <button
-              className="btn btn-primary"
+              className="btn btn-primary btn-onboarding"
               onClick={onClose}
-              className="btn-onboarding" style={{ marginTop: 16 }}
+              style={{ marginTop: 16 }}
             >
               {t('close', lang)}
             </button>
@@ -117,9 +117,9 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
                 {categories.map((cat) => (
                   <button
                     key={cat}
-                    className={`seg-control-btn${category === cat ? ' active-worklog' : ''}`}
+                    className={`seg-control-btn btn-pill${category === cat ? ' active-worklog' : ''}`}
                     onClick={() => setCategory(cat)}
-                    className="btn-pill" style={{ padding: '5px 12px' }}
+                    style={{ padding: '5px 12px' }}
                   >
                     {getCategoryLabel(cat, lang)}
                   </button>
@@ -144,18 +144,17 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
             {/* Actions */}
             <div className="flex justify-end gap-3">
               <button
-                className="btn"
+                className="btn btn-nav-sm"
                 onClick={handleCopy}
                 disabled={!body.trim()}
-                className="btn-nav-sm" style={{ padding: '6px 16px' }}
+                style={{ padding: '6px 16px' }}
               >
                 {t('feedbackCopy', lang)}
               </button>
               <button
-                className="btn btn-primary"
+                className="btn btn-primary btn-md-action"
                 onClick={handleSubmit}
                 disabled={!body.trim()}
-                className="btn-md-action"
               >
                 {t('feedbackSubmit', lang)}
               </button>

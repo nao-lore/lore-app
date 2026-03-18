@@ -371,9 +371,9 @@ export default function App() {
             <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{t('demoBadge', s.lang)}</span>
             <span className="text-muted">{t('demoModeBanner', s.lang)}</span>
             <button
-              className="btn"
+              className="btn text-sm"
               onClick={() => { setDemoMode(false); setDemoModeState(false); s.setLogsVersion((v: number) => v + 1); }}
-              className="text-sm" style={{ padding: '2px 10px', color: 'var(--accent)', minHeight: 44 }}
+              style={{ padding: '2px 10px', color: 'var(--accent)', minHeight: 44 }}
             >
               {t('exitDemoMode', s.lang)}
             </button>
@@ -526,7 +526,7 @@ export default function App() {
               ))}
             </div>
             <div className="mt-lg text-right">
-              <button className="btn" onClick={() => s.setShortcutsOpen(false)} className="text-sm">
+              <button className="btn text-sm" onClick={() => s.setShortcutsOpen(false)}>
                 {t('close', s.lang)}
               </button>
             </div>

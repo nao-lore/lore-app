@@ -140,7 +140,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
   return (
     <div className="workspace-content">
       <div className="page-header">
-        <button className="btn-back" onClick={onBack} className="btn-back-mb">
+        <button className="btn-back btn-back-mb" onClick={onBack}>
           ← {t('back', lang)}
         </button>
         <h2>{t('settingsTitle', lang)}</h2>
@@ -153,9 +153,9 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
             {t('onboardingReturnToSetup', lang)}
           </span>
           <button
-            className="btn btn-primary"
+            className="btn btn-primary btn-sm-save"
             onClick={onResumeOnboarding}
-            className="btn-sm-save" style={{ borderRadius: 8, fontWeight: 600 }}
+            style={{ borderRadius: 8, fontWeight: 600 }}
           >
             ← {t('onboardingReturnToSetup', lang)}
           </button>
@@ -177,12 +177,11 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
               onChange={(e) => { handleKeyChange('gemini', e.target.value); setKeyErrors((prev) => ({ ...prev, gemini: '' })); }}
               onBlur={() => { const err = validateApiKey('gemini', keys.gemini); setKeyErrors((prev) => ({ ...prev, gemini: err })); }}
               placeholder={PROVIDER_KEY_PLACEHOLDER.gemini}
-              style={{ flex: 1, maxWidth: 420, fontSize: 13 }}
+              className="input settings-flex-max"
             />
             <button
-              className="btn btn-primary"
+              className="btn btn-primary btn-sm-save shrink-0"
               onClick={() => handleSaveKey('gemini')}
-              className="btn-sm-save shrink-0"
             >
               {t('saveKey', lang)}
             </button>
@@ -198,7 +197,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
 
           {/* Built-in API usage */}
           <div className="subtle-panel">
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
+            <div className="section-label">
               {t('builtinApiUsage', lang)}
             </div>
             {shouldUseBuiltinApi() ? (() => {
@@ -207,7 +206,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
               const barColor = remaining <= 3 ? 'var(--error-text, #ef4444)' : remaining <= 8 ? 'var(--warning-text, #f59e0b)' : 'var(--accent)';
               return (
                 <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                  <div className="settings-usage-row">
                     <span>{used} / {limit}</span>
                     <span>{remaining} {lang === 'ja' ? '回残り' : 'remaining'}</span>
                   </div>
@@ -217,7 +216,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 </>
               );
             })() : (
-              <div style={{ fontSize: 13, color: 'var(--success-text, #22c55e)' }}>
+              <div className="fs-13" style={{ color: 'var(--success-text, #22c55e)' }}>
                 {t('builtinApiUsingOwn', lang)}
               </div>
             )}
@@ -272,9 +271,8 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
             {OUTPUT_LANGS.map((opt) => (
               <button
                 key={opt.code}
-                className={`seg-control-btn${currentUiLang === opt.code ? ' active-worklog' : ''}`}
+                className={`seg-control-btn btn-pill${currentUiLang === opt.code ? ' active-worklog' : ''}`}
                 onClick={() => handleUiLangChange(opt.code as Lang)}
-                className="btn-pill"
               >
                 {opt.flag} {opt.label}
               </button>
@@ -290,8 +288,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
           </p>
           <div className="flex-wrap-gap-2">
             <button
-              className={`seg-control-btn${currentOutputLang === 'auto' ? ' active-worklog' : ''}`}
-              className="btn-pill-sm"
+              className={`seg-control-btn btn-pill-sm${currentOutputLang === 'auto' ? ' active-worklog' : ''}`}
               onClick={() => handleOutputLangChange('auto')}
             >
               {t('langAuto', lang)}
@@ -308,8 +305,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
             ].map((v) => (
               <button
                 key={v.code}
-                className={`seg-control-btn${currentOutputLang === v.code ? ' active-worklog' : ''}`}
-                className="btn-pill-sm"
+                className={`seg-control-btn btn-pill-sm${currentOutputLang === v.code ? ' active-worklog' : ''}`}
                 onClick={() => handleOutputLangChange(v.code)}
               >
                 {v.label}
@@ -330,13 +326,12 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 {t('notionApiKey', lang)}
               </div>
               <input
-                className="input"
+                className="input input-settings"
                 type="password"
                 value={notionKey}
                 onChange={(e) => { setNotionKeyState(e.target.value); setNotionError(''); }}
                 onBlur={() => { if (notionKey.trim() && !notionKey.startsWith('ntn_') && !notionKey.startsWith('secret_')) setNotionError(t('notionApiKeyError', lang)); }}
                 placeholder={t('notionApiKeyPlaceholder', lang)}
-                className="input-settings"
               />
               {notionError && (
                 <p className="error-text-sm">{notionError}</p>
@@ -347,19 +342,17 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 {t('notionDatabaseId', lang)}
               </div>
               <input
-                className="input"
+                className="input input-settings"
                 type="text"
                 value={notionDbId}
                 onChange={(e) => setNotionDbIdState(e.target.value)}
                 placeholder={t('notionDatabaseIdPlaceholder', lang)}
                 maxLength={200}
-                className="input-settings"
               />
             </div>
             <div className="flex-row-gap-sm">
               <button
-                className="btn btn-primary"
-                className="btn-sm-save"
+                className="btn btn-primary btn-sm-save"
                 onClick={() => {
                   if (notionKey.trim() && !notionKey.startsWith('ntn_') && !notionKey.startsWith('secret_')) {
                     setNotionError(t('notionApiKeyError', lang));
@@ -397,13 +390,13 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 {t('slackWebhookUrl', lang)}
               </div>
               <input
-                className="input"
+                className="input input-settings"
                 type="password"
                 value={slackWebhook}
                 onChange={(e) => { setSlackWebhookState(e.target.value); setSlackError(''); }}
                 onBlur={() => { if (slackWebhook.trim() && !slackWebhook.startsWith('https://hooks.slack.com')) setSlackError(t('slackWebhookError', lang)); }}
                 placeholder={t('slackWebhookPlaceholder', lang)}
-                className="input-settings" style={{ maxWidth: 480 }}
+                style={{ maxWidth: 480 }}
               />
               {slackError && (
                 <p className="error-text-sm">{slackError}</p>
@@ -411,8 +404,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
             </div>
             <div className="flex-row-gap-sm">
               <button
-                className="btn btn-primary"
-                className="btn-sm-save"
+                className="btn btn-primary btn-sm-save"
                 onClick={() => {
                   if (slackWebhook.trim() && !slackWebhook.startsWith('https://hooks.slack.com')) {
                     setSlackError(t('slackWebhookError', lang));
@@ -589,9 +581,8 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
             <h3 style={{ marginBottom: 12 }}>{t('dataImport', lang)}</h3>
             <div className="flex-col-gap-md" style={{ gap: 10, marginBottom: 16 }}>
               <button
-                className={`btn${pendingImport.mode === 'merge' ? ' btn-primary' : ''}`}
+                className={`btn import-mode-btn${pendingImport.mode === 'merge' ? ' btn-primary' : ''}`}
                 onClick={() => setPendingImport({ ...pendingImport, mode: 'merge' })}
-                className="import-mode-btn"
               >
                 <div className="import-mode-title">{t('dataImportMerge', lang)}</div>
                 <div className="meta" style={{ fontSize: 12, marginTop: 2 }}>{t('dataImportConfirmMerge', lang)}</div>

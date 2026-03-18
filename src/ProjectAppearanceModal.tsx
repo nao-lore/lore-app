@@ -46,17 +46,17 @@ export default function ProjectAppearanceModal({ project, lang, onClose, onUpdat
 
   return (
     <div className="modal-overlay" role="presentation" onClick={onClose}>
-      <div ref={trapRef} className="shortcuts-modal" role="dialog" aria-modal="true" aria-label={t('projectEditAppearance', lang)} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
-        <h3 style={{ margin: '0 0 20px', fontSize: 16 }}>
+      <div ref={trapRef} className="shortcuts-modal max-w-420" role="dialog" aria-modal="true" aria-label={t('projectEditAppearance', lang)} onClick={(e) => e.stopPropagation()}>
+        <h3 className="modal-h3">
           {t('projectEditAppearance', lang)}
         </h3>
 
         {/* Color picker */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}>
+        <div className="appearance-section">
+          <div className="section-title mb-8">
             {t('projectColorLabel', lang)}
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div className="appearance-color-grid">
             {/* None option */}
             <button
               onClick={() => setSelectedColor('')}
@@ -93,22 +93,21 @@ export default function ProjectAppearanceModal({ project, lang, onClose, onUpdat
         </div>
 
         {/* Icon picker */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+        <div className="appearance-section">
+          <div className="appearance-icon-label-row">
+            <span className="section-title">
               {t('projectIconLabel', lang)}
             </span>
             {selectedIcon && (
               <button
-                className="btn-link"
-                style={{ fontSize: 11 }}
+                className="btn-link fs-11"
                 onClick={() => setSelectedIcon('')}
               >
                 {t('projectRemoveIcon', lang)}
               </button>
             )}
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          <div className="appearance-icon-grid">
             {EMOJI_PRESETS.map((emoji) => (
               <button
                 key={emoji}
@@ -131,9 +130,9 @@ export default function ProjectAppearanceModal({ project, lang, onClose, onUpdat
         </div>
 
         {/* Preview */}
-        <div style={{ marginBottom: 20, padding: '12px 16px', borderRadius: 8, border: '1px solid var(--border-default)', background: 'var(--bg-sidebar)' }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>{t('previewLabel', lang)}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="appearance-preview">
+          <div className="appearance-preview-label">{t('previewLabel', lang)}</div>
+          <div className="appearance-preview-row">
             {selectedColor && (
               <div style={{
                 width: 4, height: 24, borderRadius: 2,
@@ -142,20 +141,20 @@ export default function ProjectAppearanceModal({ project, lang, onClose, onUpdat
               }} />
             )}
             {selectedIcon && (
-              <span style={{ fontSize: 18, flexShrink: 0 }}>{selectedIcon}</span>
+              <span className="fs-18 shrink-0">{selectedIcon}</span>
             )}
-            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-secondary)' }}>
+            <span className="appearance-project-name">
               {project.name}
             </span>
           </div>
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button className="btn" onClick={onClose} style={{ fontSize: 13 }}>
+        <div className="flex-end gap-8">
+          <button className="btn fs-13" onClick={onClose}>
             {t('cancel', lang)}
           </button>
-          <button className="btn btn-primary" onClick={handleSave} style={{ fontSize: 13 }}>
+          <button className="btn btn-primary fs-13" onClick={handleSave}>
             {t('mnAccept', lang)}
           </button>
         </div>

@@ -12,7 +12,6 @@ vi.stubGlobal('localStorage', {
   clear: () => store.clear(),
 });
 
-import { recordMetric, getMetrics, getMetricsSummary } from '../aiMetrics';
 import type { TransformMetric } from '../aiMetrics';
 
 function makeMetric(overrides?: Partial<TransformMetric>): TransformMetric {

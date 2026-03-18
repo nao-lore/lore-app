@@ -153,8 +153,9 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
     if (!accountMenuOpen) return;
     const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeAccountMenu(); };
     const handleClick = (e: MouseEvent) => {
-      if (accountPopoverRef.current && !accountPopoverRef.current.contains(e.target as Node) &&
-          accountTriggerRef.current && !accountTriggerRef.current.contains(e.target as Node)) {
+      if (e.target instanceof Node &&
+          accountPopoverRef.current && !accountPopoverRef.current.contains(e.target) &&
+          accountTriggerRef.current && !accountTriggerRef.current.contains(e.target)) {
         closeAccountMenu();
       }
     };
@@ -203,7 +204,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
 
   const openMenu = (logId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const rect = e.currentTarget.getBoundingClientRect();
     setMenuState({ logId, rect });
   };
 

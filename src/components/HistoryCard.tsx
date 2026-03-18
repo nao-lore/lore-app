@@ -73,9 +73,8 @@ export function LogContextMenu({ log, lang, projects, onClose, onAction }: {
 
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
-      if (menuRef.current && menuRef.current.contains(e.target as Node)) return;
-      const trigger = (e.target as HTMLElement).closest('.action-menu-btn');
-      if (trigger) return;
+      if (menuRef.current && e.target instanceof Node && menuRef.current.contains(e.target)) return;
+      if (e.target instanceof HTMLElement && e.target.closest('.action-menu-btn')) return;
       onClose();
     };
     const onKeyDown = (e: KeyboardEvent) => {
@@ -239,14 +238,15 @@ export function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
           {!activeProjectId && log.projectId && (() => {
             const proj = projects.find((p) => p.id === log.projectId);
             return proj ? (
-              <span
+              <button
+                type="button"
                 className="tag cursor-pointer inline-flex-center"
-                style={{ fontSize: 10, gap: 3 }}
+                style={{ fontSize: 10, gap: 3, background: 'none', border: 'none', padding: 'inherit', fontFamily: 'inherit', color: 'inherit' }}
                 onClick={(e) => { e.stopPropagation(); onOpenProject?.(proj.id); }}
               >
                 {proj.icon && <span style={{ fontSize: 11 }}>{proj.icon}</span>}
                 {proj.name}
-              </span>
+              </button>
             ) : null;
           })()}
         </div>
@@ -318,14 +318,15 @@ export function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
         {log.tags.length > 0 && (
           <div className="flex flex-wrap" style={{ marginTop: compact ? 3 : 8, gap: compact ? 2 : 4 }}>
             {log.tags.slice(0, 5).map((tg, i) => (
-              <span
+              <button
+                type="button"
                 key={i}
                 className="tag cursor-pointer"
-                style={compact ? { fontSize: 10, padding: '0px 6px' } : undefined}
+                style={{ ...(compact ? { fontSize: 10, padding: '0px 6px' } : {}), background: 'none', border: 'none', fontFamily: 'inherit', color: 'inherit' }}
                 onClick={(e) => { e.stopPropagation(); onTagFilter?.(tg); }}
               >
                 <Highlight text={tg} query={debouncedQuery} />
-              </span>
+              </button>
             ))}
             {log.tags.length > 5 && <span className="meta text-xs-muted" style={{ alignSelf: 'center' }}>+{log.tags.length - 5}</span>}
           </div>

@@ -1,7 +1,7 @@
 /**
  * schemas.test.ts — Unit tests for Zod schemas
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { WorklogResultSchema, HandoffResultSchema, TodoOnlyResultSchema, safeParse } from '../schemas';
 
 describe('WorklogResultSchema', () => {

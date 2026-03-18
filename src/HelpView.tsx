@@ -26,7 +26,7 @@ export default function HelpView({ onBack, lang, onShowOnboarding, onFeedback }:
           <p className="help-body-text">
             {t('helpWhatIsLoreDesc', lang)}
           </p>
-          <p className="meta" className="text-sm" style={{ marginTop: 10 }}>
+          <p className="meta text-sm" style={{ marginTop: 10 }}>
             {t('helpWhatIsLoreAudience', lang)}
           </p>
         </div>
@@ -149,7 +149,7 @@ export default function HelpView({ onBack, lang, onShowOnboarding, onFeedback }:
         </div>
 
         {/* Pricing */}
-        <div className="content-card" className="provider-row">
+        <div className="content-card provider-row">
           <span className="text-md" style={{ color: 'var(--text-body)' }}>
             {t('navPricing', lang)}
           </span>
@@ -201,9 +201,8 @@ export default function HelpView({ onBack, lang, onShowOnboarding, onFeedback }:
               {t('helpFeedbackDesc', lang)}
             </p>
             <button
-              className="btn btn-primary"
+              className="btn btn-primary btn-md-action"
               onClick={onFeedback}
-              className="btn-md-action"
             >
               {t('feedbackTitle', lang)}
             </button>
@@ -214,9 +213,8 @@ export default function HelpView({ onBack, lang, onShowOnboarding, onFeedback }:
         {onShowOnboarding && (
           <div className="text-center" style={{ paddingTop: 4 }}>
             <button
-              className="btn"
+              className="btn text-sm"
               onClick={() => { resetOnboarding(); onShowOnboarding(); }}
-              className="text-sm"
             >
               {t('helpShowOnboarding', lang)}
             </button>

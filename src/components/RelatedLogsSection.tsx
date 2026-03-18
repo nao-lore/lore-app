@@ -61,7 +61,7 @@ function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; 
     if (!searchOpen) return;
     const close = (e: MouseEvent) => {
       const container = document.querySelector('[data-related-search]');
-      if (container && !container.contains(e.target as Node)) setSearchOpen(false);
+      if (container && e.target instanceof Node && !container.contains(e.target)) setSearchOpen(false);
     };
     document.addEventListener('mousedown', close);
     return () => document.removeEventListener('mousedown', close);
@@ -74,31 +74,30 @@ function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; 
   return (
     <div className="content-card">
       <div className="flex justify-between items-center" style={{ marginBottom: showSection ? 8 : 0 }}>
-        <div className="content-card-header" style={{ margin: 0 }}>{t('relatedLogs', lang)}</div>
+        <div className="content-card-header no-margin">{t('relatedLogs', lang)}</div>
         <div className="relative" data-related-search>
           <button
             className="btn btn-toolbar"
-            style={{ minHeight: 24 }}
             onClick={() => { setSearchOpen(!searchOpen); setSearchQuery(''); }}
+            style={{ minHeight: 24 }}
           >
             <Link size={12} />
             {t('linkLog', lang)}
           </button>
           {searchOpen && (
             <div className="search-dropdown-panel">
-              <div style={{ padding: 8 }}>
+              <div className="search-dropdown-pad">
                 <input
                   ref={searchInputRef}
-                  className="input w-full"
+                  className="input w-full pad-6-10 fs-13"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('searchLogs', lang)}
-                  style={{ fontSize: 13, padding: '6px 10px' }}
                 />
               </div>
-              <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+              <div className="search-dropdown-scroll">
                 {searchQuery.trim() && searchCandidates.length === 0 && (
-                  <div className="text-placeholder" style={{ padding: '12px 16px', fontSize: 13 }}>
+                  <div className="text-placeholder search-empty-msg">
                     {t('noMatches', lang)}
                   </div>
                 )}
@@ -149,7 +148,7 @@ function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; 
 
       {/* Same-project logs */}
       {hasProject && (
-        <div className="flex-col-gap-sm" style={{ gap: 2 }}>
+        <div className="flex-col-gap-sm related-gap-2">
           {projectLogs.map((r) => (
             <button
               key={r.id}
@@ -160,7 +159,7 @@ function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; 
                 {r.outputMode === 'handoff' ? '🔁' : '📝'}
               </span>
               <span className="log-link-title">{r.title}</span>
-              <span className="meta shrink-0" style={{ fontSize: 11 }}>
+              <span className="meta shrink-0 fs-11">
                 {formatDateUnified(r.createdAt)}
               </span>
               <ExternalLink size={11} className="text-placeholder shrink-0" />
@@ -170,7 +169,7 @@ function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; 
       )}
 
       {!showSection && (
-        <p className="meta" style={{ fontSize: 13, margin: 0 }}>
+        <p className="meta fs-13 no-margin">
           {t('noMatches', lang)}
         </p>
       )}

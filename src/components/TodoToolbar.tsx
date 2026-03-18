@@ -248,7 +248,7 @@ export function TodoHeaderActions({ lang, selectMode, displayedCount, completedC
   useEffect(() => {
     if (!overflowOpen) return;
     const handler = (e: MouseEvent) => {
-      if (overflowRef.current && !overflowRef.current.contains(e.target as Node)) {
+      if (overflowRef.current && e.target instanceof Node && !overflowRef.current.contains(e.target)) {
         setOverflowOpen(false);
       }
     };

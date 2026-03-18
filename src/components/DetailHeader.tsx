@@ -36,7 +36,7 @@ export default function DetailHeader({
   editingTitle, titleDraft, setTitleDraft, setEditingTitle,
   onTitleSave, onTitleCancel, showSaved,
   analyzingWorkload, onAnalyzeWorkload,
-  onCopyWithContext, onMenuToggle, menuOpen, menuContent,
+  onCopyWithContext, onMenuToggle, menuOpen: _menuOpen, menuContent,
   onBack, onRefresh, showToast, onOpenMasterNote,
 }: DetailHeaderProps) {
   return (

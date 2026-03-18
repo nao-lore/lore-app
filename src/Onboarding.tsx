@@ -112,7 +112,7 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
         </div>
 
         {/* Step counter */}
-        <div className="meta" className="text-center text-sm" style={{ marginBottom: 8 }}>
+        <div className="meta text-center text-sm" style={{ marginBottom: 8 }}>
           {tf('onboardingStepCounter', lang, step + 1, totalSteps)}
         </div>
 
@@ -161,8 +161,8 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
                 href={CHROME_EXTENSION_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn btn-primary"
-                className="btn-onboarding" style={{ textDecoration: 'none' }}
+                className="btn btn-primary btn-onboarding"
+                style={{ textDecoration: 'none' }}
               >
                 {t('onboardingExtensionInstall', lang)}
               </a>
@@ -184,9 +184,8 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
         {current.action && current.custom !== 'extension' && (
           <div className="flex justify-center" style={{ marginBottom: 20 }}>
             <button
-              className="btn btn-primary"
+              className="btn btn-primary btn-onboarding"
               onClick={current.action.handler}
-              className="btn-onboarding"
             >
               {t(current.action.labelKey as Parameters<typeof t>[0], lang)}
             </button>
@@ -198,9 +197,8 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
           <div>
             {!isFirst && (
               <button
-                className="btn"
+                className="btn btn-nav-sm"
                 onClick={() => setStep((s) => s - 1)}
-                className="btn-nav-sm"
               >
                 {t('onboardingBack', lang)}
               </button>
@@ -209,26 +207,24 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
           <div className="flex flex-wrap gap-3">
             {!isLast && (
               <button
-                className="btn"
+                className="btn btn-nav-sm"
                 onClick={finish}
-                className="btn-nav-sm" style={{ color: 'var(--text-muted)' }}
+                style={{ color: 'var(--text-muted)' }}
               >
                 {t('onboardingSkip', lang)}
               </button>
             )}
             {current.final ? (
               <button
-                className="btn btn-primary"
+                className="btn btn-primary btn-md-action"
                 onClick={finish}
-                className="btn-md-action"
               >
                 {t('onboardingGetStarted', lang)}
               </button>
             ) : (
               <button
-                className="btn btn-primary"
+                className="btn btn-primary btn-md-action"
                 onClick={() => setStep((s) => s + 1)}
-                className="btn-md-action"
               >
                 {t('onboardingNext', lang)}
               </button>

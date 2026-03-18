@@ -15,7 +15,7 @@ export const HandoffResultSchema = z.object({
     sessionFocus: z.string().nullable().default(null),
     whyThisSession: z.string().nullable().default(null),
     timePressure: z.string().nullable().default(null),
-  }).default({}),
+  }).default({ sessionFocus: null, whyThisSession: null, timePressure: null }),
   currentStatus: z.array(z.string()).default([]),
   resumeChecklist: z.array(z.object({
     action: z.string(),

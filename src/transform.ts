@@ -9,6 +9,13 @@ import { parseJsonInWorker } from './workers/parseHelper';
 import { safeParse, WorklogResultSchema, HandoffResultSchema, TodoOnlyResultSchema } from './schemas';
 import { AIError } from './errors';
 import { parseJsonWithRepair } from './utils/jsonRepair';
+import { fuzzyDedupStrings } from './utils/fuzzyDedup';
+
+/** Safely coerce an unknown value to string[], filtering out non-strings. */
+function toStringArray(val: unknown): string[] {
+  if (!Array.isArray(val)) return [];
+  return val.filter((v): v is string => typeof v === 'string');
+}
 
 // Prompts (SYSTEM_PROMPT, HANDOFF_PROMPT, BOTH_PROMPT, TODO_ONLY_PROMPT) are
 // defined in ./prompts.ts with PROMPT_VERSION for tracking.
@@ -173,7 +180,7 @@ function validateHandoffResult(
   }
 
   // Warn if nextActions is empty for non-trivial conversations
-  if (import.meta.env.DEV && parsed.nextActions && (parsed.nextActions as unknown[]).length === 0 && charLen > 2000) {
+  if (import.meta.env.DEV && parsed.nextActions && Array.isArray(parsed.nextActions) && parsed.nextActions.length === 0 && charLen > 2000) {
     console.warn(`[Transform Validation] nextActions is empty for ${charLen}-char input — expected at least 1 item`);
   }
 
@@ -322,10 +329,10 @@ async function transformTextOnce(sourceText: string, opts?: { onStream?: StreamC
     const raw = await extractAndParse(rawText) as Record<string, unknown>;
     const parsed = safeParse(WorklogResultSchema, raw, 'worklog');
     validateWorklogResult(parsed, sourceText);
-    warnOutputLanguageMismatch(parsed as unknown as Record<string, unknown>, lang);
+    warnOutputLanguageMismatch(parsed, lang);
     return {
       title: parsed.title || 'Untitled',
-      today: parsed.today || [],
+      today: fuzzyDedupStrings(parsed.today || []),
       decisions: parsed.decisions || [],
       todo: parsed.todo || [],
       relatedProjects: parsed.relatedProjects || [],
@@ -354,13 +361,13 @@ function normalizeDecisions(raw: unknown[]): {
   const MAX_DECISIONS = 6;
   // Check if first element is an object (new format)
   if (typeof raw[0] === 'object' && raw[0] !== null && 'decision' in raw[0]) {
-    const decisionRationales: DecisionWithRationale[] = raw.map((item: unknown) => {
-      const obj = item as Record<string, unknown>;
-      return {
+    const decisionRationales: DecisionWithRationale[] = raw
+      .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+      .map((obj) => ({
         decision: String(obj.decision || ''),
         rationale: typeof obj.rationale === 'string' ? obj.rationale : null,
-      };
-    }).filter(dr => dr.decision.trim()).slice(0, MAX_DECISIONS);
+      }))
+      .filter(dr => dr.decision.trim()).slice(0, MAX_DECISIONS);
     const decisions = decisionRationales.map(dr => dr.decision);
     return { decisions, decisionRationales };
   }
@@ -384,8 +391,9 @@ export function normalizeNextActions(raw: unknown[]): {
   }
   // Check if first element is an object with `action` field (new format)
   if (typeof raw[0] === 'object' && raw[0] !== null && 'action' in raw[0]) {
-    const nextActionItems: NextActionItem[] = raw.map((item: unknown) => {
-      const obj = item as Record<string, unknown>;
+    const nextActionItems: NextActionItem[] = raw
+      .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+      .map((obj) => {
       const depRaw = obj.dependsOn;
       const dependsOn = Array.isArray(depRaw)
         ? depRaw.filter((d): d is string => typeof d === 'string' && d.trim() !== '')
@@ -415,14 +423,14 @@ export function normalizeResumeChecklist(raw: unknown): ResumeChecklistItem[] {
   if (!Array.isArray(raw) || raw.length === 0) return [];
   let items: ResumeChecklistItem[];
   if (typeof raw[0] === 'object' && raw[0] !== null && 'action' in raw[0]) {
-    items = raw.map((item: unknown) => {
-      const obj = item as Record<string, unknown>;
-      return {
+    items = raw
+      .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+      .map((obj) => ({
         action: String(obj.action || ''),
         whyNow: typeof obj.whyNow === 'string' ? obj.whyNow : null,
         ifSkipped: typeof obj.ifSkipped === 'string' ? obj.ifSkipped : null,
-      };
-    }).filter(r => r.action.trim());
+      }))
+      .filter(r => r.action.trim());
   } else {
     // Legacy string[] fallback
     items = raw
@@ -436,9 +444,9 @@ export function normalizeResumeChecklist(raw: unknown): ResumeChecklistItem[] {
 /**
  * Warn in DEV if the output language doesn't match the expected language.
  */
-function warnOutputLanguageMismatch(result: Record<string, unknown>, expectedLang: string): void {
+function warnOutputLanguageMismatch(result: { title?: string | unknown }, expectedLang: string): void {
   if (!import.meta.env.DEV) return;
-  const title = (result.title as string) || '';
+  const title = typeof result.title === 'string' ? result.title : '';
   if (!title) return;
   const actualLang = detectLanguage(title);
   if (actualLang !== expectedLang && title.length > 10) {
@@ -450,7 +458,7 @@ function warnOutputLanguageMismatch(result: Record<string, unknown>, expectedLan
 export function normalizeHandoffMeta(raw: unknown): HandoffMeta {
   const defaults: HandoffMeta = { sessionFocus: null, whyThisSession: null, timePressure: null };
   if (!raw || typeof raw !== 'object') return defaults;
-  const obj = raw as Record<string, unknown>;
+  const obj = raw as { sessionFocus?: unknown; whyThisSession?: unknown; timePressure?: unknown };
   return {
     sessionFocus: typeof obj.sessionFocus === 'string' && obj.sessionFocus.trim() ? obj.sessionFocus : null,
     whyThisSession: typeof obj.whyThisSession === 'string' && obj.whyThisSession.trim() ? obj.whyThisSession : null,
@@ -479,9 +487,9 @@ export function normalizeHandoffFields(parsed: Record<string, unknown>): {
   actionBacklog: NextActionItem[];
   handoffMeta: HandoffMeta;
 } {
-  const rawDecisions = (parsed.decisions || []) as unknown[];
+  const rawDecisions = Array.isArray(parsed.decisions) ? parsed.decisions : [];
   const { decisions, decisionRationales } = normalizeDecisions(rawDecisions);
-  const rawNextActions = (parsed.nextActions || []) as unknown[];
+  const rawNextActions = Array.isArray(parsed.nextActions) ? parsed.nextActions : [];
   let { nextActions, nextActionItems } = normalizeNextActions(rawNextActions);
   const resumeChecklist = normalizeResumeChecklist(parsed.resumeChecklist);
   let actionBacklog = normalizeActionBacklog(parsed.actionBacklog);
@@ -557,31 +565,29 @@ async function transformHandoffOnce(sourceText: string, opts?: { onStream?: Stre
 
   try {
     const raw = await extractAndParse(rawText) as Record<string, unknown>;
-    const parsed = safeParse(HandoffResultSchema, raw, 'handoff') as Record<string, unknown>;
+    const parsed = safeParse(HandoffResultSchema, raw, 'handoff');
     // Validate handoff fields (title, currentStatus, resumeChecklist, nextActions, completed, tags)
     validateHandoffResult(parsed, sourceText);
     warnOutputLanguageMismatch(parsed, lang);
-    const completed = (parsed.completed || []) as string[];
-    const { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta } = normalizeHandoffFields(parsed);
+    const completed = fuzzyDedupStrings(parsed.completed);
+    const { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta } = normalizeHandoffFields(parsed as Record<string, unknown>);
     return {
-      title: (parsed.title as string) || 'Untitled',
+      title: parsed.title || 'Untitled',
       handoffMeta,
-      currentStatus: (parsed.currentStatus || []) as string[],
+      currentStatus: fuzzyDedupStrings(parsed.currentStatus),
       resumeChecklist,
       resumeContext: resumeChecklist.length > 0
         ? resumeChecklist.map(r => r.action)
-        : (typeof parsed.resumeContext === 'string'
-          ? (parsed.resumeContext.trim() ? [parsed.resumeContext.trim()] : [])
-          : ((parsed.resumeContext || []) as string[])),
+        : [],
       nextActions,
       nextActionItems,
       actionBacklog: actionBacklog.length > 0 ? actionBacklog : undefined,
       completed,
-      blockers: filterResolvedBlockers((parsed.blockers || []) as string[], completed, decisions),
+      blockers: fuzzyDedupStrings(filterResolvedBlockers(parsed.blockers, completed, decisions)),
       decisions,
       decisionRationales,
-      constraints: (parsed.constraints || []) as string[],
-      tags: (parsed.tags || []) as string[],
+      constraints: parsed.constraints,
+      tags: parsed.tags,
     };
   } catch (error) {
     if (import.meta.env.DEV) console.warn('[Transform] Parse error:', error);
@@ -628,11 +634,11 @@ async function transformTodoOnlyOnce(sourceText: string, opts?: { onStream?: Str
   try {
     const raw = await extractAndParse(rawText) as Record<string, unknown>;
     const parsed = safeParse(TodoOnlyResultSchema, raw, 'todo_only');
-    const todos: TodoOnlyItem[] = ((parsed.todos as unknown as Record<string, unknown>[]) || []).map((t: Record<string, unknown>) => ({
-      title: String(t.title || ''),
-      priority: (['high', 'medium', 'low'].includes(t.priority as string) ? t.priority : 'medium') as 'high' | 'medium' | 'low',
+    const todos: TodoOnlyItem[] = (parsed.todos || []).map((t) => ({
+      title: t.title || '',
+      priority: t.priority || 'medium',
       dueDate: typeof t.dueDate === 'string' && t.dueDate ? t.dueDate : undefined,
-    })).filter((t: TodoOnlyItem) => t.title.trim());
+    })).filter((t) => t.title.trim());
     return { todos };
   } catch (error) {
     if (import.meta.env.DEV) console.warn('[Transform] Parse error:', error);
@@ -694,44 +700,47 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
     const c = parsed.classification;
     const result: BothResult = {
       worklog: {
-        title: (w.title as string) || 'Untitled',
-        today: (w.today || []) as string[],
-        decisions: (w.decisions || []) as string[],
-        todo: (w.todo || []) as string[],
-        relatedProjects: (w.relatedProjects || []) as string[],
-        tags: (w.tags || []) as string[],
+        title: typeof w.title === 'string' ? w.title || 'Untitled' : 'Untitled',
+        today: fuzzyDedupStrings(toStringArray(w.today)),
+        decisions: toStringArray(w.decisions),
+        todo: toStringArray(w.todo),
+        relatedProjects: toStringArray(w.relatedProjects),
+        tags: toStringArray(w.tags),
       },
       handoff: (() => {
         // Validate handoff fields (title, currentStatus, resumeChecklist, nextActions, completed, tags)
         validateHandoffResult(h, sourceText);
         warnOutputLanguageMismatch(h, lang);
-        const hCompleted = (h.completed || []) as string[];
+        const hCompleted = fuzzyDedupStrings(toStringArray(h.completed));
         const hFields = normalizeHandoffFields(h);
+        const hTitle = typeof h.title === 'string' ? h.title : '';
+        const wTitle = typeof w.title === 'string' ? w.title : '';
         return {
-          title: (h.title as string) || (w.title as string) || 'Untitled',
+          title: hTitle || wTitle || 'Untitled',
           handoffMeta: hFields.handoffMeta,
-          currentStatus: (h.currentStatus || []) as string[],
+          currentStatus: fuzzyDedupStrings(toStringArray(h.currentStatus)),
           resumeChecklist: hFields.resumeChecklist,
           resumeContext: hFields.resumeChecklist.length > 0
             ? hFields.resumeChecklist.map(r => r.action)
-            : (typeof h.resumeContext === 'string'
-              ? (h.resumeContext.trim() ? [h.resumeContext.trim()] : [])
-              : ((h.resumeContext || []) as string[])),
+            : toStringArray(h.resumeContext),
           nextActions: hFields.nextActions,
           nextActionItems: hFields.nextActionItems,
           actionBacklog: hFields.actionBacklog.length > 0 ? hFields.actionBacklog : undefined,
           completed: hCompleted,
-          blockers: filterResolvedBlockers((h.blockers || []) as string[], hCompleted, hFields.decisions),
+          blockers: fuzzyDedupStrings(filterResolvedBlockers(toStringArray(h.blockers), hCompleted, hFields.decisions)),
           decisions: hFields.decisions,
           decisionRationales: hFields.decisionRationales,
-          constraints: (h.constraints || []) as string[],
-          tags: ((h.tags || w.tags || []) as string[]),
+          constraints: toStringArray(h.constraints),
+          tags: toStringArray(h.tags || w.tags),
         };
       })(),
-      classification: c ? {
-        projectId: (c as Record<string, unknown>).projectId as string || null,
-        confidence: typeof (c as Record<string, unknown>).confidence === 'number' ? Math.max(0, Math.min(1, (c as Record<string, unknown>).confidence as number)) : 0,
-      } : undefined,
+      classification: c && typeof c === 'object' ? (() => {
+        const cl = c as { projectId?: unknown; confidence?: unknown };
+        return {
+          projectId: typeof cl.projectId === 'string' ? cl.projectId : null,
+          confidence: typeof cl.confidence === 'number' ? Math.max(0, Math.min(1, cl.confidence)) : 0,
+        };
+      })() : undefined,
     };
     return result;
   } catch (error) {

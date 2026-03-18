@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { CHAR_WARN, needsChunking } from './transform';
 import { getChunkTarget, getEngineConcurrency } from './chunkEngine';
-import { getStreak, isDemoMode, safeSetItem } from './storage';
+import { getStreak, isDemoMode } from './storage';
 import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
 const loadDemoData = () => import('./demoData');
 import { Copy, Check, X } from 'lucide-react';
@@ -18,7 +18,6 @@ import { copyToClipboard } from './utils/clipboard';
 import { downloadFile } from './utils/downloadFile';
 import { HandoffResultDisplay, WorklogResultDisplay } from './ResultDisplay';
 import { useTransform } from './hooks/useTransform';
-import type { TransformAction } from './hooks/useTransform';
 import { useFileImport } from './hooks/useFileImport';
 import type { ImportedFile } from './hooks/useFileImport';
 import PostGenerationPreview from './components/PostGenerationPreview';

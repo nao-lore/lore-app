@@ -232,7 +232,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
   if (handoffLogs.length === 0) {
     return (
       <div className="workspace-content-wide flex-col items-center">
-        <div className="text-center" className="font-extrabold" style={{ fontSize: 28, color: 'var(--text-secondary)', marginTop: 80, marginBottom: 32 }}>
+        <div className="text-center font-extrabold" style={{ fontSize: 28, color: 'var(--text-secondary)', marginTop: 80, marginBottom: 32 }}>
           {getGreeting(lang)}
         </div>
         <div className="empty-state">
@@ -244,7 +244,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
             {t('dashboardWelcomeDesc', lang)}
           </p>
           <FirstUseTooltip id="dashboard" text={lang === 'ja' ? 'AIプロジェクトのスナップショットがここに表示されます' : 'Your AI project snapshots appear here'} position="top">
-            <button className="btn btn-primary" onClick={onNewLog} className="mt-lg">
+            <button className="btn btn-primary mt-lg" onClick={onNewLog}>
               <Plus size={16} />
               {t('dashboardCreateFirstLog', lang)}
             </button>
@@ -259,7 +259,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
     <div className="workspace-content-wide">
 
         {/* ── Greeting (centered, Notion-style) ── */}
-        <div className="text-center" className="mt-xl" style={{ marginBottom: 36 }}>
+        <div className="text-center mt-xl" style={{ marginBottom: 36 }}>
           <div className="font-extrabold" style={{ fontSize: 32, color: 'var(--text-secondary)', lineHeight: 1.2 }}>
             {getGreeting(lang)}
           </div>
@@ -342,7 +342,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                     className="project-snap-card"
                   >
                     <div style={{ fontSize: 24, marginBottom: 10, lineHeight: 1 }}>{snap.project.icon || '📂'}</div>
-                    <div className="truncate font-semibold" className="text-sm text-secondary" style={{ marginBottom: 4 }}>
+                    <div className="truncate font-semibold text-sm text-secondary" style={{ marginBottom: 4 }}>
                       {snap.project.name}
                     </div>
                     {snap.totalCount > 0 && (
@@ -385,7 +385,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
               <Square size={14} style={{ opacity: 0.5 }} />
               {t('dashboardTodayFocus', lang)}
               {uncheckedActions.length > 0 && (
-                <span className="badge badge-accent" className="font-bold" style={{ fontSize: 11, marginLeft: 4 }}>
+                <span className="badge badge-accent font-bold" style={{ fontSize: 11, marginLeft: 4 }}>
                   {uncheckedActions.length}
                 </span>
               )}
@@ -442,8 +442,8 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                     aria-label={action.text}
                     onClick={() => onToggleAction(action.logId, action.index)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleAction(action.logId, action.index); } }}
-                    className="flex-row text-sm-muted"
-                    className="cursor-pointer select-none" style={{ gap: 8, padding: '6px 14px', borderRadius: 8 }}
+                    className="flex-row text-sm-muted cursor-pointer select-none"
+                    style={{ gap: 8, padding: '6px 14px', borderRadius: 8 }}
                   >
                     <Square size={12} className="shrink-0" style={{ color: 'var(--text-placeholder)' }} />
                     <span className="flex-1">{action.text}</span>
@@ -572,7 +572,7 @@ function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]
         }}
       >
         <div className="flex-row justify-between mb-md">
-          <div className="section-title font-semibold" className="font-bold">
+          <div className="section-title font-semibold font-bold">
             {isJa ? 'あなたのアクティビティ' : 'Your Activity'}
           </div>
           {streak > 0 && (
@@ -585,7 +585,7 @@ function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]
         </div>
 
         {/* Row 1: headline stats */}
-        <div className="flex flex-wrap" className="items-baseline" style={{ gap: 6, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.8 }}>
+        <div className="flex flex-wrap items-baseline" style={{ gap: 6, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.8 }}>
           <span className="font-extrabold text-secondary" style={{ fontSize: 22 }}>{stats.totalLogs}</span>
           <span>{isJa ? 'ログ' : 'logs'}</span>
           <span style={{ color: 'var(--text-placeholder)', margin: '0 2px' }}>&middot;</span>
@@ -597,7 +597,7 @@ function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]
         </div>
 
         {/* Row 2: this week comparison */}
-        <div className="mt-sm" className="text-sm text-muted">
+        <div className="mt-sm text-sm text-muted">
           {isJa ? '今週' : 'This week'}: <span className="font-bold text-secondary">{stats.thisWeekLogs}</span> {isJa ? 'ログ' : 'logs'}
           {' '}
           <span style={{ color: diffColor, fontWeight: 600 }}>
@@ -736,7 +736,7 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
       {/* Key metrics row */}
       <div className="flex flex-wrap" style={{ gap: 12 }}>
         {/* This week vs last week */}
-        <div className="stat-card p-card" className="stat-card-flex">
+        <div className="stat-card p-card stat-card-flex">
           <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
             {t('vsLastWeek', lang)}
           </div>
@@ -746,7 +746,7 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
         </div>
 
         {/* Average logs per week */}
-        <div className="stat-card p-card" className="stat-card-flex">
+        <div className="stat-card p-card stat-card-flex">
           <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
             {t('avgPerWeek', lang)}
           </div>
@@ -756,7 +756,7 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
         </div>
 
         {/* TODO completion rate */}
-        <div className="stat-card p-card" className="stat-card-flex">
+        <div className="stat-card p-card stat-card-flex">
           <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
             {t('completionRate', lang)}
           </div>

@@ -339,6 +339,110 @@
 .mr-auto { margin-right: auto; }
 .font-bold { font-weight: 700; }
 .tabular-nums { font-variant-numeric: tabular-nums; }
+.mt-lg { margin-top: 16px; }
+.mt-xl { margin-top: 24px; }
+.mt-2xl { margin-top: 32px; }
+.mb-4 { margin-bottom: 4px; }
+.mb-6 { margin-bottom: 6px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-20 { margin-bottom: 20px; }
+.mb-28 { margin-bottom: 28px; }
+.fs-11 { font-size: 11px; }
+.fs-12 { font-size: 12px; }
+.fs-13 { font-size: 13px; }
+.fs-14 { font-size: 14px; }
+.fs-16 { font-size: 16px; }
+.fs-18 { font-size: 18px; }
+.font-extrabold { font-weight: 800; }
+.gap-2 { gap: 2px; }
+.gap-4 { gap: 4px; }
+.gap-6 { gap: 6px; }
+.gap-8 { gap: 8px; }
+.gap-10 { gap: 10px; }
+.gap-12 { gap: 12px; }
+.gap-24 { gap: 24px; }
+.max-w-420 { max-width: 420px; }
+.max-w-480 { max-width: 480px; }
+.min-w-120 { min-width: 120px; }
+.min-w-200 { min-width: 200px; }
+.min-w-240 { min-width: 240px; }
+.inline-flex-center { display: inline-flex; align-items: center; }
+.block { display: block; }
+.pad-4-12 { padding: 4px 12px; }
+.pad-4-8 { padding: 4px 8px; }
+.pad-2-6 { padding: 2px 6px; }
+.pad-6-10 { padding: 6px 10px; }
+.nowrap { white-space: nowrap; }
+.pin-rotate { transform: rotate(45deg); }
+.no-margin { margin: 0; }
+.text-success { color: var(--text-success, var(--success-text, #22c55e)); }
+.lh-1 { line-height: 1; }
+.flex-col-gap-8 { display: flex; flex-direction: column; gap: 8px; }
+.opacity-half { opacity: 0.5; }
+.section-label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+.modal-h3 { margin: 0 0 20px; font-size: 16px; }
+.flex-between { display: flex; justify-content: space-between; }
+.flex-end { display: flex; justify-content: flex-end; }
+
+/* ErrorBoundary */
+.error-boundary-wrapper { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 100%; padding: 32px; }
+.error-boundary-card { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px; padding: 32px 36px; max-width: 520px; width: 100%; box-shadow: var(--shadow-card); color: var(--text-body); font-size: 14px; line-height: 1.6; }
+.error-boundary-icon { font-size: 32px; margin-bottom: 8px; }
+.error-boundary-title { margin: 0 0 8px; font-size: 18px; font-weight: 600; color: var(--text-primary); }
+.error-boundary-desc { margin: 0 0 20px; color: var(--text-muted); }
+.error-boundary-actions { display: flex; gap: 10px; }
+.error-boundary-btn-primary { padding: 8px 18px; border-radius: 8px; border: none; background: var(--accent); color: var(--button-text, #fff); font-weight: 500; font-size: 14px; cursor: pointer; }
+.error-boundary-btn-secondary { padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border-default); background: var(--bg-surface-secondary); color: var(--text-body); font-weight: 500; font-size: 14px; cursor: pointer; }
+.error-boundary-details-summary { cursor: pointer; font-size: 12px; color: var(--text-muted); user-select: none; }
+.error-boundary-pre { margin-top: 8px; padding: 14px; background: var(--bg-surface-tertiary); border: 1px solid var(--border-default); border-radius: 8px; font-size: 12px; line-height: 1.5; color: var(--error-text); overflow: auto; max-height: 240px; white-space: pre-wrap; word-break: break-word; }
+
+/* ProjectAppearanceModal */
+.appearance-section { margin-bottom: 20px; }
+.appearance-preview { margin-bottom: 20px; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-default); background: var(--bg-sidebar); }
+.appearance-preview-label { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+.appearance-preview-row { display: flex; align-items: center; gap: 8px; }
+.appearance-project-name { font-weight: 600; font-size: 14px; color: var(--text-secondary); }
+.appearance-icon-grid { display: flex; flex-wrap: wrap; gap: 4px; }
+.appearance-color-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.appearance-icon-label-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+
+/* TodoAddForm */
+.todo-add-row { display: flex; gap: 8px; align-items: center; }
+.todo-add-meta-row { display: flex; gap: 10px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+.todo-add-label { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted); }
+.todo-add-input-sm { font-size: 12px; padding: 2px 6px; min-height: 24px; }
+.todo-error-msg { color: var(--error-text); font-size: 12px; margin: 4px 0 0; }
+
+/* LogPickerModal */
+.log-picker-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0; }
+.log-picker-search-pad { padding: 0 20px 12px; }
+.log-picker-item-detail { flex: 1; min-width: 0; }
+.log-picker-item-header { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+.log-picker-item-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log-picker-item-meta { display: flex; gap: 8px; font-size: 11px; color: var(--text-muted); }
+.log-picker-load-more { text-align: center; padding: 12px 0; }
+
+/* WeeklyReport extras */
+.report-h3 { margin: 0 0 4px; font-size: 18px; }
+.report-footer { margin-top: 16px; font-size: 11px; }
+.report-saved-meta { font-size: 12px; display: flex; gap: 8px; }
+
+/* SettingsPanel extras */
+.settings-flex-max { flex: 1; max-width: 420px; font-size: 13px; }
+.settings-usage-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+
+/* RelatedLogsSection extras */
+.search-dropdown-pad { padding: 8px; }
+.search-dropdown-scroll { max-height: 240px; overflow-y: auto; }
+.search-empty-msg { padding: 12px 16px; font-size: 13px; }
+.related-gap-2 { gap: 2px; }
+
+/* TrashView extras */
+.trash-badge { font-size: 10px; padding: 1px 6px; }
+.trash-load-more { padding: 16px 0; }
+
+/* ActivityHeatmap extras */
+.heatmap-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-secondary); }
 
 /* Inline-to-CSS refactor utilities */
 .sidebar { width: 260px; min-width: 260px; border-right: 1px solid var(--border-default); background: var(--bg-sidebar); }

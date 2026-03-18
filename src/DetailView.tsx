@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
-import { trashLog, restoreLog, updateLog, loadLogs, getAiContext, getMasterNote, getFeatureEnabled, safeGetItem } from './storage';
+import { trashLog, restoreLog, updateLog, getAiContext, getMasterNote, safeGetItem } from './storage';
 import { saveCorrection } from './classify';
 import { ExternalLink } from 'lucide-react';
 import { logToMarkdown } from './markdown';
@@ -9,8 +9,6 @@ import { t } from './i18n';
 import type { Lang } from './i18n';
 import ConfirmDialog from './ConfirmDialog';
 import { analyzeWorkload } from './workload';
-import { formatHandoffMarkdown, formatFullAiContext } from './formatHandoff';
-import { generateProjectContext } from './generateProjectContext';
 import TodoSection from './components/TodoSection';
 import RelatedLogsSection from './components/RelatedLogsSection';
 import { CardSection, CheckableCardSection } from './components/CardSection';
@@ -49,7 +47,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
     if (!menuOpen) return;
     const close = (e: MouseEvent) => {
       const btn = document.querySelector('[data-menu-trigger="detail"]');
-      if (btn && btn.contains(e.target as Node)) return;
+      if (btn && e.target instanceof Node && btn.contains(e.target)) return;
       setMenuOpen(false);
     };
     document.addEventListener('mousedown', close);
@@ -60,7 +58,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
     if (!projectPickerOpen) return;
     const close = (e: MouseEvent) => {
       const btn = document.querySelector('[data-menu-trigger="project-picker"]');
-      if (btn && btn.contains(e.target as Node)) return;
+      if (btn && e.target instanceof Node && btn.contains(e.target)) return;
       setProjectPickerOpen(false);
     };
     document.addEventListener('mousedown', close);

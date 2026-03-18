@@ -56,9 +56,8 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
   useEffect(() => {
     if (!menuLogId) return;
     const onMouseDown = (e: MouseEvent) => {
-      if (menuRef.current && menuRef.current.contains(e.target as Node)) return;
-      const trigger = (e.target as HTMLElement).closest('[data-menu-trigger="ph-log"]');
-      if (trigger) return;
+      if (menuRef.current && e.target instanceof Node && menuRef.current.contains(e.target)) return;
+      if (e.target instanceof HTMLElement && e.target.closest('[data-menu-trigger="ph-log"]')) return;
       setMenuLogId(null);
     };
     const onKeyDown = (e: KeyboardEvent) => {
@@ -135,7 +134,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
     <div className="workspace-content">
       {/* Header */}
       <div className="page-header">
-        <button className="btn-back" onClick={onBack} className="btn-back-mb">
+        <button className="btn-back btn-back-mb" onClick={onBack}>
           ← {t('back', lang)}
         </button>
         <div className="page-header-row">
@@ -147,15 +146,15 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
               )}
               <h2 className="ph-title" style={{ margin: 0 }}>{project.name}</h2>
             </div>
-            <span className="meta" className="text-sm">
+            <span className="meta text-sm">
               {tf('logCount', lang, projectLogs.length)}
             </span>
           </div>
           <div className="flex gap-3">
-            <button className="btn" onClick={() => setShowAddLogs(true)} className="text-sm">
+            <button className="btn text-sm" onClick={() => setShowAddLogs(true)}>
               {t('addLogsToProject', lang)}
             </button>
-            <button className="btn btn-primary" onClick={onNewLog} className="text-sm">
+            <button className="btn btn-primary text-sm" onClick={onNewLog}>
               {t('createHandoff', lang)}
             </button>
           </div>
@@ -240,17 +239,17 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
         const displayLogs = q ? projectLogs.filter((l) => l.title.toLowerCase().includes(q)) : projectLogs;
         return (
         <div className="ph-log-list">
-          <div className="ph-section-label" className="flex-row" style={{ gap: 10 }}>
+          <div className="ph-section-label flex-row" style={{ gap: 10 }}>
             <span>{t('logs', lang)}</span>
             <input
-              className="input input-sm"
+              className="input input-sm flex-1"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label={t('ariaSearchLogs', lang)}
               placeholder={t('searchLogs', lang)}
               maxLength={200}
-              className="flex-1" style={{ minWidth: 100 }}
+              style={{ minWidth: 100 }}
             />
           </div>
           {displayLogs.length === 0 ? (
@@ -354,7 +353,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
           })}
           {displayLogs.length > phVisibleCount && (
             <div className="text-center" style={{ padding: '16px 0' }}>
-              <button className="btn" onClick={() => setPhVisibleCount((v) => v + PH_PAGE_SIZE)} className="text-sm">
+              <button className="btn text-sm" onClick={() => setPhVisibleCount((v) => v + PH_PAGE_SIZE)}>
                 {tf('loadMore', lang, displayLogs.length - phVisibleCount)}
               </button>
             </div>
@@ -471,7 +470,7 @@ function AddLogsModal({ projectId, logs, lang, onClose, onAdded }: {
                     {modeLabel}
                   </span>
                   <span className="modal-list-title">{log.title}</span>
-                  <span className="meta" className="ml-auto shrink-0" style={{ fontSize: 11 }}>{formatDateShort(log.createdAt)}</span>
+                  <span className="meta ml-auto shrink-0" style={{ fontSize: 11 }}>{formatDateShort(log.createdAt)}</span>
                 </label>
               );
             })

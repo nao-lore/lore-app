@@ -36,7 +36,7 @@ function ProjectContextMenu({ project, logCount, lang, onClose, onAction }: {
 
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
+      if (menuRef.current && e.target instanceof Node && !menuRef.current.contains(e.target)) onClose();
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -196,7 +196,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
   return (
     <div className="workspace-content-wide">
       <div className="page-header page-header-sticky">
-        <button className="btn-back" onClick={onBack} className="btn-back-mb">
+        <button className="btn-back btn-back-mb" onClick={onBack}>
           ← {t('back', lang)}
         </button>
         <div className="page-header-row">
@@ -211,15 +211,15 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
       </div>
 
       {/* Toolbar: search + sort */}
-      <div className="content-card" className="toolbar-card-mb">
+      <div className="content-card toolbar-card-mb">
         <input
-          className="input input-sm"
+          className="input input-sm flex-1"
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t('searchProjects', lang)}
           maxLength={200}
-          className="flex-1" style={{ minWidth: 140 }}
+          style={{ minWidth: 140 }}
         />
         <DropdownMenu
           label={t('sortLabel', lang)}
@@ -240,9 +240,9 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
 
       {/* Add project form */}
       {addingProject && (
-        <div className="content-card" className="flex-row-gap-sm flex-wrap" style={{ marginBottom: 16 }}>
+        <div className="content-card flex-row-gap-sm flex-wrap" style={{ marginBottom: 16 }}>
           <input
-            className="input"
+            className="input flex-1"
             value={newProjectName}
             onChange={(e) => { setNewProjectName(e.target.value); setProjectNameError(''); }}
             onBlur={() => { if (newProjectName.trim() === '') setProjectNameError(t('projectNameRequired', lang)); }}
@@ -253,7 +253,6 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
             placeholder={t('projectNamePlaceholder', lang)}
             autoFocus
             maxLength={200}
-            className="flex-1"
           />
           <button className="btn btn-primary" onClick={handleAddProject}>
             {t('addBtn', lang)}

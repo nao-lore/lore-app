@@ -2,13 +2,9 @@ import { Copy, Share2 } from 'lucide-react';
 import { HandoffResultDisplay } from '../ResultDisplay';
 import { t } from '../i18n';
 import type { Lang } from '../i18n';
-import type { HandoffResult } from '../types';
+import type { SavedResult } from '../hooks/useTransform';
 
-interface SavedResultData {
-  log: HandoffResult;
-  markdown: string;
-  fullContext?: string;
-}
+type SavedResultData = SavedResult;
 
 interface PostGenerationPreviewProps {
   savedResult: SavedResultData;

@@ -31,7 +31,7 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
 
       <div className="pricing-grid">
         {/* Free Plan */}
-        <div className="content-card" className="pricing-card" style={{ border: isFreePlan ? '2px solid var(--accent)' : undefined }}>
+        <div className="content-card pricing-card" style={{ border: isFreePlan ? '2px solid var(--accent)' : undefined }}>
           {isFreePlan && (
             <div className="pricing-badge">
               {t('pricingCurrentPlan', lang)}
@@ -83,17 +83,16 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
           <div className="mt-xl" style={{ marginTop: 20 }}>
             {isFreePlan ? (
               <button
-                className="btn"
+                className="btn pricing-btn-full"
                 disabled
-                className="pricing-btn-full" style={{ opacity: 0.6, cursor: 'default' }}
+                style={{ opacity: 0.6, cursor: 'default' }}
               >
                 {t('pricingCurrentPlan', lang)}
               </button>
             ) : (
               <button
-                className="btn"
+                className="btn pricing-btn-full"
                 disabled
-                className="pricing-btn-full"
               >
                 {t('pricingFreeButton', lang)}
               </button>
@@ -102,7 +101,7 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
         </div>
 
         {/* Pro Plan */}
-        <div className="content-card" className="pricing-card" style={{ border: !isFreePlan ? '2px solid var(--accent)' : undefined }}>
+        <div className="content-card pricing-card" style={{ border: !isFreePlan ? '2px solid var(--accent)' : undefined }}>
           {!isFreePlan && (
             <div className="pricing-badge">
               {t('pricingCurrentPlan', lang)}
@@ -155,17 +154,17 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
           <div className="mt-xl" style={{ marginTop: 20 }}>
             {isFreePlan ? (
               <button
-                className="btn btn-primary"
+                className="btn btn-primary pricing-btn-full"
                 onClick={handleUpgrade}
-                className="pricing-btn-full" style={{ background: 'linear-gradient(135deg, var(--accent), #a855f7)', border: 'none', color: 'var(--button-text, #fff)', cursor: 'pointer' }}
+                style={{ background: 'linear-gradient(135deg, var(--accent), #a855f7)', border: 'none', color: 'var(--button-text, #fff)', cursor: 'pointer' }}
               >
                 {t('pricingUpgradeButton', lang)}
               </button>
             ) : (
               <button
-                className="btn"
+                className="btn pricing-btn-full"
                 disabled
-                className="pricing-btn-full" style={{ opacity: 0.6, cursor: 'default' }}
+                style={{ opacity: 0.6, cursor: 'default' }}
               >
                 {t('pricingCurrentPlan', lang)}
               </button>
@@ -175,7 +174,7 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
       </div>
 
       {/* FAQ / additional info */}
-      <div className="content-card" className="mt-lg">
+      <div className="content-card mt-lg">
         <div className="content-card-header">{t('pricingFaqTitle', lang)}</div>
         <div className="flex-col-gap-none">
           {([

@@ -27,8 +27,8 @@ export default function ErrorRetryBanner({ message, retryLabel, dismissLabel, on
       <span className="flex-1">{message}</span>
       {onRetry && (
         <button
-          className="btn"
-          className="btn-sm-action shrink-0" style={{ padding: '4px 12px' }}
+          className="btn btn-sm-action shrink-0"
+          style={{ padding: '4px 12px' }}
           onClick={handleRetry}
           disabled={retrying}
         >

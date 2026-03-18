@@ -71,7 +71,7 @@ export function OverflowMenu({
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (menuRef.current && e.target instanceof Node && !menuRef.current.contains(e.target)) {
         setOpen(false);
       }
     };

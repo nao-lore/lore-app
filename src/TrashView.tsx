@@ -223,7 +223,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
           })}
           {filteredItems.length > visibleCount && (
             <div className="text-center" style={{ padding: '16px 0' }}>
-              <button className="btn" onClick={() => setVisibleCount((v) => v + TRASH_PAGE_SIZE)} className="text-sm">
+              <button className="btn text-sm" onClick={() => setVisibleCount((v) => v + TRASH_PAGE_SIZE)}>
                 {tf('loadMore', lang, filteredItems.length - visibleCount)}
               </button>
             </div>

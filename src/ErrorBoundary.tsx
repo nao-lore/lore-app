@@ -30,111 +30,43 @@ export default class ErrorBoundary extends Component<Props, State> {
     const { error } = this.state;
 
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '100%',
-        minHeight: '100%',
-        padding: 32,
-      }}>
-        <div style={{
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 12,
-          padding: '32px 36px',
-          maxWidth: 520,
-          width: '100%',
-          boxShadow: 'var(--shadow-card)',
-          color: 'var(--text-body)',
-          fontSize: 14,
-          lineHeight: 1.6,
-        }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>&#9888;&#65039;</div>
-          <h2 style={{
-            margin: '0 0 8px',
-            fontSize: 18,
-            fontWeight: 600,
-            color: 'var(--text-primary)',
-          }}>
+      <div className="error-boundary-wrapper">
+        <div className="error-boundary-card">
+          <div className="error-boundary-icon">&#9888;&#65039;</div>
+          <h2 className="error-boundary-title">
             {t('somethingWentWrong', lang)}
           </h2>
-          <p style={{ margin: '0 0 20px', color: 'var(--text-muted)' }}>
+          <p className="error-boundary-desc">
             {t('errorDesc', lang)}
           </p>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div className="error-boundary-actions">
             <button
               onClick={() => this.setState({ hasError: false, error: null })}
-              style={{
-                padding: '8px 18px',
-                borderRadius: 8,
-                border: 'none',
-                background: 'var(--accent)',
-                color: 'var(--button-text, #fff)',
-                fontWeight: 500,
-                fontSize: 14,
-                cursor: 'pointer',
-              }}
+              className="error-boundary-btn-primary"
             >
               {t('tryAgain', lang)}
             </button>
             <button
               onClick={() => window.location.reload()}
-              style={{
-                padding: '8px 18px',
-                borderRadius: 8,
-                border: '1px solid var(--border-default)',
-                background: 'var(--bg-surface-secondary)',
-                color: 'var(--text-body)',
-                fontWeight: 500,
-                fontSize: 14,
-                cursor: 'pointer',
-              }}
+              className="error-boundary-btn-secondary"
             >
               {t('reloadPage', lang)}
             </button>
             {this.props.onGoHome && (
               <button
                 onClick={() => { this.setState({ hasError: false, error: null }); this.props.onGoHome!(); }}
-                style={{
-                  padding: '8px 18px',
-                  borderRadius: 8,
-                  border: '1px solid var(--border-default)',
-                  background: 'var(--bg-surface-secondary)',
-                  color: 'var(--text-body)',
-                  fontWeight: 500,
-                  fontSize: 14,
-                  cursor: 'pointer',
-                }}
+                className="error-boundary-btn-secondary"
               >
                 {t('goBackToHome', lang)}
               </button>
             )}
           </div>
           {error && (
-            <details style={{ marginTop: 16 }}>
-              <summary style={{
-                cursor: 'pointer',
-                fontSize: 12,
-                color: 'var(--text-muted)',
-                userSelect: 'none',
-              }}>
+            <details className="mt-lg">
+              <summary className="error-boundary-details-summary">
                 {t('errorDetails', lang)}
               </summary>
-              <pre style={{
-                marginTop: 8,
-                padding: 14,
-                background: 'var(--bg-surface-tertiary)',
-                border: '1px solid var(--border-default)',
-                borderRadius: 8,
-                fontSize: 12,
-                lineHeight: 1.5,
-                color: 'var(--error-text)',
-                overflow: 'auto',
-                maxHeight: 240,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-              }}>
+              <pre className="error-boundary-pre">
                 {error.message}
                 {error.stack && '\n\n' + error.stack}
               </pre>

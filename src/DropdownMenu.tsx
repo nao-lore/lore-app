@@ -27,7 +27,7 @@ export default function DropdownMenu({ label, value, options, onChange }: Dropdo
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) closeMenu();
+      if (ref.current && e.target instanceof Node && !ref.current.contains(e.target)) closeMenu();
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { closeMenu(); return; }

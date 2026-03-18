@@ -21,9 +21,8 @@ export default function ContextMenu({ items, anchorRect, onClose }: ContextMenuP
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && menuRef.current.contains(e.target as Node)) return;
-      const trigger = (e.target as HTMLElement).closest('.sidebar-icon-btn, .action-menu-btn, .card-menu-btn, [data-menu-trigger]');
-      if (trigger) return;
+      if (menuRef.current && e.target instanceof Node && menuRef.current.contains(e.target)) return;
+      if (e.target instanceof HTMLElement && e.target.closest('.sidebar-icon-btn, .action-menu-btn, .card-menu-btn, [data-menu-trigger]')) return;
       onClose();
     };
     document.addEventListener('mousedown', handleClickOutside);
