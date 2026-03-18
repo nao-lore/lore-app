@@ -357,7 +357,7 @@ function HistoryView({ logs, onSelect, onBack, showBack = true, onRefresh, lang,
   });
 
   return (
-    <div className="workspace-content-wide flex-col h-full">
+    <div className="workspace-content-wide flex-col">
       <div className="page-header page-header-sticky">
         {showBack && (
           <button className="btn-back mb-md" onClick={onBack}>
