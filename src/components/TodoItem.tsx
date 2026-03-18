@@ -406,7 +406,6 @@ export function renderTodoItem(
       <div className="flex-1">
         {editingTodoId === todo.id ? (
           <input
-            className="input w-full"
             className="input w-full fs-14"
             value={editDraft}
             onChange={(e) => onSetEditDraft(e.target.value)}
