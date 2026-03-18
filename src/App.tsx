@@ -198,7 +198,12 @@ export default function App() {
   useEffect(() => {
     const handler = () => s.showToast(t('storageFullWarning', s.lang), 'error');
     window.addEventListener('lore-storage-full', handler);
-    return () => window.removeEventListener('lore-storage-full', handler);
+    const pricingHandler = () => s.goTo('pricing');
+    window.addEventListener('lore-navigate-pricing', pricingHandler);
+    return () => {
+      window.removeEventListener('lore-storage-full', handler);
+      window.removeEventListener('lore-navigate-pricing', pricingHandler);
+    };
   }, [s]);
 
   // Apply data-theme attribute

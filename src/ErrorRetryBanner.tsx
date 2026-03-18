@@ -7,9 +7,11 @@ interface ErrorRetryBannerProps {
   dismissLabel?: string;
   onRetry?: () => void;
   onDismiss?: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
-export default memo(function ErrorRetryBanner({ message, retryLabel, dismissLabel, onRetry, onDismiss }: ErrorRetryBannerProps) {
+export default memo(function ErrorRetryBanner({ message, retryLabel, dismissLabel, onRetry, onDismiss, actionLabel, onAction }: ErrorRetryBannerProps) {
   const [retrying, setRetrying] = useState(false);
 
   const handleRetry = () => {
@@ -38,6 +40,14 @@ export default memo(function ErrorRetryBanner({ message, retryLabel, dismissLabe
           ) : (
             retryLabel
           )}
+        </button>
+      )}
+      {onAction && actionLabel && (
+        <button
+          className="btn btn-sm-action shrink-0 pad-4-12 btn-upgrade"
+          onClick={onAction}
+        >
+          {actionLabel}
         </button>
       )}
       {onDismiss && (
