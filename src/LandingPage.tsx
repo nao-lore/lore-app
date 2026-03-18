@@ -13,14 +13,16 @@ const GITHUB_URL = 'https://github.com/yo-ban/lore-pwa';
 const FEEDBACK_URL = 'https://github.com/yo-ban/lore-pwa/issues';
 
 function LandingPage({ lang, onGetStarted }: LandingPageProps) {
-  // Override #root overflow:hidden so LP can scroll
+  // Override body + #root overflow:hidden so LP can scroll
   useEffect(() => {
     const root = document.getElementById('root');
+    document.body.style.overflow = 'auto';
     if (root) {
       root.style.height = 'auto';
       root.style.overflow = 'visible';
     }
     return () => {
+      document.body.style.overflow = 'hidden';
       if (root) {
         root.style.height = '100vh';
         root.style.overflow = 'hidden';
