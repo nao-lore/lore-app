@@ -12,6 +12,7 @@ import FeedbackModal from './FeedbackModal';
 import { getProjectColor } from './projectColors';
 import { useFocusTrap } from './useFocusTrap';
 import { isStaleMasterNote } from './utils/staleness';
+import { isPro } from './utils/proManager';
 
 
 function formatNumber(n: number): string {
@@ -497,7 +498,9 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
         <div className="account-avatar"><User size={16} /></div>
         <div className="account-info">
           <span className="account-name">{t('accountMenuUser', lang)}</span>
-          <button className="account-plan sidebar-plan-link" onClick={(e) => { e.stopPropagation(); onOpenPricing?.(); }} type="button">{t('accountMenuPlan', lang)}</button>
+          <button className="account-plan sidebar-plan-link" onClick={(e) => { e.stopPropagation(); onOpenPricing?.(); }} type="button">
+            {isPro() ? <><span className="pro-badge-inline">{t('proBadge', lang)}</span> Pro</> : t('accountMenuPlan', lang)}
+          </button>
         </div>
         <ChevronUp size={14} className="account-menu-chevron" />
       </button>

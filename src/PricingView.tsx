@@ -1,6 +1,9 @@
-import { t } from './i18n';
+import { useState, useEffect } from 'react';
+import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
+import { isPro, checkProStatus } from './utils/proManager';
+import { redirectToCheckout, STRIPE_CUSTOMER_PORTAL_URL } from './utils/stripe';
 
 interface PricingViewProps {
   onBack: () => void;
@@ -10,12 +13,33 @@ interface PricingViewProps {
 
 export default function PricingView({ onBack, lang, showToast }: PricingViewProps) {
   const isFreePlan = shouldUseBuiltinApi();
+  const userIsPro = isPro();
+  const [loading, setLoading] = useState(false);
 
-  const handleUpgrade = () => {
-    // Stripe Checkout URL will be configured here after Stripe account approval.
-    // For now, show a "coming soon" toast as the beta placeholder.
-    showToast?.(t('planComingSoon', lang), 'default');
+  // Handle checkout URL params on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'cancelled') {
+      showToast?.(t('checkoutCancelled', lang), 'default');
+      // Clean up URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('checkout');
+      window.history.replaceState({}, '', url.pathname);
+    }
+  }, [lang, showToast]);
+
+  const handleUpgrade = async () => {
+    setLoading(true);
+    try {
+      await redirectToCheckout();
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[PricingView] checkout error:', err);
+      showToast?.(t('somethingWentWrong', lang), 'error');
+      setLoading(false);
+    }
   };
+
+  const proStatus = checkProStatus();
 
   return (
     <div className="workspace-content">
@@ -31,8 +55,8 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
 
       <div className="pricing-grid">
         {/* Free Plan */}
-        <div className="content-card pricing-card" style={{ border: isFreePlan ? '2px solid var(--accent)' : undefined }}>
-          {isFreePlan && (
+        <div className="content-card pricing-card" style={{ border: isFreePlan && !userIsPro ? '2px solid var(--accent)' : undefined }}>
+          {isFreePlan && !userIsPro && (
             <div className="pricing-badge">
               {t('pricingCurrentPlan', lang)}
             </div>
@@ -50,7 +74,7 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
                 / {t('pricingMonth', lang)}
               </span>
             </div>
-            {shouldUseBuiltinApi() && (() => {
+            {shouldUseBuiltinApi() && !userIsPro && (() => {
               const { used, limit } = getBuiltinUsage();
               return (
                 <div className="text-sm text-muted" style={{ marginTop: 4 }}>
@@ -81,28 +105,19 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
           </div>
 
           <div className="mt-xl">
-            {isFreePlan ? (
-              <button
-                className="btn pricing-btn-full"
-                disabled
-                style={{ opacity: 0.6 }}
-              >
-                {t('pricingCurrentPlan', lang)}
-              </button>
-            ) : (
-              <button
-                className="btn pricing-btn-full"
-                disabled
-              >
-                {t('pricingFreeButton', lang)}
-              </button>
-            )}
+            <button
+              className="btn pricing-btn-full"
+              disabled
+              style={{ opacity: 0.6 }}
+            >
+              {isFreePlan && !userIsPro ? t('pricingCurrentPlan', lang) : t('pricingFreeButton', lang)}
+            </button>
           </div>
         </div>
 
         {/* Pro Plan */}
-        <div className="content-card pricing-card" style={{ border: !isFreePlan ? '2px solid var(--accent)' : undefined }}>
-          {!isFreePlan && (
+        <div className="content-card pricing-card" style={{ border: userIsPro ? '2px solid var(--accent)' : undefined }}>
+          {userIsPro && (
             <div className="pricing-badge">
               {t('pricingCurrentPlan', lang)}
             </div>
@@ -124,6 +139,11 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
                 / {t('pricingMonth', lang)}
               </span>
             </div>
+            {userIsPro && proStatus.expiresAt && (
+              <div className="text-sm text-muted" style={{ marginTop: 4 }}>
+                {tf('proExpires', lang, new Date(proStatus.expiresAt).toLocaleDateString())}
+              </div>
+            )}
           </div>
 
           <div className="flex-col gap-10 flex-1">
@@ -152,21 +172,32 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
           </div>
 
           <div className="mt-xl">
-            {isFreePlan ? (
+            {userIsPro ? (
+              <div className="flex-col gap-10">
+                <button
+                  className="btn pricing-btn-full"
+                  disabled
+                  style={{ opacity: 0.6 }}
+                >
+                  {t('pricingCurrentPlan', lang)}
+                </button>
+                <a
+                  href={STRIPE_CUSTOMER_PORTAL_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn pricing-btn-full text-center"
+                >
+                  {t('manageSubscription', lang)}
+                </a>
+              </div>
+            ) : (
               <button
                 className="btn btn-primary pricing-btn-full"
                 onClick={handleUpgrade}
-                style={{ background: 'linear-gradient(135deg, var(--accent), #a855f7)', border: 'none', color: 'var(--button-text, #fff)', cursor: 'pointer' }}
+                disabled={loading}
+                style={{ background: 'linear-gradient(135deg, var(--accent), #a855f7)', border: 'none', color: 'var(--button-text, #fff)', cursor: loading ? 'wait' : 'pointer' }}
               >
-                {t('pricingUpgradeButton', lang)}
-              </button>
-            ) : (
-              <button
-                className="btn pricing-btn-full"
-                disabled
-                style={{ opacity: 0.6 }}
-              >
-                {t('pricingCurrentPlan', lang)}
+                {loading ? t('upgrading', lang) : t('pricingUpgradeButton', lang)}
               </button>
             )}
           </div>
