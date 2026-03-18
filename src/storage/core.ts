@@ -20,10 +20,12 @@ export const MAX_MN_SNAPSHOTS = 50;
 
 // ─── Safe localStorage wrappers ───
 
+/** Safely read from localStorage, returning null on error */
 export function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { if (import.meta.env.DEV) console.error(`Failed to read localStorage key: ${key}`); return null; }
 }
 
+/** Safely remove a key from localStorage */
 export function safeRemoveItem(key: string): void {
   try { localStorage.removeItem(key); } catch { if (import.meta.env.DEV) console.error(`Failed to remove localStorage key: ${key}`); }
 }

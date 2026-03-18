@@ -1,3 +1,4 @@
+/** Trigger a browser file download from string content */
 export function downloadFile(content: string, fileName: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);

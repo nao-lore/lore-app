@@ -17,23 +17,28 @@ function loadAllTodos(): Todo[] {
   } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadAllTodos', err); return []; }
 }
 
+/** Load active (non-trashed, non-archived) todos */
 export function loadTodos(): Todo[] {
   return loadAllTodos().filter((t) => !t.trashedAt && !t.archivedAt);
 }
 
+/** Load archived todos */
 export function loadArchivedTodos(): Todo[] {
   return loadAllTodos().filter((t) => !!t.archivedAt && !t.trashedAt);
 }
 
+/** Load trashed todos */
 export function loadTrashedTodos(): Todo[] {
   return loadAllTodos().filter((t) => !!t.trashedAt);
 }
 
+/** Persist the full todos array to localStorage */
 export function saveTodos(todos: Todo[]): void {
   safeSetItem(TODOS_KEY, JSON.stringify(todos));
   invalidateTodosCache();
 }
 
+/** Create todos from a log's todo list (simple string items) */
 export function addTodosFromLog(logId: string, items: string[]): void {
   if (items.length === 0) return;
   const todos = loadAllTodos();
