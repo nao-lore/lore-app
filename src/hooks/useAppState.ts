@@ -57,20 +57,20 @@ export function useAppState() {
   const showOverdueBanner = data.overdueTodos.length > 0 && !bannerDismissed;
 
   // ── Handlers (font size / theme / lang) ───────────────────────
-  const handleFontSizeChange = (size: FontSize) => {
+  const handleFontSizeChange = useCallback((size: FontSize) => {
     setFontSizeState(size);
     safeSetItem(FONT_SIZE_KEY, size);
-  };
+  }, []);
 
-  const handleThemeChange = (v: ThemePref) => {
+  const handleThemeChange = useCallback((v: ThemePref) => {
     setThemePref(v);
     saveTheme(v);
-  };
+  }, []);
 
-  const handleUiLangChange = (v: Lang) => {
+  const handleUiLangChange = useCallback((v: Lang) => {
     setUiLang(v);
     setLangState(v);
-  };
+  }, []);
 
   // ── Cross-domain handlers (bridge nav + data + local state) ───
 
@@ -108,31 +108,31 @@ export function useAppState() {
     nav.goHome();
   }, [nav]);
 
-  const handleTagFilter = (tag: string) => {
+  const handleTagFilter = useCallback((tag: string) => {
     setTagFilter(tag);
     setActiveProjectId(null);
     nav.goToRawRef.current('history');
-  };
+  }, [nav]);
 
-  const handleOpenMasterNote = (projectId: string) => {
+  const handleOpenMasterNote = useCallback((projectId: string) => {
     setActiveProjectId(projectId);
     nav.goToRef.current('masternote');
-  };
+  }, [nav]);
 
-  const handleOpenKnowledgeBase = (projectId: string) => {
+  const handleOpenKnowledgeBase = useCallback((projectId: string) => {
     setActiveProjectId(projectId);
     nav.goToRef.current('knowledgebase');
-  };
+  }, [nav]);
 
-  const handleOpenProjectLogs = (projectId: string) => {
+  const handleOpenProjectLogs = useCallback((projectId: string) => {
     setActiveProjectId(projectId);
     nav.goToRef.current('projecthome');
     setPaletteOpen(false);
-  };
+  }, [nav]);
 
-  const handlePaletteSelectProject = (projectId: string) => {
+  const handlePaletteSelectProject = useCallback((projectId: string) => {
     handleOpenProjectLogs(projectId);
-  };
+  }, [handleOpenProjectLogs]);
 
   // ── Onboarding ────────────────────────────────────────────────
   const handleOnboardingClose = useCallback(async () => {

@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { Calendar, TrendingUp, LayoutGrid, List, AlignJustify } from 'lucide-react';
 import type { LogEntry, OutputMode } from '../types';
 import { t } from '../i18n';
@@ -125,7 +125,7 @@ interface HistoryFiltersProps {
   onDatePresetChange: (v: DatePreset | null) => void;
 }
 
-export function HistoryFiltersToolbar({
+export const HistoryFiltersToolbar = memo(function HistoryFiltersToolbar({
   lang, modeFilter, onModeFilterChange, rawQuery, onRawQueryChange,
   sortKey, onSortKeyChange, groupKey, onGroupKeyChange,
   compact, onToggleDensity, viewMode, onViewModeChange,
@@ -265,7 +265,7 @@ export function HistoryFiltersToolbar({
       </div>
     </div>
   );
-}
+});
 
 // ─── Keywords bar ───
 interface KeywordsBarProps {
@@ -277,7 +277,7 @@ interface KeywordsBarProps {
   onSetQuery: (q: string) => void;
 }
 
-export function KeywordsBar({ logs, debouncedQuery, tagFilter, modeFilter, lang, onSetQuery }: KeywordsBarProps) {
+export const KeywordsBar = memo(function KeywordsBar({ logs, debouncedQuery, tagFilter, modeFilter, lang, onSetQuery }: KeywordsBarProps) {
   const keywords = useMemo(() => extractKeywords(logs), [logs]);
 
   if (debouncedQuery.trim() || tagFilter || modeFilter !== 'all' || logs.length < 3 || keywords.length === 0) {
@@ -305,4 +305,4 @@ export function KeywordsBar({ logs, debouncedQuery, tagFilter, modeFilter, lang,
       ))}
     </div>
   );
-}
+});

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Trash2, FolderOpen } from 'lucide-react';
 import type { Project } from '../types';
 import { t, tf } from '../i18n';
@@ -13,7 +13,7 @@ interface BulkActionBarProps {
   onExitSelectMode: () => void;
 }
 
-export function BulkActionBar({
+export const BulkActionBar = memo(function BulkActionBar({
   lang, selected, projects,
   onBulkDelete, onBulkAssignProject, onExitSelectMode,
 }: BulkActionBarProps) {
@@ -64,4 +64,4 @@ export function BulkActionBar({
       </button>
     </div>
   );
-}
+});

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Copy, Share2 } from 'lucide-react';
 import { HandoffResultDisplay } from '../ResultDisplay';
 import { t } from '../i18n';
@@ -14,7 +15,7 @@ interface PostGenerationPreviewProps {
   wasFirstTransform: boolean;
 }
 
-export default function PostGenerationPreview({ savedResult, lang, showToast, onStartNew, wasFirstTransform }: PostGenerationPreviewProps) {
+export default memo(function PostGenerationPreview({ savedResult, lang, showToast, onStartNew, wasFirstTransform }: PostGenerationPreviewProps) {
   return (
     <div className="input-preview">
       <h3 className="mb-md result-heading">{wasFirstTransform ? `🎉 ${t('logSaved', lang)}` : t('logSaved', lang)}</h3>
@@ -91,4 +92,4 @@ export default function PostGenerationPreview({ savedResult, lang, showToast, on
       )}
     </div>
   );
-}
+});

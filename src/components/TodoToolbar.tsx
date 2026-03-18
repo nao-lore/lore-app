@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { CheckSquare, Square, MoreVertical, Trash2, Check, CheckCheck, AlertTriangle, Copy, Calendar } from 'lucide-react';
 import type { Todo } from '../types';
 import { t, tf } from '../i18n';
@@ -27,7 +27,7 @@ interface TodoTabsProps {
   onTabChange: (tab: TabKey) => void;
 }
 
-export function TodoTabs({
+export const TodoTabs = memo(function TodoTabs({
   activeTab, pendingCount, completedCount, archivedCount, lang,
   sortKey, onSortKeyChange, groupKey, onGroupKeyChange,
   staleTodos, staleFilter, onStaleFilterChange, onTabChange,
@@ -95,7 +95,7 @@ export function TodoTabs({
       )}
     </div>
   );
-}
+});
 
 // ─── Due date filter bar ───
 interface DueFilterBarProps {
@@ -104,7 +104,7 @@ interface DueFilterBarProps {
   onDueFilterChange: (v: 'all' | 'today' | 'week' | 'overdue') => void;
 }
 
-export function DueFilterBar({ lang, dueFilter, onDueFilterChange }: DueFilterBarProps) {
+export const DueFilterBar = memo(function DueFilterBar({ lang, dueFilter, onDueFilterChange }: DueFilterBarProps) {
   return (
     <div className="flex-row mb-md" style={{ gap: 6 }}>
       <Calendar size={12} className="text-muted shrink-0" />
@@ -121,7 +121,7 @@ export function DueFilterBar({ lang, dueFilter, onDueFilterChange }: DueFilterBa
       </div>
     </div>
   );
-}
+});
 
 // ─── Progress ring summary ───
 interface ProgressSummaryProps {
@@ -134,7 +134,7 @@ interface ProgressSummaryProps {
   onShowSnoozedChange: (v: boolean) => void;
 }
 
-export function ProgressSummary({ lang, todos, pending, completed, snoozedCount, showSnoozed, onShowSnoozedChange }: ProgressSummaryProps) {
+export const ProgressSummary = memo(function ProgressSummary({ lang, todos, pending, completed, snoozedCount, showSnoozed, onShowSnoozedChange }: ProgressSummaryProps) {
   const total = todos.length;
   const doneCount = completed.length;
   const overdueCount = pending.filter((td) => isOverdue(td.dueDate) && !td.done).length;
@@ -172,7 +172,7 @@ export function ProgressSummary({ lang, todos, pending, completed, snoozedCount,
       )}
     </div>
   );
-}
+});
 
 // ─── Bulk action bar ───
 interface BulkActionBarProps {
@@ -188,7 +188,7 @@ interface BulkActionBarProps {
   onCancel: () => void;
 }
 
-export function BulkActionBar({
+export const BulkActionBar = memo(function BulkActionBar({
   lang, selectMode, selectedIds, sorted, activeTab,
   onSelectAll, onBulkDone, onBulkDelete, onBulkCopy, onCancel,
 }: BulkActionBarProps) {
@@ -228,7 +228,7 @@ export function BulkActionBar({
       </button>
     </div>
   );
-}
+});
 
 // ─── Header actions (add, bulk select, overflow menu) ───
 interface TodoHeaderActionsProps {
@@ -241,7 +241,7 @@ interface TodoHeaderActionsProps {
   onDeleteCompleted: () => void;
 }
 
-export function TodoHeaderActions({ lang, selectMode, displayedCount, completedCount, onAdd, onStartSelect, onDeleteCompleted }: TodoHeaderActionsProps) {
+export const TodoHeaderActions = memo(function TodoHeaderActions({ lang, selectMode, displayedCount, completedCount, onAdd, onStartSelect, onDeleteCompleted }: TodoHeaderActionsProps) {
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement>(null);
 
@@ -296,4 +296,4 @@ export function TodoHeaderActions({ lang, selectMode, displayedCount, completedC
       </div>
     </div>
   );
-}
+});

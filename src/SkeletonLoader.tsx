@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { t } from './i18n';
 import type { Lang } from './i18n';
 
@@ -59,7 +60,7 @@ function DetailSkeleton() {
   );
 }
 
-export default function SkeletonLoader({ message, lang, variant = 'list' }: SkeletonLoaderProps) {
+export default memo(function SkeletonLoader({ message, lang, variant = 'list' }: SkeletonLoaderProps) {
   return (
     <div className="skeleton-loader">
       <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
@@ -70,4 +71,4 @@ export default function SkeletonLoader({ message, lang, variant = 'list' }: Skel
       {variant === 'detail' && <DetailSkeleton />}
     </div>
   );
-}
+});

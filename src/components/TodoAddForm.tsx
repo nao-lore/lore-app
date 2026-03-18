@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, memo } from 'react';
 import { t } from '../i18n';
 import type { Lang } from '../i18n';
 import { addManualTodo } from '../storage';
@@ -10,7 +10,7 @@ interface TodoAddFormProps {
   showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void;
 }
 
-export function TodoAddForm({ lang, onRefresh, onClose, showToast }: TodoAddFormProps) {
+export const TodoAddForm = memo(function TodoAddForm({ lang, onRefresh, onClose, showToast }: TodoAddFormProps) {
   const [newText, setNewText] = useState('');
   const [newPriority, setNewPriority] = useState<'high' | 'medium' | 'low' | ''>('');
   const [newDueDate, setNewDueDate] = useState('');
@@ -96,4 +96,4 @@ export function TodoAddForm({ lang, onRefresh, onClose, showToast }: TodoAddForm
       </div>
     </div>
   );
-}
+});

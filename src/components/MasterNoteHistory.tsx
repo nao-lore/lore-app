@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { MasterNote, MasterNoteSnapshot } from '../types';
 import type { Lang } from '../i18n';
 import { t } from '../i18n';
@@ -57,7 +58,7 @@ interface MasterNoteHistoryPanelProps {
   onCancelRestore: () => void;
 }
 
-export function MasterNoteHistoryPanel({
+export const MasterNoteHistoryPanel = memo(function MasterNoteHistoryPanel({
   lang, saved, snapshots, previewSnap, confirmRestoreVersion,
   onClose, onPreviewSnap, onRestore, onConfirmRestore, onCancelRestore,
 }: MasterNoteHistoryPanelProps) {
@@ -157,4 +158,4 @@ export function MasterNoteHistoryPanel({
       )}
     </>
   );
-}
+});

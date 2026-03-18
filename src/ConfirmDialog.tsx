@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, memo } from 'react';
 import { useFocusTrap } from './useFocusTrap';
 
 interface ConfirmDialogProps {
@@ -11,7 +11,7 @@ interface ConfirmDialogProps {
   danger?: boolean;
 }
 
-export default function ConfirmDialog({ title, description, confirmLabel, cancelLabel, onConfirm, onCancel, danger = true }: ConfirmDialogProps) {
+export default memo(function ConfirmDialog({ title, description, confirmLabel, cancelLabel, onConfirm, onCancel, danger = true }: ConfirmDialogProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(true);
   const previouslyFocusedRef = useRef<Element | null>(null);
 
@@ -45,4 +45,4 @@ export default function ConfirmDialog({ title, description, confirmLabel, cancel
       </div>
     </div>
   );
-}
+});

@@ -61,7 +61,7 @@ export function isToday(iso: string): boolean {
 export { downloadFile } from '../utils/downloadFile';
 
 // ─── Log Context Menu (inline dropdown) ───
-export function LogContextMenu({ log, lang, projects, onClose, onAction }: {
+export const LogContextMenu = memo(function LogContextMenu({ log, lang, projects, onClose, onAction }: {
   log: LogEntry;
   lang: Lang;
   projects: Project[];
@@ -160,7 +160,7 @@ export function LogContextMenu({ log, lang, projects, onClose, onAction }: {
       </button>
     </div>
   );
-}
+});
 
 // ─── Shared render props interface ───
 export interface LogRenderContext {
@@ -189,7 +189,7 @@ export interface LogRenderContext {
 }
 
 // ─── Card view item ───
-export function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderContext }) {
+export const HistoryCardItem = memo(function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderContext }) {
   const {
     lang, projects, activeProjectId, compact, selectMode, selected, debouncedQuery,
     editingLogId, editDraft, actionSheetLog, inlinePickerLogId,
@@ -334,10 +334,10 @@ export function HistoryCardItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
       </div>
     </div>
   );
-}
+});
 
 // ─── List view item ───
-export function HistoryListItem({ log, ctx }: { log: LogEntry; ctx: LogRenderContext }) {
+export const HistoryListItem = memo(function HistoryListItem({ log, ctx }: { log: LogEntry; ctx: LogRenderContext }) {
   const {
     lang, projects, compact, selectMode, selected, debouncedQuery,
     editingLogId, editDraft, actionSheetLog,
@@ -401,4 +401,4 @@ export function HistoryListItem({ log, ctx }: { log: LogEntry; ctx: LogRenderCon
       )}
     </div>
   );
-}
+});
