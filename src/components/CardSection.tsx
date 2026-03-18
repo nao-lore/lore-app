@@ -1,7 +1,8 @@
+import { memo } from 'react';
 import { CheckSquare, Square } from 'lucide-react';
 import type { NextActionItem } from '../types';
 
-function CardSection({ title, items, isNew }: { title: string; items: string[]; isNew?: (item: string) => boolean }) {
+const CardSection = memo(function CardSection({ title, items, isNew }: { title: string; items: string[]; isNew?: (item: string) => boolean }) {
   if (items.length === 0) return null;
   return (
     <div className="content-card">
@@ -19,9 +20,9 @@ function CardSection({ title, items, isNew }: { title: string; items: string[]; 
       </ul>
     </div>
   );
-}
+});
 
-function CheckableCardSection({ title, items, checkedIndices, onToggle, richItems }: { title: string; items: string[]; checkedIndices: number[]; onToggle: (index: number) => void; richItems?: NextActionItem[] }) {
+const CheckableCardSection = memo(function CheckableCardSection({ title, items, checkedIndices, onToggle, richItems }: { title: string; items: string[]; checkedIndices: number[]; onToggle: (index: number) => void; richItems?: NextActionItem[] }) {
   if (items.length === 0) return null;
   const doneCount = checkedIndices.length;
   return (
@@ -77,6 +78,6 @@ function CheckableCardSection({ title, items, checkedIndices, onToggle, richItem
       </ul>
     </div>
   );
-}
+});
 
 export { CardSection, CheckableCardSection };

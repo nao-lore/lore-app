@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo } from 'react';
 import type { MasterNote, LogEntry, SourcedItem } from '../types';
 import type { Lang } from '../i18n';
 import { t } from '../i18n';
@@ -48,7 +48,7 @@ import { downloadFile } from '../utils/downloadFile';
 
 // ---- Read-only display ----
 
-export function ReadOnlyText({ label, value }: { label: string; value: string }) {
+export const ReadOnlyText = memo(function ReadOnlyText({ label, value }: { label: string; value: string }) {
   return (
     <div className="content-card">
       <div className="content-card-header">{label}</div>
@@ -57,9 +57,9 @@ export function ReadOnlyText({ label, value }: { label: string; value: string })
       </p>
     </div>
   );
-}
+});
 
-export function ReadOnlyList({
+export const ReadOnlyList = memo(function ReadOnlyList({
   label,
   items,
   logs,
@@ -102,11 +102,11 @@ export function ReadOnlyList({
       </ul>
     </div>
   );
-}
+});
 
 // ---- Editable components (edit mode only) ----
 
-export function EditableText({
+export const EditableText = memo(function EditableText({
   label,
   value,
   onChange,
@@ -127,9 +127,9 @@ export function EditableText({
       />
     </div>
   );
-}
+});
 
-export function EditableList({
+export const EditableList = memo(function EditableList({
   label,
   items,
   onChange,
@@ -225,11 +225,11 @@ export function EditableList({
       </button>
     </div>
   );
-}
+});
 
 // ---- Related Logs (read-only always) ----
 
-export function RelatedLogs({ logIds, logs, onOpenLog, lang }: { logIds: string[]; logs: LogEntry[]; onOpenLog: (id: string) => void; lang: Lang }) {
+export const RelatedLogs = memo(function RelatedLogs({ logIds, logs, onOpenLog, lang }: { logIds: string[]; logs: LogEntry[]; onOpenLog: (id: string) => void; lang: Lang }) {
   if (logIds.length === 0) return null;
   return (
     <div className="content-card">
@@ -252,11 +252,11 @@ export function RelatedLogs({ logIds, logs, onOpenLog, lang }: { logIds: string[
       </div>
     </div>
   );
-}
+});
 
 // ---- Three-dot menu ----
 
-export function OverflowMenu({
+export const OverflowMenu = memo(function OverflowMenu({
   note,
   projectName,
   lang,
@@ -368,7 +368,7 @@ export function OverflowMenu({
       )}
     </div>
   );
-}
+});
 
 /** Lightweight inline markdown renderer for AI Context preview */
 export function renderSimpleMarkdown(text: string): React.ReactNode[] {

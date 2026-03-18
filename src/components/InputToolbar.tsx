@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { safeSetItem } from '../storage';
 import { t } from '../i18n';
 import type { Lang } from '../i18n';
@@ -20,7 +21,7 @@ interface InputToolbarProps {
   showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void;
 }
 
-export default function InputToolbar({
+export default memo(function InputToolbar({
   transformAction, setTransformAction, selectedProjectId, setSelectedProjectId,
   loading, files, setFiles, fileImportRef, handleFiles, lang, projects, showToast,
 }: InputToolbarProps) {
@@ -90,4 +91,4 @@ export default function InputToolbar({
       </div>
     </div>
   );
-}
+});

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { ReactNode } from 'react';
 import { Pin, Copy, Check, Activity, MoreVertical } from 'lucide-react';
 import { loadLogs, updateLog, getFeatureEnabled } from '../storage';
@@ -31,7 +32,7 @@ interface DetailHeaderProps {
   onOpenMasterNote?: (projectId: string) => void;
 }
 
-export default function DetailHeader({
+export default memo(function DetailHeader({
   log, project, isHandoff, lang,
   editingTitle, titleDraft, setTitleDraft, setEditingTitle,
   onTitleSave, onTitleCancel, showSaved,
@@ -191,4 +192,4 @@ export default function DetailHeader({
       </div>
     </div>
   );
-}
+});

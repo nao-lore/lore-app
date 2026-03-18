@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Share2 } from 'lucide-react';
 import { duplicateLog } from '../storage';
 import { logToMarkdown } from '../markdown';
@@ -25,7 +26,7 @@ interface DetailMenuProps {
   showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void;
 }
 
-export default function DetailMenu({
+export default memo(function DetailMenu({
   log, lang, menuOpen, projectPickerOpen, copied, projects,
   onCopy, onCopyWithContext, onDelete, onShare, onAssignProject,
   onOpenLog, onRefresh, setMenuOpen, setProjectPickerOpen, showToast,
@@ -104,4 +105,4 @@ export default function DetailMenu({
       )}
     </>
   );
-}
+});

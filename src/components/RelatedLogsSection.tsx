@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { linkLogs, unlinkLogs } from '../storage';
 import { ExternalLink, X, Link } from 'lucide-react';
 import type { LogEntry } from '../types';
@@ -8,7 +8,7 @@ import { formatDateFull } from '../utils/dateFormat';
 
 const formatDateUnified = formatDateFull;
 
-function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; onOpenLog: (id: string) => void; lang: Lang; allLogs: LogEntry[] }) {
+const RelatedLogsSection = memo(function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; onOpenLog: (id: string) => void; lang: Lang; allLogs: LogEntry[] }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [, setRefreshKey] = useState(0); // triggers re-render on link/unlink
@@ -175,6 +175,6 @@ function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; 
       )}
     </div>
   );
-}
+});
 
 export default RelatedLogsSection;

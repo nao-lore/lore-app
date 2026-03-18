@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import ProgressPanel from '../ProgressPanel';
 import type { ProgressStep } from '../ProgressPanel';
 import SkeletonLoader from '../SkeletonLoader';
@@ -18,7 +19,7 @@ interface ProgressDisplayProps {
   onCancel: () => void;
 }
 
-export default function ProgressDisplay({
+export default memo(function ProgressDisplay({
   loading, progress, simStep, streamDetail, lang,
   singleSteps, estMinutes, progressPct, onPauseResume, onCancel,
 }: ProgressDisplayProps) {
@@ -91,4 +92,4 @@ export default function ProgressDisplay({
       <SkeletonLoader lang={lang} />
     </div>
   );
-}
+});
