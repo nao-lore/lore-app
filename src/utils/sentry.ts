@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/react';
 export function initSentry(): void {
   if (import.meta.env.PROD) {
     Sentry.init({
-      dsn: '', // User will add DSN later
+      dsn: 'https://26eee2d71887c0a4be055358abbcc5bb@o4511065882886144.ingest.us.sentry.io/4511065882886144',
       environment: 'production',
       sampleRate: 1.0,
       tracesSampleRate: 0.1,
