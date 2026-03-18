@@ -10,7 +10,7 @@ export function useNavigation() {
   const [view, setView] = useState<View>(() => {
     const saved = safeGetItem(LAST_VIEW_KEY);
     if (saved && saved !== 'detail' && saved !== 'masternote' && saved !== 'projecthome' && saved !== 'knowledgebase') return saved as View;
-    return 'input';
+    return 'dashboard';
   });
   const [prevView, setPrevView] = useState<View>('input');
   const [selectedId, setSelectedId] = useState<string | null>(null);
