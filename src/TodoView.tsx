@@ -566,7 +566,7 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
       {/* TODO list */}
       {sorted.length === 0 && !addOpen ? (
         <div className="empty-state">
-          {activeTab !== 'archived' && <EmptyTodos />}
+          {activeTab !== 'archived' && <EmptyTodos lang={lang} />}
           {activeTab === 'archived' && <div className="empty-state-icon">{'\u{1F4E6}'}</div>}
           <p>{activeTab === 'archived' ? t('todoNoArchived', lang) : t('noTodos', lang)}</p>
           {activeTab === 'pending' && <p className="page-subtitle">{t('noTodosDesc', lang)}</p>}

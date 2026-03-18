@@ -127,6 +127,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState('');
   const [changingProjectLogId, setChangingProjectLogId] = useState<string | null>(null);
+  const changeProjectTrapRef = useFocusTrap<HTMLDivElement>(!!changingProjectLogId);
   const [moreOpen, setMoreOpen] = useState(() => {
     return safeGetItem(SIDEBAR_MORE_KEY) === 'open';
   });
@@ -573,6 +574,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
       {changingProjectLogId && createPortal(
         <div className="modal-overlay" role="presentation" onClick={() => setChangingProjectLogId(null)}>
           <div
+            ref={changeProjectTrapRef}
             className="shortcuts-modal modal-narrow"
             role="dialog"
             aria-modal="true"

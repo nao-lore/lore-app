@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useFocusTrap } from './useFocusTrap';
 import { Check, Download, Upload, AlertTriangle } from 'lucide-react';
 import { getLang, setLang, getUiLang, exportAllData, validateBackup, importData, getDataUsage, formatBytes, getAutoReportSetting, setAutoReportSetting, isDemoMode, setDemoMode, getFeatureEnabled, setFeatureEnabled, safeGetItem } from './storage';
 import { resetOnboarding } from './onboardingState';
@@ -37,6 +38,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
   const [currentOutputLang, setCurrentOutputLang] = useState<string>(getLang());
   const [importError, setImportError] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<{ backup: LoreBackup; mode: 'merge' | 'overwrite' } | null>(null);
+  const importTrapRef = useFocusTrap<HTMLDivElement>(!!pendingImport);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Notion
@@ -579,7 +581,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
       {/* Import confirmation dialog */}
       {pendingImport && (
         <div className="modal-overlay" role="presentation" onClick={() => setPendingImport(null)}>
-          <div className="modal-card max-w-420" role="dialog" aria-modal="true" aria-label={t('dataImport', lang)} onClick={(e) => e.stopPropagation()}>
+          <div ref={importTrapRef} className="modal-card max-w-420" role="dialog" aria-modal="true" aria-label={t('dataImport', lang)} onClick={(e) => e.stopPropagation()}>
             <h3 className="mb-md">{t('dataImport', lang)}</h3>
             <div className="flex-col-gap-md gap-10 mb-lg">
               <button

@@ -1,6 +1,9 @@
-export function EmptyLogs() {
+import { t } from './i18n';
+import type { Lang } from './i18n';
+
+export function EmptyLogs({ lang }: { lang?: Lang }) {
   return (
-    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={t('ariaEmptyLogs', lang ?? 'en')}>
       {/* document outline */}
       <rect x="18" y="10" width="44" height="56" rx="4" stroke="var(--text-muted)" strokeWidth="2" opacity="0.3" />
       {/* folded corner */}
@@ -17,9 +20,9 @@ export function EmptyLogs() {
   );
 }
 
-export function EmptyTodos() {
+export function EmptyTodos({ lang }: { lang?: Lang }) {
   return (
-    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={t('ariaEmptyTodos', lang ?? 'en')}>
       {/* checkbox */}
       <rect x="24" y="24" width="32" height="32" rx="6" stroke="var(--text-muted)" strokeWidth="2" opacity="0.3" />
       {/* checkmark */}
@@ -34,9 +37,9 @@ export function EmptyTodos() {
   );
 }
 
-export function EmptyProjects() {
+export function EmptyProjects({ lang }: { lang?: Lang }) {
   return (
-    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={t('ariaEmptyProjects', lang ?? 'en')}>
       {/* folder body */}
       <path
         d="M12 26C12 23.8 13.8 22 16 22H32L36 16H60C62.2 16 64 17.8 64 20V22"
@@ -54,9 +57,9 @@ export function EmptyProjects() {
   );
 }
 
-export function EmptyDashboard() {
+export function EmptyDashboard({ lang }: { lang?: Lang }) {
   return (
-    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={t('ariaEmptyDashboard', lang ?? 'en')}>
       {/* grid/dashboard layout */}
       <rect x="10" y="14" width="26" height="22" rx="4" stroke="var(--text-muted)" strokeWidth="2" opacity="0.25" />
       <rect x="44" y="14" width="26" height="22" rx="4" stroke="var(--text-muted)" strokeWidth="2" opacity="0.2" />
@@ -71,9 +74,9 @@ export function EmptyDashboard() {
   );
 }
 
-export function EmptyTimeline() {
+export function EmptyTimeline({ lang }: { lang?: Lang }) {
   return (
-    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={t('ariaEmptyTimeline', lang ?? 'en')}>
       {/* clock circle */}
       <circle cx="40" cy="38" r="24" stroke="var(--text-muted)" strokeWidth="2" opacity="0.3" />
       {/* clock hands */}

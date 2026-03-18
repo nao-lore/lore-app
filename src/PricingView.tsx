@@ -1,6 +1,7 @@
-import { t } from './i18n';
+import { t, tf } from './i18n';
 import type { Lang } from './i18n';
-import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
+import { shouldUseBuiltinApi } from './provider';
+import { isInTrialPeriod, getDailyUsageCount, DAILY_LIMIT_FREE } from './utils/trialManager';
 
 interface PricingViewProps {
   onBack: () => void;
@@ -51,10 +52,17 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
               </span>
             </div>
             {shouldUseBuiltinApi() && (() => {
-              const { used, limit } = getBuiltinUsage();
+              if (isInTrialPeriod()) {
+                return (
+                  <div className="text-sm text-muted" style={{ marginTop: 4 }}>
+                    {t('pricingTrialActive', lang)}
+                  </div>
+                );
+              }
+              const used = getDailyUsageCount();
               return (
                 <div className="text-sm text-muted" style={{ marginTop: 4 }}>
-                  {used}/{limit} {t('pricingMonth', lang) === '月' ? '回使用済み（今日）' : 'used today'}
+                  {tf('pricingUsedToday', lang, used, DAILY_LIMIT_FREE)}
                 </div>
               );
             })()}
