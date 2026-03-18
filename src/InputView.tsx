@@ -3,7 +3,7 @@ import { CHAR_WARN, needsChunking } from './transform';
 import { getChunkTarget, getEngineConcurrency } from './chunkEngine';
 import { getStreak, isDemoMode } from './storage';
 import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
-import { canTransform } from './utils/trialManager';
+import { canTransform, DAILY_LIMIT_FREE } from './utils/trialManager';
 const loadDemoData = () => import('./demoData');
 import { Copy, Check, X } from 'lucide-react';
 import { getGreeting } from './greeting';
@@ -525,6 +525,8 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           dismissLabel={t('ariaDismissNotification', lang)}
           onRetry={combined.trim() ? () => { setError(''); runTransform(transformAction); } : undefined}
           onDismiss={() => setError('')}
+          actionLabel={error.includes(String(DAILY_LIMIT_FREE)) ? t('upgradeToPro', lang) : undefined}
+          onAction={error.includes(String(DAILY_LIMIT_FREE)) ? () => window.dispatchEvent(new CustomEvent('lore-navigate-pricing')) : undefined}
         />
       )}
 
