@@ -396,6 +396,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
                 value={memoDraft}
                 onChange={(e) => setMemoDraft(e.target.value)}
                 placeholder={t('memoPlaceholder', lang)}
+                aria-label={t('memoPlaceholder', lang)}
                 autoFocus
                 rows={4}
                 maxLength={10000}

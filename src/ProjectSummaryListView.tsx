@@ -194,14 +194,13 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
             const days = daysSince(note.updatedAt);
             const isStale = days >= 7 && unreflected > 0;
             return (
-              <div
+              <button
+                type="button"
                 key={p.id}
-                className="card"
-                role="button"
-                tabIndex={0}
-                style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', borderLeft: isStale ? '3px solid var(--warning-text)' : undefined }}
+                className="card card-btn"
+                style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', borderLeft: isStale ? '3px solid var(--warning-text)' : undefined, textAlign: 'left', width: '100%' }}
                 onClick={() => onOpenSummary(p.id)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenSummary(p.id); } }}
+                aria-label={`${t('ariaOpenSummary', lang)}: ${p.name}`}
               >
                 <div style={{
                   width: 36, height: 36, borderRadius: 8,
@@ -250,7 +249,7 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
                     <ArrowRight size={12} />
                   </button>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>

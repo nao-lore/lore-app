@@ -218,6 +218,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t('searchProjects', lang)}
+          aria-label={t('searchProjects', lang)}
           maxLength={200}
           style={{ minWidth: 140 }}
         />
@@ -251,6 +252,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
               if (e.key === 'Escape') { setAddingProject(false); setNewProjectName(''); setProjectNameError(''); }
             }}
             placeholder={t('projectNamePlaceholder', lang)}
+            aria-label={t('projectNamePlaceholder', lang)}
             autoFocus
             maxLength={200}
           />
@@ -284,13 +286,12 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
             const count = logCountForProject(p.id);
             const pColor = getProjectColor(p.color);
             return (
-              <div
+              <button
+                type="button"
                 key={p.id}
-                className={`content-card content-card-clickable${p.pinned ? ' content-card-line-pinned' : ''}`}
+                className={`content-card content-card-clickable content-card-btn${p.pinned ? ' content-card-line-pinned' : ''}`}
                 onClick={() => onSelectProject(p.id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectProject(p.id); } }}
+                aria-label={`${t('ariaOpenProject', lang)}: ${p.name}`}
                 style={{
                   position: 'relative',
                   borderLeft: pColor ? `3px solid ${pColor}` : undefined,
@@ -321,6 +322,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
                   <input
                     className="input input-sm"
                     value={editName}
+                    aria-label={t('ariaRenameInput', lang)}
                     onChange={(e) => { setEditName(e.target.value); setProjectNameError(''); }}
                     onBlur={() => handleRenameProject(p.id)}
                     onKeyDown={(e) => {
@@ -348,7 +350,7 @@ export default function ProjectsView({ projects, logs, onBack, onSelectProject, 
                     </div>
                   </>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>

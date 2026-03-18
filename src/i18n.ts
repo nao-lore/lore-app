@@ -1660,6 +1660,24 @@ const labels = {
   createFirstLog: { ja: '最初のログを作成する', en: 'Create your first log', es: 'Cree su primer registro', fr: 'Créez votre premier log', de: 'Erstellen Sie Ihren ersten Log', zh: '创建您的第一条日志', ko: '첫 번째 로그 만들기', pt: 'Crie seu primeiro registro' },
   weeklyReportCreateLog: { ja: 'ログを作成する', en: 'Create a log', es: 'Crear un registro', fr: 'Créer un log', de: 'Log erstellen', zh: '创建日志', ko: '로그 만들기', pt: 'Criar um registro' },
 
+  // A11y — additional labels
+  ariaGoBack: { ja: '戻る', en: 'Go back', es: 'Volver', fr: 'Retour', de: 'Zurück', zh: '返回', ko: '뒤로', pt: 'Voltar' },
+  ariaOpenProject: { ja: 'プロジェクトを開く', en: 'Open project', es: 'Abrir proyecto', fr: 'Ouvrir le projet', de: 'Projekt öffnen', zh: '打开项目', ko: '프로젝트 열기', pt: 'Abrir projeto' },
+  ariaOpenSummary: { ja: 'サマリーを開く', en: 'Open summary', es: 'Abrir resumen', fr: 'Ouvrir le résumé', de: 'Zusammenfassung öffnen', zh: '打开摘要', ko: '요약 열기', pt: 'Abrir resumo' },
+  ariaOpenKnowledgeBase: { ja: 'ナレッジベースを開く', en: 'Open knowledge base', es: 'Abrir base de conocimientos', fr: 'Ouvrir la base de connaissances', de: 'Wissensdatenbank öffnen', zh: '打开知识库', ko: '지식 베이스 열기', pt: 'Abrir base de conhecimento' },
+  ariaOpenLog: { ja: 'ログを開く', en: 'Open log', es: 'Abrir registro', fr: 'Ouvrir le log', de: 'Log öffnen', zh: '打开日志', ko: '로그 열기', pt: 'Abrir registro' },
+  ariaToggleMore: { ja: '詳細を切り替え', en: 'Toggle more options', es: 'Alternar más opciones', fr: 'Basculer plus d\'options', de: 'Mehr Optionen umschalten', zh: '切换更多选项', ko: '더 많은 옵션 전환', pt: 'Alternar mais opções' },
+  ariaTogglePinned: { ja: 'ピン留めセクションを切り替え', en: 'Toggle pinned section', es: 'Alternar sección fijada', fr: 'Basculer la section épinglée', de: 'Angehefteten Bereich umschalten', zh: '切换固定区域', ko: '고정 섹션 전환', pt: 'Alternar seção fixada' },
+  ariaSelectLogItem: { ja: 'ログ項目を選択', en: 'Select log item', es: 'Seleccionar elemento de registro', fr: 'Sélectionner l\'élément de log', de: 'Log-Element auswählen', zh: '选择日志项', ko: '로그 항목 선택', pt: 'Selecionar item de registro' },
+  ariaFilterByKeyword: { ja: 'キーワードでフィルタ', en: 'Filter by keyword', es: 'Filtrar por palabra clave', fr: 'Filtrer par mot-clé', de: 'Nach Stichwort filtern', zh: '按关键词筛选', ko: '키워드로 필터', pt: 'Filtrar por palavra-chave' },
+  ariaToggleAction: { ja: 'アクションを切り替え', en: 'Toggle action', es: 'Alternar acción', fr: 'Basculer l\'action', de: 'Aktion umschalten', zh: '切换操作', ko: '작업 전환', pt: 'Alternar ação' },
+  ariaEditTitle: { ja: 'タイトルを編集', en: 'Edit title', es: 'Editar título', fr: 'Modifier le titre', de: 'Titel bearbeiten', zh: '编辑标题', ko: '제목 편집', pt: 'Editar título' },
+  ariaTodoInput: { ja: 'TODOを入力', en: 'Enter TODO', es: 'Introducir tarea', fr: 'Saisir une tâche', de: 'Aufgabe eingeben', zh: '输入待办', ko: '할 일 입력', pt: 'Inserir tarefa' },
+  ariaCloseForm: { ja: 'フォームを閉じる', en: 'Close form', es: 'Cerrar formulario', fr: 'Fermer le formulaire', de: 'Formular schließen', zh: '关闭表单', ko: '양식 닫기', pt: 'Fechar formulário' },
+  ariaDateFrom: { ja: '開始日', en: 'Date from', es: 'Fecha desde', fr: 'Date de début', de: 'Datum von', zh: '开始日期', ko: '시작 날짜', pt: 'Data de início' },
+  ariaDateTo: { ja: '終了日', en: 'Date to', es: 'Fecha hasta', fr: 'Date de fin', de: 'Datum bis', zh: '结束日期', ko: '종료 날짜', pt: 'Data final' },
+  ariaRenameInput: { ja: '名前を変更', en: 'Rename', es: 'Renombrar', fr: 'Renommer', de: 'Umbenennen', zh: '重命名', ko: '이름 변경', pt: 'Renomear' },
+
 } as const;
 
 /** Exported for testing — do not use in application code. */

@@ -176,6 +176,7 @@ export default function TrashView({ onBack, onRefresh, lang, showToast }: TrashV
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('searchLogs', lang)}
+            aria-label={t('ariaSearchLogs', lang)}
             maxLength={200}
           />
         </div>

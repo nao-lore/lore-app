@@ -56,6 +56,7 @@ export const TodoAddForm = memo(function TodoAddForm({ lang, onRefresh, onClose,
           onBlur={() => { if (newText.trim() === '') setTodoError(t('todoInputRequired', lang)); }}
           onKeyDown={handleKeyDown}
           placeholder={t('todoAddPlaceholder', lang)}
+          aria-label={t('ariaTodoInput', lang)}
           maxLength={200}
           className="input flex-1"
           autoFocus
@@ -63,7 +64,7 @@ export const TodoAddForm = memo(function TodoAddForm({ lang, onRefresh, onClose,
         <button className="btn btn-primary shrink-0" onClick={handleAdd} disabled={!newText.trim()}>
           {t('todoAddBtn', lang)}
         </button>
-        <button className="btn shrink-0" onClick={() => { onClose(); }}>
+        <button className="btn shrink-0" onClick={() => { onClose(); }} aria-label={t('ariaCloseForm', lang)}>
           ×
         </button>
       </div>

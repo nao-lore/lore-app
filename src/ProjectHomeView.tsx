@@ -162,12 +162,11 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
       </div>
 
       {/* Summary card */}
-      <div
-        className="ph-summary-card"
+      <button
+        type="button"
+        className="ph-summary-card ph-summary-card-btn"
         onClick={() => onOpenSummary(project.id)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenSummary(project.id); } }}
+        aria-label={t('ariaOpenSummary', lang)}
       >
         <div className="ph-summary-icon">
           <FileText size={20} />
@@ -188,15 +187,14 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
           )}
         </div>
         <span className="ph-summary-arrow">→</span>
-      </div>
+      </button>
 
       {/* Knowledge Base card */}
-      <div
-        className="ph-summary-card"
+      <button
+        type="button"
+        className="ph-summary-card ph-summary-card-btn"
         onClick={() => onOpenKnowledgeBase(project.id)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenKnowledgeBase(project.id); } }}
+        aria-label={t('ariaOpenKnowledgeBase', lang)}
       >
         <div className="ph-summary-icon" style={{ color: 'var(--warning-text)' }}>
           <BookOpen size={20} />
@@ -217,7 +215,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
           )}
         </div>
         <span className="ph-summary-arrow">→</span>
-      </div>
+      </button>
 
       {/* Search bar + Log list */}
       {projectLogs.length === 0 ? (
@@ -260,13 +258,12 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
             const modeLabel = log.outputMode === 'handoff' ? 'H' : 'W';
             const preview = buildPreview(log);
             return (
-              <div
+              <button
+                type="button"
                 key={log.id}
-                className="ph-log-card"
-                role="button"
-                tabIndex={0}
+                className="ph-log-card ph-log-card-btn"
                 onClick={() => onOpenLog(log.id)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenLog(log.id); } }}
+                aria-label={`${t('ariaOpenLog', lang)}: ${log.title}`}
               >
                 <div className="ph-log-card-row1">
                   <span className={log.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'}>
@@ -280,6 +277,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
                       className="input"
                       style={{ fontSize: 'inherit', fontWeight: 'inherit', flex: 1, minWidth: 0 }}
                       value={editDraft}
+                      aria-label={t('ariaRenameInput', lang)}
                       onChange={(e) => setEditDraft(e.target.value)}
                       onBlur={() => { if (editDraft.trim() && editDraft.trim() !== log.title) { updateLog(log.id, { title: editDraft.trim() }); onRefresh(); } setEditingLogId(null); }}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } if (e.key === 'Escape') { setEditingLogId(null); } }}
@@ -348,7 +346,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
                     </div>
                   </div>
                 )}
-              </div>
+              </button>
             );
           })}
           {displayLogs.length > phVisibleCount && (
@@ -451,6 +449,7 @@ function AddLogsModal({ projectId, logs, lang, onClose, onAdded }: {
           className="modal-search"
           type="text"
           placeholder={t('addLogsSearchPlaceholder', lang)}
+          aria-label={t('ariaSearchLogs', lang)}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           autoFocus

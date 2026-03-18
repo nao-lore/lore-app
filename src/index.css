@@ -473,8 +473,8 @@
 .modal-heading-md { margin: 0; font-size: 16px; }
 .modal-close-sm { font-size: 13px; }
 .modal-narrow { max-width: 320px; }
-.btn-sm-compact { font-size: 12px; padding: 4px 12px; min-height: 26px; }
-.btn-xs-dismiss { font-size: 11px; padding: 1px 8px; min-height: 20px; line-height: 1; }
+.btn-sm-compact { font-size: 12px; padding: 4px 12px; min-height: 44px; min-width: 44px; }
+.btn-xs-dismiss { font-size: 11px; padding: 1px 8px; min-height: 44px; min-width: 44px; line-height: 1; }
 .stats-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-divider); }
 .stats-value { font-size: 14px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .filter-indicator { gap: 8px; font-size: 13px; color: var(--text-muted); }
@@ -3753,6 +3753,45 @@ button:focus-visible,
   outline-offset: 2px;
 }
 
+/* ===== A11y: semantic button resets for interactive cards ===== */
+.card-btn,
+.list-row-btn,
+.content-card-btn,
+.ph-summary-card-btn,
+.ph-log-card-btn,
+.log-picker-item-btn,
+.tag-btn,
+.breadcrumb-btn,
+.sidebar-toggle-btn {
+  background: none;
+  border: none;
+  padding: inherit;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+/* card-btn inherits the card background from parent class */
+.card-btn { text-align: left; width: 100%; }
+.list-row-btn { text-align: left; width: 100%; }
+.content-card-btn { text-align: left; width: 100%; }
+.ph-summary-card-btn { text-align: left; width: 100%; }
+.ph-log-card-btn { text-align: left; width: 100%; }
+.log-picker-item-btn { text-align: left; width: 100%; }
+.sidebar-toggle-btn { background: none; border: none; padding: 0; width: 100%; }
+.breadcrumb-btn { background: none; border: none; padding: 0; font-family: inherit; }
+.tag-btn { background: none; border: none; font-family: inherit; }
+
+/* ===== A11y: disabled button states ===== */
+button:disabled,
+button[disabled] {
+  opacity: 0.5;
+  border-color: var(--border-subtle) !important;
+  cursor: not-allowed;
+}
+
 /* ===== Small button utility ===== */
 .btn-sm {
   font-size: 12px;
@@ -4205,6 +4244,11 @@ button:focus-visible,
   background: linear-gradient(to right, rgba(0,0,0,0.08), transparent);
   transition: opacity 0.15s ease;
 }
+[dir="rtl"] .swipe-indicator {
+  left: auto;
+  right: 0;
+  background: linear-gradient(to left, rgba(0,0,0,0.08), transparent);
+}
 .swipe-indicator.active {
   opacity: 1;
 }
@@ -4268,10 +4312,10 @@ button:focus-visible,
 
 /* ===== InputView & DetailView extracted classes ===== */
 
-/* Button size variants */
-.btn-xs { font-size: 11px; padding: 3px 10px; min-height: 24px; }
-.btn-sm-compact { font-size: 12px; padding: 3px 10px; min-height: 24px; }
-.btn-md-compact { font-size: 13px; padding: 5px 14px; min-height: 30px; }
+/* Button size variants — 44px min touch target for a11y */
+.btn-xs { font-size: 11px; padding: 3px 10px; min-height: 44px; min-width: 44px; }
+.btn-sm-compact { font-size: 12px; padding: 3px 10px; min-height: 44px; min-width: 44px; }
+.btn-md-compact { font-size: 13px; padding: 5px 14px; min-height: 44px; min-width: 44px; }
 
 /* Extra gap utilities */
 .gap-2 { gap: 2px; }
