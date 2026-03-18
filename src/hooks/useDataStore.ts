@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { loadLogs, loadProjects, loadTodos, loadMasterNotes } from '../storage';
 
+/** Central data store hook — loads logs, projects, todos, masterNotes with cache-friendly refresh */
 export function useDataStore() {
   const [logsVersion, setLogsVersion] = useState(0);
 

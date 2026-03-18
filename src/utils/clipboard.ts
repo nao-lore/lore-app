@@ -1,3 +1,4 @@
+/** Copy text to clipboard with fallback for older browsers */
 export async function copyToClipboard(text: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(text);
