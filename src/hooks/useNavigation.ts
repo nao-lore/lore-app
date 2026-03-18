@@ -5,6 +5,7 @@ export type View = 'input' | 'detail' | 'settings' | 'history' | 'masternote' | 
 
 const LAST_VIEW_KEY = 'threadlog_last_view';
 
+/** Navigation state management with history stack and deep-linking */
 export function useNavigation() {
   const [view, setView] = useState<View>(() => {
     const saved = safeGetItem(LAST_VIEW_KEY);

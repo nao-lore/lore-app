@@ -10,6 +10,7 @@ interface SwipeActionOptions {
   rightColor?: string;
 }
 
+/** Touch swipe gesture handler for mobile list items */
 export function useSwipeAction(opts: SwipeActionOptions) {
   const {
     onSwipeLeft, onSwipeRight,
