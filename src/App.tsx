@@ -70,9 +70,15 @@ function resolveEffectiveTheme(pref: ThemePref): 'light' | 'dark' | 'high-contra
 export default function App() {
   const { inputDirtyRef, scrollRef, scrollPositionRef, shortcutsTrapRef, ...s } = useAppState();
   const [showLanding, setShowLanding] = useState(() => {
-    // ?home forces LP display (for testing/sharing)
+    // Static LP is now separate — skip React LP, go straight to onboarding
+    // ?home forces LP display (for testing only)
     if (new URLSearchParams(window.location.search).has('home')) return true;
-    return s.logs.length === 0 && !isOnboardingDone();
+    // New users go to onboarding, not LP
+    if (s.logs.length === 0 && !isOnboardingDone()) {
+      s.setShowOnboarding(true);
+      return false;
+    }
+    return false;
   });
   const [navState, setNavState] = useState<{ direction: 'forward' | 'back'; prevView: View }>({ direction: 'forward', prevView: s.view });
   const navDirection = navState.direction;

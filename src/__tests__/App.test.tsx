@@ -136,10 +136,13 @@ describe('App', () => {
     expect(container).toBeTruthy();
   });
 
-  it('shows landing page for first-time users (no logs, onboarding not done)', async () => {
+  it('skips LP for first-time users and does not show landing page', async () => {
     vi.mocked(isOnboardingDone).mockReturnValue(false);
     render(<App />);
-    expect(await screen.findByText('Paste a conversation. Get a project briefing in 30 seconds.')).toBeInTheDocument();
+    // New users skip React LP (static LP is separate now)
+    // Should NOT show the LP headline
+    await new Promise((r) => setTimeout(r, 500));
+    expect(screen.queryByText('Paste a conversation. Get a project briefing in 30 seconds.')).not.toBeInTheDocument();
   });
 
   it('shows main UI when onboarding is done', () => {
