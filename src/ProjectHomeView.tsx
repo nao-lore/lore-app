@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useFocusTrap } from './useFocusTrap';
 import { FileText, Pin, MoreHorizontal, Copy, Download, Trash2, Pencil, BookOpen, ExternalLink, CopyPlus } from 'lucide-react';
 import type { LogEntry, Project } from './types';
 import { t, tf } from './i18n';
@@ -398,6 +399,7 @@ function AddLogsModal({ projectId, logs, lang, onClose, onAdded }: {
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
 
   const candidates = useMemo(() =>
     logs
@@ -430,7 +432,7 @@ function AddLogsModal({ projectId, logs, lang, onClose, onAdded }: {
   if (candidates.length === 0) {
     return (
       <div className="modal-overlay" role="presentation" onClick={onClose}>
-        <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div ref={trapRef} className="modal-card" role="dialog" aria-modal="true" aria-label={t('addLogsTitle', lang)} onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">{t('addLogsTitle', lang)}</div>
           <div className="empty-state"><p>{t('addLogsNoUnassigned', lang)}</p></div>
           <div className="modal-footer">
@@ -443,7 +445,7 @@ function AddLogsModal({ projectId, logs, lang, onClose, onAdded }: {
 
   return (
     <div className="modal-overlay" role="presentation" onClick={onClose}>
-      <div className="modal-card modal-card-lg" onClick={(e) => e.stopPropagation()}>
+      <div ref={trapRef} className="modal-card modal-card-lg" role="dialog" aria-modal="true" aria-label={t('addLogsTitle', lang)} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">{t('addLogsTitle', lang)}</div>
         <input
           className="modal-search"
