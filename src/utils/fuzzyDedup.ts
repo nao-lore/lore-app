@@ -28,6 +28,8 @@ const STOP_WORDS = new Set([
   'the', 'and', 'for', 'that', 'this', 'with', 'from', 'are', 'was',
   'will', 'has', 'have', 'been', 'not', 'but', 'also', 'into',
   'more', 'some', 'when', 'than', 'then', 'just', 'only',
+  // Japanese basic particles (single-char)
+  'は', 'が', 'を', 'に', 'へ', 'で', 'と', 'も', 'の', 'や',
   // Japanese particles and auxiliaries
   'する', 'した', 'して', 'ている', 'ない', 'ある', 'いる',
   'これ', 'それ', 'この', 'その', 'など', 'として', 'について', 'ため',

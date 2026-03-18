@@ -13,6 +13,7 @@ import type { TransformResult, HandoffResult, BothResult, LogEntry } from '../ty
 import { t } from '../i18n';
 import type { EngineProgress } from '../chunkEngine';
 import type { StreamCallback } from '../provider';
+import { PROVIDER_MODEL_LABELS } from '../provider';
 import type { Lang } from '../i18n';
 import type { Project, SourceReference, OutputMode } from '../types';
 
@@ -42,18 +43,29 @@ export function djb2Hash(str: string): string {
   return hash.toString(36);
 }
 
-/** Compute a cache key from text content and action */
-export function hashCacheKey(text: string, action: string, provider: string, lang: string): string {
-  const composite = `${action}:${provider}:${lang}:${text.length}:${text}`;
+/** Compute a cache key from text content and action.
+ *  Uses only the first 1000 chars as prefix to avoid memory explosion on large inputs.
+ *  Includes model version so model upgrades don't return stale results. */
+export function hashCacheKey(text: string, action: string, provider: string, lang: string, model: string): string {
+  const prefix = text.slice(0, 1000);
+  const composite = `${action}:${provider}:${model}:${lang}:${text.length}:${prefix}`;
   return djb2Hash(composite);
 }
 
-/** Get a cached AI result if available (with TTL) */
-export function getCachedResult<T>(text: string, action: string, provider: string, lang: string): T | undefined {
-  const key = hashCacheKey(text, action, provider, lang);
+/** Get a cached AI result if available (with TTL).
+ *  The `as T` cast is safe: the cache is session-scoped and callers always
+ *  store/retrieve with matching action keys, so the runtime type is guaranteed.
+ *  An optional `validate` guard can be passed for extra safety. */
+export function getCachedResult<T>(text: string, action: string, provider: string, lang: string, validate?: (v: unknown) => v is T): T | undefined {
+  const model = PROVIDER_MODEL_LABELS[provider as keyof typeof PROVIDER_MODEL_LABELS] ?? '';
+  const key = hashCacheKey(text, action, provider, lang, model);
   const entry = aiResultCache.get(key);
   if (entry !== undefined) {
     if (Date.now() - entry.timestamp > AI_CACHE_TTL_MS) {
+      aiResultCache.delete(key);
+      return undefined;
+    }
+    if (validate && !validate(entry.result)) {
       aiResultCache.delete(key);
       return undefined;
     }
@@ -66,7 +78,8 @@ export function getCachedResult<T>(text: string, action: string, provider: strin
 
 /** Store an AI result in the cache */
 export function setCachedResult(text: string, action: string, provider: string, lang: string, result: unknown): void {
-  const key = hashCacheKey(text, action, provider, lang);
+  const model = PROVIDER_MODEL_LABELS[provider as keyof typeof PROVIDER_MODEL_LABELS] ?? '';
+  const key = hashCacheKey(text, action, provider, lang, model);
   if (aiResultCache.size >= AI_CACHE_MAX && !aiResultCache.has(key)) {
     const oldest = aiResultCache.keys().next().value;
     if (oldest !== undefined) aiResultCache.delete(oldest);

@@ -1523,6 +1523,7 @@ textarea.input:focus {
 .action-menu-btn:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
+  visibility: visible !important;
 }
 
 /* Sidebar icon buttons */
@@ -3275,6 +3276,7 @@ textarea.input:focus {
 }
 .list-row:hover .action-menu-btn {
   opacity: 1 !important;
+  visibility: visible !important;
 }
 .list-row-selected {
   background: var(--sidebar-active);
@@ -3772,6 +3774,21 @@ button[disabled] {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  /* Explicitly disable named animations that may override the wildcard */
+  .action-sheet,
+  .action-sheet-overlay,
+  .bottom-nav-sheet {
+    animation-name: none !important; /* action-sheet-slide-up, action-sheet-fade-in */
+  }
+  .account-popover {
+    animation-name: none !important; /* account-popover-in */
+  }
+  .check-pop {
+    animation-name: none !important; /* check-pop */
+  }
+  .skeleton-bar {
+    animation-name: none !important; /* skeleton-shimmer */
+  }
 }
 
 @media print {
@@ -4235,6 +4252,11 @@ button[disabled] {
 
   /* Action sheet */
   .action-sheet {
+    border: 1px solid ButtonText;
+  }
+
+  /* Color-only indicators need borders */
+  .priority-dot, .snooze-badge, .overdue-badge {
     border: 1px solid ButtonText;
   }
 
@@ -4711,10 +4733,21 @@ button[disabled] {
 .feature-toggle-checkbox { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; margin-top: 2px; flex-shrink: 0; }
 .feature-toggle-title { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
 .onboarding-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 24px; }
-.onboarding-dot { width: 8px; height: 8px; border-radius: 50%; transition: background 0.2s; }
+.onboarding-dot { width: 8px; height: 8px; border-radius: 50%; transition: background 0.2s; background: var(--border-default); }
+.onboarding-dot.active { background: var(--accent); }
 .onboarding-desc { text-align: center; font-size: 14px; line-height: 1.7; color: var(--text-muted); margin: 0 0 28px; max-width: 360px; margin-left: auto; margin-right: auto; white-space: pre-line; }
 .onboarding-desc-left { text-align: left; font-size: 14px; line-height: 1.7; color: var(--text-muted); margin: 0; max-width: 360px; white-space: pre-line; }
+.onboarding-desc.no-margin { margin: 0; }
 .onboarding-lang-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 0 auto 28px; max-width: 340px; }
+.onboarding-lang-btn { display: flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 14px; font-weight: 400; border-radius: 10px; border: 2px solid var(--border-default); background: transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
+.onboarding-lang-btn.selected { font-weight: 700; border-color: var(--accent); background: var(--accent-bg, rgba(99,102,241,0.08)); }
+.onboarding-lang-flag { font-size: 20px; }
+.onboarding-lang-hint { grid-column: 1 / -1; margin: 4px 0 0; }
+.onboarding-section { margin: 0 0 28px; }
+.onboarding-input { max-width: 320px; width: 100%; }
+.onboarding-success { color: var(--success-text, #22c55e); }
+.onboarding-skip-btn { color: var(--text-muted); }
+.onboarding-ext-link { text-decoration: none; }
 .onboarding-title { text-align: center; font-size: 20px; font-weight: 700; color: var(--text-secondary); margin: 0 0 12px; }
 .feedback-textarea { width: 100%; min-height: 120px; padding: 12px; font-size: 14px; line-height: 1.6; border: 1px solid var(--border-default); border-radius: 8px; background: var(--bg-surface); color: var(--text-primary); resize: vertical; box-sizing: border-box; }
 .feedback-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
@@ -4821,6 +4854,20 @@ button[disabled] {
 
 [dir="rtl"] .feedback-header {
   flex-direction: row-reverse;
+}
+
+[dir="rtl"] .sidebar-nav-item {
+  text-align: right;
+}
+
+[dir="rtl"] .input-clear-btn {
+  left: 8px;
+  right: auto;
+}
+
+[dir="rtl"] .todo-checkbox {
+  margin-right: 0;
+  margin-left: 8px;
 }
 
 /* ===== Landing Page ===== */

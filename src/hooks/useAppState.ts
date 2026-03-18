@@ -38,7 +38,6 @@ export function useAppState() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const { toast, toasts, showToast } = useToast();
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onboardingPausedForSettings, setOnboardingPausedForSettings] = useState(false);
   const [helpFeedbackOpen, setHelpFeedbackOpen] = useState(false);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -212,7 +211,6 @@ export function useAppState() {
     paletteOpen, setPaletteOpen,
     toast, toasts, showToast,
     showOnboarding, setShowOnboarding,
-    onboardingPausedForSettings, setOnboardingPausedForSettings,
     helpFeedbackOpen, setHelpFeedbackOpen,
     tagFilter, setTagFilter,
     shortcutsOpen, setShortcutsOpen,

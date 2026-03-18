@@ -3,51 +3,40 @@ import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { useFocusTrap } from './useFocusTrap';
 import { markOnboardingDone } from './onboardingState';
-import { safeSetItem, addProject } from './storage';
 
 interface OnboardingProps {
   lang: Lang;
   onLangChange: (lang: Lang) => void;
   onClose: () => void;
-  onPauseForSettings?: () => void;
   initialStep?: number;
 }
 
 interface StepDef {
   titleKey: string;
   descKey: string;
-  action?: { labelKey: string; handler: () => void };
   final?: boolean;
   descAlign?: 'left';
-  custom?: 'lang' | 'extension' | 'project';
+  custom?: 'lang' | 'howItWorks' | 'extensionReady';
 }
 
 const LANG_OPTIONS: { code: Lang; label: string; flag: string }[] = [
-  { code: 'en', label: 'English', flag: '🇺🇸' },
-  { code: 'ja', label: '日本語', flag: '🇯🇵' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
-  { code: 'zh', label: '中文', flag: '🇨🇳' },
-  { code: 'ko', label: '한국어', flag: '🇰🇷' },
-  { code: 'pt', label: 'Português', flag: '🇧🇷' },
+  { code: 'en', label: 'English', flag: '\u{1F1FA}\u{1F1F8}' },
+  { code: 'ja', label: '\u65E5\u672C\u8A9E', flag: '\u{1F1EF}\u{1F1F5}' },
+  { code: 'es', label: 'Espa\u00F1ol', flag: '\u{1F1EA}\u{1F1F8}' },
+  { code: 'fr', label: 'Fran\u00E7ais', flag: '\u{1F1EB}\u{1F1F7}' },
+  { code: 'de', label: 'Deutsch', flag: '\u{1F1E9}\u{1F1EA}' },
+  { code: 'zh', label: '\u4E2D\u6587', flag: '\u{1F1E8}\u{1F1F3}' },
+  { code: 'ko', label: '\uD55C\uAD6D\uC5B4', flag: '\u{1F1F0}\u{1F1F7}' },
+  { code: 'pt', label: 'Portugu\u00EAs', flag: '\u{1F1E7}\u{1F1F7}' },
 ];
 
 // Chrome Web Store URL — update when published
 const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/lore-capture/ioaccmbgjkaklailnmgklmipccmbneen';
 
-export default function Onboarding({ lang, onLangChange, onClose, onPauseForSettings, initialStep = 0 }: OnboardingProps) {
+export default function Onboarding({ lang, onLangChange, onClose, initialStep = 0 }: OnboardingProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(true);
-  const [step, setStep] = useState(initialStep);
-  const [projectName, setProjectName] = useState('');
-  const [projectCreated, setProjectCreated] = useState(false);
-
-  const handleCreateProject = useCallback(() => {
-    const name = projectName.trim();
-    if (!name || projectCreated) return;
-    addProject(name);
-    setProjectCreated(true);
-  }, [projectName, projectCreated]);
+  // Clamp initialStep to valid range for 3 steps
+  const [step, setStep] = useState(Math.min(initialStep, 2));
 
   const finish = useCallback(() => {
     markOnboardingDone();
@@ -63,12 +52,6 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
     return () => document.removeEventListener('keydown', handler);
   }, [finish]);
 
-  const handlePauseForSettings = useCallback(() => {
-    // Save current step so we can resume
-    safeSetItem('threadlog_onboarding_step', String(step));
-    onPauseForSettings?.();
-  }, [step, onPauseForSettings]);
-
   const steps: StepDef[] = [
     {
       titleKey: 'onboardingLangTitle',
@@ -76,34 +59,16 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
       custom: 'lang',
     },
     {
-      titleKey: 'onboardingWelcomeTitle',
-      descKey: 'onboardingWelcomeDesc',
-    },
-    {
-      titleKey: 'onboardingAssetTitle',
-      descKey: 'onboardingAssetDesc',
+      titleKey: 'onboardingHowItWorksTitle',
+      descKey: 'onboardingHowItWorksDesc',
       descAlign: 'left',
+      custom: 'howItWorks',
     },
     {
-      titleKey: 'onboardingProjectTitle',
-      descKey: 'onboardingProjectDesc',
-      custom: 'project',
-    },
-    {
-      titleKey: 'onboardingApiKeyTitle',
-      descKey: 'onboardingApiKeyDesc',
-      descAlign: 'left',
-      action: onPauseForSettings ? { labelKey: 'onboardingApiKeyAction', handler: handlePauseForSettings } : undefined,
-    },
-    {
-      titleKey: 'onboardingExtensionTitle',
-      descKey: 'onboardingExtensionDesc',
-      custom: 'extension',
-    },
-    {
-      titleKey: 'onboardingReadyTitle',
-      descKey: 'onboardingReadyDesc',
+      titleKey: 'onboardingExtReadyTitle',
+      descKey: 'onboardingExtReadyDesc',
       final: true,
+      custom: 'extensionReady',
     },
   ];
 
@@ -120,7 +85,7 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
           {steps.map((_, i) => (
             <div
               key={i}
-              className="onboarding-dot" style={{ background: i === step ? 'var(--accent)' : 'var(--border-default)' }}
+              className={`onboarding-dot${i === step ? ' active' : ''}`}
             />
           ))}
         </div>
@@ -135,72 +100,34 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
           {t(current.titleKey as Parameters<typeof t>[0], lang)}
         </h2>
 
-        {/* Language selector (custom step) */}
-        {current.custom === 'project' ? (
-          <div className="flex-col gap-10" style={{ margin: '0 0 28px' }}>
-            <p className="onboarding-desc">
-              {t(current.descKey as Parameters<typeof t>[0], lang)}
-            </p>
-            <div className="flex justify-center">
-              <input
-                type="text"
-                className="input"
-                value={projectName}
-                onChange={(e) => { setProjectName(e.target.value); setProjectCreated(false); }}
-                placeholder={t('onboardingProjectPlaceholder', lang)}
-                maxLength={60}
-                disabled={projectCreated}
-                style={{ maxWidth: 320, width: '100%' }}
-              />
-            </div>
-            {projectCreated && (
-              <p className="text-sm text-center" style={{ color: 'var(--success-text, #22c55e)' }}>
-                {t('onboardingProjectCreated', lang)}
-              </p>
-            )}
-            {!projectCreated && projectName.trim() && (
-              <div className="flex justify-center">
-                <button
-                  className="btn btn-primary btn-onboarding"
-                  onClick={handleCreateProject}
-                >
-                  {t('onboardingProjectTitle', lang)}
-                </button>
-              </div>
-            )}
-          </div>
-        ) : current.custom === 'lang' ? (
+        {/* Step 1: Language selector */}
+        {current.custom === 'lang' ? (
           <div className="onboarding-lang-grid">
             {LANG_OPTIONS.map((opt) => (
               <button
                 key={opt.code}
                 onClick={() => onLangChange(opt.code)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '8px 16px',
-                  fontSize: 14,
-                  fontWeight: lang === opt.code ? 700 : 400,
-                  borderRadius: 10,
-                  border: lang === opt.code ? '2px solid var(--accent)' : '2px solid var(--border-default)',
-                  background: lang === opt.code ? 'var(--accent-bg, rgba(99,102,241,0.08))' : 'transparent',
-                  color: 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
+                className={`onboarding-lang-btn${lang === opt.code ? ' selected' : ''}`}
               >
-                <span style={{ fontSize: 20 }}>{opt.flag}</span>
+                <span className="onboarding-lang-flag">{opt.flag}</span>
                 {opt.label}
               </button>
             ))}
-            <p className="text-sm text-muted text-center" style={{ gridColumn: '1 / -1', margin: '4px 0 0' }}>
+            <p className="text-sm text-muted text-center onboarding-lang-hint">
               {t(current.descKey as Parameters<typeof t>[0], lang)}
             </p>
           </div>
-        ) : current.custom === 'extension' ? (
+        ) : current.custom === 'howItWorks' ? (
+          /* Step 2: How it works (merged welcome + asset) */
+          <div className="flex justify-center onboarding-section">
+            <p className="onboarding-desc-left">
+              {t(current.descKey as Parameters<typeof t>[0], lang)}
+            </p>
+          </div>
+        ) : current.custom === 'extensionReady' ? (
+          /* Step 3: Chrome extension + You're all set */
           <>
-            <p className="onboarding-desc mb-20" style={{ margin: 0 }}>
+            <p className="onboarding-desc no-margin">
               {t(current.descKey as Parameters<typeof t>[0], lang)}
             </p>
             <div className="flex justify-center mb-28">
@@ -208,35 +135,16 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
                 href={CHROME_EXTENSION_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn btn-primary btn-onboarding"
-                style={{ textDecoration: 'none' }}
+                className="btn btn-primary btn-onboarding onboarding-ext-link"
               >
                 {t('onboardingExtensionInstall', lang)}
               </a>
             </div>
           </>
-        ) : current.descAlign === 'left' ? (
-          <div className="flex justify-center" style={{ margin: '0 0 28px' }}>
-            <p className="onboarding-desc-left">
-              {t(current.descKey as Parameters<typeof t>[0], lang)}
-            </p>
-          </div>
         ) : (
           <p className="onboarding-desc">
             {t(current.descKey as Parameters<typeof t>[0], lang)}
           </p>
-        )}
-
-        {/* Action button (step-specific, not for extension which has its own) */}
-        {current.action && current.custom !== 'extension' && (
-          <div className="flex justify-center mb-20">
-            <button
-              className="btn btn-primary btn-onboarding"
-              onClick={current.action.handler}
-            >
-              {t(current.action.labelKey as Parameters<typeof t>[0], lang)}
-            </button>
-          </div>
         )}
 
         {/* Navigation */}
@@ -254,9 +162,8 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
           <div className="flex flex-wrap gap-3">
             {!isLast && (
               <button
-                className="btn btn-nav-sm"
+                className="btn btn-nav-sm onboarding-skip-btn"
                 onClick={finish}
-                style={{ color: 'var(--text-muted)' }}
               >
                 {t('onboardingSkip', lang)}
               </button>

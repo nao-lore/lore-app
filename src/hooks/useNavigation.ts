@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, startTransition } from 'react';
-import { safeGetItem } from '../storage';
+import { safeGetItem, loadLogs } from '../storage';
 
 export type View = 'input' | 'detail' | 'settings' | 'history' | 'masternote' | 'projects' | 'todos' | 'trash' | 'summarylist' | 'projecthome' | 'timeline' | 'help' | 'weeklyreport' | 'knowledgebase' | 'dashboard' | 'pricing';
 
@@ -10,7 +10,9 @@ export function useNavigation() {
   const [view, setView] = useState<View>(() => {
     const saved = safeGetItem(LAST_VIEW_KEY);
     if (saved && saved !== 'detail' && saved !== 'masternote' && saved !== 'projecthome' && saved !== 'knowledgebase') return saved as View;
-    return 'dashboard';
+    // New users with no logs land on input, not dashboard
+    const hasLogs = loadLogs().length > 0;
+    return hasLogs ? 'dashboard' : 'input';
   });
   const [prevView, setPrevView] = useState<View>('input');
   const [selectedId, setSelectedId] = useState<string | null>(null);

@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { getUiLang } from './storage';
 import { t } from './i18n';
 
@@ -32,7 +33,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     return (
       <div className="error-boundary-wrapper">
         <div className="error-boundary-card">
-          <div className="error-boundary-icon">&#9888;&#65039;</div>
+          <div className="error-boundary-icon"><AlertTriangle size={48} /></div>
           <h2 className="error-boundary-title">
             {t('somethingWentWrong', lang)}
           </h2>

@@ -79,8 +79,6 @@ apiDescribe('nextActionItems real API extraction', () => {
       expect(docAction.dependsOn).toBeNull();
     }
 
-    console.log('=== WITH CONTEXT ===');
-    console.log(JSON.stringify(result.nextActionItems, null, 2));
   }, 60_000);
 
   it('returns null/empty for all optional fields when no context is present', async () => {
@@ -104,7 +102,5 @@ apiDescribe('nextActionItems real API extraction', () => {
       }
     }
 
-    console.log('=== WITHOUT CONTEXT ===');
-    console.log(JSON.stringify(result.nextActionItems, null, 2));
   }, 60_000);
 });

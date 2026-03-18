@@ -14,11 +14,10 @@ import { matchesLogQuery } from './search';
 import { formatDateGroup } from './utils/dateFormat';
 
 // Extracted components
-import { HistoryCardItem, HistoryListItem, downloadFile, type LogRenderContext } from './components/HistoryCard';
-import {
-  HistoryFiltersToolbar, KeywordsBar, matchesDateRange,
-  type ModeFilter, type SortKey, type GroupKey, type DatePreset,
-} from './components/HistoryFilters';
+import { HistoryCardItem, HistoryListItem, type LogRenderContext } from './components/HistoryCard';
+import { downloadFile } from './components/historyCardHelpers';
+import { HistoryFiltersToolbar, KeywordsBar } from './components/HistoryFilters';
+import { matchesDateRange, type ModeFilter, type SortKey, type GroupKey, type DatePreset } from './components/historyFiltersHelpers';
 
 // ─── Main HistoryView ───
 interface HistoryViewProps {
@@ -319,6 +318,7 @@ function HistoryView({ logs, onSelect, onBack, showBack = true, onRefresh, lang,
 
   const virtualData = groupKey === 'none' ? sorted : flatItems;
 
+  // @tanstack/react-virtual is hooks-compatible but the lint rule doesn't recognize it
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: selectMode ? 0 : virtualData.length,

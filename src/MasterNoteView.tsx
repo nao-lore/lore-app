@@ -12,7 +12,8 @@ import type { ProgressStep } from './ProgressPanel';
 import { Pencil, Copy, ExternalLink } from 'lucide-react';
 
 // Extracted components
-import { OverflowMenu, PendingNotePreview, normalizeItems, renderSimpleMarkdown } from './components/MasterNoteGenerate';
+import { OverflowMenu, PendingNotePreview } from './components/MasterNoteGenerate';
+import { normalizeItems, renderSimpleMarkdown } from './components/masterNoteHelpers';
 import { MasterNoteHistoryPanel } from './components/MasterNoteHistory';
 
 // ---- Read-only display ----

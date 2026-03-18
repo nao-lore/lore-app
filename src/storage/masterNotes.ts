@@ -1,5 +1,6 @@
 import type { MasterNote, MasterNoteHistory, MasterNoteSnapshot } from '../types';
 import { MASTER_NOTES_KEY, MN_HISTORY_KEY, MAX_MN_SNAPSHOTS, safeGetItem, safeSetItem, cache, invalidateMasterNotesCache } from './core';
+import { safeJsonParse } from '../utils/safeJsonParse';
 
 // ─── Master Notes ───
 
@@ -10,12 +11,10 @@ export function loadMasterNotes(): MasterNote[] {
   }
   const raw = safeGetItem(MASTER_NOTES_KEY);
   if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    const data = Array.isArray(parsed) ? parsed : [];
-    cache.masterNotesCache = { data, version: cache.masterNotesCacheVersion };
-    return data;
-  } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadMasterNotes', err); return []; }
+  const parsed = safeJsonParse<unknown>(raw, []);
+  const data = Array.isArray(parsed) ? parsed as MasterNote[] : [];
+  cache.masterNotesCache = { data, version: cache.masterNotesCacheVersion };
+  return data;
 }
 
 export function getMasterNote(projectId: string): MasterNote | undefined {
@@ -70,10 +69,8 @@ export function cleanMasterNoteSourceLogIds(logId: string): void {
 function loadAllMnHistory(): MasterNoteHistory[] {
   const raw = safeGetItem(MN_HISTORY_KEY);
   if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadAllMnHistory', err); return []; }
+  const parsed = safeJsonParse<unknown>(raw, []);
+  return Array.isArray(parsed) ? parsed as MasterNoteHistory[] : [];
 }
 
 function saveMnHistory(histories: MasterNoteHistory[]): void {

@@ -4,7 +4,7 @@ import { isPro } from './proManager';
 // ─── Constants ───
 
 export const TRIAL_DAYS = 7;
-export const DAILY_LIMIT_FREE = 5;
+export const DAILY_LIMIT_FREE = 30;
 
 const TRIAL_START_KEY = 'threadlog_trial_start';
 const DAILY_USAGE_KEY = 'threadlog_daily_usage';

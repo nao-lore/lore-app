@@ -1,4 +1,5 @@
 import type { DecisionWithRationale } from '../types';
+import { fuzzyDedupStrings, fuzzyDedupByField } from './fuzzyDedup';
 
 /**
  * Normalize decisions to dual format.
@@ -24,27 +25,16 @@ export function normalizeDecisions(
 }
 
 /**
- * Deduplicate items by case-insensitive text comparison.
+ * Deduplicate items by fuzzy similarity (Jaccard on keywords).
+ * Falls back to exact dedup for very short lists.
  */
 export function dedupStrings(items: string[]): string[] {
-  const seen = new Set<string>();
-  return items.filter(s => {
-    const key = s.toLowerCase().trim();
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return fuzzyDedupStrings(items);
 }
 
 /**
- * Deduplicate DecisionWithRationale by decision text.
+ * Deduplicate DecisionWithRationale by fuzzy similarity on decision text.
  */
 export function dedupDecisions(items: DecisionWithRationale[]): DecisionWithRationale[] {
-  const seen = new Set<string>();
-  return items.filter(dr => {
-    const key = dr.decision.toLowerCase().trim();
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return fuzzyDedupByField(items, dr => dr.decision);
 }

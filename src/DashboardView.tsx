@@ -237,16 +237,16 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
         </div>
         <div className="empty-state">
           <div className="empty-state-icon"><EmptyDashboard lang={lang} /></div>
-          <p className="font-semibold">
-            {t('dashboardWelcome', lang)}
+          <p className="font-semibold" style={{ fontSize: 20 }}>
+            {t('dashboardEmptyTitle', lang)}
           </p>
-          <p className="page-subtitle">
-            {t('dashboardWelcomeDesc', lang)}
+          <p className="page-subtitle" style={{ maxWidth: 360, margin: '8px auto 0' }}>
+            {t('dashboardEmptyDesc', lang)}
           </p>
           <FirstUseTooltip id="dashboard" text={lang === 'ja' ? 'AIプロジェクトのスナップショットがここに表示されます' : 'Your AI project snapshots appear here'} position="top">
-            <button className="btn btn-primary mt-lg" onClick={onNewLog}>
-              <Plus size={16} />
-              {t('dashboardCreateFirstLog', lang)}
+            <button className="btn btn-primary mt-lg" onClick={onNewLog} style={{ fontSize: 16, padding: '12px 28px' }}>
+              <Plus size={18} />
+              {t('dashboardCreateFirstSnapshot', lang)}
             </button>
           </FirstUseTooltip>
         </div>
