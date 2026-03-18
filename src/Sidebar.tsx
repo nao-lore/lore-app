@@ -325,24 +325,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
           <span>{t('navTodo', lang)}</span>
           {dots.overdueTodos && <span className="nav-dot warning" role="status" aria-label={t('dotOverdueTodos', lang)} title={t('dotOverdueTodos', lang)} />}
         </button>
-        <button
-          className={`sidebar-nav-item sidebar-nav-item-secondary${activeView === 'settings' ? ' active' : ''}`}
-          onClick={onOpenSettings}
-          title={t('settings', lang)}
-          aria-current={activeView === 'settings' ? 'page' : undefined}
-        >
-          <Settings size={15} />
-          <span>{t('settings', lang)}</span>
-        </button>
-        <button
-          className={`sidebar-nav-item sidebar-nav-item-secondary${activeView === 'help' ? ' active' : ''}`}
-          onClick={onOpenHelp}
-          title={t('accountMenuHelp', lang)}
-          aria-current={activeView === 'help' ? 'page' : undefined}
-        >
-          <HelpCircle size={15} />
-          <span>{t('accountMenuHelp', lang)}</span>
-        </button>
+        {/* Settings & Help accessible via User menu only */}
       </div>
 
       {/* Pinned section (projects + logs combined) */}
