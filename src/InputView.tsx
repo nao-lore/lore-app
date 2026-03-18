@@ -233,7 +233,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     >
       {/* Greeting + Project Switcher */}
       <h1 className="text-center input-greeting">
-        {getGreeting(lang)}{(() => { const streak = getStreak(); return streak > 1 ? ` 🔥 ${streak}` : ''; })()}
+        {getGreeting(lang)}{(() => { const streak = getStreak(); return streak > 1 ? <span className="streak-badge" title={`${streak} day streak`}> 🔥 {streak}</span> : null; })()}
       </h1>
       {/* Quick stats */}
       {(() => {

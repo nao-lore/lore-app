@@ -12,7 +12,6 @@ interface BottomNavProps {
 }
 
 const PRIMARY_TABS = [
-  { view: 'input' as const, icon: LayoutDashboard, labelKey: 'navHome' as const },
   { view: 'dashboard' as const, icon: BarChart2, labelKey: 'navDashboard' as const },
   { view: 'history' as const, icon: ScrollText, labelKey: 'navLogs' as const },
   { view: 'projects' as const, icon: FolderOpen, labelKey: 'navProjects' as const },

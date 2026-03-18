@@ -473,8 +473,8 @@
 .modal-heading-md { margin: 0; font-size: 16px; }
 .modal-close-sm { font-size: 13px; }
 .modal-narrow { max-width: 320px; }
-.btn-sm-compact { font-size: 12px; padding: 4px 12px; min-height: 44px; min-width: 44px; }
-.btn-xs-dismiss { font-size: 11px; padding: 1px 8px; min-height: 44px; min-width: 44px; line-height: 1; }
+.btn-sm-compact { font-size: 12px; padding: 4px 12px; min-height: 26px; }
+.btn-xs-dismiss { font-size: 11px; padding: 1px 8px; min-height: 20px; line-height: 1; }
 .stats-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-divider); }
 .stats-value { font-size: 14px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .filter-indicator { gap: 8px; font-size: 13px; color: var(--text-muted); }
@@ -3754,6 +3754,7 @@ button:focus-visible,
 }
 
 /* ===== A11y: semantic button resets for interactive cards ===== */
+/* Semantic button resets — for div→button a11y conversion */
 .card-btn,
 .list-row-btn,
 .content-card-btn,
@@ -3765,24 +3766,19 @@ button:focus-visible,
 .sidebar-toggle-btn {
   background: none;
   border: none;
-  padding: inherit;
+  padding: 0;
+  margin: 0;
   font: inherit;
   color: inherit;
-  text-align: inherit;
+  text-align: left;
   cursor: pointer;
+  display: block;
+  width: 100%;
   -webkit-appearance: none;
   appearance: none;
 }
-/* card-btn inherits the card background from parent class */
-.card-btn { text-align: left; width: 100%; }
-.list-row-btn { text-align: left; width: 100%; }
-.content-card-btn { text-align: left; width: 100%; }
-.ph-summary-card-btn { text-align: left; width: 100%; }
-.ph-log-card-btn { text-align: left; width: 100%; }
-.log-picker-item-btn { text-align: left; width: 100%; }
-.sidebar-toggle-btn { background: none; border: none; padding: 0; width: 100%; }
-.breadcrumb-btn { background: none; border: none; padding: 0; font-family: inherit; }
-.tag-btn { background: none; border: none; font-family: inherit; }
+.tag-btn { display: inline-block; width: auto; }
+.breadcrumb-btn { display: inline; width: auto; }
 
 /* ===== A11y: disabled button states ===== */
 button:disabled,
@@ -4313,9 +4309,9 @@ button[disabled] {
 /* ===== InputView & DetailView extracted classes ===== */
 
 /* Button size variants — 44px min touch target for a11y */
-.btn-xs { font-size: 11px; padding: 3px 10px; min-height: 44px; min-width: 44px; }
-.btn-sm-compact { font-size: 12px; padding: 3px 10px; min-height: 44px; min-width: 44px; }
-.btn-md-compact { font-size: 13px; padding: 5px 14px; min-height: 44px; min-width: 44px; }
+.btn-xs { font-size: 11px; padding: 3px 10px; min-height: 24px; }
+.btn-sm-compact { font-size: 12px; padding: 3px 10px; min-height: 26px; }
+.btn-md-compact { font-size: 13px; padding: 5px 14px; min-height: 32px; }
 
 /* Extra gap utilities */
 .gap-2 { gap: 2px; }
@@ -4339,6 +4335,12 @@ button[disabled] {
   letter-spacing: -0.02em;
   margin: 0 0 8px;
   color: var(--text-primary);
+}
+.streak-badge {
+  font-size: 16px;
+  font-weight: 600;
+  vertical-align: middle;
+  opacity: 0.8;
 }
 
 /* InputView — quick stats line */

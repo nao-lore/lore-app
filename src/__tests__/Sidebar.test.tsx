@@ -57,13 +57,13 @@ describe('Sidebar', () => {
     vi.clearAllMocks();
   });
 
-  it('renders 5 primary nav items', () => {
+  it('renders 4 primary nav items', () => {
     render(<Sidebar {...defaultProps} />);
-    // The 5 primary nav items: Home, Dashboard, Logs, Projects, TODO
+    // The 4 primary nav items: Dashboard, Logs, Projects, TODO
     const navItems = screen.getAllByRole('button').filter(
       (btn) => btn.classList.contains('sidebar-nav-item')
     );
-    expect(navItems.length).toBe(5);
+    expect(navItems.length).toBe(4);
   });
 
   it('shows "More" section that can be toggled', () => {
