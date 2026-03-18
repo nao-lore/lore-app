@@ -1,13 +1,19 @@
-import type { TransformResult, HandoffResult, BothResult, OutputMode, DecisionWithRationale, NextActionItem } from './types';
+/**
+ * ChunkEngine — orchestrates chunked AI processing for large inputs.
+ *
+ * Splitting logic is in chunkSplitter.ts, merging logic in chunkMerger.ts.
+ * This file contains the engine class, mode config, and API call coordination.
+ */
+
+import type { TransformResult, HandoffResult, BothResult, OutputMode, DecisionWithRationale } from './types';
 import type { ChunkSession, PartialResult } from './chunkDb';
 import { computeSourceHash, loadSession, saveSession, deleteSession } from './chunkDb';
 import { getLang } from './storage';
 import { callProvider, callProviderStream, getActiveProvider } from './provider';
 import type { StreamCallback } from './provider';
-import { filterResolvedBlockers, normalizeNextActions, normalizeResumeChecklist, normalizeHandoffMeta, normalizeActionBacklog, normalizeHandoffFields, detectLanguage, extractJson } from './transform';
-import { dedupStrings, dedupDecisions } from './utils/decisions';
+import { filterResolvedBlockers, normalizeResumeChecklist, normalizeHandoffMeta, normalizeHandoffFields, detectLanguage, extractJson } from './transform';
+import { dedupDecisions } from './utils/decisions';
 import {
-  CHUNK_WORKLOG_EXTRACT_PROMPT as WORKLOG_EXTRACT_PROMPT,
   CHUNK_HANDOFF_EXTRACT_PROMPT as HANDOFF_EXTRACT_PROMPT,
   CHUNK_HANDOFF_EXTRACT_LIGHT_PROMPT,
   CHUNK_HANDOFF_EXTRACT_ULTRA_PROMPT as HANDOFF_EXTRACT_ULTRA_PROMPT,
@@ -15,223 +21,18 @@ import {
   CHUNK_COMPLETED_EXTRACT_PROMPT as COMPLETED_EXTRACT_PROMPT,
   CHUNK_CONSISTENCY_CHECK_PROMPT as CONSISTENCY_CHECK_PROMPT,
   CHUNK_FINAL_SUMMARIZATION_PROMPT as FINAL_SUMMARIZATION_PROMPT,
+  CHUNK_WORKLOG_EXTRACT_PROMPT as WORKLOG_EXTRACT_PROMPT,
 } from './prompts';
+
+import { splitIntoChunks, getChunkTargets } from './chunkSplitter';
+import { asString, asStringArray, localMerge } from './chunkMerger';
 
 // Re-export for any external consumers
 export { CHUNK_HANDOFF_EXTRACT_LIGHT_PROMPT as HANDOFF_EXTRACT_LIGHT_PROMPT };
 
 // =============================================================================
-// Chunk splitting — mode-aware
-// =============================================================================
-
-// Chunk targets per provider — Claude has strict input token limits
-const CHUNK_TARGETS = {
-  anthropic: { worklog: 12_000, handoff: 10_000 },
-  gemini:    { worklog: 60_000, handoff: 50_000 },
-  openai:    { worklog: 30_000, handoff: 25_000 },
-} as const;
-
-function getChunkTargets() {
-  const provider = getActiveProvider();
-  return CHUNK_TARGETS[provider] ?? CHUNK_TARGETS.gemini;
-}
-
-function splitIntoChunks(text: string, chunkTarget: number): string[] {
-  const fileSeparator = /(?=--- FILE: .+ ---\n)/g;
-  const segments = text.split(fileSeparator).filter((s) => s.trim());
-
-  if (segments.length > 1) {
-    return groupSegments(segments, chunkTarget);
-  }
-
-  const paragraphs = text.split(/\n{2,}/);
-  return groupSegments(paragraphs.map((p) => p + '\n\n'), chunkTarget);
-}
-
-/** Hard cap: no single chunk may exceed this in extract phase */
-const EXTRACT_MAX_CHARS = 60_000;
-
-function groupSegments(segments: string[], target: number): string[] {
-  // First pass: split any oversized segment at line boundaries
-  const split: string[] = [];
-  for (const seg of segments) {
-    if (seg.length <= EXTRACT_MAX_CHARS) {
-      split.push(seg);
-    } else {
-      // Force-split at newlines to stay under the cap
-      const lines = seg.split('\n');
-      let buf = '';
-      for (const line of lines) {
-        if (buf.length + line.length + 1 > EXTRACT_MAX_CHARS && buf.length > 0) {
-          split.push(buf);
-          buf = line + '\n';
-        } else {
-          buf += line + '\n';
-        }
-      }
-      if (buf.trim()) split.push(buf);
-    }
-  }
-
-  // Second pass: group small segments up to target size
-  const chunks: string[] = [];
-  let current = '';
-
-  for (const seg of split) {
-    if (seg.length > target * 1.5 && current.length > 0) {
-      chunks.push(current.trim());
-      current = '';
-    }
-    if (current.length + seg.length > target && current.length > 0) {
-      chunks.push(current.trim());
-      current = seg;
-    } else {
-      current += seg;
-    }
-  }
-  if (current.trim()) chunks.push(current.trim());
-  return chunks;
-}
-
-// detectLanguage and extractJson are imported from ./transform
-
-// =============================================================================
-// Fallback reformatter — sends prose back to model to get JSON
-// =============================================================================
-
-async function reformatToJson(
-  apiKey: string,
-  proseText: string,
-  schemaHint: string,
-): Promise<PartialResult> {
-  if (import.meta.env.DEV) console.warn(`[Reformat Fallback] Sending ${proseText.length} chars of prose back for JSON conversion`);
-
-  const rawText = await callProvider({
-    apiKey,
-    system: 'You convert text into structured JSON. Output ONLY a valid JSON object. No prose, no explanation, no markdown.',
-    userMessage: `Convert the following text into the required JSON schema. Output JSON only.\n\nRequired schema:\n${schemaHint}\n\nText to convert:\n${proseText}`,
-    maxTokens: 8192,
-  });
-
-  const jsonText = extractJson(rawText);
-  return JSON.parse(jsonText) as PartialResult;
-}
-
-/** Lightweight local JSON repair — fixes common model output issues without API call */
-function tryRepairJson(raw: string): PartialResult | null {
-  let text = raw
-    .replace(/```json\s*/gi, '')
-    .replace(/```\s*/g, '')
-    .trim();
-
-  // Find the first '{'
-  const start = text.indexOf('{');
-  if (start === -1) return null;
-  text = text.slice(start);
-
-  // Strip trailing prose after the last '}'
-  const lastBrace = text.lastIndexOf('}');
-  if (lastBrace === -1) {
-    // No closing brace — try adding one
-    text = text + '}';
-  } else {
-    text = text.slice(0, lastBrace + 1);
-  }
-
-  // Fix trailing commas before } or ]
-  text = text.replace(/,\s*([}\]])/g, '$1');
-
-  // Fix unescaped newlines inside string values
-  text = text.replace(/:\s*"([^"]*)\n([^"]*)"/g, (_m, a, b) => `: "${a}\\n${b}"`);
-
-  try {
-    const parsed = JSON.parse(text);
-    if (typeof parsed === 'object' && parsed !== null) {
-      return parsed as PartialResult;
-    }
-  } catch (err) { if (import.meta.env.DEV) console.warn('[chunkEngine] JSON repair failed:', err); }
-  return null;
-}
-
-// Detect schema type from system prompt to provide the right hint
-function extractSchemaHint(system: string): string {
-  const match = system.match(/Schema:\s*\n(\{[\s\S]*?\n\})/);
-  return match ? match[1] : '{ "title": "string" }';
-}
-
-// =============================================================================
-// API call — returns raw parsed JSON
-// =============================================================================
-
-async function callApiRaw(
-  apiKey: string,
-  system: string,
-  userMessage: string,
-  maxTokens = 8192,
-  skipReformat = false,
-  onStream?: StreamCallback,
-): Promise<PartialResult> {
-  const req = { apiKey, system, userMessage, maxTokens };
-  const rawText = onStream
-    ? await callProviderStream(req, onStream)
-    : await callProvider(req);
-
-  // Step 1: Try local JSON repair first (no API call)
-  const repaired = tryRepairJson(rawText);
-  if (repaired) return repaired;
-
-  // Step 2: Detect non-JSON — no '{' at all, model returned prose
-  const firstBrace = rawText.indexOf('{');
-  if (firstBrace === -1) {
-    // Fallback: ask the model to convert prose into JSON (skip for long handoff to save API calls)
-    if (!skipReformat) {
-      try {
-        const schemaHint = extractSchemaHint(system);
-        return await reformatToJson(apiKey, rawText, schemaHint);
-      } catch (err) {
-        if (import.meta.env.DEV) console.warn('[chunkEngine] reformat fallback failed:', err);
-      }
-    }
-    throw new Error('[Non-JSON Response]');
-  }
-
-  // Step 3: Has '{' but extractJson / JSON.parse failed
-  try {
-    const jsonText = extractJson(rawText);
-    return JSON.parse(jsonText) as PartialResult;
-  } catch (err) {
-    if (import.meta.env.DEV) console.warn('[chunkEngine] extractJson/parse failed:', err);
-    const stripped = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
-    const hasCloseBrace = stripped.lastIndexOf('}') > stripped.indexOf('{');
-    if (!hasCloseBrace) {
-      throw new Error('[Truncated]');
-    }
-    // Malformed JSON — try reformat fallback (skip for long handoff)
-    if (!skipReformat) {
-      try {
-        const schemaHint = extractSchemaHint(system);
-        return await reformatToJson(apiKey, rawText, schemaHint);
-      } catch (err) {
-        if (import.meta.env.DEV) console.warn('[chunkEngine] reformat fallback failed:', err);
-      }
-    }
-    throw new Error('[Parse Error]');
-  }
-}
-
-// =============================================================================
 // Result converters
 // =============================================================================
-
-/** Safely extract a string from unknown */
-function asString(v: unknown, fallback = ''): string {
-  return typeof v === 'string' ? v : fallback;
-}
-
-/** Safely extract a string[] from unknown */
-function asStringArray(v: unknown): string[] {
-  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
-}
 
 function toWorklog(raw: PartialResult): TransformResult {
   return {
@@ -247,7 +48,6 @@ function toWorklog(raw: PartialResult): TransformResult {
 function toHandoff(raw: PartialResult): HandoffResult {
   const completed = asStringArray(raw.completed);
   const { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta } = normalizeHandoffFields(raw);
-  // resumeContext: derived from resumeChecklist, fallback to raw
   let resumeContext: string[];
   if (resumeChecklist.length > 0) {
     resumeContext = resumeChecklist.map(r => r.action);
@@ -285,7 +85,7 @@ interface ModeConfig {
   extractInstruction: string;
   chunkTarget: number;
   extractMaxTokens: number;
-  skipReformatFallback: boolean; // skip prose-to-JSON reformat call (saves API calls)
+  skipReformatFallback: boolean;
 }
 
 // =============================================================================
@@ -297,250 +97,17 @@ export type SizeMode = 'normal' | 'long' | 'extralong';
 const LONG_THRESHOLD = 120_000;
 const EXTRALONG_THRESHOLD = 200_000;
 
+/** Determine the size tier for the given source length */
 export function getSizeMode(sourceLength: number): SizeMode {
   if (sourceLength > EXTRALONG_THRESHOLD) return 'extralong';
   if (sourceLength > LONG_THRESHOLD) return 'long';
   return 'normal';
 }
 
-// =============================================================================
-// Local merge — combine partial results in JS, no API call
-// =============================================================================
-
-
-function collectStrings(partials: PartialResult[], key: string): string[] {
-  return partials.flatMap((p) => {
-    const v = p[key];
-    if (!Array.isArray(v)) return [];
-    // Coerce non-string items (e.g. {text:"..."} objects from AI) to strings
-    return v.map((item) =>
-      typeof item === 'string' ? item
-      : typeof item === 'object' && item !== null && 'text' in item ? String((item as { text: unknown }).text)
-      : String(item)
-    ).filter((s) => s && s !== 'undefined' && s !== 'null' && s !== '[object Object]');
-  });
-}
-
-/** Flatten combined "both" partials — extract nested worklog/handoff fields to top level */
-function flattenBothPartials(partials: PartialResult[]): PartialResult[] {
-  return partials.map((p) => {
-    const w = p.worklog as PartialResult | undefined;
-    const h = p.handoff as PartialResult | undefined;
-    if (!w && !h) return p; // already flat
-    return {
-      title: w?.title || h?.title || p.title,
-      today: w?.today, decisions: w?.decisions, todo: w?.todo,
-      relatedProjects: w?.relatedProjects, tags: w?.tags || h?.tags,
-      currentStatus: h?.currentStatus, nextActions: h?.nextActions,
-      nextActionItems: h?.nextActionItems, actionBacklog: h?.actionBacklog,
-      completed: h?.completed, blockers: h?.blockers,
-      constraints: h?.constraints, resumeContext: h?.resumeContext,
-      // Pass handoff decisions as decisionRationales (they may be objects from chunk prompts)
-      decisionRationales: h?.decisionRationales || h?.decisions,
-    } as PartialResult;
-  });
-}
-
-/** Take items from the last chunk that has non-empty values for the given key */
-function collectLastChunk(partials: PartialResult[], key: string): string[] {
-  for (let i = partials.length - 1; i >= 0; i--) {
-    const v = partials[i][key];
-    if (Array.isArray(v) && v.length > 0) return v.filter((x): x is string => typeof x === 'string');
-    if (typeof v === 'string' && v.trim()) return [v];
-  }
-  return [];
-}
-
-/** Union two nullable string arrays, deduplicating. Returns null if both are null/empty. */
-function mergeStringArrays(a: string[] | null | undefined, b: string[] | null | undefined): string[] | null {
-  const combined = [...(a || []), ...(b || [])];
-  if (combined.length === 0) return null;
-  return [...new Set(combined)];
-}
-
-function localMerge(partials: PartialResult[], isBothMode = false): PartialResult {
-  const flat = isBothMode ? flattenBothPartials(partials) : partials;
-  // title: take the last non-empty (latest state)
-  const title = [...flat].reverse().find((p) => p.title && String(p.title).trim())?.title || 'Untitled';
-
-  const merged: PartialResult = {
-    title,
-    // Worklog fields — collect from all chunks (均等マージ)
-    today:           dedupStrings(collectStrings(flat, 'today')),
-    decisions:       dedupStrings(collectStrings(flat, 'decisions')),
-    todo:            dedupStrings(collectStrings(flat, 'todo')),
-    relatedProjects: dedupStrings(collectStrings(flat, 'relatedProjects')),
-    tags:            dedupStrings(collectStrings(flat, 'tags')),
-    // Handoff: last-chunk-wins for state/resume (末尾が最新状態)
-    currentStatus:   collectLastChunk(flat, 'currentStatus'),
-    nextActions:     [],  // populated below by mergeNextActionItems
-    resumeContext:   collectLastChunk(flat, 'resumeContext'),
-    // Handoff: collect from all chunks for accumulated items (均等マージ)
-    completed:       dedupStrings(collectStrings(flat, 'completed')),
-    blockers:        dedupStrings(collectStrings(flat, 'blockers')),
-    constraints:     dedupStrings(collectStrings(flat, 'constraints')),
-  };
-
-  // Merge decisionRationales from all chunks, deduplicate by decision text
-  // Chunks may return decisions as objects (new format) — normalize to decisionRationales
-  const allRationales: DecisionWithRationale[] = [];
-  for (const chunk of flat) {
-    // Check explicit decisionRationales first
-    const dr = chunk.decisionRationales;
-    if (Array.isArray(dr)) {
-      for (const r of dr) {
-        if (typeof r === 'object' && r !== null && 'decision' in r) {
-          allRationales.push(r as DecisionWithRationale);
-        }
-      }
-    }
-    // Also check decisions array — may contain {decision, rationale} objects from chunk prompts
-    const decs = chunk.decisions;
-    if (Array.isArray(decs)) {
-      for (const item of decs) {
-        if (typeof item === 'object' && item !== null && 'decision' in item) {
-          const obj = item as { decision: unknown; rationale?: unknown };
-          allRationales.push({
-            decision: String(obj.decision || ''),
-            rationale: typeof obj.rationale === 'string' ? obj.rationale : null,
-          });
-        }
-      }
-    }
-  }
-  const dedupedRationales = dedupDecisions(allRationales);
-  merged.decisionRationales = dedupedRationales;
-  // Backward compat: populate legacy decisions from merged decisionRationales
-  if (allRationales.length > 0) {
-    merged.decisions = dedupedRationales.map(dr => dr.decision);
-  }
-
-  // Merge nextActionItems across chunks: action-level merge, latest chunk order wins
-  // Earlier chunks fill in missing metadata; dependsOn is union + dedup
-  {
-    const allChunkItems: { items: NextActionItem[]; chunkIndex: number }[] = [];
-    for (let ci = 0; ci < flat.length; ci++) {
-      const raw = flat[ci].nextActions;
-      if (Array.isArray(raw) && raw.length > 0) {
-        const { nextActionItems: items } = normalizeNextActions(raw);
-        allChunkItems.push({ items, chunkIndex: ci });
-      }
-    }
-    // Build a map keyed by action text; later chunks override earlier ones
-    const actionMap = new Map<string, { item: NextActionItem; chunkIndex: number }>();
-    for (const { items, chunkIndex } of allChunkItems) {
-      for (const item of items) {
-        const key = item.action;
-        const existing = actionMap.get(key);
-        if (existing) {
-          // Merge: latest wins for scalar fields, earlier fills gaps
-          const merged_item: NextActionItem = {
-            action: key,
-            whyImportant: item.whyImportant ?? existing.item.whyImportant,
-            priorityReason: item.priorityReason ?? existing.item.priorityReason,
-            dueBy: item.dueBy ?? existing.item.dueBy,
-            dependsOn: mergeStringArrays(existing.item.dependsOn, item.dependsOn),
-          };
-          actionMap.set(key, { item: merged_item, chunkIndex });
-        } else {
-          actionMap.set(key, { item: { ...item }, chunkIndex });
-        }
-      }
-    }
-    // Order: use the latest chunk that has nextActions, preserve its order, then append earlier-only items
-    // latestChunkIndex used for ordering reference
-    void (allChunkItems.length > 0 ? allChunkItems[allChunkItems.length - 1].chunkIndex : -1);
-    const latestActions = allChunkItems.length > 0 ? allChunkItems[allChunkItems.length - 1].items.map(i => i.action) : [];
-    const orderedItems: NextActionItem[] = [];
-    const seen = new Set<string>();
-    // First: items in latest chunk order
-    for (const action of latestActions) {
-      const entry = actionMap.get(action);
-      if (entry) { orderedItems.push(entry.item); seen.add(action); }
-    }
-    // Then: items from earlier chunks not in latest
-    for (const [action, entry] of actionMap) {
-      if (!seen.has(action)) { orderedItems.push(entry.item); }
-    }
-    merged.nextActionItems = orderedItems;
-    merged.nextActions = orderedItems.map(i => i.action);
-  }
-
-  // Merge actionBacklog across chunks (same action-level merge as nextActionItems)
-  {
-    const allBacklogItems: { items: NextActionItem[]; chunkIndex: number }[] = [];
-    for (let ci = 0; ci < flat.length; ci++) {
-      const raw = flat[ci].actionBacklog;
-      if (Array.isArray(raw) && raw.length > 0) {
-        const items = normalizeActionBacklog(raw);
-        allBacklogItems.push({ items, chunkIndex: ci });
-      }
-    }
-    const backlogMap = new Map<string, NextActionItem>();
-    for (const { items } of allBacklogItems) {
-      for (const item of items) {
-        const existing = backlogMap.get(item.action);
-        if (existing) {
-          backlogMap.set(item.action, {
-            action: item.action,
-            whyImportant: item.whyImportant ?? existing.whyImportant,
-            priorityReason: item.priorityReason ?? existing.priorityReason,
-            dueBy: item.dueBy ?? existing.dueBy,
-            dependsOn: mergeStringArrays(existing.dependsOn, item.dependsOn),
-          });
-        } else {
-          backlogMap.set(item.action, { ...item });
-        }
-      }
-    }
-    // Latest chunk order for backlog too
-    const latestBacklog = allBacklogItems.length > 0 ? allBacklogItems[allBacklogItems.length - 1].items.map(i => i.action) : [];
-    const orderedBacklog: NextActionItem[] = [];
-    const seenBacklog = new Set<string>();
-    for (const action of latestBacklog) {
-      const entry = backlogMap.get(action);
-      if (entry) { orderedBacklog.push(entry); seenBacklog.add(action); }
-    }
-    for (const [action, entry] of backlogMap) {
-      if (!seenBacklog.has(action)) orderedBacklog.push(entry);
-    }
-    if (orderedBacklog.length > 0) merged.actionBacklog = orderedBacklog.slice(0, 7);
-  }
-
-  // resumeContext/resumeChecklist/handoffMeta are NOT merged from chunks —
-  // they are generated by final summarization after localMerge
-
-  // For "both" mode, reconstruct nested structure so processBoth can split it
-  if (isBothMode) {
-    merged.worklog = {
-      title: merged.title,
-      today: merged.today, decisions: merged.decisions,
-      todo: merged.todo, relatedProjects: merged.relatedProjects, tags: merged.tags,
-    } as PartialResult;
-    merged.handoff = {
-      title: merged.title,
-      currentStatus: merged.currentStatus, nextActions: merged.nextActions,
-      nextActionItems: merged.nextActionItems, actionBacklog: merged.actionBacklog,
-      completed: merged.completed, blockers: merged.blockers,
-      decisions: merged.decisions, decisionRationales: merged.decisionRationales,
-      constraints: merged.constraints,
-      tags: merged.tags,
-    } as PartialResult;
-  }
-
-  return merged;
-}
-
-// Retry config
-const RETRY_DELAY_429 = 5;   // 429 fallback when no Retry-After header
-const RETRY_DELAY_503 = 2;   // 503 server overload — short retry
-const RETRY_MAX = 5;
-
 type ExtractMode = OutputMode | 'both';
 
 function getModeConfig(mode: ExtractMode, sourceLength: number): ModeConfig {
   const tier = getSizeMode(sourceLength);
-
   const targets = getChunkTargets();
 
   const handoffBase = {
@@ -560,8 +127,8 @@ function getModeConfig(mode: ExtractMode, sourceLength: number): ModeConfig {
   const bothBase = {
     extractPrompt: BOTH_EXTRACT_PROMPT,
     extractInstruction: 'Extract both worklog AND handoff from the chat below into a single JSON object. First character must be {. Last character must be }.',
-    chunkTarget: targets.worklog, // use worklog (smaller) target for safety
-    extractMaxTokens: 8192,       // larger output needed for combined schema
+    chunkTarget: targets.worklog,
+    extractMaxTokens: 8192,
   };
 
   const jsonOnlyInstruction = 'Output the JSON object ONLY. First character must be {. Last character must be }.';
@@ -590,19 +157,130 @@ function getModeConfig(mode: ExtractMode, sourceLength: number): ModeConfig {
     return { ...handoffBase, skipReformatFallback: false };
   }
 
-  // Worklog
   return { ...worklogBase, skipReformatFallback: false };
 }
 
-// Expose chunk targets for Workspace.tsx to compute estimated chunks
+/** Get chunk target for a given output mode */
 export function getChunkTarget(mode: OutputMode): number {
   const targets = getChunkTargets();
   return mode === 'handoff' ? targets.handoff : targets.worklog;
 }
 
-// Expose concurrency for Workspace.tsx estimation
+/** Get engine concurrency for the active provider */
 export function getEngineConcurrency(): number {
   return getActiveProvider() === 'anthropic' ? 1 : 2;
+}
+
+// =============================================================================
+// Fallback reformatter — sends prose back to model to get JSON
+// =============================================================================
+
+async function reformatToJson(
+  apiKey: string,
+  proseText: string,
+  schemaHint: string,
+): Promise<PartialResult> {
+  if (import.meta.env.DEV) console.warn(`[Reformat Fallback] Sending ${proseText.length} chars of prose back for JSON conversion`);
+
+  const rawText = await callProvider({
+    apiKey,
+    system: 'You convert text into structured JSON. Output ONLY a valid JSON object. No prose, no explanation, no markdown.',
+    userMessage: `Convert the following text into the required JSON schema. Output JSON only.\n\nRequired schema:\n${schemaHint}\n\nText to convert:\n${proseText}`,
+    maxTokens: 8192,
+  });
+
+  const jsonText = extractJson(rawText);
+  return JSON.parse(jsonText) as PartialResult;
+}
+
+/** Lightweight local JSON repair — fixes common model output issues without API call */
+function tryRepairJson(raw: string): PartialResult | null {
+  let text = raw
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .trim();
+
+  const start = text.indexOf('{');
+  if (start === -1) return null;
+  text = text.slice(start);
+
+  const lastBrace = text.lastIndexOf('}');
+  if (lastBrace === -1) {
+    text = text + '}';
+  } else {
+    text = text.slice(0, lastBrace + 1);
+  }
+
+  text = text.replace(/,\s*([}\]])/g, '$1');
+  text = text.replace(/:\s*"([^"]*)\n([^"]*)"/g, (_m, a, b) => `: "${a}\\n${b}"`);
+
+  try {
+    const parsed = JSON.parse(text);
+    if (typeof parsed === 'object' && parsed !== null) {
+      return parsed as PartialResult;
+    }
+  } catch (err) { if (import.meta.env.DEV) console.warn('[chunkEngine] JSON repair failed:', err); }
+  return null;
+}
+
+function extractSchemaHint(system: string): string {
+  const match = system.match(/Schema:\s*\n(\{[\s\S]*?\n\})/);
+  return match ? match[1] : '{ "title": "string" }';
+}
+
+// =============================================================================
+// API call — returns raw parsed JSON
+// =============================================================================
+
+async function callApiRaw(
+  apiKey: string,
+  system: string,
+  userMessage: string,
+  maxTokens = 8192,
+  skipReformat = false,
+  onStream?: StreamCallback,
+): Promise<PartialResult> {
+  const req = { apiKey, system, userMessage, maxTokens };
+  const rawText = onStream
+    ? await callProviderStream(req, onStream)
+    : await callProvider(req);
+
+  const repaired = tryRepairJson(rawText);
+  if (repaired) return repaired;
+
+  const firstBrace = rawText.indexOf('{');
+  if (firstBrace === -1) {
+    if (!skipReformat) {
+      try {
+        const schemaHint = extractSchemaHint(system);
+        return await reformatToJson(apiKey, rawText, schemaHint);
+      } catch (err) {
+        if (import.meta.env.DEV) console.warn('[chunkEngine] reformat fallback failed:', err);
+      }
+    }
+    throw new Error('[Non-JSON Response]');
+  }
+
+  try {
+    const jsonText = extractJson(rawText);
+    return JSON.parse(jsonText) as PartialResult;
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn('[chunkEngine] extractJson/parse failed:', err);
+    const stripped = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+    const hasCloseBrace = stripped.lastIndexOf('}') > stripped.indexOf('{');
+    if (!hasCloseBrace) {
+      throw new Error('[Truncated]');
+    }
+    if (!skipReformat) {
+      try {
+        const schemaHint = extractSchemaHint(system);
+        return await reformatToJson(apiKey, rawText, schemaHint);
+      } catch (err) {
+        if (import.meta.env.DEV) console.warn('[chunkEngine] reformat fallback failed:', err);
+      }
+    }
+    throw new Error('[Parse Error]');
+  }
 }
 
 // =============================================================================
@@ -618,14 +296,16 @@ export interface EngineProgress {
   retryAttempt?: number;
   retryMax?: number;
   message: string;
-  autoPaused?: boolean;  // true when auto-paused after max retries
-  estimatedMinutes?: number;  // estimated total runtime in minutes
+  autoPaused?: boolean;
+  estimatedMinutes?: number;
 }
 
 export type ProgressCallback = (p: EngineProgress) => void;
 
-// Post-merge prompts (COMPLETED_EXTRACT_PROMPT, CONSISTENCY_CHECK_PROMPT,
-// FINAL_SUMMARIZATION_PROMPT) are imported from ./prompts.ts above.
+// Retry config
+const RETRY_DELAY_429 = 5;
+const RETRY_DELAY_503 = 2;
+const RETRY_MAX = 5;
 
 // =============================================================================
 // Engine
@@ -636,8 +316,7 @@ export class ChunkEngine {
   private _cancelled = false;
   private _pauseResolve: (() => void) | null = null;
   private _pausePromise: Promise<void> | null = null;
-  /** Adaptive inter-chunk delay — starts low, grows on rate-limit hits */
-  private _chunkDelay = 3;  // seconds, initial value
+  private _chunkDelay = 3;
   private _onStream?: StreamCallback;
 
   get isPaused(): boolean { return this._paused; }
@@ -659,17 +338,14 @@ export class ChunkEngine {
 
   cancel(): void {
     this._cancelled = true;
-    this.resume(); // unblock if paused
+    this.resume();
   }
 
   private async checkPause(onProgress: ProgressCallback, session: ChunkSession, current: number, total: number): Promise<void> {
     if (this._cancelled) throw new Error('[Cancelled]');
     if (this._paused) {
       const saved = Object.keys(session.partials).length;
-      onProgress({
-        phase: 'paused', current, total, savedCount: saved,
-        message: `paused:${saved}`,
-      });
+      onProgress({ phase: 'paused', current, total, savedCount: saved, message: `paused:${saved}` });
       await this._pausePromise;
       if (this._cancelled) throw new Error('[Cancelled]');
     }
@@ -679,12 +355,11 @@ export class ChunkEngine {
     return new Promise((r) => setTimeout(r, ms));
   }
 
-  /** Interruptible wait — checks cancel/pause every 200ms */
   private async waitInterruptible(ms: number): Promise<void> {
     const end = Date.now() + ms;
     while (Date.now() < end) {
       if (this._cancelled) throw new Error('[Cancelled]');
-      if (this._paused) return; // exit immediately, caller will handle pause
+      if (this._paused) return;
       await this.sleep(Math.min(200, end - Date.now()));
     }
   }
@@ -705,7 +380,6 @@ export class ChunkEngine {
     for (let attempt = 0; attempt <= RETRY_MAX; attempt++) {
       try {
         const result = await callApiRaw(apiKey, system, userMessage, effectiveMaxTokens, skipReformat, this._onStream);
-        // Successful call — reduce delay toward minimum (adaptive cooldown)
         if (this._chunkDelay > 3) {
           this._chunkDelay = Math.max(3, this._chunkDelay * 0.7);
         }
@@ -713,10 +387,8 @@ export class ChunkEngine {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         const isRateLimit = msg.includes('[Rate Limit]') || msg.includes('[Overloaded]');
-        // Extract API-requested retry delay from error message (e.g. "[Rate Limit:30]")
         const apiRetryMatch = msg.match(/\[Rate Limit:(\d+)\]/);
         const apiRetrySec = apiRetryMatch ? parseInt(apiRetryMatch[1], 10) : 0;
-        // Adaptive: grow delay on rate limit
         if (isRateLimit) {
           this._chunkDelay = Math.min(30, this._chunkDelay * 2);
         }
@@ -725,23 +397,20 @@ export class ChunkEngine {
         const isNonJson = msg.includes('[Non-JSON Response]');
         const isRetryable = isRateLimit || isTruncated || isParseError || isNonJson;
 
-        // Truncated responses: bump maxTokens (up to 2 times)
         if (isTruncated && attempt < 2) {
           const prev = effectiveMaxTokens;
           effectiveMaxTokens = Math.min(Math.ceil(effectiveMaxTokens * 1.5), 8192);
-          if (import.meta.env.DEV) console.warn(`${label} retry #${attempt + 1} after Truncated (maxTokens: ${prev}→${effectiveMaxTokens})`);
+          if (import.meta.env.DEV) console.warn(`${label} retry #${attempt + 1} after Truncated (maxTokens: ${prev}->${effectiveMaxTokens})`);
           await this.waitInterruptible(2000);
           continue;
         }
 
-        // Non-JSON / Parse errors: quick retry (up to 2 times)
         if ((isNonJson || isParseError) && attempt < 2) {
           if (import.meta.env.DEV) console.warn(`${label} retry #${attempt + 1} after ${isNonJson ? 'Non-JSON' : 'Parse Error'} (delay=3s)`);
           await this.waitInterruptible(3000);
           continue;
         }
 
-        // Rate limit / retryable errors: 429 uses Retry-After or 5s, 503 uses 2s
         if (isRetryable && attempt < RETRY_MAX) {
           const saved = Object.keys(session.partials).length;
           const is503 = msg.includes('[Overloaded]');
@@ -765,7 +434,6 @@ export class ChunkEngine {
           continue;
         }
 
-        // Retry budget exhausted — auto-pause so progress is preserved
         if (isRetryable) {
           const saved = Object.keys(session.partials).length;
           this._paused = true;
@@ -785,8 +453,7 @@ export class ChunkEngine {
     throw new Error('Unexpected: retry loop exited without result.');
   }
 
-  // --- Worklog processing (backward-compatible) ---
-
+  /** Process worklog extraction */
   async process(
     sourceText: string,
     apiKey: string,
@@ -799,8 +466,7 @@ export class ChunkEngine {
     return toWorklog(raw);
   }
 
-  // --- Handoff processing ---
-
+  /** Process handoff extraction */
   async processHandoff(
     sourceText: string,
     apiKey: string,
@@ -813,8 +479,7 @@ export class ChunkEngine {
     return toHandoff(raw);
   }
 
-  // --- Combined "both" processing — single API call per chunk ---
-
+  /** Process combined worklog + handoff extraction */
   async processBoth(
     sourceText: string,
     apiKey: string,
@@ -825,20 +490,15 @@ export class ChunkEngine {
     const raw = await this.processGeneric(sourceText, apiKey, onProgress, 'both');
     this._onStream = undefined;
 
-    // raw contains { worklog: {...}, handoff: {...} } from combined prompt
     const w = raw.worklog as PartialResult | undefined;
     const h = raw.handoff as PartialResult | undefined;
 
-    const result = {
+    return {
       worklog: toWorklog(w || raw),
       handoff: toHandoff(h || raw),
     };
-    return result;
   }
 
-  // --- Generic processing (shared pipeline) ---
-
-  /** Max concurrent API calls — 1 for Claude (rate limit), 2 for others */
   private static getConcurrency(): number {
     return getActiveProvider() === 'anthropic' ? 1 : 2;
   }
@@ -856,9 +516,8 @@ export class ChunkEngine {
     let session = await loadSession(hash);
     const freshChunks = splitIntoChunks(sourceText, config.chunkTarget);
 
-    // Resume or create new session
     if (session && session.chunks.length === freshChunks.length && session.status === 'active') {
-      // Resume — reuse stored chunks
+      // Resume
     } else {
       if (session) await deleteSession(hash);
       session = {
@@ -886,8 +545,6 @@ export class ChunkEngine {
     };
     const langInstruction = CHUNK_LANG_MAP[lang] || CHUNK_LANG_MAP.en;
 
-    // --- Extract phase — parallel with concurrency limit ---
-    // Build work items (skip already-completed chunks)
     const workItems: number[] = [];
     for (let i = 0; i < chunks.length; i++) {
       if (!session.partials[String(i)]) {
@@ -896,16 +553,14 @@ export class ChunkEngine {
     }
 
     const completedCount = chunks.length - workItems.length;
+    let finished = completedCount;
 
-    // Report initial progress
     onProgress({
       phase: 'extract', current: completedCount, total: chunks.length,
       savedCount: completedCount,
       message: `extract:${completedCount}:${chunks.length}`,
     });
 
-    // Process in parallel with concurrency limit
-    let finished = completedCount;
     const processChunk = async (i: number): Promise<void> => {
       if (this._cancelled) throw new Error('[Cancelled]');
       if (this._paused) {
@@ -929,9 +584,8 @@ export class ChunkEngine {
         message: `extract:${finished}:${chunks.length}`,
       });
 
-      // Adaptive inter-chunk cooldown for Claude to avoid TPM rate limits
       if (getActiveProvider() === 'anthropic' && finished < chunks.length) {
-        const jitter = (Math.random() - 0.5) * 2; // ±1s jitter
+        const jitter = (Math.random() - 0.5) * 2;
         const delaySec = Math.max(1, this._chunkDelay + jitter);
         onProgress({
           phase: 'waiting', current: finished, total: chunks.length,
@@ -942,19 +596,15 @@ export class ChunkEngine {
       }
     };
 
-    // Concurrency-limited parallel execution
     if (workItems.length > 0) {
       await this.runParallel(workItems, processChunk, ChunkEngine.getConcurrency());
     }
 
-    // Collect all partials in order — filter out any undefined entries from corrupted cache
     const allPartials = chunks.map((_, i) => session!.partials[String(i)]).filter(Boolean);
 
     if (allPartials.length === 1) {
-      // Single chunk — still need completed extraction + final summarization for handoff/both
       if (mode === 'handoff' || mode === 'both') {
         try {
-          // Build compact input from the single partial (NOT full sourceText)
           const partial = allPartials[0];
           const singlePartialText = Object.entries(partial)
             .filter(([key]) => key !== 'title' && key !== 'worklog' && key !== 'handoff')
@@ -964,74 +614,11 @@ export class ChunkEngine {
               return null;
             }).filter(Boolean).join('\n');
 
-          // 1. Completed extraction
-          const completedPromise = (async (): Promise<string[]> => {
-            onProgress({
-              phase: 'completed', current: 1, total: 2, savedCount: finished,
-              message: 'completed:extract',
-            });
-            try {
-              const sLang = detectLanguage(singlePartialText.slice(0, 3000));
-              const sLangHint = sLang === 'ja'
-                ? 'Input is Japanese. Output in Japanese (keep code terms in English).'
-                : 'Output in English.';
-              const cResult = await callApiRaw(
-                apiKey,
-                COMPLETED_EXTRACT_PROMPT,
-                `${sLangHint}\n\nExtract ALL completed work from this chunk extraction result:\n\n${singlePartialText}`,
-                4096,
-                true,
-              );
-              const cItems = cResult.completed;
-              if (Array.isArray(cItems) && cItems.length > 0) {
-                const MAX_COMPLETED = 50;
-                const strings = cItems.filter((x): x is string => typeof x === 'string');
-                return strings.length > MAX_COMPLETED ? strings.slice(-MAX_COMPLETED) : strings;
-              }
-              return [];
-            } catch (err) {
-              if (import.meta.env.DEV) console.warn('[chunkEngine] completed extraction failed:', err);
-              return [];
-            }
-          })();
-
-          // 2. Final summarization — handoffMeta + resumeChecklist + active decisions
-          const finalSumPromise = (async (): Promise<PartialResult | null> => {
-            onProgress({
-              phase: 'summarization', current: 2, total: 2, savedCount: finished,
-              message: 'summarization:final',
-            });
-            try {
-              const handoffData: PartialResult = mode === 'both'
-                ? (partial.handoff as PartialResult | undefined) ?? partial
-                : partial;
-              const summaryInput: Record<string, unknown> = {};
-              for (const key of ['currentStatus', 'nextActions', 'nextActionItems', 'actionBacklog', 'blockers', 'completed', 'decisions', 'decisionRationales', 'constraints', 'title'] as const) {
-                if (handoffData[key] != null) {
-                  summaryInput[key] = handoffData[key];
-                }
-              }
-              const inputJson = JSON.stringify(summaryInput);
-              const fsLang = detectLanguage(inputJson.slice(0, 3000));
-              const fsLangHint = fsLang === 'ja'
-                ? 'Input is Japanese. Output in Japanese (keep code terms in English).'
-                : 'Output in English.';
-              return await callApiRaw(
-                apiKey,
-                FINAL_SUMMARIZATION_PROMPT,
-                `${fsLangHint}\n\nGenerate session-wide summary fields from this merged handoff:\n\n${inputJson}`,
-                4096,
-                true,
-              );
-            } catch (err) {
-              if (import.meta.env.DEV) console.warn('[chunkEngine] final summarization failed:', err);
-              return null;
-            }
-          })();
+          const completedPromise = this.extractCompleted(apiKey, singlePartialText, onProgress, finished, 2);
+          const finalSumPromise = this.extractFinalSummary(apiKey, partial, mode, onProgress, finished, 2);
 
           const [completedItems, finalSummary] = await Promise.all([completedPromise, finalSumPromise]);
 
-          // Apply completed
           if (completedItems.length > 0) {
             allPartials[0].completed = completedItems;
             if (mode === 'both') {
@@ -1040,45 +627,8 @@ export class ChunkEngine {
             }
           }
 
-          // Apply final summarization
           if (finalSummary) {
-            const meta = normalizeHandoffMeta(finalSummary.handoffMeta);
-            const checklist = normalizeResumeChecklist(finalSummary.resumeChecklist);
-            const derivedResumeContext = checklist.map(item => item.action);
-
-            let activeDecisions: DecisionWithRationale[] | undefined;
-            const rawActiveDecisions = finalSummary.activeDecisions;
-            if (Array.isArray(rawActiveDecisions) && rawActiveDecisions.length > 0) {
-              activeDecisions = dedupDecisions(
-                rawActiveDecisions
-                  .filter((d): d is Record<string, unknown> => typeof d === 'object' && d !== null && 'decision' in d)
-                  .map(d => ({
-                    decision: String(d.decision || ''),
-                    rationale: typeof d.rationale === 'string' ? d.rationale : null,
-                  }))
-              ).slice(0, 6);
-            }
-
-            const applyToTarget = (target: PartialResult) => {
-              target.handoffMeta = meta;
-              target.resumeChecklist = checklist;
-              target.resumeContext = derivedResumeContext;
-              if (activeDecisions && activeDecisions.length > 0) {
-                target.decisionRationales = activeDecisions;
-                target.decisions = activeDecisions.map(d => d.decision);
-              }
-            };
-
-            applyToTarget(allPartials[0]);
-            if (mode === 'both') {
-              const h = allPartials[0].handoff as PartialResult | undefined;
-              if (h) applyToTarget(h);
-            }
-
-            if (import.meta.env.DEV) {
-              console.log('[SingleChunk FinalSummarization] handoffMeta:', JSON.stringify(meta));
-              console.log('[SingleChunk FinalSummarization] resumeChecklist:', JSON.stringify(checklist));
-            }
+            this.applyFinalSummary(finalSummary, allPartials[0], mode);
           }
         } catch (err) {
           if (import.meta.env.DEV) console.warn('[SingleChunk] post-extraction failed:', err);
@@ -1088,18 +638,13 @@ export class ChunkEngine {
       return allPartials[0];
     }
 
-    // --- Local merge (no API call) ---
-    onProgress({
-      phase: 'merge', current: 1, total: 1, savedCount: finished,
-      message: 'merge:local',
-    });
+    // --- Local merge ---
+    onProgress({ phase: 'merge', current: 1, total: 1, savedCount: finished, message: 'merge:local' });
     let mergedResult: PartialResult = localMerge(allPartials, mode === 'both');
 
-    // --- Post-merge: completed extraction + consistency check (handoff/both only) ---
+    // --- Post-merge: completed + consistency + final summarization ---
     if (mode === 'handoff' || mode === 'both') {
-
       try {
-        // Build compact input for completed extraction from chunk partials (NOT full sourceText)
         const partialsText = allPartials.map((p, i) => {
           const lines: string[] = [];
           for (const [key, val] of Object.entries(p)) {
@@ -1112,112 +657,13 @@ export class ChunkEngine {
           }
           return `[Chunk ${i + 1}]\n${lines.join('\n')}`;
         }).join('\n\n');
-        // 1. Completed extraction — from chunk extraction results (compact)
-        const completedPromise = (async (): Promise<string[]> => {
-          onProgress({
-            phase: 'completed', current: 1, total: 2, savedCount: finished,
-            message: 'completed:extract',
-          });
-          try {
-            const cLang = detectLanguage(partialsText.slice(0, 3000));
-            const langHint = cLang === 'ja'
-              ? 'Input is Japanese. Output in Japanese (keep code terms in English).'
-              : 'Output in English.';
-            const result = await callApiRaw(
-              apiKey,
-              COMPLETED_EXTRACT_PROMPT,
-              `${langHint}\n\nExtract ALL completed work from these chunk extraction results:\n\n${partialsText}`,
-              4096,
-              true,
-            );
-            const items = result.completed;
-            if (Array.isArray(items) && items.length > 0) {
-              return items.filter((x): x is string => typeof x === 'string');
-            }
-            return [];
-          } catch (err) {
-            if (import.meta.env.DEV) console.warn('[chunkEngine] completed extraction failed:', err);
-            return [];
-          }
-        })();
 
-        // 2. Consistency check — on merged handoff (without completed, which comes from step 1)
-        const consistencyPromise = (async (): Promise<PartialResult | null> => {
-          onProgress({
-            phase: 'consistency', current: 2, total: 2, savedCount: finished,
-            message: 'consistency:check',
-          });
-          try {
-            const handoffData: PartialResult | undefined = mode === 'both'
-              ? mergedResult.handoff as PartialResult | undefined
-              : mergedResult;
+        const completedPromise = this.extractCompleted(apiKey, partialsText, onProgress, finished, 2);
+        const consistencyPromise = this.runConsistencyCheck(apiKey, mergedResult, mode, onProgress, finished);
+        const finalSummarizationPromise = this.extractFinalSummary(apiKey, mergedResult, mode, onProgress, finished, 3);
 
-            if (handoffData) {
-              // Trim decisions to latest 10 to reduce output size and avoid token limit truncation
-              const MAX_DECISIONS_FOR_CHECK = 10;
-              const fullDecisions = handoffData.decisions;
-              let trimmedDecisions: unknown[] | undefined;
-              if (Array.isArray(fullDecisions) && fullDecisions.length > MAX_DECISIONS_FOR_CHECK) {
-                trimmedDecisions = fullDecisions.slice(-MAX_DECISIONS_FOR_CHECK);
-              }
-              const checkPayload = trimmedDecisions
-                ? { ...handoffData, decisions: trimmedDecisions }
-                : handoffData;
-              const handoffJson = JSON.stringify(checkPayload);
-              return await callApiRaw(
-                apiKey,
-                CONSISTENCY_CHECK_PROMPT,
-                `Clean up and output the final handoff JSON:\n\n${handoffJson}`,
-                8192,
-                true,
-              );
-            }
-            return null;
-          } catch (err) {
-            if (import.meta.env.DEV) console.warn('[chunkEngine] consistency check failed:', err);
-            return null;
-          }
-        })();
-
-        // 3. Final summarization — handoffMeta + resumeChecklist + active decisions (session-wide)
-        const finalSummarizationPromise = (async (): Promise<PartialResult | null> => {
-          onProgress({
-            phase: 'summarization', current: 3, total: 3, savedCount: finished,
-            message: 'summarization:final',
-          });
-          try {
-            const handoffData: PartialResult | undefined = mode === 'both'
-              ? mergedResult.handoff as PartialResult | undefined
-              : mergedResult;
-            if (!handoffData) return null;
-            // Build compact payload: only fields needed for summarization
-            const summaryInput: Record<string, unknown> = {};
-            for (const key of ['currentStatus', 'nextActions', 'nextActionItems', 'actionBacklog', 'blockers', 'completed', 'decisions', 'decisionRationales', 'constraints', 'title'] as const) {
-              if (handoffData[key] != null) {
-                summaryInput[key] = handoffData[key];
-              }
-            }
-            const inputJson = JSON.stringify(summaryInput);
-            const sLang = detectLanguage(inputJson.slice(0, 3000));
-            const langHint = sLang === 'ja'
-              ? 'Input is Japanese. Output in Japanese (keep code terms in English).'
-              : 'Output in English.';
-            return await callApiRaw(
-              apiKey,
-              FINAL_SUMMARIZATION_PROMPT,
-              `${langHint}\n\nGenerate session-wide summary fields from this merged handoff:\n\n${inputJson}`,
-              4096,
-              true,
-            );
-          } catch (err) {
-            if (import.meta.env.DEV) console.warn('[chunkEngine] final summarization failed:', err);
-            return null;
-          }
-        })();
-
-        // Await all three in parallel
         const [completedItems, checkedRaw, finalSummary] = await Promise.all([completedPromise, consistencyPromise, finalSummarizationPromise]);
-        // Apply consistency check result — but keep original decisions (consistency check only received trimmed subset)
+
         if (checkedRaw) {
           const originalDecisions = mergedResult.decisions;
           if (mode === 'both') {
@@ -1227,24 +673,18 @@ export class ChunkEngine {
             mergedResult.blockers = checkedRaw.blockers;
             mergedResult.constraints = checkedRaw.constraints;
             mergedResult.resumeContext = checkedRaw.resumeContext;
-            // Restore original full decisions (not the trimmed version from consistency check)
             mergedResult.decisions = originalDecisions;
             const handoffRef = mergedResult.handoff as PartialResult | undefined;
             if (handoffRef) handoffRef.decisions = originalDecisions;
           } else {
             mergedResult = checkedRaw;
-            // Restore original full decisions
             mergedResult.decisions = originalDecisions;
           }
         }
 
-        // Apply completed items (from dedicated extraction — overrides any partial completed data)
-        // Keep only the most recent 50 items (last items = most recent in conversation order)
         if (completedItems.length > 0) {
           const MAX_COMPLETED = 50;
-          const trimmed = completedItems.length > MAX_COMPLETED
-            ? completedItems.slice(-MAX_COMPLETED)
-            : completedItems;
+          const trimmed = completedItems.length > MAX_COMPLETED ? completedItems.slice(-MAX_COMPLETED) : completedItems;
           mergedResult.completed = trimmed;
           if (mode === 'both') {
             const handoff = mergedResult.handoff as PartialResult | undefined;
@@ -1252,61 +692,152 @@ export class ChunkEngine {
           }
         }
 
-        // Apply final summarization — handoffMeta, resumeChecklist, active decisions
-        if (import.meta.env.DEV) {
-          console.log('[FinalSummarization] raw result:', finalSummary ? JSON.stringify(finalSummary).slice(0, 500) : 'null');
-        }
         if (finalSummary) {
-          const meta = normalizeHandoffMeta(finalSummary.handoffMeta);
-          const checklist = normalizeResumeChecklist(finalSummary.resumeChecklist);
-          // Derive resumeContext from resumeChecklist
-          const derivedResumeContext = checklist.map(item => item.action);
-
-          // Compress decisions: use activeDecisions from final summarization (max 6)
-          let activeDecisions: DecisionWithRationale[] | undefined;
-          const rawActiveDecisions = finalSummary.activeDecisions;
-          if (Array.isArray(rawActiveDecisions) && rawActiveDecisions.length > 0) {
-            activeDecisions = dedupDecisions(
-              rawActiveDecisions
-                .filter((d): d is Record<string, unknown> => typeof d === 'object' && d !== null && 'decision' in d)
-                .map(d => ({
-                  decision: String(d.decision || ''),
-                  rationale: typeof d.rationale === 'string' ? d.rationale : null,
-                }))
-            ).slice(0, 6);
-          }
-
-          // Apply to mergedResult
-          const applyToTarget = (target: PartialResult) => {
-            target.handoffMeta = meta;
-            target.resumeChecklist = checklist;
-            target.resumeContext = derivedResumeContext;
-            if (activeDecisions && activeDecisions.length > 0) {
-              target.decisionRationales = activeDecisions;
-              target.decisions = activeDecisions.map(d => d.decision);
-            }
-          };
-
-          applyToTarget(mergedResult);
-          if (mode === 'both') {
-            const handoff = mergedResult.handoff as PartialResult | undefined;
-            if (handoff) applyToTarget(handoff);
-          }
-          if (import.meta.env.DEV) {
-            console.log('[FinalSummarization] applied handoffMeta:', JSON.stringify(meta));
-            console.log('[FinalSummarization] applied resumeChecklist:', JSON.stringify(checklist));
-            if (activeDecisions) console.log('[FinalSummarization] applied activeDecisions:', activeDecisions.length);
-          }
+          this.applyFinalSummary(finalSummary, mergedResult, mode);
         }
       } catch (err) {
         if (import.meta.env.DEV) console.warn('[chunkEngine] post-merge failed:', err);
       }
-
     }
 
     session.status = 'completed';
     await deleteSession(hash);
     return mergedResult;
+  }
+
+  /** Extract completed items from chunk text */
+  private async extractCompleted(
+    apiKey: string, inputText: string, onProgress: ProgressCallback, savedCount: number, total: number,
+  ): Promise<string[]> {
+    onProgress({ phase: 'completed', current: 1, total, savedCount, message: 'completed:extract' });
+    try {
+      const cLang = detectLanguage(inputText.slice(0, 3000));
+      const langHint = cLang === 'ja'
+        ? 'Input is Japanese. Output in Japanese (keep code terms in English).'
+        : 'Output in English.';
+      const result = await callApiRaw(
+        apiKey, COMPLETED_EXTRACT_PROMPT,
+        `${langHint}\n\nExtract ALL completed work from these chunk extraction results:\n\n${inputText}`,
+        4096, true,
+      );
+      const items = result.completed;
+      if (Array.isArray(items) && items.length > 0) {
+        const MAX_COMPLETED = 50;
+        const strings = items.filter((x): x is string => typeof x === 'string');
+        return strings.length > MAX_COMPLETED ? strings.slice(-MAX_COMPLETED) : strings;
+      }
+      return [];
+    } catch (err) {
+      if (import.meta.env.DEV) console.warn('[chunkEngine] completed extraction failed:', err);
+      return [];
+    }
+  }
+
+  /** Run consistency check on merged handoff */
+  private async runConsistencyCheck(
+    apiKey: string, mergedResult: PartialResult, mode: ExtractMode, onProgress: ProgressCallback, savedCount: number,
+  ): Promise<PartialResult | null> {
+    onProgress({ phase: 'consistency', current: 2, total: 2, savedCount, message: 'consistency:check' });
+    try {
+      const handoffData: PartialResult | undefined = mode === 'both'
+        ? mergedResult.handoff as PartialResult | undefined
+        : mergedResult;
+
+      if (handoffData) {
+        const MAX_DECISIONS_FOR_CHECK = 10;
+        const fullDecisions = handoffData.decisions;
+        let trimmedDecisions: unknown[] | undefined;
+        if (Array.isArray(fullDecisions) && fullDecisions.length > MAX_DECISIONS_FOR_CHECK) {
+          trimmedDecisions = fullDecisions.slice(-MAX_DECISIONS_FOR_CHECK);
+        }
+        const checkPayload = trimmedDecisions ? { ...handoffData, decisions: trimmedDecisions } : handoffData;
+        const handoffJson = JSON.stringify(checkPayload);
+        return await callApiRaw(
+          apiKey, CONSISTENCY_CHECK_PROMPT,
+          `Clean up and output the final handoff JSON:\n\n${handoffJson}`,
+          8192, true,
+        );
+      }
+      return null;
+    } catch (err) {
+      if (import.meta.env.DEV) console.warn('[chunkEngine] consistency check failed:', err);
+      return null;
+    }
+  }
+
+  /** Extract final summary (handoffMeta + resumeChecklist + activeDecisions) */
+  private async extractFinalSummary(
+    apiKey: string, source: PartialResult, mode: ExtractMode, onProgress: ProgressCallback, savedCount: number, total: number,
+  ): Promise<PartialResult | null> {
+    onProgress({ phase: 'summarization', current: total, total, savedCount, message: 'summarization:final' });
+    try {
+      const handoffData: PartialResult | undefined = mode === 'both'
+        ? (source.handoff as PartialResult | undefined) ?? source
+        : source;
+      if (!handoffData) return null;
+
+      const summaryInput: Record<string, unknown> = {};
+      for (const key of ['currentStatus', 'nextActions', 'nextActionItems', 'actionBacklog', 'blockers', 'completed', 'decisions', 'decisionRationales', 'constraints', 'title'] as const) {
+        if (handoffData[key] != null) {
+          summaryInput[key] = handoffData[key];
+        }
+      }
+      const inputJson = JSON.stringify(summaryInput);
+      const sLang = detectLanguage(inputJson.slice(0, 3000));
+      const langHint = sLang === 'ja'
+        ? 'Input is Japanese. Output in Japanese (keep code terms in English).'
+        : 'Output in English.';
+      return await callApiRaw(
+        apiKey, FINAL_SUMMARIZATION_PROMPT,
+        `${langHint}\n\nGenerate session-wide summary fields from this merged handoff:\n\n${inputJson}`,
+        4096, true,
+      );
+    } catch (err) {
+      if (import.meta.env.DEV) console.warn('[chunkEngine] final summarization failed:', err);
+      return null;
+    }
+  }
+
+  /** Apply final summary results to a target partial */
+  private applyFinalSummary(finalSummary: PartialResult, target: PartialResult, mode: ExtractMode): void {
+    const meta = normalizeHandoffMeta(finalSummary.handoffMeta);
+    const checklist = normalizeResumeChecklist(finalSummary.resumeChecklist);
+    const derivedResumeContext = checklist.map(item => item.action);
+
+    let activeDecisions: DecisionWithRationale[] | undefined;
+    const rawActiveDecisions = finalSummary.activeDecisions;
+    if (Array.isArray(rawActiveDecisions) && rawActiveDecisions.length > 0) {
+      activeDecisions = dedupDecisions(
+        rawActiveDecisions
+          .filter((d): d is Record<string, unknown> => typeof d === 'object' && d !== null && 'decision' in d)
+          .map(d => ({
+            decision: String(d.decision || ''),
+            rationale: typeof d.rationale === 'string' ? d.rationale : null,
+          }))
+      ).slice(0, 6);
+    }
+
+    const applyToTarget = (t: PartialResult) => {
+      t.handoffMeta = meta;
+      t.resumeChecklist = checklist;
+      t.resumeContext = derivedResumeContext;
+      if (activeDecisions && activeDecisions.length > 0) {
+        t.decisionRationales = activeDecisions;
+        t.decisions = activeDecisions.map(d => d.decision);
+      }
+    };
+
+    applyToTarget(target);
+    if (mode === 'both') {
+      const h = target.handoff as PartialResult | undefined;
+      if (h) applyToTarget(h);
+    }
+
+    if (import.meta.env.DEV) {
+      console.log('[FinalSummarization] applied handoffMeta:', JSON.stringify(meta));
+      console.log('[FinalSummarization] applied resumeChecklist:', JSON.stringify(checklist));
+      if (activeDecisions) console.log('[FinalSummarization] applied activeDecisions:', activeDecisions.length);
+    }
   }
 
   /** Run tasks with a concurrency limit */

@@ -33,6 +33,7 @@ vi.mock('../storage', async (importOriginal) => {
 // ── Mock provider ──
 vi.mock('../provider', () => ({
   shouldUseBuiltinApi: () => false,
+  getActiveProvider: () => 'gemini',
   callProvider: vi.fn(),
   callProviderStream: vi.fn(),
 }));

@@ -5,6 +5,7 @@ import { cleanMasterNoteSourceLogIds } from './masterNotes';
 
 // ─── Logs ───
 
+/** Persist the full logs array to localStorage */
 export function saveLogs(logs: LogEntry[]): void {
   safeSetItem(LOGS_KEY, JSON.stringify(logs));
   invalidateLogsCache();
@@ -60,12 +61,14 @@ export function loadTrashedLogs(): LogEntry[] {
   return loadAllLogs().filter((l) => !!l.trashedAt);
 }
 
+/** Add a new log entry at the top of the list */
 export function addLog(entry: LogEntry): void {
   const logs = [...loadAllLogs()];
   logs.unshift(entry);
   saveLogs(logs);
 }
 
+/** Find a log by ID */
 export function getLog(id: string): LogEntry | undefined {
   return loadAllLogs().find((l) => l.id === id);
 }
@@ -97,11 +100,13 @@ export function deleteLog(id: string): void {
   cleanMasterNoteSourceLogIds(id);
 }
 
+/** Update a log entry with a partial patch */
 export function updateLog(id: string, patch: Partial<LogEntry>): void {
   const logs = loadAllLogs().map((l) => l.id === id ? { ...l, ...patch } : l);
   saveLogs(logs);
 }
 
+/** Duplicate a log with a new ID and title suffix */
 export function duplicateLog(id: string, titleSuffix: string): string | null {
   const log = getLog(id);
   if (!log) return null;
@@ -122,6 +127,7 @@ export function duplicateLog(id: string, titleSuffix: string): string | null {
 
 // ─── Log Linking (bidirectional backlinks) ───
 
+/** Create a bidirectional link between two logs */
 export function linkLogs(logId1: string, logId2: string): void {
   const logs = loadAllLogs().map((l) => {
     if (l.id === logId1) {
@@ -139,6 +145,7 @@ export function linkLogs(logId1: string, logId2: string): void {
   saveLogs(logs);
 }
 
+/** Remove a bidirectional link between two logs */
 export function unlinkLogs(logId1: string, logId2: string): void {
   const logs = loadAllLogs().map((l) => {
     if (l.id === logId1) {
@@ -157,6 +164,7 @@ export function unlinkLogs(logId1: string, logId2: string): void {
 import { LOG_SUMMARIES_KEY } from './core';
 import type { LogSummary } from '../types';
 
+/** Load all cached log summaries */
 export function loadLogSummaries(): LogSummary[] {
   const raw = safeGetItem(LOG_SUMMARIES_KEY);
   if (!raw) return [];
@@ -166,12 +174,14 @@ export function loadLogSummaries(): LogSummary[] {
   } catch (err) { if (import.meta.env.DEV) console.warn('[storage] loadLogSummaries', err); return []; }
 }
 
+/** Save or update a log summary (replaces existing for same logId) */
 export function saveLogSummary(summary: LogSummary): void {
   const summaries = loadLogSummaries().filter((s) => s.logId !== summary.logId);
   summaries.push(summary);
   safeSetItem(LOG_SUMMARIES_KEY, JSON.stringify(summaries));
 }
 
+/** Get a cached summary for a specific log */
 export function getLogSummary(logId: string): LogSummary | undefined {
   return loadLogSummaries().find((s) => s.logId === logId);
 }

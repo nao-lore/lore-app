@@ -9,6 +9,8 @@
  */
 
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
+import { callWithRetry } from './utils/retryManager';
+import { parseSSEStream, extractGeminiText, extractAnthropicText } from './utils/streamParser';
 
 export type ProviderName = 'anthropic' | 'gemini' | 'openai';
 
@@ -266,38 +268,7 @@ async function callGeminiStreamWithModel(req: ProviderRequest, model: string, on
     const reader = res.body?.getReader();
     if (!reader) throw new Error('[Stream] ReadableStream not supported');
 
-    const decoder = new TextDecoder();
-    let accumulated = '';
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (!data || data === '[DONE]') continue;
-
-        try {
-          const event = JSON.parse(data);
-          const text = event.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) {
-            accumulated += text;
-            onChunk(text, accumulated);
-          }
-        } catch (e) {
-          if (e instanceof SyntaxError) continue;
-          throw e;
-        }
-      }
-    }
-
-    return accumulated;
+    return await parseSSEStream(reader, extractGeminiText, onChunk);
   } finally {
     clearTimeout(timeoutId);
   }
@@ -352,39 +323,7 @@ async function callAnthropicStream(req: ProviderRequest, onChunk: StreamCallback
     const reader = res.body?.getReader();
     if (!reader) throw new Error('[Stream] ReadableStream not supported');
 
-    const decoder = new TextDecoder();
-    let accumulated = '';
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (data === '[DONE]') continue;
-
-        try {
-          const event = JSON.parse(data);
-          if (event.type === 'content_block_delta' && event.delta?.text) {
-            accumulated += event.delta.text;
-            onChunk(event.delta.text, accumulated);
-          }
-          if (event.type === 'error') {
-            throw new Error(`[Stream Error] ${event.error?.message || 'Unknown'}`);
-          }
-        } catch (e) {
-          if (e instanceof SyntaxError) continue; // skip non-JSON lines
-          throw e;
-        }
-      }
-    }
-
+    const accumulated = await parseSSEStream(reader, extractAnthropicText, onChunk);
     if (!accumulated) throw new Error('[AI Response] Empty streaming response from API. Try again.');
     return accumulated;
   } finally {
@@ -548,37 +487,7 @@ async function callBuiltinStream(req: ProviderRequest, onChunk: StreamCallback):
     const reader = res.body?.getReader();
     if (!reader) throw new Error('[Stream] ReadableStream not supported');
 
-    const decoder = new TextDecoder();
-    let accumulated = '';
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (!data || data === '[DONE]') continue;
-
-        try {
-          const event = JSON.parse(data);
-          const text = event.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) {
-            accumulated += text;
-            onChunk(text, accumulated);
-          }
-        } catch (e) {
-          if (e instanceof SyntaxError) continue;
-          throw e;
-        }
-      }
-    }
-
+    const accumulated = await parseSSEStream(reader, extractGeminiText, onChunk);
     if (!accumulated) throw new Error('[AI Response] Empty streaming response. Try again.');
     return accumulated;
   } finally {
@@ -648,31 +557,8 @@ function migrateOldApiKey(): void {
 // Run migration once on load
 migrateOldApiKey();
 
-// ---------------------------------------------------------------------------
-// Retry with exponential backoff for transient errors (429, 503, overloaded)
-// ---------------------------------------------------------------------------
-
-async function callProviderWithRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (err) {
-      if (attempt === maxRetries) throw err;
-      const isRetryable = err instanceof Error && (
-        err.message.includes('429') || err.message.includes('503') || err.message.includes('overloaded') || err.message.includes('[Overloaded]') || err.message.includes('[Rate Limit]')
-      );
-      if (!isRetryable) throw err;
-      // Use server-provided delay from [Rate Limit:N] if available, otherwise exponential backoff
-      const delayMatch = err instanceof Error ? err.message.match(/\[Rate Limit:(\d+)\]/) : null;
-      const delay = delayMatch ? parseInt(delayMatch[1], 10) * 1000 : 1000 * Math.pow(2, attempt);
-      await new Promise(r => setTimeout(r, delay));
-    }
-  }
-  throw new Error('Unreachable');
-}
-
 export async function callProvider(req: ProviderRequest): Promise<string> {
-  return callProviderWithRetry(() => {
+  return callWithRetry(() => {
     // Use built-in API when no user key is configured
     if (shouldUseBuiltinApi()) {
       return callBuiltin(req);
@@ -693,7 +579,7 @@ export async function callProvider(req: ProviderRequest): Promise<string> {
 
 /** Streaming variant — calls onChunk with each text delta. Falls back to non-streaming for OpenAI. */
 export async function callProviderStream(req: ProviderRequest, onChunk: StreamCallback): Promise<string> {
-  return callProviderWithRetry(() => {
+  return callWithRetry(() => {
     // Use built-in API when no user key is configured
     if (shouldUseBuiltinApi()) {
       return callBuiltinStream(req, onChunk);

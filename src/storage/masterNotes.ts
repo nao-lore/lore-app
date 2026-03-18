@@ -3,6 +3,7 @@ import { MASTER_NOTES_KEY, MN_HISTORY_KEY, MAX_MN_SNAPSHOTS, safeGetItem, safeSe
 
 // ─── Master Notes ───
 
+/** Load all master notes from cache/localStorage */
 export function loadMasterNotes(): MasterNote[] {
   if (cache.masterNotesCache.data !== null && cache.masterNotesCache.version === cache.masterNotesCacheVersion) {
     return cache.masterNotesCache.data;

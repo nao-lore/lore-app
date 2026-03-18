@@ -7,7 +7,7 @@
 function extractKeywords(text: string): Set<string> {
   const tokens = text
     .toLowerCase()
-    .replace(/[()（）「」『』、。,.;:：・\-–—\[\]{}!?！？]/g, ' ')
+    .replace(/[()（）「」『』、。,.;:：・\-–—[\]{}!?！？]/g, ' ')
     .split(/\s+/)
     .filter(w => w.length >= 2);
 
