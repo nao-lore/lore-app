@@ -1506,6 +1506,7 @@ const labels = {
   pricingFreeTitle: { ja: 'Free', en: 'Free', es: 'Free', fr: 'Free', de: 'Free', zh: 'Free', ko: 'Free', pt: 'Free' },
   pricingProTitle: { ja: 'Pro', en: 'Pro', es: 'Pro', fr: 'Pro', de: 'Pro', zh: 'Pro', ko: 'Pro', pt: 'Pro' },
   pricingMonth: { ja: '月', en: 'month', es: 'mes', fr: 'mois', de: 'Monat', zh: '月', ko: '월', pt: 'mês' },
+  pricingYear: { ja: '年', en: 'year', es: 'año', fr: 'an', de: 'Jahr', zh: '年', ko: '년', pt: 'ano' },
   pricingRecommended: { ja: 'おすすめ', en: 'Recommended', es: 'Recomendado', fr: 'Recommandé', de: 'Empfohlen', zh: '推荐', ko: '추천', pt: 'Recomendado' },
   pricingFreeAiTransforms: { ja: '無制限（7日間トライアル）、以降30回/日', en: 'Unlimited (7-day trial), then 30/day', es: 'Ilimitado (prueba 7 días), luego 30/día', fr: 'Illimité (essai 7 jours), puis 30/jour', de: 'Unbegrenzt (7-Tage-Test), dann 30/Tag', zh: '无限制（7天试用），之后30次/天', ko: '무제한 (7일 체험), 이후 30회/일', pt: 'Ilimitado (teste 7 dias), depois 30/dia' },
   upgradeToPro: { ja: 'Proにアップグレード', en: 'Upgrade to Pro', es: 'Actualizar a Pro', fr: 'Passer à Pro', de: 'Auf Pro upgraden', zh: '升级到Pro', ko: 'Pro로 업그레이드', pt: 'Atualizar para Pro' },
