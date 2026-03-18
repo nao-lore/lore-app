@@ -1,25 +1,46 @@
 /**
  * Fuzzy deduplication — removes items that share significant keyword overlap.
  * Works for both Japanese and English text.
+ *
+ * Uses Jaccard similarity on extracted keywords. Threshold is configurable:
+ * - 0.6 (default): good balance for merge dedup in chunk engine
+ * - 0.4-0.5: aggressive dedup for user-facing lists
+ * - 0.7-0.8: conservative, only removes near-exact matches
  */
+
+/** Default similarity threshold for fuzzy dedup */
+export const DEFAULT_FUZZY_THRESHOLD = 0.6;
 
 /** Extract significant keywords from text (2+ chars for CJK, filtered by stop words) */
 function extractKeywords(text: string): Set<string> {
   const tokens = text
     .toLowerCase()
-    .replace(/[()（）「」『』、。,.;:：・\-–—\[\]{}!?！？]/g, ' ')
+    .replace(/[()（）「」『』、。,.;:：・\-–—[\]{}!?！？]/g, ' ')
     .split(/\s+/)
     .filter(w => w.length >= 2);
 
-  const stops = new Set([
-    'the', 'and', 'for', 'that', 'this', 'with', 'from', 'are', 'was',
-    'will', 'has', 'have', 'been',
-    'する', 'した', 'して', 'ている', 'ない', 'ある', 'いる',
-    'これ', 'それ', 'この', 'その', 'など', 'として', 'について', 'ため',
-  ]);
-
-  return new Set(tokens.filter(w => !stops.has(w)));
+  return new Set(tokens.filter(w => !STOP_WORDS.has(w)));
 }
+
+/** Stop words for English and CJK languages */
+const STOP_WORDS = new Set([
+  // English function words
+  'the', 'and', 'for', 'that', 'this', 'with', 'from', 'are', 'was',
+  'will', 'has', 'have', 'been', 'not', 'but', 'also', 'into',
+  'more', 'some', 'when', 'than', 'then', 'just', 'only',
+  // Japanese particles and auxiliaries
+  'する', 'した', 'して', 'ている', 'ない', 'ある', 'いる',
+  'これ', 'それ', 'この', 'その', 'など', 'として', 'について', 'ため',
+  'から', 'まで', 'より', 'ので', 'けど', 'でも', 'だが', 'しかし',
+  'ところ', 'こと', 'もの', 'よう', 'ほう', 'ほど', 'くらい',
+  'られる', 'される', 'できる', 'なる', 'おく', 'みる', 'いく',
+  'という', 'といった', 'における', 'に対して', 'に関して',
+  // Chinese common function words
+  '的', '了', '在', '是', '我', '他', '她', '它', '们',
+  '这', '那', '有', '和', '与', '或', '但', '而', '也',
+  // Korean common particles
+  '은', '는', '이', '가', '을', '를', '에', '의', '와', '과',
+]);
 
 /** Calculate Jaccard similarity between two keyword sets */
 function jaccardSimilarity(a: Set<string>, b: Set<string>): number {

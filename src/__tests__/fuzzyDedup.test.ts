@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fuzzyDedupStrings, fuzzyDedupByField } from '../utils/fuzzyDedup';
+import { fuzzyDedupStrings, fuzzyDedupByField, DEFAULT_FUZZY_THRESHOLD } from '../utils/fuzzyDedup';
 
 describe('fuzzyDedupStrings', () => {
   it('returns empty array for empty input', () => {
@@ -112,6 +112,29 @@ describe('fuzzyDedupStrings', () => {
     ]);
     expect(result).toHaveLength(1);
     expect(result[0]).toBe('Refactored authentication module for better security');
+  });
+
+  it('exports DEFAULT_FUZZY_THRESHOLD', () => {
+    expect(typeof DEFAULT_FUZZY_THRESHOLD).toBe('number');
+    expect(DEFAULT_FUZZY_THRESHOLD).toBe(0.6);
+  });
+
+  it('filters expanded English stop words for better dedup', () => {
+    // 'also', 'just', 'only' are now stop words — items differing only by them dedup
+    const result = fuzzyDedupStrings([
+      'Added error handling also timeout retry',
+      'Added error handling only timeout retry',
+    ]);
+    expect(result).toHaveLength(1);
+  });
+
+  it('filters Japanese particle stop words', () => {
+    // 'から', 'まで' are stop words when space-separated
+    const result = fuzzyDedupStrings([
+      'API から データ取得 実装 完了',
+      'API まで データ取得 実装 完了',
+    ]);
+    expect(result).toHaveLength(1);
   });
 });
 
