@@ -157,6 +157,9 @@ describe('i18n', () => {
       errorFileRead: ['test.pdf'],
       ariaRemoveFile: ['file.txt'],
       onboardingStepCounter: [2, 6],
+      trialActive: [5],
+      dailyLimitReached: [5, 5],
+      transformsRemaining: [3],
     };
 
     it('all function labels return non-empty strings for ja', () => {

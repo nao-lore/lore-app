@@ -3,6 +3,7 @@ import { CHAR_WARN, needsChunking } from './transform';
 import { getChunkTarget, getEngineConcurrency } from './chunkEngine';
 import { getStreak, isDemoMode } from './storage';
 import { shouldUseBuiltinApi, getBuiltinUsage } from './provider';
+import { canTransform } from './utils/trialManager';
 const loadDemoData = () => import('./demoData');
 import { Copy, Check, X } from 'lucide-react';
 import { getGreeting } from './greeting';
@@ -355,6 +356,31 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                 {used}/{limit}
               </span>
             );
+          })()}
+          {!loading && (() => {
+            const trial = canTransform();
+            if (trial.trialDaysLeft !== undefined) {
+              return (
+                <span className="input-usage-counter">
+                  {tf('trialActive', lang, trial.trialDaysLeft)}
+                </span>
+              );
+            }
+            if (!trial.allowed) {
+              return (
+                <span className="input-usage-counter input-usage-counter--exhausted">
+                  {t('trialEnded', lang)}
+                </span>
+              );
+            }
+            if (trial.remaining !== undefined) {
+              return (
+                <span className="input-usage-counter">
+                  {tf('transformsRemaining', lang, trial.remaining)}
+                </span>
+              );
+            }
+            return null;
           })()}
           {loading ? (
             <button
