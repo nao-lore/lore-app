@@ -11,7 +11,7 @@
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import { callWithRetry } from './utils/retryManager';
 import { parseSSEStream, extractGeminiText, extractAnthropicText } from './utils/streamParser';
-import { encrypt, decrypt, isEncrypted } from './utils/crypto';
+import { encrypt, decrypt, isEncrypted, getCachedKey, setCachedKey } from './utils/crypto';
 
 export type ProviderName = 'anthropic' | 'gemini' | 'openai';
 
@@ -588,20 +588,14 @@ export function setActiveProvider(name: ProviderName): void {
   safeSetItem('threadlog_provider', name);
 }
 
-// ---------------------------------------------------------------------------
-// In-memory decrypted key cache — avoids async in every sync call path
-// ---------------------------------------------------------------------------
-
-const decryptedKeyCache = new Map<string, string>();
-
 /**
  * Get API key for a specific provider (synchronous).
- * Returns from in-memory cache if encrypted, or raw value if plaintext.
- * Keys are decrypted asynchronously on startup via initKeyCache().
+ * Returns from in-memory cache if available, or raw plaintext value.
+ * Encrypted keys require initKeyCache() to have run first.
  */
 export function getProviderApiKey(provider: ProviderName): string {
-  // Check in-memory cache first (populated by initKeyCache or setProviderApiKey)
-  const cached = decryptedKeyCache.get(provider);
+  // Check shared decrypted cache first (populated by initKeyCache or setProviderApiKey)
+  const cached = getCachedKey(provider);
   if (cached !== undefined) return cached;
 
   const stored = safeGetItem(`threadlog_api_key_${provider}`) || '';
@@ -611,7 +605,7 @@ export function getProviderApiKey(provider: ProviderName): string {
   if (isEncrypted(stored)) return '';
 
   // Plaintext — cache and return
-  decryptedKeyCache.set(provider, stored);
+  setCachedKey(provider, stored);
   return stored;
 }
 
@@ -625,16 +619,16 @@ export async function initKeyCache(): Promise<void> {
   for (const provider of providers) {
     const stored = safeGetItem(`threadlog_api_key_${provider}`) || '';
     if (!stored) {
-      decryptedKeyCache.set(provider, '');
+      setCachedKey(provider, '');
       continue;
     }
 
     if (isEncrypted(stored)) {
       const plain = await decrypt(stored);
-      decryptedKeyCache.set(provider, plain);
+      setCachedKey(provider, plain);
     } else {
       // Plaintext legacy key — cache it and migrate to encrypted
-      decryptedKeyCache.set(provider, stored);
+      setCachedKey(provider, stored);
       const encrypted = await encrypt(stored);
       if (encrypted !== stored) {
         safeSetItem(`threadlog_api_key_${provider}`, encrypted);
@@ -645,8 +639,8 @@ export async function initKeyCache(): Promise<void> {
 
 /** Set API key for a specific provider (encrypts before storing) */
 export function setProviderApiKey(provider: ProviderName, key: string): void {
-  // Update cache immediately so sync reads work
-  decryptedKeyCache.set(provider, key);
+  // Update shared cache immediately so sync reads work
+  setCachedKey(provider, key);
 
   if (!key) {
     safeSetItem(`threadlog_api_key_${provider}`, '');
