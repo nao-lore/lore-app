@@ -15,6 +15,7 @@ import { formatHandoffMarkdown, formatFullAiContext } from '../formatHandoff';
 import { generateProjectContext } from '../generateProjectContext';
 import { recordMetric } from '../aiMetrics';
 import { isStaleMasterNote } from '../utils/staleness';
+import { canTransform, incrementDailyUsage, DAILY_LIMIT_FREE } from '../utils/trialManager';
 import { AIError } from '../errors';
 
 export type TransformAction = 'both' | 'handoff' | 'worklog' | 'todo_only' | 'worklog_handoff' | 'handoff_todo';
@@ -478,6 +479,14 @@ export function useTransform(params: UseTransformParams) {
     if (loading) return;
     if (!combined.trim()) { setError(t('errorEmptyInput', lang)); return; }
 
+    // --- Trial / daily limit check ---
+    const trialCheck = canTransform();
+    if (!trialCheck.allowed) {
+      const used = DAILY_LIMIT_FREE;
+      setError(tf('dailyLimitReached', lang, used, DAILY_LIMIT_FREE));
+      return;
+    }
+
     const demo = isDemoMode();
     if (!demo && !navigator.onLine) { setError(t('offlineAiUnavailable', lang)); return; }
 
@@ -600,6 +609,9 @@ export function useTransform(params: UseTransformParams) {
       }
 
       if (actionResult.lastEntryId) setSavedId(actionResult.lastEntryId);
+
+      // Track daily usage for trial/free limits
+      incrementDailyUsage();
 
       // Record AI quality metric
       const _duration = performance.now() - _t0;
