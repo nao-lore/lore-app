@@ -1,11 +1,9 @@
 import { loadStripe } from '@stripe/stripe-js';
 import type { Stripe } from '@stripe/stripe-js';
 
-// STRIPE_PLACEHOLDER: replace with real publishable key after Stripe approval
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_PLACEHOLDER';
+const STRIPE_PUBLISHABLE_KEY = 'pk_live_51T1OkTQYHC6R0MTf3a7KDACZ2CvvlL8H8h0xxBdIVmXmr67nC4DHow4X5tfVMIDTGq3Aw2qPSXPmgebXnN5V47qZ006hnH5dYC';
 
-// STRIPE_PLACEHOLDER: replace with real price ID after Stripe approval
-const STRIPE_PRICE_ID_MONTHLY = 'price_PLACEHOLDER_monthly';
+const STRIPE_PRICE_ID_MONTHLY = 'price_1TCDzrQYHC6R0MTfaAqrYMvY';
 
 let stripePromise: Promise<Stripe | null> | null = null;
 
@@ -36,7 +34,6 @@ export async function redirectToCheckout(email?: string): Promise<void> {
   if (error) throw error;
 }
 
-// STRIPE_PLACEHOLDER: replace after approval
-export const STRIPE_CUSTOMER_PORTAL_URL = 'https://billing.stripe.com/p/login/PLACEHOLDER';
+export const STRIPE_CUSTOMER_PORTAL_URL = 'https://billing.stripe.com/p/login/5kQcN7fyzeEq33i9v6bMQ00';
 
 export { STRIPE_PUBLISHABLE_KEY, STRIPE_PRICE_ID_MONTHLY };
