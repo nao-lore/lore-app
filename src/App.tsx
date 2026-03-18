@@ -69,7 +69,11 @@ function resolveEffectiveTheme(pref: ThemePref): 'light' | 'dark' | 'high-contra
 
 export default function App() {
   const { inputDirtyRef, scrollRef, scrollPositionRef, shortcutsTrapRef, ...s } = useAppState();
-  const [showLanding, setShowLanding] = useState(() => s.logs.length === 0 && !isOnboardingDone());
+  const [showLanding, setShowLanding] = useState(() => {
+    // ?home forces LP display (for testing/sharing)
+    if (new URLSearchParams(window.location.search).has('home')) return true;
+    return s.logs.length === 0 && !isOnboardingDone();
+  });
   const [navState, setNavState] = useState<{ direction: 'forward' | 'back'; prevView: View }>({ direction: 'forward', prevView: s.view });
   const navDirection = navState.direction;
   if (navState.prevView !== s.view) {
