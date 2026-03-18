@@ -93,6 +93,7 @@ function RelatedLogsSection({ log, onOpenLog, lang, allLogs }: { log: LogEntry; 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('searchLogs', lang)}
+                  aria-label={t('ariaSearchLogs', lang)}
                 />
               </div>
               <div className="search-dropdown-scroll">

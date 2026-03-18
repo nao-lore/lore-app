@@ -523,6 +523,7 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
               onBlur={() => { if (addOpen && newText.trim() === '') setTodoError(t('todoInputRequired', lang)); }}
               onKeyDown={handleKeyDown}
               placeholder={t('todoAddPlaceholder', lang)}
+              aria-label={t('ariaTodoInput', lang)}
               maxLength={200}
             />
             <button className="btn btn-primary shrink-0" onClick={handleAdd} disabled={!newText.trim()}>

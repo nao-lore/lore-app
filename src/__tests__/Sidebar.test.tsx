@@ -68,8 +68,8 @@ describe('Sidebar', () => {
 
   it('shows "More" section that can be toggled', () => {
     render(<Sidebar {...defaultProps} />);
-    // "More" toggle exists — it uses aria-label="More" and aria-expanded
-    const moreToggles = screen.getAllByRole('button', { name: 'More' });
+    // "More" toggle exists — it uses aria-label and aria-expanded
+    const moreToggles = screen.getAllByRole('button', { name: 'Toggle more options' });
     const moreToggle = moreToggles[0];
     expect(moreToggle).toBeInTheDocument();
     expect(moreToggle).toHaveAttribute('aria-expanded', 'false');
@@ -86,7 +86,7 @@ describe('Sidebar', () => {
     };
     render(<Sidebar {...propsWithPinned} />);
     // Pinned toggle should exist
-    const pinnedToggle = screen.getByLabelText('Pinned');
+    const pinnedToggle = screen.getByLabelText('Toggle pinned section');
     expect(pinnedToggle).toBeInTheDocument();
     expect(screen.getByText('Pinned Project')).toBeInTheDocument();
   });

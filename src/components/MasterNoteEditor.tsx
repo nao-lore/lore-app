@@ -124,6 +124,7 @@ export function EditableText({
         onChange={(e) => onChange(e.target.value)}
         rows={4}
         maxLength={10000}
+        aria-label={label}
       />
     </div>
   );
@@ -176,6 +177,7 @@ export function EditableList({
                 <input
                   className="mn-edit-input"
                   value={item.text}
+                  aria-label={label}
                   onChange={(e) => updateItem(i, e.target.value)}
                   onBlur={() => setEditingIdx(null)}
                   onKeyDown={(e) => {

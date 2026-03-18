@@ -190,9 +190,11 @@ export default function App() {
     }
   }, [s.themePref]);
 
-  // Sync html lang attribute with current UI language
+  // Sync html lang attribute and dir with current UI language
   useEffect(() => {
     document.documentElement.lang = s.lang;
+    const rtlLanguages = ['ar', 'he', 'fa', 'ur'];
+    document.documentElement.dir = rtlLanguages.includes(s.lang) ? 'rtl' : 'ltr';
   }, [s.lang]);
 
   // Global keyboard shortcuts

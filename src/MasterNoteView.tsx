@@ -93,6 +93,7 @@ function EditableText({
         onChange={(e) => onChange(e.target.value)}
         rows={4}
         maxLength={10000}
+        aria-label={label}
       />
     </div>
   );
@@ -145,6 +146,7 @@ function EditableList({
                 <input
                   className="mn-edit-input"
                   value={item.text}
+                  aria-label={t('ariaEditTitle', lang)}
                   onChange={(e) => updateItem(i, e.target.value)}
                   onBlur={() => setEditingIdx(null)}
                   onKeyDown={(e) => {
@@ -516,6 +518,7 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
                 value={refineText}
                 onChange={(e) => setRefineText(e.target.value)}
                 placeholder={t('mnRefineInstruction', lang)}
+                aria-label={t('mnRefineInstruction', lang)}
                 rows={2}
                 autoFocus
                 maxLength={10000}
