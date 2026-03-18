@@ -182,7 +182,8 @@ async function reformatToJson(
   proseText: string,
   schemaHint: string,
 ): Promise<PartialResult> {
-  if (import.meta.env.DEV) console.warn(`[Reformat Fallback] Sending ${proseText.length} chars of prose back for JSON conversion`);
+  _reformatCallCount++;
+  if (import.meta.env.DEV) console.warn(`[Reformat Fallback #${_reformatCallCount}] Sending ${proseText.length} chars of prose back for JSON conversion`);
 
   const rawText = await callProvider({
     apiKey,
@@ -194,6 +195,11 @@ async function reformatToJson(
   const jsonText = extractJson(rawText);
   return JSON.parse(jsonText) as PartialResult;
 }
+
+/** DEV-only counter for reformatToJson calls (for cost monitoring) */
+let _reformatCallCount = 0;
+export function getReformatCallCount(): number { return _reformatCallCount; }
+export function resetReformatCallCount(): void { _reformatCallCount = 0; }
 
 /** Lightweight local JSON repair — fixes common model output issues without API call */
 function tryRepairJson(raw: string): PartialResult | null {
@@ -207,13 +213,14 @@ function tryRepairJson(raw: string): PartialResult | null {
   if (start === -1) return null;
   text = text.slice(start);
 
-  // Strip trailing prose after the last '}'
-  const lastBrace = text.lastIndexOf('}');
-  if (lastBrace === -1) {
-    // No closing brace — try adding one
-    text = text + '}';
+  // Strip trailing text after valid JSON using bracket-counting
+  // This handles: trailing prose, multiple concatenated JSON objects
+  const end = findMatchingBrace(text);
+  if (end !== -1) {
+    text = text.slice(0, end + 1);
   } else {
-    text = text.slice(0, lastBrace + 1);
+    // No matching close brace found — incomplete JSON, balance brackets
+    text = balanceBrackets(text);
   }
 
   // Fix trailing commas before } or ]
@@ -222,13 +229,93 @@ function tryRepairJson(raw: string): PartialResult | null {
   // Fix unescaped newlines inside string values
   text = text.replace(/:\s*"([^"]*)\n([^"]*)"/g, (_m, a, b) => `: "${a}\\n${b}"`);
 
+  // Fix single quotes used as string delimiters (common LLM mistake)
+  // Only replace when it looks like a JSON key/value pattern
+  text = text.replace(/(?<=[:,[{]\s*)'([^']*)'/g, '"$1"');
+
   try {
     const parsed = JSON.parse(text);
     if (typeof parsed === 'object' && parsed !== null) {
       return parsed as PartialResult;
     }
-  } catch (err) { if (import.meta.env.DEV) console.warn('[chunkEngine] JSON repair failed:', err); }
+  } catch {
+    // Second attempt: try to fix truncated string values
+    // If JSON ends mid-string (no closing quote), close it
+    const fixedTruncated = fixTruncatedStrings(text);
+    if (fixedTruncated !== text) {
+      try {
+        const parsed = JSON.parse(fixedTruncated);
+        if (typeof parsed === 'object' && parsed !== null) {
+          return parsed as PartialResult;
+        }
+      } catch { /* fall through */ }
+    }
+    if (import.meta.env.DEV) console.warn('[chunkEngine] JSON repair failed');
+  }
   return null;
+}
+
+/** Find the index of the closing '}' that matches the first '{' via bracket-counting */
+function findMatchingBrace(text: string): number {
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (escape) { escape = false; continue; }
+    if (ch === '\\' && inString) { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{') depth++;
+    if (ch === '}') { depth--; if (depth === 0) return i; }
+  }
+  return -1; // no matching brace found (incomplete JSON)
+}
+
+/** Balance unclosed brackets/braces for incomplete JSON */
+function balanceBrackets(text: string): string {
+  let braceCount = 0;
+  let bracketCount = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (escape) { escape = false; continue; }
+    if (ch === '\\' && inString) { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{') braceCount++;
+    else if (ch === '}') braceCount--;
+    else if (ch === '[') bracketCount++;
+    else if (ch === ']') bracketCount--;
+  }
+  // If we're still inside a string, close it
+  let result = text;
+  if (inString) result += '"';
+  while (bracketCount > 0) { result += ']'; bracketCount--; }
+  while (braceCount > 0) { result += '}'; braceCount--; }
+  return result;
+}
+
+/** Fix truncated string values — if the last token is an unclosed string, close it */
+function fixTruncatedStrings(text: string): string {
+  // Remove trailing incomplete key-value pairs
+  // e.g., {"a":"b","c":"trun  → {"a":"b"}
+  let result = text;
+  // Try closing an open string and removing trailing incomplete content
+  const lastQuote = result.lastIndexOf('"');
+  if (lastQuote > 0) {
+    // Check if this quote opens a string (odd number of unescaped quotes after it)
+    const after = result.slice(lastQuote + 1);
+    // If after the last quote there are only whitespace/brackets, string is closed
+    // If there's non-bracket content, the string might be truncated
+    if (after.trim() && !/^[}\],\s]*$/.test(after.trim())) {
+      // Truncated mid-string — close the string and balance
+      result = result + '"';
+      result = balanceBrackets(result);
+    }
+  }
+  return result;
 }
 
 // Detect schema type from system prompt to provide the right hint
@@ -261,7 +348,7 @@ async function callApiRaw(
   // Step 2: Detect non-JSON — no '{' at all, model returned prose
   const firstBrace = rawText.indexOf('{');
   if (firstBrace === -1) {
-    // Fallback: ask the model to convert prose into JSON (skip for long handoff to save API calls)
+    // No JSON at all — single-attempt reformat fallback (skip for long handoff)
     if (!skipReformat) {
       try {
         const schemaHint = extractSchemaHint(system);
@@ -284,15 +371,9 @@ async function callApiRaw(
     if (!hasCloseBrace) {
       throw new Error('[Truncated]');
     }
-    // Malformed JSON — try reformat fallback (skip for long handoff)
-    if (!skipReformat) {
-      try {
-        const schemaHint = extractSchemaHint(system);
-        return await reformatToJson(apiKey, rawText, schemaHint);
-      } catch (err) {
-        if (import.meta.env.DEV) console.warn('[chunkEngine] reformat fallback failed:', err);
-      }
-    }
+    // Malformed JSON — do NOT call reformatToJson again; tryRepairJson already
+    // attempted local repair, and reformatToJson is reserved as a single-attempt
+    // fallback for the "no JSON at all" case above.
     throw new Error('[Parse Error]');
   }
 }
