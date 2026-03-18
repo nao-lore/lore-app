@@ -497,7 +497,7 @@ export default function TimelineView({ logs, projects, todos, masterNotes, onBac
 
       {filteredEvents.length === 0 ? (
         <div className="empty-state">
-          <EmptyTimeline />
+          <EmptyTimeline lang={lang} />
           <p>{t('timelineEmpty', lang)}</p>
           <p className="page-subtitle">{t('timelineEmptyHint', lang)}</p>
           {onNewLog && (

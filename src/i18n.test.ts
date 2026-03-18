@@ -158,6 +158,7 @@ describe('i18n', () => {
       ariaRemoveFile: ['file.txt'],
       onboardingStepCounter: [2, 6],
       trialActive: [5],
+      pricingUsedToday: [3, 5],
       dailyLimitReached: [5, 5],
       transformsRemaining: [3],
       proExpires: ['2026-12-31'],

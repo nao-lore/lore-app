@@ -491,7 +491,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
       {/* Log list */}
       {sorted.length === 0 ? (
         <div className="empty-state">
-          {!debouncedQuery.trim() && modeFilter === 'all' && <EmptyLogs />}
+          {!debouncedQuery.trim() && modeFilter === 'all' && <EmptyLogs lang={lang} />}
           <p>{debouncedQuery.trim() || modeFilter !== 'all' ? t('noMatchingLogs', lang) : t('noLogsYet', lang)}</p>
           {!debouncedQuery.trim() && modeFilter === 'all' && !activeProjectId && <p className="page-subtitle">{t('noLogsYetDesc', lang)}</p>}
           {!debouncedQuery.trim() && modeFilter === 'all' && !activeProjectId && (
