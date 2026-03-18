@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, memo } from 'react';
-import type { MasterNote, LogEntry } from '../types';
+import { useState, useRef, useEffect, memo } from 'react';
+import type { MasterNote, LogEntry, SourcedItem } from '../types';
 import type { Lang } from '../i18n';
 import { t } from '../i18n';
 import { ExternalLink, Pencil, MoreVertical, Copy, Download, RefreshCw, History } from 'lucide-react';
