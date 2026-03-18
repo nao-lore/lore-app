@@ -28,7 +28,7 @@ function CheckableCardSection({ title, items, checkedIndices, onToggle, richItem
     <div className="content-card">
       <div className="content-card-header card-list-header">
         {title}
-        {items.length > 0 && <span className="text-placeholder" style={{ fontSize: 12, fontWeight: 500 }}>{doneCount}/{items.length}</span>}
+        {items.length > 0 && <span className="text-placeholder fs-12" style={{ fontWeight: 500 }}>{doneCount}/{items.length}</span>}
       </div>
       <ul className="list-none">
         {items.map((item, i) => {

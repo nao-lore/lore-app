@@ -161,7 +161,7 @@ export default function DetailHeader({
               title={log.pinned ? t('titleUnpin', lang) : t('titlePin', lang)}
               aria-label={log.pinned ? t('ariaUnpin', lang) : t('ariaPin', lang)}
             >
-              <Pin size={18} style={{ transform: 'rotate(45deg)' }} fill={log.pinned ? 'currentColor' : 'none'} />
+              <Pin size={18} className="pin-rotate" fill={log.pinned ? 'currentColor' : 'none'} />
             </button>
           </div>
         </div>

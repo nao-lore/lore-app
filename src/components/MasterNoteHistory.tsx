@@ -10,15 +10,15 @@ function truncate(text: string, max: number): string {
 // ─── Snapshot preview (read-only, no source links) ───
 function SnapshotPreview({ note, lang }: { note: MasterNote; lang: Lang }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
+    <div className="mn-snapshot-list">
       <div>
         <div className="content-card-header">{t('mnOverview', lang)}</div>
-        <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, color: 'var(--text-body)' }}>{note.overview || '—'}</p>
+        <p className="mn-snapshot-text">{note.overview || '—'}</p>
       </div>
       {note.decisions.length > 0 && (
         <div>
           <div className="content-card-header">{t('mnDecisions', lang)}</div>
-          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.6 }}>
+          <ul className="mn-snapshot-ul">
             {note.decisions.map((d, i) => <li key={i}>{d.text}</li>)}
           </ul>
         </div>
@@ -26,7 +26,7 @@ function SnapshotPreview({ note, lang }: { note: MasterNote; lang: Lang }) {
       {note.openIssues.length > 0 && (
         <div>
           <div className="content-card-header">{t('mnOpenIssues', lang)}</div>
-          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.6 }}>
+          <ul className="mn-snapshot-ul">
             {note.openIssues.map((d, i) => <li key={i}>{d.text}</li>)}
           </ul>
         </div>
@@ -34,7 +34,7 @@ function SnapshotPreview({ note, lang }: { note: MasterNote; lang: Lang }) {
       {note.nextActions.length > 0 && (
         <div>
           <div className="content-card-header">{t('mnNextActions', lang)}</div>
-          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.6 }}>
+          <ul className="mn-snapshot-ul">
             {note.nextActions.map((d, i) => <li key={i}>{d.text}</li>)}
           </ul>
         </div>
@@ -67,7 +67,7 @@ export function MasterNoteHistoryPanel({
         <div className="mn-history-panel" onClick={(e) => e.stopPropagation()}>
           <div className="mn-history-header">
             <h3>{t('mnHistoryTitle', lang)}</h3>
-            <button className="btn btn-ghost" onClick={() => { onClose(); onPreviewSnap(null); }} style={{ padding: '4px 8px', fontSize: 18 }}>×</button>
+            <button className="btn btn-ghost mn-history-close-btn" onClick={() => { onClose(); onPreviewSnap(null); }}>×</button>
           </div>
 
           {snapshots.length === 0 ? (
@@ -118,12 +118,12 @@ export function MasterNoteHistoryPanel({
               <div className="mn-history-detail">
                 {previewSnap ? (
                   <>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <div className="mn-history-header-row">
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: 15 }}>v{previewSnap.version}</div>
-                        <div className="meta" style={{ fontSize: 11 }}>{new Date(previewSnap.savedAt).toLocaleString()}</div>
+                        <div className="mn-history-version-label">v{previewSnap.version}</div>
+                        <div className="meta fs-11">{new Date(previewSnap.savedAt).toLocaleString()}</div>
                       </div>
-                      <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={() => onRestore(previewSnap.version)}>
+                      <button className="btn btn-primary fs-12" onClick={() => onRestore(previewSnap.version)}>
                         {t('mnHistoryRestore', lang)}
                       </button>
                     </div>
@@ -131,9 +131,9 @@ export function MasterNoteHistoryPanel({
                   </>
                 ) : saved ? (
                   <>
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15 }}>v{snapshots.length + 1} <span className="mn-history-badge-current">{t('mnHistoryCurrent', lang)}</span></div>
-                      <div className="meta" style={{ fontSize: 11 }}>{new Date(saved.updatedAt).toLocaleString()}</div>
+                    <div className="mb-lg">
+                      <div className="mn-history-version-label">v{snapshots.length + 1} <span className="mn-history-badge-current">{t('mnHistoryCurrent', lang)}</span></div>
+                      <div className="meta fs-11">{new Date(saved.updatedAt).toLocaleString()}</div>
                     </div>
                     <SnapshotPreview note={saved} lang={lang} />
                   </>

@@ -407,7 +407,7 @@ export function renderTodoItem(
         {editingTodoId === todo.id ? (
           <input
             className="input w-full"
-            style={{ fontSize: 14 }}
+            className="input w-full fs-14"
             value={editDraft}
             onChange={(e) => onSetEditDraft(e.target.value)}
             onBlur={() => { if (editDraft.trim() && editDraft.trim() !== todo.text) { updateTodo(todo.id, { text: editDraft.trim() }); onRefresh(); } onSetEditingTodoId(null); }}
@@ -448,8 +448,7 @@ export function renderTodoItem(
           )}
           {showSource && todo.logId && logTitle && (
             <button
-              className="btn-link"
-              style={{ fontSize: 11 }}
+              className="btn-link fs-11"
               onClick={(e) => { e.stopPropagation(); onOpenLog(todo.logId); }}
             >
               {logTitle}

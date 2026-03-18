@@ -372,7 +372,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
             </h2>
             <p className="page-subtitle">{tf('logCount', lang, sorted.length)}</p>
           </div>
-          <div className="flex" style={{ gap: 6 }}>
+          <div className="flex gap-6">
             {!selectMode && activeProjectId && onOpenMasterNote && (() => {
               const hasNote = !!getMasterNote(activeProjectId);
               return (
@@ -495,7 +495,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
           <p>{debouncedQuery.trim() || modeFilter !== 'all' ? t('noMatchingLogs', lang) : t('noLogsYet', lang)}</p>
           {!debouncedQuery.trim() && modeFilter === 'all' && !activeProjectId && <p className="page-subtitle">{t('noLogsYetDesc', lang)}</p>}
           {!debouncedQuery.trim() && modeFilter === 'all' && !activeProjectId && (
-            <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={onBack}>
+            <button className="btn btn-primary mt-md" onClick={onBack}>
               {t('createFirstLog', lang)}
             </button>
           )}
@@ -512,7 +512,7 @@ function HistoryView({ logs, onSelect, onBack, onRefresh, lang, activeProjectId,
         groupKey === 'none' ? (
           <div role="list">{sorted.map((log) => <div key={log.id} role="listitem">{renderItem(log)}</div>)}</div>
         ) : (
-          <div className="flex-col" style={{ gap: 24 }}>
+          <div className="flex-col gap-24">
             {groups.map((group) => (
               <div key={group.key}>
                 {group.label && (

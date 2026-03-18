@@ -93,7 +93,7 @@ export function LogContextMenu({ log, lang, projects, onClose, onAction }: {
 
   if (subMenu === 'project') {
     return (
-      <div ref={menuRef} className="dropdown-menu dropdown-anchor" style={{ minWidth: 200 }} onMouseDown={(e) => e.stopPropagation()}>
+      <div ref={menuRef} className="dropdown-menu dropdown-anchor min-w-200" onMouseDown={(e) => e.stopPropagation()}>
         <div className="dropdown-menu-header">{t('ctxChangeProject', lang)}</div>
         {projects.map((p) => (
           <button key={p.id} className="mn-export-item" onClick={() => { onAction('assignProject', p.id); onClose(); }}>
@@ -120,9 +120,9 @@ export function LogContextMenu({ log, lang, projects, onClose, onAction }: {
   }
 
   return (
-    <div ref={menuRef} className="dropdown-menu dropdown-anchor" style={{ minWidth: 200 }}>
+    <div ref={menuRef} className="dropdown-menu dropdown-anchor min-w-200">
       <button className="mn-export-item" onClick={() => { onAction('pin'); onClose(); }}>
-        <Pin size={14} style={{ transform: 'rotate(45deg)' }} />
+        <Pin size={14} className="pin-rotate" />
         <span>{log.pinned ? t('ctxUnpin', lang) : t('ctxPin', lang)}</span>
       </button>
       <button className="mn-export-item" onClick={() => { onAction('rename'); onClose(); }}>

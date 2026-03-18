@@ -27,13 +27,12 @@ export default function ErrorRetryBanner({ message, retryLabel, dismissLabel, on
       <span className="flex-1">{message}</span>
       {onRetry && (
         <button
-          className="btn btn-sm-action shrink-0"
-          style={{ padding: '4px 12px' }}
+          className="btn btn-sm-action shrink-0 pad-4-12"
           onClick={handleRetry}
           disabled={retrying}
         >
           {retrying ? (
-            <span className="flex-row" style={{ display: 'inline-flex', gap: 4 }}>
+            <span className="inline-flex-center gap-4">
               <span className="spinner-sm" /> ...
             </span>
           ) : (

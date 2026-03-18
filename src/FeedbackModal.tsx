@@ -73,11 +73,11 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
     <div className="modal-overlay" role="presentation" onClick={onClose}>
       <div
         ref={trapRef}
-        className="onboarding-card"
+        className="onboarding-card max-w-480"
         role="dialog"
         aria-modal="true"
         aria-label={t('feedbackTitle', lang)}
-        style={{ maxWidth: 480, width: '90vw' }}
+        style={{ width: '90vw' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -99,9 +99,8 @@ export default function FeedbackModal({ lang, onClose }: FeedbackModalProps) {
               {t('feedbackThanksDesc', lang)}
             </p>
             <button
-              className="btn btn-primary btn-onboarding"
+              className="btn btn-primary btn-onboarding mt-lg"
               onClick={onClose}
-              style={{ marginTop: 16 }}
             >
               {t('close', lang)}
             </button>

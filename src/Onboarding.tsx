@@ -112,7 +112,7 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
         </div>
 
         {/* Step counter */}
-        <div className="meta text-center text-sm" style={{ marginBottom: 8 }}>
+        <div className="meta text-center text-sm mb-8">
           {tf('onboardingStepCounter', lang, step + 1, totalSteps)}
         </div>
 
@@ -153,10 +153,10 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
           </div>
         ) : current.custom === 'extension' ? (
           <>
-            <p className="onboarding-desc" style={{ margin: '0 0 20px' }}>
+            <p className="onboarding-desc mb-20" style={{ margin: 0 }}>
               {t(current.descKey as Parameters<typeof t>[0], lang)}
             </p>
-            <div className="flex justify-center" style={{ marginBottom: 28 }}>
+            <div className="flex justify-center mb-28">
               <a
                 href={CHROME_EXTENSION_URL}
                 target="_blank"
@@ -182,7 +182,7 @@ export default function Onboarding({ lang, onLangChange, onClose, onPauseForSett
 
         {/* Action button (step-specific, not for extension which has its own) */}
         {current.action && current.custom !== 'extension' && (
-          <div className="flex justify-center" style={{ marginBottom: 20 }}>
+          <div className="flex justify-center mb-20">
             <button
               className="btn btn-primary btn-onboarding"
               onClick={current.action.handler}

@@ -30,7 +30,7 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
   useEffect(() => {
     if (!pickerOpen) return;
     const onMouseDown = (e: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false);
+      if (pickerRef.current && e.target instanceof Node && !pickerRef.current.contains(e.target)) setPickerOpen(false);
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setPickerOpen(false);
@@ -88,25 +88,24 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
   return (
     <div className="workspace-content-wide">
       <div className="page-header">
-        <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
+        <button className="btn-back mb-md" onClick={onBack}>
           ← {t('back', lang)}
         </button>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div className="flex-between" style={{ alignItems: 'flex-start' }}>
           <div>
             <h2>{t('projectSummaryListTitle', lang)}</h2>
             <p className="page-subtitle">{t('projectSummaryListDesc', lang)}</p>
           </div>
           {projects.length > 0 && (
-            <div ref={pickerRef} style={{ position: 'relative' }}>
+            <div ref={pickerRef} className="relative">
               <button
-                className="btn btn-primary"
-                style={{ fontSize: 13 }}
+                className="btn btn-primary fs-13"
                 onClick={() => setPickerOpen(!pickerOpen)}
               >
                 {t('projectSummaryNew', lang)}
               </button>
               {pickerOpen && (
-                <div className="dropdown-menu" style={{ minWidth: 240 }}>
+                <div className="dropdown-menu min-w-240">
                   <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 600, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
                     {t('projectSummarySelectProject', lang)}
                   </div>
@@ -182,13 +181,13 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
           <p>{t('projectSummaryNoSummaries', lang)}</p>
           <p className="page-subtitle">{t('projectSummaryNoSummariesDesc', lang)}</p>
           {projects.length > 0 && (
-            <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={() => setPickerOpen(true)}>
+            <button className="btn btn-primary mt-md" onClick={() => setPickerOpen(true)}>
               {t('projectSummaryNew', lang)}
             </button>
           )}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="flex-col-gap-8">
           {withSummary.map(({ project: p, note }) => {
             const count = logCountFor(p.id);
             const unreflected = countUnreflectedHandoffs(p.id, note.updatedAt);
@@ -212,7 +211,7 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
                 }}>
                   <FileText size={16} style={{ color: unreflected > 0 ? 'var(--warning-text)' : 'var(--success-text)' }} />
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="flex-1">
                   <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-secondary)', marginBottom: 2 }}>
                     {p.name}
                   </div>

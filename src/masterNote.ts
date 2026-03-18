@@ -294,7 +294,7 @@ export async function generateMasterNote(
   const note: MasterNote = {
     id: existing?.id || crypto.randomUUID(),
     projectId,
-    overview: parsed.overview as string || '',
+    overview: typeof parsed.overview === 'string' ? parsed.overview : '',
     currentStatus: '',
     decisions: parseSourcedItems(parsed.decisions),
     openIssues: parseSourcedItems(parsed.openIssues),

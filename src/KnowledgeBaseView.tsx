@@ -87,7 +87,7 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
     return (
       <div className="workspace-content">
         <div className="page-header">
-          <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
+          <button className="btn-back mb-md" onClick={onBack}>
             ← {t('kbBack', lang)}
           </button>
           <div className="page-header-row">
@@ -100,11 +100,11 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
             </div>
           </div>
         </div>
-        <div className="empty-state" style={{ marginTop: 32 }}>
+        <div className="empty-state mt-2xl">
           <div className="empty-state-icon">&#128218;</div>
           <p>{t('kbEmpty', lang)}</p>
           <p className="page-subtitle">{t('kbEmptyDesc', lang)}</p>
-          {error && <p className="text-sm text-error" style={{ marginTop: 8 }}>{error}</p>}
+          {error && <p className="text-sm text-error mt-sm">{error}</p>}
           <button
             className="btn btn-primary mt-lg"
             onClick={handleGenerate}
@@ -174,7 +174,7 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
         <>
           {/* Recurring Problems & Solutions */}
           {kb.patterns.length > 0 && (
-            <div className="content-card mb-lg" style={{ marginBottom: 20 }}>
+            <div className="content-card mb-20">
               <h3 className="kb-section-title">
                 <AlertCircle size={16} />
                 {t('kbPatterns', lang)}
@@ -215,7 +215,7 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
 
           {/* Best Practices */}
           {kb.bestPractices.length > 0 && (
-            <div className="content-card mb-lg" style={{ marginBottom: 20 }}>
+            <div className="content-card mb-20">
               <h3 className="kb-section-title">
                 <Lightbulb size={16} />
                 {t('kbBestPractices', lang)}
@@ -232,7 +232,7 @@ export default function KnowledgeBaseView({ project, logs, onBack, onOpenLog, la
 
           {/* Common Decisions */}
           {kb.commonDecisions.length > 0 && (
-            <div className="content-card mb-lg" style={{ marginBottom: 20 }}>
+            <div className="content-card mb-20">
               <h3 className="kb-section-title">
                 <CheckCircle2 size={16} />
                 {t('kbCommonDecisions', lang)}

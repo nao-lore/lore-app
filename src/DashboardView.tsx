@@ -372,7 +372,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
                 className="new-log-card"
               >
                 <Plus size={20} />
-                <span style={{ fontSize: 11, fontWeight: 600 }}>{t('dashboardNew', lang)}</span>
+                <span className="fs-11 font-semibold">{t('dashboardNew', lang)}</span>
               </div>
             </div>
           </div>
@@ -461,7 +461,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
               <CheckSquare size={14} style={{ color: 'var(--success-text)' }} />
               {t('dashboardDone', lang)}
             </div>
-            <div className="flex-col" style={{ gap: 2 }}>
+            <div className="flex-col gap-2">
               {recentlyDone.map((action) => (
                 <div
                   key={`${action.logId}-${action.index}`}
@@ -710,7 +710,7 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
       {/* Weekly activity bars */}
       <div className="flex-col gap-sm mb-lg">
         {weeklyData.map((week, i) => (
-          <div key={i} className="flex-row" style={{ gap: 10 }}>
+          <div key={i} className="flex-row gap-10">
             <span className="text-xs-placeholder shrink-0" style={{ width: 70, textAlign: 'right' }}>
               {week.label}
             </span>
@@ -734,10 +734,10 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
       </div>
 
       {/* Key metrics row */}
-      <div className="flex flex-wrap" style={{ gap: 12 }}>
+      <div className="flex flex-wrap gap-12">
         {/* This week vs last week */}
         <div className="stat-card p-card stat-card-flex">
-          <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
+          <div className="stat-label mb-4" style={{ marginTop: 0 }}>
             {t('vsLastWeek', lang)}
           </div>
           <div className="stat-value" style={{ fontSize: 18, color: changeUp ? 'var(--success-text, #22c55e)' : 'var(--error-text, #ef4444)' }}>
@@ -747,20 +747,20 @@ function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[];
 
         {/* Average logs per week */}
         <div className="stat-card p-card stat-card-flex">
-          <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
+          <div className="stat-label mb-4" style={{ marginTop: 0 }}>
             {t('avgPerWeek', lang)}
           </div>
-          <div className="stat-value" style={{ fontSize: 18 }}>
+          <div className="stat-value fs-18">
             {avgPerWeek}
           </div>
         </div>
 
         {/* TODO completion rate */}
         <div className="stat-card p-card stat-card-flex">
-          <div className="stat-label" style={{ marginTop: 0, marginBottom: 4 }}>
+          <div className="stat-label mb-4" style={{ marginTop: 0 }}>
             {t('completionRate', lang)}
           </div>
-          <div className="stat-value" style={{ fontSize: 18 }}>
+          <div className="stat-value fs-18">
             {completionRate}%
           </div>
         </div>

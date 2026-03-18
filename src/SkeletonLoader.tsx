@@ -46,12 +46,12 @@ function DetailSkeleton() {
   return (
     <div className="skeleton-detail">
       <SkeletonBar width="45%" delay={0} height={22} />
-      <div style={{ marginTop: 16 }}>
+      <div className="mt-lg">
         <SkeletonBar width="100%" delay={0.1} />
         <SkeletonBar width="95%" delay={0.2} />
         <SkeletonBar width="88%" delay={0.3} />
       </div>
-      <div style={{ marginTop: 12 }}>
+      <div className="mt-md">
         <SkeletonBar width="100%" delay={0.4} />
         <SkeletonBar width="72%" delay={0.5} />
       </div>

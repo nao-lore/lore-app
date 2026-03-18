@@ -13,7 +13,8 @@ export function usePullToRefresh({ onRefresh, threshold = 80 }: PullToRefreshOpt
   const scrollEl = useRef<HTMLElement | null>(null);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
-    const el = e.currentTarget as HTMLElement;
+    const el = e.currentTarget instanceof HTMLElement ? e.currentTarget : null;
+    if (!el) return;
     scrollEl.current = el;
     if (el.scrollTop <= 0) {
       startY.current = e.touches[0].clientY;

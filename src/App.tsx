@@ -509,8 +509,8 @@ export default function App() {
       {s.shortcutsOpen && (
         <div className="modal-overlay" role="presentation" onClick={() => s.setShortcutsOpen(false)}>
           <div ref={shortcutsTrapRef} className="shortcuts-modal" role="dialog" aria-modal="true" aria-label={t('shortcutsTitle', s.lang)} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 16px', fontSize: 16 }}>{t('shortcutsTitle', s.lang)}</h3>
-            <div className="flex-col" style={{ gap: 10 }}>
+            <h3 className="fs-16" style={{ margin: '0 0 16px' }}>{t('shortcutsTitle', s.lang)}</h3>
+            <div className="flex-col gap-10">
               {([
                 { keys: '\u2318 N', desc: t('shortcutNewLog', s.lang) },
                 { keys: '\u2318 K', desc: t('shortcutSearch', s.lang) },

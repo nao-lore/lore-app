@@ -59,12 +59,12 @@ export default function ActivityHeatmap({ logs, lang, onDateClick }: ActivityHea
   const svgH = LABEL_H + 7 * (CELL_SIZE + GAP);
 
   return (
-    <div className="content-card" style={{ marginBottom: 20, overflow: 'auto' }}>
-      <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--text-secondary)' }}>
+    <div className="content-card mb-20 overflow-auto">
+      <h3 className="heatmap-title">
         {t('heatmapTitle', lang)}
       </h3>
       <div style={{ position: 'relative', minWidth: svgW }}>
-        <svg width={svgW} height={svgH} style={{ display: 'block' }}>
+        <svg width={svgW} height={svgH} className="block">
           {/* Hour labels */}
           {Array.from({ length: 24 }, (_, h) => (
             <text

@@ -512,7 +512,7 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
 
       {/* Add TODO form */}
       {addOpen && (
-        <div className="content-card" style={{ marginBottom: 20 }}>
+        <div className="content-card mb-20">
           <div className="form-row">
             <input
               ref={inputRef}

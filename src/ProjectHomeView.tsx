@@ -221,7 +221,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
 
       {/* Search bar + Log list */}
       {projectLogs.length === 0 ? (
-        <div className="empty-state" style={{ marginTop: 32 }}>
+        <div className="empty-state mt-2xl">
           <div className="empty-state-icon">&#128221;</div>
           <p>{t('noLogsYet', lang)}</p>
           <p className="page-subtitle">{t('noLogsYetDesc', lang)}</p>
@@ -239,7 +239,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
         const displayLogs = q ? projectLogs.filter((l) => l.title.toLowerCase().includes(q)) : projectLogs;
         return (
         <div className="ph-log-list">
-          <div className="ph-section-label flex-row" style={{ gap: 10 }}>
+          <div className="ph-section-label flex-row gap-10">
             <span>{t('logs', lang)}</span>
             <input
               className="input input-sm flex-1"
@@ -303,7 +303,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
                     {menuLogId === log.id && (
                       <div ref={menuRef} className="dropdown-menu" style={{ top: '100%', right: 0 }} onMouseDown={(e) => e.stopPropagation()}>
                         <button className="mn-export-item" onClick={() => handleTogglePin(log)}>
-                          <Pin size={14} style={{ transform: 'rotate(45deg)' }} />
+                          <Pin size={14} className="pin-rotate" />
                           <span>{log.pinned ? t('ctxUnpin', lang) : t('ctxPin', lang)}</span>
                         </button>
                         <button className="mn-export-item" onClick={() => { setMenuLogId(null); setEditingLogId(log.id); setEditDraft(log.title); }}>
@@ -340,7 +340,7 @@ export default function ProjectHomeView({ project, logs, onBack, onOpenLog, onOp
                 )}
                 {log.outputMode === 'handoff' && log.nextActions && log.nextActions.length > 0 && (
                   <div className="flex-row-gap-sm text-sm text-placeholder" style={{ marginTop: 4 }}>
-                    <span className="flex-row" style={{ display: 'inline-flex', gap: 4 }}>
+                    <span className="inline-flex-center gap-4">
                       ☑ {log.checkedActions?.length || 0}/{log.nextActions.length}
                     </span>
                     <div className="progress-bar-mini" style={{ maxWidth: 80 }}>
@@ -470,7 +470,7 @@ function AddLogsModal({ projectId, logs, lang, onClose, onAdded }: {
                     {modeLabel}
                   </span>
                   <span className="modal-list-title">{log.title}</span>
-                  <span className="meta ml-auto shrink-0" style={{ fontSize: 11 }}>{formatDateShort(log.createdAt)}</span>
+                  <span className="meta ml-auto shrink-0 fs-11">{formatDateShort(log.createdAt)}</span>
                 </label>
               );
             })

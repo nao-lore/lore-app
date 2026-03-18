@@ -14,7 +14,7 @@ export function useFocusTrap<T extends HTMLElement>(active: boolean) {
     if (!active) return;
 
     // Save current focus to restore later
-    previousFocus.current = document.activeElement as HTMLElement | null;
+    previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     const container = containerRef.current;
     if (!container) return;

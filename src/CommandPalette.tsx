@@ -131,8 +131,8 @@ export default function CommandPalette({ logs, projects, masterNotes, onSelectLo
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    const item = list.children[selectedIndex] as HTMLElement | undefined;
-    item?.scrollIntoView({ block: 'nearest' });
+    const item = list.children[selectedIndex];
+    if (item instanceof HTMLElement) item.scrollIntoView({ block: 'nearest' });
   }, [selectedIndex]);
 
   const handleSelect = (r: SearchResult) => {

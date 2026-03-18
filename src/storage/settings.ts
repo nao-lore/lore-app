@@ -39,7 +39,7 @@ const VALID_LANGS: Lang[] = ['ja', 'en', 'es', 'fr', 'de', 'zh', 'ko', 'pt'];
 
 export function getUiLang(): Lang {
   const v = safeGetItem(UI_LANG_KEY);
-  if (v && VALID_LANGS.includes(v as Lang)) return v as Lang;
+  if (v && (VALID_LANGS as readonly string[]).includes(v)) return v as Lang;
   return 'en';
 }
 
@@ -174,7 +174,8 @@ export function exportAllData(): LoreBackup {
 
 export function validateBackup(obj: unknown): obj is LoreBackup {
   if (!obj || typeof obj !== 'object') return false;
-  const b = obj as Record<string, unknown>;
+  if (!('version' in obj) || !('data' in obj)) return false;
+  const b = obj as { version: unknown; data: unknown };
   if (b.version !== 1 || typeof b.data !== 'object' || !b.data) return false;
   // Every key in data should be an array
   for (const val of Object.values(b.data as Record<string, unknown>)) {
@@ -218,12 +219,11 @@ export function importData(backup: LoreBackup, mode: 'merge' | 'overwrite'): Imp
       }
       const map = new Map<string, unknown>();
       for (const item of existing) {
-        const id = (item as Record<string, unknown>).id || (item as Record<string, unknown>).projectId;
+        const id = item.id || item.projectId;
         if (id) map.set(String(id), item);
       }
       for (const item of incoming) {
-        const r = item as Record<string, unknown>;
-        const id = r.id || r.projectId;
+        const id = typeof item === 'object' && item !== null ? (item as Record<string, unknown>).id || (item as Record<string, unknown>).projectId : undefined;
         if (id) map.set(String(id), item);
         else map.set(crypto.randomUUID(), item);
       }

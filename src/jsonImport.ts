@@ -216,7 +216,7 @@ function parseClaudeExport(conversations: unknown[], fileName: string): JsonImpo
 
     for (const msg of messages) {
       const m = msg as Record<string, unknown>;
-      const sender = m.sender as string | undefined;
+      const sender = typeof m.sender === 'string' ? m.sender : undefined;
       if (!sender) continue;
 
       const text = typeof m.text === 'string' ? m.text.trim() : '';
@@ -253,7 +253,7 @@ function parseMessagesArray(messages: unknown[], formatName: string, fileName: s
   for (const msg of messages) {
     if (!msg || typeof msg !== 'object') continue;
     const m = msg as Record<string, unknown>;
-    const role = m.role as string | undefined;
+    const role = typeof m.role === 'string' ? m.role : undefined;
     if (!role || role === 'system' || role === 'tool' || role === 'tool_result') continue;
 
     const text = extractApiMessageContent(m.content);

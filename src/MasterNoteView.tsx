@@ -456,7 +456,7 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
       })()}
 
       {error && (
-        <div className="alert-error" style={{ marginBottom: 20 }}>
+        <div className="alert-error mb-20">
           {error}
         </div>
       )}

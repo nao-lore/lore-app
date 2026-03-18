@@ -20,7 +20,7 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
   return (
     <div className="workspace-content">
       <div className="page-header">
-        <button className="btn-back" onClick={onBack} style={{ marginBottom: 12 }}>
+        <button className="btn-back mb-md" onClick={onBack}>
           ← {t('back', lang)}
         </button>
         <h2>{t('pricingTitle', lang)}</h2>
@@ -39,7 +39,7 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
           )}
 
           <div className="mb-lg">
-            <div className="content-card-header" style={{ marginBottom: 4 }}>
+            <div className="content-card-header mb-4">
               {t('pricingFreeTitle', lang)}
             </div>
             <div className="flex items-baseline gap-xs">
@@ -60,7 +60,7 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
             })()}
           </div>
 
-          <div className="flex-col" style={{ gap: 10, flex: 1 }}>
+          <div className="flex-col gap-10 flex-1">
             {([
               { key: 'pricingFreeAiTransforms' as const },
               { key: 'pricingFreeCoreFeatures' as const },
@@ -80,12 +80,12 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
             ))}
           </div>
 
-          <div className="mt-xl" style={{ marginTop: 20 }}>
+          <div className="mt-xl">
             {isFreePlan ? (
               <button
                 className="btn pricing-btn-full"
                 disabled
-                style={{ opacity: 0.6, cursor: 'default' }}
+                style={{ opacity: 0.6 }}
               >
                 {t('pricingCurrentPlan', lang)}
               </button>
@@ -113,7 +113,7 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
           </div>
 
           <div className="mb-lg">
-            <div className="content-card-header" style={{ marginBottom: 4 }}>
+            <div className="content-card-header mb-4">
               {t('pricingProTitle', lang)}
             </div>
             <div className="flex items-baseline gap-xs">
@@ -126,7 +126,7 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
             </div>
           </div>
 
-          <div className="flex-col" style={{ gap: 10, flex: 1 }}>
+          <div className="flex-col gap-10 flex-1">
             {([
               { key: 'pricingProUnlimitedAi' as const },
               { key: 'pricingProPriorityAi' as const },
@@ -151,7 +151,7 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
             ))}
           </div>
 
-          <div className="mt-xl" style={{ marginTop: 20 }}>
+          <div className="mt-xl">
             {isFreePlan ? (
               <button
                 className="btn btn-primary pricing-btn-full"
@@ -164,7 +164,7 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
               <button
                 className="btn pricing-btn-full"
                 disabled
-                style={{ opacity: 0.6, cursor: 'default' }}
+                style={{ opacity: 0.6 }}
               >
                 {t('pricingCurrentPlan', lang)}
               </button>

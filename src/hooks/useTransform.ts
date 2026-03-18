@@ -88,6 +88,9 @@ interface ActionResult {
   lastEntryId: string | null;
   savedHandoffLog: LogEntry | null;
   todoCount: number;
+  _handoffEntry?: LogEntry;
+  _worklogEntry?: LogEntry;
+  _bothResult?: BothResult;
 }
 
 // ---------------------------------------------------------------------------
@@ -168,7 +171,9 @@ async function executeBoth(ctx: TransformContext): Promise<ActionResult> {
     savedHandoffLog,
     todoCount,
     // Expose extra data needed by the caller for suggestion handling
-    ...({ _handoffEntry: handoffEntry, _worklogEntry: worklogEntry, _bothResult: bothResult } as Record<string, unknown>),
+    _handoffEntry: handoffEntry,
+    _worklogEntry: worklogEntry,
+    _bothResult: bothResult,
   };
 }
 

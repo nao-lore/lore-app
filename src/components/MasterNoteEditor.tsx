@@ -10,7 +10,7 @@ import { ExternalLink, Pencil, MoreVertical, Copy, Download, RefreshCw, History 
 export function normalizeItems(raw: SourcedItem[] | string[]): SourcedItem[] {
   if (!Array.isArray(raw) || raw.length === 0) return [];
   if (typeof raw[0] === 'string') {
-    return (raw as string[]).map((text) => ({ text, sourceLogIds: [] }));
+    return raw.filter((item): item is string => typeof item === 'string').map((text) => ({ text, sourceLogIds: [] }));
   }
   return raw as SourcedItem[];
 }

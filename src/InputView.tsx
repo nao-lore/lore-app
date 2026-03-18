@@ -340,7 +340,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             )}
           </div>
           {combined.length > 0 && !loading && (
-            <span className="meta text-xs" style={{ opacity: 0.5 }}>
+            <span className="meta text-xs opacity-half">
               {navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Enter
             </span>
           )}

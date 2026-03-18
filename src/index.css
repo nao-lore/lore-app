@@ -444,6 +444,14 @@
 /* ActivityHeatmap extras */
 .heatmap-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-secondary); }
 
+/* MasterNote history extras */
+.mn-snapshot-list { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+.mn-snapshot-ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
+.mn-snapshot-text { font-size: 13px; line-height: 1.6; margin: 0; color: var(--text-body); }
+.mn-history-close-btn { padding: 4px 8px; font-size: 18px; }
+.mn-history-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.mn-history-version-label { font-weight: 700; font-size: 15px; }
+
 /* Inline-to-CSS refactor utilities */
 .sidebar { width: 260px; min-width: 260px; border-right: 1px solid var(--border-default); background: var(--bg-sidebar); }
 .sidebar-header { padding: 16px 14px 12px; }
