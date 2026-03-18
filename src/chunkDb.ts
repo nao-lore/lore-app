@@ -11,6 +11,7 @@ export interface ChunkSession {
   partials: Record<string, PartialResult>;  // index → result
   status: 'active' | 'completed';
   createdAt: number;
+  partialsChecksum?: number; // count of completed partials at last save (for resume integrity)
 }
 
 function openDb(): Promise<IDBDatabase> {
