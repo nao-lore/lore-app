@@ -11,6 +11,7 @@
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import { callWithRetry } from './utils/retryManager';
 import { parseSSEStream, extractGeminiText, extractAnthropicText } from './utils/streamParser';
+import { encrypt, decrypt, isEncrypted } from './utils/crypto';
 
 export type ProviderName = 'anthropic' | 'gemini' | 'openai';
 
@@ -587,25 +588,99 @@ export function setActiveProvider(name: ProviderName): void {
   safeSetItem('threadlog_provider', name);
 }
 
-/** Get API key for a specific provider */
+// ---------------------------------------------------------------------------
+// In-memory decrypted key cache — avoids async in every sync call path
+// ---------------------------------------------------------------------------
+
+const decryptedKeyCache = new Map<string, string>();
+
+/**
+ * Get API key for a specific provider (synchronous).
+ * Returns from in-memory cache if encrypted, or raw value if plaintext.
+ * Keys are decrypted asynchronously on startup via initKeyCache().
+ */
 export function getProviderApiKey(provider: ProviderName): string {
-  return safeGetItem(`threadlog_api_key_${provider}`) || '';
+  // Check in-memory cache first (populated by initKeyCache or setProviderApiKey)
+  const cached = decryptedKeyCache.get(provider);
+  if (cached !== undefined) return cached;
+
+  const stored = safeGetItem(`threadlog_api_key_${provider}`) || '';
+  if (!stored) return '';
+
+  // If encrypted and not yet cached, return empty (initKeyCache will populate)
+  if (isEncrypted(stored)) return '';
+
+  // Plaintext — cache and return
+  decryptedKeyCache.set(provider, stored);
+  return stored;
 }
 
-/** Set API key for a specific provider */
+/**
+ * Initialize the decrypted key cache on app startup.
+ * Decrypts any encrypted keys and migrates plaintext keys to encrypted.
+ * Call this once during app initialization.
+ */
+export async function initKeyCache(): Promise<void> {
+  const providers: ProviderName[] = ['gemini', 'anthropic', 'openai'];
+  for (const provider of providers) {
+    const stored = safeGetItem(`threadlog_api_key_${provider}`) || '';
+    if (!stored) {
+      decryptedKeyCache.set(provider, '');
+      continue;
+    }
+
+    if (isEncrypted(stored)) {
+      const plain = await decrypt(stored);
+      decryptedKeyCache.set(provider, plain);
+    } else {
+      // Plaintext legacy key — cache it and migrate to encrypted
+      decryptedKeyCache.set(provider, stored);
+      const encrypted = await encrypt(stored);
+      if (encrypted !== stored) {
+        safeSetItem(`threadlog_api_key_${provider}`, encrypted);
+      }
+    }
+  }
+}
+
+/** Set API key for a specific provider (encrypts before storing) */
 export function setProviderApiKey(provider: ProviderName, key: string): void {
+  // Update cache immediately so sync reads work
+  decryptedKeyCache.set(provider, key);
+
+  if (!key) {
+    safeSetItem(`threadlog_api_key_${provider}`, '');
+    return;
+  }
+
+  // Store plaintext immediately as fallback, then encrypt
   safeSetItem(`threadlog_api_key_${provider}`, key);
+  encrypt(key).then((encrypted) => {
+    // Only overwrite if the plaintext value is still current
+    const current = safeGetItem(`threadlog_api_key_${provider}`);
+    if (current === key) {
+      safeSetItem(`threadlog_api_key_${provider}`, encrypted);
+    }
+  }).catch(() => {
+    // Encryption failed — plaintext remains, which is the legacy behavior
+  });
+}
+
+/** Check if a raw stored key exists for a provider (plaintext or encrypted) */
+function hasStoredKey(provider: ProviderName): boolean {
+  const stored = safeGetItem(`threadlog_api_key_${provider}`) || '';
+  return stored.length > 0;
 }
 
 /** Check if any user-provided API key is configured */
 export function hasAnyApiKey(): boolean {
-  return !!(getProviderApiKey('gemini') || getProviderApiKey('anthropic') || getProviderApiKey('openai'));
+  return hasStoredKey('gemini') || hasStoredKey('anthropic') || hasStoredKey('openai');
 }
 
 /** Whether the current call should use the built-in API (no user key for active provider) */
 export function shouldUseBuiltinApi(): boolean {
   const provider = getActiveProvider();
-  return !getProviderApiKey(provider);
+  return !hasStoredKey(provider);
 }
 
 /** Migrate: if old single key exists, move it to anthropic slot */

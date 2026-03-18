@@ -2,6 +2,7 @@ import { Component, type ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { getUiLang } from './storage';
 import { t } from './i18n';
+import { Sentry } from './utils/sentry';
 
 interface Props {
   children: ReactNode;
@@ -22,6 +23,7 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     if (import.meta.env.DEV) console.error('[ErrorBoundary]', error, info.componentStack);
+    Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
   }
 
   render() {
