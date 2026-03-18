@@ -18,6 +18,9 @@ import { useAppState } from './hooks/useAppState';
 import { useBootstrapEffects } from './hooks/useBootstrapEffects';
 import { useSwipeNavigation } from './hooks/useSwipeNavigation';
 import type { View } from './hooks/useAppState';
+import { isOnboardingDone } from './onboardingState';
+
+const LandingPage = lazy(() => import('./LandingPage'));
 
 export type { View };
 
@@ -65,6 +68,7 @@ function resolveEffectiveTheme(pref: ThemePref): 'light' | 'dark' | 'high-contra
 
 export default function App() {
   const { inputDirtyRef, scrollRef, scrollPositionRef, shortcutsTrapRef, ...s } = useAppState();
+  const [showLanding, setShowLanding] = useState(() => s.logs.length === 0 && !isOnboardingDone());
   const [navState, setNavState] = useState<{ direction: 'forward' | 'back'; prevView: View }>({ direction: 'forward', prevView: s.view });
   const navDirection = navState.direction;
   if (navState.prevView !== s.view) {
@@ -303,6 +307,20 @@ export default function App() {
       ? `${s.view}-${s.activeProjectId}` : s.view;
     return <ErrorBoundary key={key} onGoHome={s.goHome}>{content}</ErrorBoundary>;
   };
+
+  if (showLanding) {
+    return (
+      <Suspense fallback={<SkeletonLoader lang={s.lang} variant="card" />}>
+        <LandingPage
+          lang={s.lang}
+          onGetStarted={() => {
+            setShowLanding(false);
+            s.setShowOnboarding(true);
+          }}
+        />
+      </Suspense>
+    );
+  }
 
   return (
     <div className="app-root">
