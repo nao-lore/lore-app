@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, memo } from 'react';
 
 export interface MenuItem {
   label: string;
@@ -12,7 +12,7 @@ interface ContextMenuProps {
   onClose: () => void;
 }
 
-export default function ContextMenu({ items, anchorRect, onClose }: ContextMenuProps) {
+export default memo(function ContextMenu({ items, anchorRect, onClose }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -69,4 +69,4 @@ export default function ContextMenu({ items, anchorRect, onClose }: ContextMenuP
       ))}
     </div>
   );
-}
+});

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { CheckSquare, Square } from 'lucide-react';
 import { loadTodos } from '../storage';
 import { updateTodo as updateTodoStorage } from '../storage';
@@ -6,7 +7,7 @@ import { t } from '../i18n';
 import type { Lang } from '../i18n';
 
 // _todosVersion is destructured as a reactive dependency trigger to force re-render on todo changes
-function TodoSection({ logId, lang, todosVersion: _todosVersion, onToggle, allTodos }: { logId: string; lang: Lang; todosVersion: number; onToggle: () => void; allTodos?: Todo[] }) {
+const TodoSection = memo(function TodoSection({ logId, lang, todosVersion: _todosVersion, onToggle, allTodos }: { logId: string; lang: Lang; todosVersion: number; onToggle: () => void; allTodos?: Todo[] }) {
   const todos = (allTodos ?? loadTodos()).filter((t: Todo) => t.logId === logId);
   if (todos.length === 0) return null;
 
@@ -42,6 +43,6 @@ function TodoSection({ logId, lang, todosVersion: _todosVersion, onToggle, allTo
       </ul>
     </div>
   );
-}
+});
 
 export default TodoSection;

@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { CheckSquare, Square, MoreHorizontal, Star, Edit3, Trash2, Flag, Calendar, ExternalLink, Pin, Check, Undo2, Archive, ArchiveRestore, GripVertical, Clock } from 'lucide-react';
 import type { Todo, LogEntry } from '../types';
 import { t } from '../i18n';
@@ -47,7 +47,7 @@ export function priorityStyles(p?: string): { bg: string; hoverBg: string; borde
 }
 
 // ─── Action Sheet ───
-export function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
+export const TodoActionSheet = memo(function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
   todo: Todo;
   lang: Lang;
   logTitle?: string;
@@ -276,7 +276,7 @@ export function TodoActionSheet({ todo, lang, logTitle, onClose, onAction }: {
       </div>
     </div>
   );
-}
+});
 
 // ─── Render context for TodoItem ───
 export interface TodoRenderContext {
@@ -300,7 +300,7 @@ export interface TodoRenderContext {
 }
 
 // ─── Swipeable wrapper (uses hook) ───
-function SwipeableTodoItem({ todo, lang, selectMode, onDelete, onToggleDone, children }: {
+const SwipeableTodoItem = memo(function SwipeableTodoItem({ todo, lang, selectMode, onDelete, onToggleDone, children }: {
   todo: Todo;
   lang: Lang;
   selectMode: boolean;
@@ -331,7 +331,7 @@ function SwipeableTodoItem({ todo, lang, selectMode, onDelete, onToggleDone, chi
       </div>
     </div>
   );
-}
+});
 
 // ─── TodoItem renderer ───
 export function renderTodoItem(
@@ -406,7 +406,6 @@ export function renderTodoItem(
       <div className="flex-1">
         {editingTodoId === todo.id ? (
           <input
-            className="input w-full"
             className="input w-full fs-14"
             value={editDraft}
             onChange={(e) => onSetEditDraft(e.target.value)}

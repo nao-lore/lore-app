@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Copy } from 'lucide-react';
 import { loadLogs, getMasterNote } from '../storage';
 import { formatHandoffMarkdown, formatFullAiContext } from '../formatHandoff';
@@ -13,7 +14,7 @@ interface HandoffDisplayProps {
   showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void;
 }
 
-export default function HandoffDisplay({ log, lang, projects, showToast }: HandoffDisplayProps) {
+export default memo(function HandoffDisplay({ log, lang, projects, showToast }: HandoffDisplayProps) {
   return (
     <>
       <div className="flex gap-sm mb-md">
@@ -97,4 +98,4 @@ export default function HandoffDisplay({ log, lang, projects, showToast }: Hando
       })()}
     </>
   );
-}
+});
