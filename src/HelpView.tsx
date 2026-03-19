@@ -163,6 +163,12 @@ export default function HelpView({ onBack, lang, onShowOnboarding, onFeedback }:
           <div className="content-card-header">{t('helpFaqTitle', lang)}</div>
           <div className="flex-col-gap-none">
             {([
+              { qKey: 'helpFaqDiffFromMemoryQ' as const, aKey: 'helpFaqDiffFromMemoryA' as const },
+              { qKey: 'helpFaqDataStorageQ' as const, aKey: 'helpFaqDataStorageA' as const },
+              { qKey: 'helpFaqApiKeysSafeQ' as const, aKey: 'helpFaqApiKeysSafeA' as const },
+              { qKey: 'helpFaqWhyFreeQ' as const, aKey: 'helpFaqWhyFreeA' as const },
+              { qKey: 'helpFaqOpenSourceProQ' as const, aKey: 'helpFaqOpenSourceProA' as const },
+              { qKey: 'helpFaqDataDisappearQ' as const, aKey: 'helpFaqDataDisappearA' as const },
               { qKey: 'helpFaqTransformQ' as const, aKey: 'helpFaqTransformA' as const },
               { qKey: 'helpFaqDataLostQ' as const, aKey: 'helpFaqDataLostA' as const },
               { qKey: 'helpFaqLongInputQ' as const, aKey: 'helpFaqLongInputA' as const },
@@ -173,7 +179,6 @@ export default function HelpView({ onBack, lang, onShowOnboarding, onFeedback }:
               { qKey: 'helpFaqKnowledgeBaseQ' as const, aKey: 'helpFaqKnowledgeBaseA' as const },
               { qKey: 'helpFaqTooManyLogsQ' as const, aKey: 'helpFaqTooManyLogsA' as const },
               { qKey: 'helpFaqExtensionQ' as const, aKey: 'helpFaqExtensionA' as const },
-              { qKey: 'helpFaqDataStorageQ' as const, aKey: 'helpFaqDataStorageA' as const },
             ]).map((item, i, arr) => (
               <div
                 key={i}
