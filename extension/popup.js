@@ -103,7 +103,7 @@
     if (!extractedJson) return;
 
     var importHash = '#import=' + encodeURIComponent(extractedJson);
-    var baseUrl = 'https://lore-app.vercel.app';
+    var baseUrl = 'https://loresync.dev';
 
     chrome.tabs.query({}, function (tabs) {
       if (chrome.runtime.lastError) {

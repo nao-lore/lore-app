@@ -270,6 +270,11 @@ async function callGeminiStreamWithModel(req: ProviderRequest, model: string, on
     if (!reader) throw new Error('[Stream] ReadableStream not supported');
 
     return await parseSSEStream(reader, extractGeminiText, onChunk);
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new Error('[Stream] Request timed out. Please try again.');
+    }
+    throw e;
   } finally {
     clearTimeout(timeoutId);
   }
@@ -327,6 +332,11 @@ async function callAnthropicStream(req: ProviderRequest, onChunk: StreamCallback
     const accumulated = await parseSSEStream(reader, extractAnthropicText, onChunk);
     if (!accumulated) throw new Error('[AI Response] Empty streaming response from API. Try again.');
     return accumulated;
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new Error('[Stream] Request timed out. Please try again.');
+    }
+    throw e;
   } finally {
     clearTimeout(timeoutId);
   }
@@ -401,6 +411,11 @@ async function callOpenAIStream(req: ProviderRequest, onChunk: StreamCallback): 
 
     if (!accumulated) throw new Error('[AI Response] Empty streaming response from OpenAI. Try again.');
     return accumulated;
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new Error('[Stream] Request timed out. Please try again.');
+    }
+    throw e;
   } finally {
     clearTimeout(timeoutId);
   }
@@ -565,6 +580,11 @@ async function callBuiltinStream(req: ProviderRequest, onChunk: StreamCallback):
     const accumulated = await parseSSEStream(reader, extractGeminiText, onChunk);
     if (!accumulated) throw new Error('[AI Response] Empty streaming response. Try again.');
     return accumulated;
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new Error('[Stream] Request timed out. Please try again.');
+    }
+    throw e;
   } finally {
     clearTimeout(timeoutId);
   }

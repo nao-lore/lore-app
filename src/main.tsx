@@ -5,10 +5,23 @@ import './index.css'
 import App from './App.tsx'
 import { initSentry } from './utils/sentry'
 import { initKeyCache } from './provider'
+import { isTransformActive } from './utils/transformState'
 
 inject();
 
 initSentry();
+
+// Catch unhandled promise rejections globally to prevent silent crashes
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('[Unhandled Rejection]', event.reason);
+});
+
+// Warn user before closing tab during an active AI transform
+window.addEventListener('beforeunload', (e) => {
+  if (isTransformActive()) {
+    e.preventDefault();
+  }
+});
 
 // Decrypt API keys from localStorage into memory cache (fire and forget).
 // Keys become available almost immediately; if a call happens before
