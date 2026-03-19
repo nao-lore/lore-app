@@ -20,4 +20,4 @@ Each session feeds into a **project dashboard** that tracks progress across all 
 
 **Coming next:** cloud sync so your project context follows you across devices, and team features for shared project handoffs.
 
-Try it at [loresync.dev](https://loresync.dev) or check out the source on [GitHub](https://github.com/nao-lore/lore-app).
+Try it at [loresync.dev](https://loresync.dev?utm_source=producthunt) or check out the source on [GitHub](https://github.com/nao-lore/lore-app).

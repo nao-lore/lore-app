@@ -15,6 +15,6 @@ A few things I'm proud of:
 
 **PH-exclusive offer:** PH users get Pro free for 3 months — just comment here and I'll set you up.
 
-Try it at [loresync.dev](https://loresync.dev) and let me know what you think. I read every piece of feedback.
+Try it at [loresync.dev](https://loresync.dev?utm_source=producthunt) and let me know what you think. I read every piece of feedback.
 
 What's your biggest frustration with AI context loss? I'd love to hear how you deal with it.

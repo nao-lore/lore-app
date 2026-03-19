@@ -3,7 +3,7 @@ title: "I'm 21 with zero coding experience. I built a full SaaS in 5 days with C
 published: false
 description: "How I went from university dropout with no programming background to shipping a production React app — using AI as my entire engineering team."
 tags: ai, webdev, buildinpublic, beginners
-cover_image: https://loresync.dev/og-image.png
+cover_image: https://loresync.dev?utm_source=devto/og-image.png
 ---
 
 ## The backstory nobody asked for
@@ -90,7 +90,7 @@ The bigger lesson: the barrier to building software has genuinely dropped. Not t
 
 Lore is fully open source and free to use:
 
-- **App:** [loresync.dev](https://loresync.dev)
+- **App:** [loresync.dev](https://loresync.dev?utm_source=devto)
 - **Source:** [github.com/nao-lore/lore-app](https://github.com/nao-lore/lore-app)
 
 If you work with AI conversations regularly, I'd love for you to try it and tell me what's missing. I'm building this for people like me — people who live in AI tools and are tired of losing context between sessions.
