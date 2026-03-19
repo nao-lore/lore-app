@@ -1,5 +1,5 @@
 import type { LogEntry } from '../types';
-import { LOGS_KEY, MIGRATION_KEY, safeGetItem, safeSetItem, cache, invalidateLogsCache } from './core';
+import { LOGS_KEY, MIGRATION_KEY, safeGetItem, safeSetItem, cache, invalidateLogsCache, incrementSnapshotCounter } from './core';
 import { deleteTodosForLog } from './todos';
 import { cleanMasterNoteSourceLogIds } from './masterNotes';
 import { safeJsonParse } from '../utils/safeJsonParse';
@@ -67,6 +67,7 @@ export function addLog(entry: LogEntry): void {
   const logs = [...loadAllLogs()];
   logs.unshift(entry);
   saveLogs(logs);
+  incrementSnapshotCounter();
 }
 
 /** Find a log by ID */

@@ -1,18 +1,22 @@
-import { memo, useEffect } from 'react';
-import { Clipboard, Zap, LayoutDashboard, ArrowRight, Globe, MessageSquare, Github } from 'lucide-react';
-import { t } from './i18n';
+import { memo, useEffect, useState } from 'react';
+import { Clipboard, Zap, LayoutDashboard, ArrowRight, Globe, MessageSquare, Github, Shield, CheckCircle, WifiOff, Users, Mail } from 'lucide-react';
+import { t, tf } from './i18n';
 import type { Lang } from './i18n';
+import { getTotalSnapshots } from './storage';
 
 interface LandingPageProps {
   lang: Lang;
   onGetStarted: () => void;
 }
 
-const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/lore-ai-conversation-snap/opkdpjpgkjcjpkahbljjnhnahliedmkc';
+const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/lore-ai-conversation-snap/opkdpjpkahbljjnhnahliedmkc';
 const GITHUB_URL = 'https://github.com/nao-lore/lore-app';
 const FEEDBACK_URL = 'https://github.com/nao-lore/lore-app/issues';
+const TEAMS_NOTIFY_URL = 'https://formspree.io/f/xldjqkdl';
 
 function LandingPage({ lang, onGetStarted }: LandingPageProps) {
+  const [totalSnapshots] = useState(() => getTotalSnapshots());
+
   // Override body + #root overflow:hidden so LP can scroll
   useEffect(() => {
     const root = document.getElementById('root');
@@ -50,6 +54,34 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
             <ArrowRight size={16} aria-hidden="true" />
           </button>
         </div>
+
+        {/* Task 3: Snapshot counter */}
+        {totalSnapshots > 0 && (
+          <p className="lp-snapshot-counter">
+            {tf('lpSnapshotsCreated', lang, totalSnapshots)}
+          </p>
+        )}
+
+        {/* Task 2: Trust badges */}
+        <div className="lp-trust-badges" role="list" aria-label="Trust badges">
+          <span className="lp-trust-badge" role="listitem">
+            <Github size={14} aria-hidden="true" />
+            {t('lpBadgeOpenSource', lang)}
+          </span>
+          <span className="lp-trust-badge" role="listitem">
+            <CheckCircle size={14} aria-hidden="true" />
+            {t('lpBadgeTests', lang)}
+          </span>
+          <span className="lp-trust-badge" role="listitem">
+            <Globe size={14} aria-hidden="true" />
+            {t('lpBadge8Languages', lang)}
+          </span>
+          <span className="lp-trust-badge" role="listitem">
+            <WifiOff size={14} aria-hidden="true" />
+            {t('lpBadgeWorksOffline', lang)}
+          </span>
+        </div>
+
         {/* TODO(ph-launch): Replace static screenshot with a demo GIF or short video
             showing the paste → transform → snapshot flow. Keep autoplay muted loop
             for GIF-like behavior: <video autoPlay muted loop playsInline /> */}
@@ -111,6 +143,41 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
           <div className="lp-feature-card">
             <h3 className="lp-feature-title">{t('lpFeature3Title', lang)}</h3>
             <p className="lp-feature-desc">{t('lpFeature3Desc', lang)}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Task 4: Teams Coming Soon */}
+      <section className="lp-section" aria-labelledby="lp-teams">
+        <h2 id="lp-teams" className="lp-section-title">
+          <Users size={24} aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: 8 }} />
+          {t('lpTeamsTitle', lang)}
+        </h2>
+        <ul className="lp-teams-list">
+          <li>{t('lpTeamsBullet1', lang)}</li>
+          <li>{t('lpTeamsBullet2', lang)}</li>
+          <li>{t('lpTeamsBullet3', lang)}</li>
+          <li>{t('lpTeamsBullet4', lang)}</li>
+        </ul>
+        <div className="lp-teams-cta">
+          <a href={TEAMS_NOTIFY_URL} target="_blank" rel="noopener noreferrer" className="btn btn-secondary lp-teams-notify-btn">
+            <Mail size={16} aria-hidden="true" />
+            {t('lpTeamsNotify', lang)}
+          </a>
+        </div>
+      </section>
+
+      {/* Task 1: Privacy / Trust Section */}
+      <section className="lp-section lp-section-alt lp-privacy-section" aria-labelledby="lp-privacy">
+        <div className="lp-privacy-content">
+          <Shield size={32} aria-hidden="true" className="lp-privacy-icon" />
+          <div>
+            <h2 id="lp-privacy" className="lp-section-title" style={{ textAlign: 'left', marginBottom: 8 }}>
+              {t('lpPrivacyTitle', lang)}
+            </h2>
+            <p className="lp-privacy-desc">
+              {t('lpPrivacyDesc', lang)}
+            </p>
           </div>
         </div>
       </section>

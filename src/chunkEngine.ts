@@ -687,6 +687,9 @@ export class ChunkEngine {
     }
   }
 
+  /** Maximum depth for recursive truncation splits to prevent infinite recursion */
+  private static readonly MAX_SPLIT_DEPTH = 2;
+
   private async callWithRetry(
     apiKey: string,
     system: string,
@@ -697,6 +700,7 @@ export class ChunkEngine {
     total: number,
     maxTokens = 8192,
     skipReformat = false,
+    splitDepth = 0,
   ): Promise<PartialResult> {
     let effectiveUserMessage = userMessage;
     const effectiveMaxTokens = maxTokens;
@@ -721,17 +725,47 @@ export class ChunkEngine {
         const isNonJson = msg.includes('[Non-JSON Response]');
         const isRetryable = isRateLimit || isTruncated || isParseError || isNonJson;
 
-        if (isTruncated && attempt < 2) {
-          // Truncation is an input length problem, not output limit — reduce
-          // the chunk by re-splitting into two smaller pieces and retrying only
-          // the first half. The second half will be handled in a subsequent call.
+        if (isTruncated && attempt < 2 && splitDepth < ChunkEngine.MAX_SPLIT_DEPTH) {
+          // Truncation is an input length problem — split into two halves
+          // and process both to avoid losing data from the second half.
           const halfLen = Math.ceil(effectiveUserMessage.length / 2);
           const splitIdx = effectiveUserMessage.lastIndexOf('\n', halfLen);
           const cutPoint = splitIdx > effectiveUserMessage.length * 0.25 ? splitIdx : halfLen;
-          effectiveUserMessage = effectiveUserMessage.slice(0, cutPoint);
-          if (import.meta.env.DEV) console.warn(`${label} retry #${attempt + 1} after Truncated (reduced input to ${effectiveUserMessage.length} chars)`);
+          const firstHalf = effectiveUserMessage.slice(0, cutPoint);
+          const secondHalf = effectiveUserMessage.slice(cutPoint);
+
+          if (import.meta.env.DEV) console.warn(`${label} split after Truncated (depth=${splitDepth + 1}, first=${firstHalf.length} chars, second=${secondHalf.length} chars)`);
           await this.waitInterruptible(2000);
-          continue;
+
+          // Process first half
+          const firstResult = await this.callWithRetry(
+            apiKey, system, firstHalf, onProgress, session,
+            current, total, maxTokens, skipReformat, splitDepth + 1,
+          );
+
+          // Process second half — if it fails, log warning but return first half
+          let secondResult: PartialResult | null = null;
+          if (secondHalf.trim().length > 0) {
+            onProgress({
+              phase: 'extract', current, total,
+              savedCount: Object.keys(session.partials).length,
+              message: `extract:${current}:${total}:split-recovery`,
+            });
+            try {
+              secondResult = await this.callWithRetry(
+                apiKey, system, secondHalf, onProgress, session,
+                current, total, maxTokens, skipReformat, splitDepth + 1,
+              );
+            } catch (secondErr) {
+              if (import.meta.env.DEV) console.warn(`${label} second half failed after split (depth=${splitDepth + 1}), partial data may be lost:`, secondErr);
+            }
+          }
+
+          // Merge both halves if second succeeded, with deduplication via localMerge
+          if (secondResult) {
+            return localMerge([firstResult, secondResult]);
+          }
+          return firstResult;
         }
 
         if ((isNonJson || isParseError) && attempt < 2) {
