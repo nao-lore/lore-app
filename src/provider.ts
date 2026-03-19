@@ -11,7 +11,7 @@
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import { callWithRetry } from './utils/retryManager';
 import { parseSSEStream, extractGeminiText, extractAnthropicText, extractOpenAIText } from './utils/streamParser';
-import { encrypt, decrypt, isEncrypted, getCachedKey, setCachedKey, readKeyForSlot } from './utils/crypto';
+import { encrypt, decrypt, isEncrypted, setCachedKey, readKeyForSlot } from './utils/crypto';
 
 export type ProviderName = 'anthropic' | 'gemini' | 'openai';
 

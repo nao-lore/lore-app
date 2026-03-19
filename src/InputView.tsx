@@ -78,7 +78,18 @@ function formatFileDate(ts: number): string {
 }
 
 function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, pendingTodosCount, lastLogCreatedAt }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onDirtyChange?: (dirty: boolean) => void; pendingTodosCount: number; lastLogCreatedAt: string | null }) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shared = params.get('text');
+    if (shared) {
+      // Clean up URL param (PWA Web Share Target)
+      const url = new URL(window.location.href);
+      url.searchParams.delete('text');
+      window.history.replaceState({}, '', url.pathname + url.search);
+      return shared;
+    }
+    return '';
+  });
   const [copied, setCopied] = useState(false);
   const [pasteFeedback, setPasteFeedback] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(activeProjectId ?? undefined);
@@ -143,21 +154,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
   // Auto-focus textarea on mount
   useEffect(() => { textareaRef.current?.focus(); }, []);
 
-  // Populate input from share_target ?text= param (PWA Web Share Target)
-  const shareHandled = useRef(false);
-  useEffect(() => {
-    if (shareHandled.current) return;
-    const params = new URLSearchParams(window.location.search);
-    const sharedText = params.get('text');
-    if (sharedText) {
-      shareHandled.current = true;
-      setText(sharedText);
-      // Clean up URL param
-      const url = new URL(window.location.href);
-      url.searchParams.delete('text');
-      window.history.replaceState({}, '', url.pathname + url.search);
-    }
-  }, []);
+  // Share target text is now handled via useState initializer above
 
   // Pre-fill demo conversation if demo mode and empty (mount-only via ref guard)
   const demoPrefilled = useRef(false);
