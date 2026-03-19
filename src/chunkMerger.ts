@@ -81,7 +81,7 @@ export function localMerge(partials: PartialResult[], isBothMode = false): Parti
     tags:            dedupStrings(collectStrings(flat, 'tags')),
     currentStatus:   collectLastChunk(flat, 'currentStatus'),
     nextActions:     [],
-    resumeContext:   collectLastChunk(flat, 'resumeContext'),
+    resumeContext:   dedupStrings(collectStrings(flat, 'resumeContext')),
     completed:       dedupStrings(collectStrings(flat, 'completed')),
     blockers:        dedupStrings(collectStrings(flat, 'blockers')),
     constraints:     dedupStrings(collectStrings(flat, 'constraints')),

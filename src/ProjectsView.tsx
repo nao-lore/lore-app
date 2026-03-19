@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { usePersistedState } from './usePersistedState';
 import { Plus, Pin, MoreHorizontal, Pencil, FileText, Trash2, FolderOpen, ExternalLink, Palette } from 'lucide-react';
 import type { Project, LogEntry } from './types';
@@ -10,6 +10,7 @@ import ConfirmDialog from './ConfirmDialog';
 import ProjectAppearanceModal from './ProjectAppearanceModal';
 import { getProjectColor } from './projectColors';
 import { EmptyProjects } from './EmptyIllustrations';
+import { useClickOutside } from './hooks/useClickOutside';
 
 type SortKey = 'created' | 'name' | 'logCount';
 
@@ -32,22 +33,7 @@ function ProjectContextMenu({ project, logCount, lang, onClose, onAction }: {
   onClose: () => void;
   onAction: (action: string, value?: string) => void;
 }) {
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onMouseDown = (e: MouseEvent) => {
-      if (menuRef.current && e.target instanceof Node && !menuRef.current.contains(e.target)) onClose();
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('mousedown', onMouseDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', onMouseDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [onClose]);
+  const menuRef = useClickOutside<HTMLDivElement>(true, onClose);
 
   return (
     <div ref={menuRef} className="dropdown-menu min-w-200" style={{ top: '100%', right: 0 }}>

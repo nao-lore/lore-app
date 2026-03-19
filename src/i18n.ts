@@ -1662,6 +1662,7 @@ const labels = {
   // A11y — BottomNav & Onboarding
   ariaBottomNav: { ja: 'ナビゲーション', en: 'Bottom navigation', es: 'Navegación inferior', fr: 'Navigation inférieure', de: 'Untere Navigation', zh: '底部导航', ko: '하단 탐색', pt: 'Navegação inferior' },
   ariaSetupWizard: { ja: 'セットアップウィザード', en: 'Setup wizard', es: 'Asistente de configuración', fr: "Assistant de configuration", de: 'Einrichtungsassistent', zh: '设置向导', ko: '설정 마법사', pt: 'Assistente de configuração' },
+  ariaOnboardingSteps: { ja: 'セットアップ手順', en: 'Setup steps', es: 'Pasos de configuración', fr: 'Étapes de configuration', de: 'Einrichtungsschritte', zh: '设置步骤', ko: '설정 단계', pt: 'Etapas de configuração' },
   ariaEmptyLogs: { ja: 'ログなしイラスト', en: 'No logs illustration', es: 'Ilustración sin registros', fr: 'Illustration aucun journal', de: 'Keine Einträge Illustration', zh: '无日志插图', ko: '로그 없음 일러스트', pt: 'Ilustração sem registros' },
   ariaEmptyTodos: { ja: 'TODOなしイラスト', en: 'No tasks illustration', es: 'Ilustración sin tareas', fr: 'Illustration aucune tâche', de: 'Keine Aufgaben Illustration', zh: '无任务插图', ko: '할 일 없음 일러스트', pt: 'Ilustração sem tarefas' },
   ariaEmptyProjects: { ja: 'プロジェクトなしイラスト', en: 'No projects illustration', es: 'Ilustración sin proyectos', fr: 'Illustration aucun projet', de: 'Keine Projekte Illustration', zh: '无项目插图', ko: '프로젝트 없음 일러스트', pt: 'Ilustração sem projetos' },

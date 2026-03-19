@@ -4966,7 +4966,7 @@ button[disabled] {
 .feature-toggle-checkbox { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; margin-top: 2px; flex-shrink: 0; }
 .feature-toggle-title { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
 .onboarding-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 24px; }
-.onboarding-dot { width: 8px; height: 8px; border-radius: 50%; transition: background 0.2s; background: var(--border-default); }
+.onboarding-dot { width: 8px; height: 8px; border-radius: 50%; transition: background 0.2s; background: var(--border-default); border: none; padding: 0; cursor: pointer; }
 .onboarding-dot.active { background: var(--accent); }
 .onboarding-desc { text-align: center; font-size: 14px; line-height: 1.7; color: var(--text-muted); margin: 0 0 28px; max-width: 360px; margin-left: auto; margin-right: auto; white-space: pre-line; }
 .onboarding-desc-left { text-align: left; font-size: 14px; line-height: 1.7; color: var(--text-muted); margin: 0; max-width: 360px; white-space: pre-line; }
