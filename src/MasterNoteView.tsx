@@ -9,7 +9,7 @@ import { formatFullAiContext } from './formatHandoff';
 import type { GenerateProgress } from './masterNote';
 import ProgressPanel from './ProgressPanel';
 import type { ProgressStep } from './ProgressPanel';
-import { Pencil, Copy, ExternalLink } from 'lucide-react';
+import { Pencil, Copy, ExternalLink, FileText } from 'lucide-react';
 
 // Extracted components
 import { OverflowMenu, PendingNotePreview } from './components/MasterNoteGenerate';
@@ -465,7 +465,7 @@ export default function MasterNoteView({ project, logs, latestHandoff, onBack, o
       )}
 
       {projectLogs.length === 0 ? (
-        <div className="empty-state"><p>{t('mnNoLogs', lang)}</p></div>
+        <div className="empty-state"><div className="empty-state-icon"><FileText size={48} strokeWidth={1.2} color="var(--text-muted)" opacity={0.4} /></div><p>{t('mnNoLogs', lang)}</p></div>
       ) : !current && !loading && !pendingNote ? (
         <div className="mn-empty-cta">
           <div className="empty-state mb-lg"><p>{t('mnEmpty', lang)}</p></div>

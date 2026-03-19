@@ -47,14 +47,18 @@ export const TodoTabs = memo(function TodoTabs({
 
   return (
     <div className="content-card flex-row flex-wrap mb-xl" style={{ gap: 10 }}>
-      <div className="seg-control">
+      <div className="seg-control" role="tablist" aria-label={t('ariaTodoTabs', lang)}>
         <button
+          role="tab"
+          aria-selected={activeTab === 'pending'}
           className={`seg-control-btn${activeTab === 'pending' ? ' active-worklog' : ''}`}
           onClick={() => onTabChange('pending')}
         >
           {t('todoPending', lang)} ({pendingCount})
         </button>
         <button
+          role="tab"
+          aria-selected={activeTab === 'completed'}
           className={`seg-control-btn${activeTab === 'completed' ? ' active-worklog' : ''}`}
           onClick={() => onTabChange('completed')}
           disabled={completedCount === 0}
@@ -63,6 +67,8 @@ export const TodoTabs = memo(function TodoTabs({
           {t('todoCompleted', lang)} ({completedCount})
         </button>
         <button
+          role="tab"
+          aria-selected={activeTab === 'archived'}
           className={`seg-control-btn${activeTab === 'archived' ? ' active-worklog' : ''}`}
           onClick={() => onTabChange('archived')}
           disabled={archivedCount === 0}
@@ -77,17 +83,21 @@ export const TodoTabs = memo(function TodoTabs({
         value={sortKey}
         options={sortOptions}
         onChange={(k) => onSortKeyChange(k as SortKey)}
+        ariaLabel={t('ariaTodoSort', lang)}
       />
       <DropdownMenu
         label={t('todoGroupLabel', lang)}
         value={groupKey}
         options={groupOptions}
         onChange={(k) => onGroupKeyChange(k as GroupKey)}
+        ariaLabel={t('ariaTodoGroup', lang)}
       />
       {activeTab === 'pending' && staleTodos.length > 0 && (
         <button
           className={`btn btn-sm btn-toolbar${staleFilter ? ' btn-active' : ''}`}
           onClick={() => onStaleFilterChange(!staleFilter)}
+          aria-label={t('ariaTodoFilterStale', lang)}
+          aria-pressed={staleFilter}
         >
           <AlertTriangle size={12} />
           {t('todoFilterStale', lang)}
@@ -106,14 +116,15 @@ interface DueFilterBarProps {
 
 export const DueFilterBar = memo(function DueFilterBar({ lang, dueFilter, onDueFilterChange }: DueFilterBarProps) {
   return (
-    <div className="flex-row mb-md" style={{ gap: 6 }}>
-      <Calendar size={12} className="text-muted shrink-0" />
+    <div className="flex-row mb-md" role="group" aria-label={t('ariaTodoDueFilter', lang)} style={{ gap: 6 }}>
+      <Calendar size={12} className="text-muted shrink-0" aria-hidden="true" />
       <div className="seg-control" style={{ fontSize: 11 }}>
         {(['all', 'today', 'week', 'overdue'] as const).map((key) => (
           <button
             key={key}
             className={`seg-control-btn due-filter-btn${dueFilter === key ? ' active-worklog' : ''}`}
             onClick={() => onDueFilterChange(key)}
+            aria-pressed={dueFilter === key}
           >
             {key === 'all' ? t('todoDueAll', lang) : key === 'today' ? t('todoDueToday', lang) : key === 'week' ? t('todoDueThisWeek', lang) : t('todoDueOverdue', lang)}
           </button>
@@ -209,21 +220,21 @@ export const BulkActionBar = memo(function BulkActionBar({
       </span>
       <div className="flex-1" />
       {selectedIds.size > 0 && (
-        <button className="btn btn-toolbar" onClick={onBulkCopy}>
+        <button className="btn btn-toolbar" onClick={onBulkCopy} aria-label={t('ariaTodoBulkCopy', lang)}>
           <Copy size={13} /> {t('todoBulkCopy', lang)}
         </button>
       )}
       {selectedIds.size > 0 && activeTab === 'pending' && (
-        <button className="btn btn-primary btn-toolbar" onClick={onBulkDone}>
+        <button className="btn btn-primary btn-toolbar" onClick={onBulkDone} aria-label={t('ariaTodoBulkDone', lang)}>
           <Check size={13} /> {t('todoBulkDone', lang)}
         </button>
       )}
       {selectedIds.size > 0 && (
-        <button className="btn btn-toolbar text-error" onClick={onBulkDelete}>
+        <button className="btn btn-toolbar text-error" onClick={onBulkDelete} aria-label={t('ariaTodoBulkDelete', lang)}>
           <Trash2 size={13} /> {t('todoBulkDelete', lang)}
         </button>
       )}
-      <button className="btn btn-toolbar" onClick={onCancel}>
+      <button className="btn btn-toolbar" onClick={onCancel} aria-label={t('ariaTodoBulkCancel', lang)}>
         {t('todoBulkCancel', lang)}
       </button>
     </div>
@@ -260,13 +271,14 @@ export const TodoHeaderActions = memo(function TodoHeaderActions({ lang, selectM
     <div className="flex-row" style={{ gap: 6 }}>
       {!selectMode && (
         <>
-          <button className="btn btn-primary btn-add" onClick={onAdd}>
+          <button className="btn btn-primary btn-add" onClick={onAdd} aria-label={t('ariaTodoAddBtn', lang)}>
             {t('todoAdd', lang)}
           </button>
           <button
             className="btn btn-add-flex"
             onClick={onStartSelect}
             disabled={displayedCount === 0}
+            aria-label={t('ariaTodoBulkSelect', lang)}
           >
             <CheckCheck size={14} /> {t('todoBulkSelect', lang)}
           </button>
@@ -277,6 +289,9 @@ export const TodoHeaderActions = memo(function TodoHeaderActions({ lang, selectM
           className="btn btn-ghost"
           style={{ padding: '5px 6px', minHeight: 44 }}
           onClick={() => setOverflowOpen(!overflowOpen)}
+          aria-label={t('ariaTodoOverflow', lang)}
+          aria-haspopup="menu"
+          aria-expanded={overflowOpen}
         >
           <MoreVertical size={18} />
         </button>

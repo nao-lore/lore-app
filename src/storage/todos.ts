@@ -4,6 +4,9 @@ import { safeJsonParse } from '../utils/safeJsonParse';
 
 // ─── Todos ───
 
+/** Maximum number of completed (non-archived, non-trashed) todos to keep. Oldest are pruned first. */
+export const MAX_COMPLETED = 200;
+
 function loadAllTodos(): Todo[] {
   if (cache.todosCache.data !== null && cache.todosCache.version === cache.todosCacheVersion) {
     return cache.todosCache.data;
@@ -31,10 +34,24 @@ export function loadTrashedTodos(): Todo[] {
   return loadAllTodos().filter((t) => !!t.trashedAt);
 }
 
-/** Persist the full todos array to localStorage */
+/** Persist the full todos array to localStorage, pruning excess completed items */
 export function saveTodos(todos: Todo[]): void {
-  safeSetItem(TODOS_KEY, JSON.stringify(todos));
+  const pruned = pruneCompleted(todos);
+  safeSetItem(TODOS_KEY, JSON.stringify(pruned));
   invalidateTodosCache();
+}
+
+/** Remove oldest completed (non-archived, non-trashed) todos beyond MAX_COMPLETED */
+function pruneCompleted(todos: Todo[]): Todo[] {
+  const completed = todos.filter((t) => t.done && !t.trashedAt && !t.archivedAt);
+  if (completed.length <= MAX_COMPLETED) return todos;
+
+  // Sort completed by createdAt ascending (oldest first), then take the ones to remove
+  const sorted = [...completed].sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+  const removeCount = completed.length - MAX_COMPLETED;
+  const removeIds = new Set(sorted.slice(0, removeCount).map((t) => t.id));
+
+  return todos.filter((t) => !removeIds.has(t.id));
 }
 
 /** Create todos from a log's todo list (simple string items) */

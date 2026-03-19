@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { Clock } from 'lucide-react';
 import type { MasterNote, MasterNoteSnapshot } from '../types';
 import type { Lang } from '../i18n';
 import { t } from '../i18n';
@@ -73,6 +74,7 @@ export const MasterNoteHistoryPanel = memo(function MasterNoteHistoryPanel({
 
           {snapshots.length === 0 ? (
             <div className="empty-state">
+              <div className="empty-state-icon"><Clock size={48} strokeWidth={1.2} color="var(--text-muted)" opacity={0.4} /></div>
               <p>{t('mnHistoryEmpty', lang)}</p>
             </div>
           ) : (

@@ -6,9 +6,10 @@ interface DropdownMenuProps {
   value: string;
   options: { key: string; label: string }[];
   onChange: (key: string) => void;
+  ariaLabel?: string;
 }
 
-export default memo(function DropdownMenu({ label, value, options, onChange }: DropdownMenuProps) {
+export default memo(function DropdownMenu({ label, value, options, onChange, ariaLabel }: DropdownMenuProps) {
   const [open, setOpenRaw] = useState(false);
   const [focusIdx, setFocusIdx] = useState(-1);
   const ref = useRef<HTMLDivElement>(null);
@@ -60,6 +61,7 @@ export default memo(function DropdownMenu({ label, value, options, onChange }: D
         onClick={() => setOpenRaw(!open)}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label={ariaLabel}
       >
         <span style={{ color: 'var(--text-muted)', marginRight: 2 }}>{label}:</span>
         {currentLabel}
