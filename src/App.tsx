@@ -287,17 +287,20 @@ export default function App() {
   }, [s]);
 
   // Restore scroll position when view changes
+  // Only depend on view (not selectedId) to avoid iOS Safari viewport reset
+  // when handleSaved sets selectedId while PostGenerationPreview is shown.
+  const selectedIdForScroll = s.view === 'detail' ? s.selectedId : null;
   useEffect(() => {
     const scrollEl = scrollRef.current;
     const positions = scrollPositionRef.current;
     requestAnimationFrame(() => {
       if (scrollEl) {
-        const scrollKey = s.view === 'detail' && s.selectedId ? `detail:${s.selectedId}` : s.view;
+        const scrollKey = selectedIdForScroll ? `detail:${selectedIdForScroll}` : s.view;
         const saved = positions[scrollKey];
         scrollEl.scrollTo(0, saved || 0);
       }
     });
-  }, [s.view, s.selectedId, scrollRef, scrollPositionRef]);
+  }, [s.view, selectedIdForScroll, scrollRef, scrollPositionRef]);
 
   const backTo = (v: View) => () => s.goTo(s.prevView === v ? 'input' : s.prevView);
   const activeProject = useMemo(
