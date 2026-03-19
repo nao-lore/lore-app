@@ -429,7 +429,7 @@ export default function App() {
       <main id="main-content" tabIndex={-1} ref={scrollRef} data-main-scroll className="main-content">
         {demoMode && (
           <div className="demo-banner">
-            <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{t('demoBadge', s.lang)}</span>
+            <span className="demo-badge-text">{t('demoBadge', s.lang)}</span>
             <span className="text-muted">{t('demoModeBanner', s.lang)}</span>
             <button
               className="btn text-sm"
@@ -565,7 +565,7 @@ export default function App() {
       {s.shortcutsOpen && (
         <div className="modal-overlay" role="presentation" onClick={() => s.setShortcutsOpen(false)}>
           <div ref={shortcutsTrapRef} className="shortcuts-modal" role="dialog" aria-modal="true" aria-label={t('shortcutsTitle', s.lang)} onClick={(e) => e.stopPropagation()}>
-            <h3 className="fs-16" style={{ margin: '0 0 16px' }}>{t('shortcutsTitle', s.lang)}</h3>
+            <h3 className="fs-16 shortcuts-title">{t('shortcutsTitle', s.lang)}</h3>
             <div className="flex-col gap-10">
               {([
                 { keys: '\u2318 N', desc: t('shortcutNewLog', s.lang) },

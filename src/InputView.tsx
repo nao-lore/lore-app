@@ -484,7 +484,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
                 {f.name}
               </span>
               {f.lastModified && (
-                <span className="meta file-meta" style={{ color: 'var(--border-hover)' }}>
+                <span className="meta file-meta file-meta-date">
                   {formatFileDate(f.lastModified)}
                 </span>
               )}
@@ -547,7 +547,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
       )}
 
       {result && (
-        <div className="result-panel" aria-live="polite" style={{ marginTop: 28 }}>
+        <div className="result-panel result-panel-spaced" aria-live="polite">
           {savedId && (
             <div className="alert-success flex-row flex-wrap justify-between mb-xl gap-sm">
               <span>{t('savedToLogs', lang)}</span>

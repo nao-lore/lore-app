@@ -20,37 +20,28 @@ export const BulkActionBar = memo(function BulkActionBar({
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
 
   return (
-    <div className="flex-row" style={{
-      position: 'sticky',
-      bottom: 0,
-      background: 'var(--bg-primary)',
-      borderTop: '1px solid var(--border-default)',
-      padding: 12,
-      gap: 8,
-      zIndex: 100,
-      boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
-    }}>
-      <span style={{ fontWeight: 600, fontSize: 13, marginRight: 'auto' }}>
+    <div className="flex-row bulk-action-bar">
+      <span className="bulk-action-bar-label">
         {selected.size > 0 ? tf('selectedCount', lang, selected.size) : t('selectItems', lang)}
       </span>
       {selected.size > 0 && (
         <>
-          <button className="btn btn-danger flex-row" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, gap: 4 }} onClick={onBulkDelete}>
+          <button className="btn btn-danger flex-row btn-compact" onClick={onBulkDelete}>
             <Trash2 size={13} />
             {t('bulkTrash', lang)}
           </button>
           {projects.length > 0 && (
-            <div style={{ position: 'relative' }}>
-              <button className="btn flex-row" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26, gap: 4 }} onClick={() => setProjectPickerOpen(!projectPickerOpen)}>
+            <div className="bulk-project-picker">
+              <button className="btn flex-row btn-compact" onClick={() => setProjectPickerOpen(!projectPickerOpen)}>
                 <FolderOpen size={13} />
                 {t('bulkAssignProject', lang)}
               </button>
               {projectPickerOpen && (
-                <div className="card-menu-dropdown" style={{ right: 'auto', left: 0, bottom: '100%', top: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                <div className="card-menu-dropdown bulk-project-dropdown" onClick={(e) => e.stopPropagation()}>
                   {projects.map((p) => (
                     <button key={p.id} className="card-menu-item" onClick={() => { onBulkAssignProject(p.id); setProjectPickerOpen(false); }}>{p.name}</button>
                   ))}
-                  <button className="card-menu-item" style={{ color: 'var(--text-placeholder)' }} onClick={() => { onBulkAssignProject(''); setProjectPickerOpen(false); }}>
+                  <button className="card-menu-item text-placeholder-color" onClick={() => { onBulkAssignProject(''); setProjectPickerOpen(false); }}>
                     {t('removeFromProject', lang)}
                   </button>
                 </div>
@@ -59,7 +50,7 @@ export const BulkActionBar = memo(function BulkActionBar({
           )}
         </>
       )}
-      <button className="btn" style={{ fontSize: 12, padding: '4px 10px', minHeight: 26 }} onClick={onExitSelectMode}>
+      <button className="btn btn-compact" onClick={onExitSelectMode}>
         {t('cancel', lang)}
       </button>
     </div>
