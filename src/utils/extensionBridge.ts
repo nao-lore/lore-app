@@ -7,7 +7,7 @@
 
 import { safeGetItem, safeSetItem } from '../storage/core';
 
-const STORAGE_KEY = 'lore_extension_contexts';
+const STORAGE_KEY = 'lore_contexts';
 
 export interface ExtensionContext {
   projectName: string;

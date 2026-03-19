@@ -157,7 +157,7 @@
       return { success: false, error: 'No pending injection found' };
     }
 
-    var formatted = formatContext(site, pending.projectName, pending.updatedAt, pending.fullContext);
+    var formatted = formatContext(site, pending.projectName, pending.lastUpdated, pending.fullContext);
     var injected = injectText(site, formatted);
 
     if (injected) {

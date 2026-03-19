@@ -145,7 +145,7 @@ async function injectContext(projectId, ctx, btn) {
     await chrome.runtime.sendMessage({
       type: 'mark-injected',
       projectId,
-      tabId: tab.id,
+      tabId: tab.id,  // Keep tabId for badge flash
       url: tab.url,
     });
 
@@ -165,12 +165,12 @@ async function loadContexts() {
 
   try {
     const response = await chrome.runtime.sendMessage({ type: 'get-contexts' });
-    const contexts = response?.contexts || [];
+    const contextsObj = response?.contexts || {};
 
-    // contexts is an array of context objects — sort by lastUpdated descending
-    const entries = Array.isArray(contexts)
-      ? [...contexts].sort(
-          (a, b) => new Date(b.lastUpdated || 0) - new Date(a.lastUpdated || 0)
+    // contexts is an object keyed by projectId — convert to entries and sort by lastUpdated descending
+    const entries = (typeof contextsObj === 'object' && contextsObj !== null && !Array.isArray(contextsObj))
+      ? Object.entries(contextsObj).sort(
+          (a, b) => new Date(b[1].lastUpdated || 0) - new Date(a[1].lastUpdated || 0)
         )
       : [];
 
@@ -184,7 +184,7 @@ async function loadContexts() {
     listEl.style.display = 'block';
     listEl.innerHTML = '';
 
-    for (const ctx of entries) {
+    for (const [projectId, ctx] of entries) {
       const card = document.createElement('div');
       card.className = 'project-card';
 
@@ -198,7 +198,7 @@ async function loadContexts() {
       const btn = document.createElement('button');
       btn.className = 'btn-inject';
       btn.textContent = 'Inject into current tab';
-      btn.addEventListener('click', () => injectContext(ctx.projectId, ctx, btn));
+      btn.addEventListener('click', () => injectContext(projectId, ctx, btn));
       card.appendChild(btn);
 
       listEl.appendChild(card);
