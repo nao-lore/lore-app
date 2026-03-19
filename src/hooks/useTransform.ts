@@ -225,6 +225,11 @@ export function useTransform(params: UseTransformParams) {
 
       if (actionResult.lastEntryId) setSavedId(actionResult.lastEntryId);
 
+      // Fire GA4 custom conversion event
+      if (typeof gtag === 'function') {
+        gtag('event', 'snapshot_created', { method: action });
+      }
+
       // Track daily usage for trial/free limits
       incrementDailyUsage();
 
