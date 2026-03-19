@@ -647,6 +647,17 @@ h4 {
 }
 
 /* ===== Buttons ===== */
+.btn-reset {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  text-align: start;
+  font: inherit;
+  color: inherit;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -3802,6 +3813,61 @@ button[disabled] {
   }
   .skeleton-bar {
     animation-name: none !important; /* skeleton-shimmer */
+  }
+  /* Toast animations */
+  .toast-enter,
+  .toast-exit {
+    animation-name: none !important; /* toast-slide-in, toast-slide-out */
+  }
+  /* Modal / backdrop animations */
+  .modal-overlay,
+  .modal-overlay-exit {
+    animation-name: none !important; /* backdrop-fade-in, backdrop-fade-out */
+  }
+  .modal-content,
+  .modal-content-exit {
+    animation-name: none !important; /* modal-scale-in, modal-scale-out */
+  }
+  /* Page slide transitions */
+  .slide-in-right {
+    animation-name: none !important; /* slideInRight */
+  }
+  .slide-in-left {
+    animation-name: none !important; /* slideInLeft */
+  }
+  /* Pulse / loading spinners */
+  .pulse-dot,
+  .swipe-indicator-dot {
+    animation-name: none !important; /* pulse */
+  }
+  .loading-spinner,
+  .spinner {
+    animation-name: none !important; /* spin */
+  }
+  /* Paste / fade animations */
+  .paste-fade {
+    animation-name: none !important; /* paste-fade */
+  }
+  .fade-in-up {
+    animation-name: none !important; /* fadeInUp */
+  }
+  /* List item enter */
+  .slide-in-up {
+    animation-name: none !important; /* slide-in-up */
+  }
+  /* Progress bar — show instant width changes */
+  .progress-bar-fill,
+  .progress-bar-mini-fill {
+    transition: none !important;
+  }
+  /* Offline banner — show/hide instantly */
+  .offline-banner {
+    transition: none !important;
+  }
+  /* Onboarding dots and buttons */
+  .onboarding-dot,
+  .onboarding-lang-btn {
+    transition: none !important;
   }
 }
 

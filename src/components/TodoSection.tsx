@@ -21,23 +21,27 @@ const TodoSection = memo(function TodoSection({ logId, lang, todosVersion: _todo
       <div className="content-card-header">{t('sectionTodo', lang)}</div>
       <ul className="list-none">
         {todos.map((todo: Todo) => (
-          <li
-            key={todo.id}
-            onClick={() => handleToggle(todo.id, todo.done)}
-            className="todo-section-item"
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--sidebar-hover)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          >
-            {todo.done
-              ? <CheckSquare size={18} className="shrink-0 mt-1" style={{ color: 'var(--success-text)' }} />
-              : <Square size={18} className="shrink-0 mt-1" style={{ color: 'var(--text-placeholder)' }} />
-            }
-            <span style={{
-              color: todo.done ? 'var(--text-placeholder)' : 'var(--text-secondary)',
-              textDecoration: todo.done ? 'line-through' : 'none',
-            }}>
-              {todo.text}
-            </span>
+          <li key={todo.id}>
+            <button
+              type="button"
+              onClick={() => handleToggle(todo.id, todo.done)}
+              className="btn-reset todo-section-item"
+              role="checkbox"
+              aria-checked={todo.done}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--sidebar-hover)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            >
+              {todo.done
+                ? <CheckSquare size={18} className="shrink-0 mt-1" style={{ color: 'var(--success-text)' }} />
+                : <Square size={18} className="shrink-0 mt-1" style={{ color: 'var(--text-placeholder)' }} />
+              }
+              <span style={{
+                color: todo.done ? 'var(--text-placeholder)' : 'var(--text-secondary)',
+                textDecoration: todo.done ? 'line-through' : 'none',
+              }}>
+                {todo.text}
+              </span>
+            </button>
           </li>
         ))}
       </ul>
