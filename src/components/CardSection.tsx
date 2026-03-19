@@ -1,8 +1,10 @@
 import { memo } from 'react';
 import { CheckSquare, Square } from 'lucide-react';
 import type { NextActionItem } from '../types';
+import { t } from '../i18n';
+import type { Lang } from '../i18n';
 
-const CardSection = memo(function CardSection({ title, items, isNew }: { title: string; items: string[]; isNew?: (item: string) => boolean }) {
+const CardSection = memo(function CardSection({ title, items, isNew, lang }: { title: string; items: string[]; isNew?: (item: string) => boolean; lang?: Lang }) {
   if (items.length === 0) return null;
   return (
     <div className="content-card">
@@ -13,7 +15,7 @@ const CardSection = memo(function CardSection({ title, items, isNew }: { title: 
           return (
             <li key={i} className="card-list-item">
               <span className="flex-1">{item}</span>
-              {fresh && <span className="new-item-badge">NEW</span>}
+              {fresh && <span className="new-item-badge">{lang ? t('newBadge', lang) : 'NEW'}</span>}
             </li>
           );
         })}
@@ -22,7 +24,7 @@ const CardSection = memo(function CardSection({ title, items, isNew }: { title: 
   );
 });
 
-const CheckableCardSection = memo(function CheckableCardSection({ title, items, checkedIndices, onToggle, richItems }: { title: string; items: string[]; checkedIndices: number[]; onToggle: (index: number) => void; richItems?: NextActionItem[] }) {
+const CheckableCardSection = memo(function CheckableCardSection({ title, items, checkedIndices, onToggle, richItems, lang }: { title: string; items: string[]; checkedIndices: number[]; onToggle: (index: number) => void; richItems?: NextActionItem[]; lang?: Lang }) {
   if (items.length === 0) return null;
   const doneCount = checkedIndices.length;
   return (
@@ -54,17 +56,17 @@ const CheckableCardSection = memo(function CheckableCardSection({ title, items, 
                     <span className="flex flex-wrap" style={{ gap: '2px 8px', marginTop: 2 }}>
                       {rich.whyImportant && (
                         <span className="rich-meta">
-                          Why: {rich.whyImportant}
+                          {lang ? t('richWhy', lang) : 'Why:'} {rich.whyImportant}
                         </span>
                       )}
                       {rich.priorityReason && (
                         <span className="rich-meta">
-                          Priority: {rich.priorityReason}
+                          {lang ? t('richPriority', lang) : 'Priority:'} {rich.priorityReason}
                         </span>
                       )}
                       {rich.dependsOn && rich.dependsOn.length > 0 && (
                         <span className="rich-meta-sm">
-                          Depends on: {rich.dependsOn.join(', ')}
+                          {lang ? t('richDependsOn', lang) : 'Depends on:'} {rich.dependsOn.join(', ')}
                         </span>
                       )}
                       {rich.dueBy && (

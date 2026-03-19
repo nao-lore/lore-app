@@ -432,7 +432,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
               {progressLabel}
             </button>
           ) : (
-            <FirstUseTooltip id="transform" text={lang === 'ja' ? 'AI会話を上に貼り付けて、ここをクリック！' : 'Paste an AI conversation above, then click here!'}>
+            <FirstUseTooltip id="transform" text={lang === 'ja' ? 'AI会話を上に貼り付けて、ここをクリック！' : 'Paste an AI conversation above, then click here!'} lang={lang}>
               <button
                 className="btn btn-primary btn-transform"
                 onClick={() => runTransform(transformAction)}

@@ -257,7 +257,7 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
               <span className="dashboard-step-text">{t('dashboardStep3', lang)}</span>
             </div>
           </div>
-          <FirstUseTooltip id="dashboard" text={lang === 'ja' ? 'AIプロジェクトのスナップショットがここに表示されます' : 'Your AI project snapshots appear here'} position="top">
+          <FirstUseTooltip id="dashboard" text={lang === 'ja' ? 'AIプロジェクトのスナップショットがここに表示されます' : 'Your AI project snapshots appear here'} position="top" lang={lang}>
             <button className="btn btn-primary mt-lg" onClick={onNewLog} style={{ fontSize: 16, padding: '12px 28px' }}>
               <Plus size={18} />
               {t('dashboardCreateFirstSnapshot', lang)}

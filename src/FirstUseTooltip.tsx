@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import { safeGetItem, safeSetItem } from './storage';
+import { t } from './i18n';
+import type { Lang } from './i18n';
 
 interface FirstUseTooltipProps {
   id: string; // unique key for localStorage
   text: string;
   position?: 'top' | 'bottom' | 'left' | 'right';
   children: React.ReactNode;
+  lang?: Lang;
 }
 
-export default function FirstUseTooltip({ id, text, position = 'bottom', children }: FirstUseTooltipProps) {
+export default function FirstUseTooltip({ id, text, position = 'bottom', children, lang }: FirstUseTooltipProps) {
   const key = `lore_tip_${id}`;
   const [show, setShow] = useState(false);
 
@@ -39,7 +42,7 @@ export default function FirstUseTooltip({ id, text, position = 'bottom', childre
           }}
         >
           <span>{text}</span>
-          <span className="first-use-tooltip-close" aria-label="Close">&times;</span>
+          <span className="first-use-tooltip-close" aria-label={lang ? t('close', lang) : 'Close'}>&times;</span>
         </div>
       )}
     </div>
