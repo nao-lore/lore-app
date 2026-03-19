@@ -64,7 +64,7 @@ export const MasterNoteHistoryPanel = memo(function MasterNoteHistoryPanel({
 }: MasterNoteHistoryPanelProps) {
   return (
     <>
-      <div className="mn-history-overlay" onClick={() => { onClose(); onPreviewSnap(null); }}>
+      <div className="mn-history-overlay" role="presentation" onClick={() => { onClose(); onPreviewSnap(null); }}>
         <div className="mn-history-panel" onClick={(e) => e.stopPropagation()}>
           <div className="mn-history-header">
             <h3>{t('mnHistoryTitle', lang)}</h3>

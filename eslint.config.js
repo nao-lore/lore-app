@@ -25,6 +25,8 @@ export default defineConfig([
         varsIgnorePattern: '^_',
         destructuredArrayIgnorePattern: '^_',
       }],
+      // @tanstack/react-virtual is hooks-compatible; disable false positive
+      'react-hooks/incompatible-library': 'off',
     },
   },
 ])

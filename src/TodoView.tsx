@@ -69,10 +69,10 @@ function SortableTodoItem({ id, disabled, children }: { id: string; disabled: bo
 // ─── Main TodoView ───
 function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
   const [todosVersion, setTodosVersion] = useState(0);
-  // todosVersion is an intentional manual invalidation counter — loadTodos/loadArchivedTodos
-  // are stable storage readers and must NOT be in the dep array (would re-run on every render).
-  const todos = useMemo(() => loadTodos(), [todosVersion]); // eslint-disable-line react-hooks/exhaustive-deps
-  const archivedTodos = useMemo(() => loadArchivedTodos(), [todosVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+  // todosVersion is an intentional manual invalidation counter — void reference
+  // ensures the hook re-runs when the counter changes.
+  const todos = useMemo(() => { void todosVersion; return loadTodos(); }, [todosVersion]);
+  const archivedTodos = useMemo(() => { void todosVersion; return loadArchivedTodos(); }, [todosVersion]);
 
   const [activeTab, setActiveTab] = useState<TabKey>('pending');
   const [sortKey, setSortKey] = usePersistedState<SortKey>('threadlog_todos_sort', 'created');
@@ -347,8 +347,6 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
   }, [groupKey, sorted, lang, logMap]);
 
   // Virtual scrolling
-  // @tanstack/react-virtual is hooks-compatible but the lint rule doesn't recognize it
-  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: sorted.length,
     getScrollElement: useCallback(() => listParentRef.current, []),

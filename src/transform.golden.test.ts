@@ -103,8 +103,7 @@ describe('handoff extraction golden tests', () => {
   });
 
   // API-based tests: only run with GOLDEN_API_KEY env var
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const apiDescribe = (import.meta as any).env?.GOLDEN_API_KEY ? describe : describe.skip;
+  const apiDescribe = import.meta.env?.GOLDEN_API_KEY ? describe : describe.skip;
   apiDescribe('extraction quality (requires API key)', () => {
     for (const tc of GOLDEN_TESTS) {
       it(

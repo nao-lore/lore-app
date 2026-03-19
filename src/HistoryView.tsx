@@ -318,8 +318,6 @@ function HistoryView({ logs, onSelect, onBack, showBack = true, onRefresh, lang,
 
   const virtualData = groupKey === 'none' ? sorted : flatItems;
 
-  // @tanstack/react-virtual is hooks-compatible but the lint rule doesn't recognize it
-  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: selectMode ? 0 : virtualData.length,
     getScrollElement: useCallback(() => scrollContainerRef.current, []),

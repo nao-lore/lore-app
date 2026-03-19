@@ -36,42 +36,46 @@ const CheckableCardSection = memo(function CheckableCardSection({ title, items, 
           const checked = checkedIndices.includes(i);
           const rich = richItems?.[i];
           return (
-            <li
-              key={i}
-              onClick={() => onToggle(i)}
-              className="checkable-list-item"
-              style={{ color: checked ? 'var(--text-placeholder)' : 'var(--text-body)', textDecoration: checked ? 'line-through' : 'none' }}
-            >
-              <span className="shrink-0 mt-3">
-                {checked ? <CheckSquare size={16} style={{ color: 'var(--accent)' }} /> : <Square size={16} className="text-placeholder" />}
-              </span>
-              <span>
-                {item}
-                {rich && (rich.whyImportant || rich.priorityReason || rich.dueBy || (rich.dependsOn && rich.dependsOn.length > 0)) && (
-                  <span className="flex flex-wrap" style={{ gap: '2px 8px', marginTop: 2 }}>
-                    {rich.whyImportant && (
-                      <span className="rich-meta">
-                        Why: {rich.whyImportant}
-                      </span>
-                    )}
-                    {rich.priorityReason && (
-                      <span className="rich-meta">
-                        Priority: {rich.priorityReason}
-                      </span>
-                    )}
-                    {rich.dependsOn && rich.dependsOn.length > 0 && (
-                      <span className="rich-meta-sm">
-                        Depends on: {rich.dependsOn.join(', ')}
-                      </span>
-                    )}
-                    {rich.dueBy && (
-                      <span className="rich-due-badge">
-                        {rich.dueBy}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </span>
+            <li key={i}>
+              <button
+                type="button"
+                onClick={() => onToggle(i)}
+                className="btn-reset checkable-list-item"
+                role="checkbox"
+                aria-checked={checked}
+                style={{ color: checked ? 'var(--text-placeholder)' : 'var(--text-body)', textDecoration: checked ? 'line-through' : 'none' }}
+              >
+                <span className="shrink-0 mt-3">
+                  {checked ? <CheckSquare size={16} style={{ color: 'var(--accent)' }} /> : <Square size={16} className="text-placeholder" />}
+                </span>
+                <span>
+                  {item}
+                  {rich && (rich.whyImportant || rich.priorityReason || rich.dueBy || (rich.dependsOn && rich.dependsOn.length > 0)) && (
+                    <span className="flex flex-wrap" style={{ gap: '2px 8px', marginTop: 2 }}>
+                      {rich.whyImportant && (
+                        <span className="rich-meta">
+                          Why: {rich.whyImportant}
+                        </span>
+                      )}
+                      {rich.priorityReason && (
+                        <span className="rich-meta">
+                          Priority: {rich.priorityReason}
+                        </span>
+                      )}
+                      {rich.dependsOn && rich.dependsOn.length > 0 && (
+                        <span className="rich-meta-sm">
+                          Depends on: {rich.dependsOn.join(', ')}
+                        </span>
+                      )}
+                      {rich.dueBy && (
+                        <span className="rich-due-badge">
+                          {rich.dueBy}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </span>
+              </button>
             </li>
           );
         })}
