@@ -1,9 +1,12 @@
 import React, { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
+import { inject } from '@vercel/analytics'
 import './index.css'
 import App from './App.tsx'
 import { initSentry } from './utils/sentry'
 import { initKeyCache } from './provider'
+
+inject();
 
 initSentry();
 
