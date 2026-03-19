@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { LayoutDashboard, PenSquare, FolderKanban } from 'lucide-react';
+import { LayoutDashboard, PenSquare, FolderKanban, Settings } from 'lucide-react';
 import { t } from './i18n';
 import type { Lang } from './i18n';
 import type { View } from './App';
@@ -14,6 +14,7 @@ const TABS = [
   { view: 'dashboard' as const, icon: LayoutDashboard, labelKey: 'navDashboard' as const },
   { view: 'input' as const, icon: PenSquare, labelKey: 'navInput' as const },
   { view: 'projects' as const, icon: FolderKanban, labelKey: 'navProjects' as const },
+  { view: 'settings' as const, icon: Settings, labelKey: 'settings' as const },
 ];
 
 function BottomNav({ activeView, onNavigate, lang }: BottomNavProps) {
@@ -23,7 +24,8 @@ function BottomNav({ activeView, onNavigate, lang }: BottomNavProps) {
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const active = activeView === tab.view ||
-            (tab.view === 'input' && (activeView === 'input' || activeView === 'detail'));
+            (tab.view === 'input' && (activeView === 'input' || activeView === 'detail')) ||
+            (tab.view === 'settings' && (activeView === 'settings' || activeView === 'help' || activeView === 'pricing'));
           return (
             <button
               key={tab.view}

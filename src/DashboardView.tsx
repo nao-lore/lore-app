@@ -4,7 +4,7 @@ import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { getGreeting } from './greeting';
-import { getStreak, safeGetItem, safeSetItem } from './storage';
+import { getStreak, safeGetItem, safeSetItem, getTotalSnapshots } from './storage';
 import FirstUseTooltip from './FirstUseTooltip';
 import { EmptyDashboard } from './EmptyIllustrations';
 
@@ -522,6 +522,7 @@ export default memo(DashboardView);
 
 function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]; todos: Todo[]; projects: Project[]; lang: Lang }) {
   const streak = useMemo(() => getStreak(), []);
+  const totalSnapshots = useMemo(() => getTotalSnapshots(), []);
 
   const stats = useMemo(() => {
     const totalLogs = logs.length;
@@ -613,6 +614,13 @@ function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]
           <div className="text-xs-placeholder" style={{ marginTop: 6 }}>
             {isJa ? '最も活発:' : 'Most active:'} <span className="text-muted font-semibold">{stats.topProjectName}</span>
             <span style={{ opacity: 0.6 }}> ({stats.topCount} {isJa ? 'ログ' : 'logs'})</span>
+          </div>
+        )}
+
+        {/* Row 4: total snapshots */}
+        {totalSnapshots > 0 && (
+          <div className="text-xs-placeholder" style={{ marginTop: 6 }}>
+            {t('dashboardTotalSnapshots', lang)}: <span className="text-muted font-semibold">{totalSnapshots}</span>
           </div>
         )}
       </div>

@@ -18,6 +18,8 @@ export const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 export const MAX_MN_SNAPSHOTS = 50;
 
+export const TOTAL_SNAPSHOTS_KEY = 'lore_total_snapshots';
+
 // ─── Safe localStorage wrappers ───
 
 /** Safely read from localStorage, returning null on error */
@@ -58,6 +60,19 @@ export async function loadWithIdbFallback(key: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+// ─── Snapshot counter ───
+
+/** Increment the global snapshot counter */
+export function incrementSnapshotCounter(): void {
+  const current = parseInt(safeGetItem(TOTAL_SNAPSHOTS_KEY) || '0', 10) || 0;
+  safeSetItem(TOTAL_SNAPSHOTS_KEY, String(current + 1));
+}
+
+/** Get the global snapshot counter */
+export function getTotalSnapshots(): number {
+  return parseInt(safeGetItem(TOTAL_SNAPSHOTS_KEY) || '0', 10) || 0;
 }
 
 // ─── In-memory caches (avoid re-parsing localStorage on every read) ───

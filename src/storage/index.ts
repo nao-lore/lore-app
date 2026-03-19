@@ -1,7 +1,7 @@
 // ─── Re-export everything from domain modules ───
 // All existing `import { ... } from './storage'` will resolve to this barrel.
 
-export { safeGetItem, safeSetItem, safeRemoveItem, invalidateLogsCache, invalidateProjectsCache, invalidateTodosCache, invalidateMasterNotesCache } from './core';
+export { safeGetItem, safeSetItem, safeRemoveItem, invalidateLogsCache, invalidateProjectsCache, invalidateTodosCache, invalidateMasterNotesCache, incrementSnapshotCounter, getTotalSnapshots } from './core';
 
 export { saveLogs, loadLogs, loadTrashedLogs, addLog, getLog, trashLog, restoreLog, deleteLog, updateLog, duplicateLog, linkLogs, unlinkLogs, loadLogSummaries, saveLogSummary, getLogSummary } from './logs';
 
