@@ -16,13 +16,37 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         globIgnores: ['**/mammoth-*.js', '**/sampleData-*.js'],
+        navigateFallback: 'index.html',
         runtimeCaching: [
+          // AI API calls must never be cached — use NetworkOnly
           {
-            urlPattern: /^https:\/\/api\./,
+            urlPattern: /^https:\/\/generativelanguage\.googleapis\.com\//,
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: /^https:\/\/api\.anthropic\.com\//,
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: /^https:\/\/api\.openai\.com\//,
+            handler: 'NetworkOnly',
+          },
+          // Static assets — CacheFirst with long expiration
+          {
+            urlPattern: /\.(?:js|css|woff2?|png|svg|ico|webp)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'static-assets',
+              expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+          // Navigation requests — NetworkFirst for freshness
+          {
+            urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'api-cache',
-              expiration: { maxEntries: 50, maxAgeSeconds: 86400 },
+              cacheName: 'navigation-cache',
+              expiration: { maxEntries: 10, maxAgeSeconds: 24 * 60 * 60 },
             },
           },
         ],
