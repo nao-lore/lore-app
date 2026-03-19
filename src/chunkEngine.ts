@@ -15,7 +15,6 @@ import { normalizeResumeChecklist, normalizeHandoffMeta, normalizeHandoffFields,
 import { dedupDecisions } from './utils/decisions';
 import {
   CHUNK_HANDOFF_EXTRACT_PROMPT as HANDOFF_EXTRACT_PROMPT,
-  CHUNK_HANDOFF_EXTRACT_LIGHT_PROMPT,
   CHUNK_HANDOFF_EXTRACT_ULTRA_PROMPT as HANDOFF_EXTRACT_ULTRA_PROMPT,
   CHUNK_BOTH_EXTRACT_PROMPT as BOTH_EXTRACT_PROMPT,
   CHUNK_COMPLETED_EXTRACT_PROMPT as COMPLETED_EXTRACT_PROMPT,
@@ -26,8 +25,6 @@ import {
 
 import { asString, asStringArray, localMerge } from './chunkMerger';
 
-// Re-export for any external consumers
-export { CHUNK_HANDOFF_EXTRACT_LIGHT_PROMPT as HANDOFF_EXTRACT_LIGHT_PROMPT };
 
 // =============================================================================
 // Chunk splitting — mode-aware
@@ -95,6 +92,55 @@ function tokenTargetToCharLimit(text: string, tokenTarget: number): number {
   return Math.ceil(tokenTarget * charsPerToken);
 }
 
+/** Threshold for splitting long paragraphs at sentence boundaries */
+const LONG_PARAGRAPH_CHARS = 10_000;
+
+/**
+ * Split a very long paragraph (>10K chars) at sentence boundaries.
+ * Handles English sentence-ending punctuation (.!?) and CJK sentence markers (。！？).
+ * Falls back to mid-point split for text with no sentence boundaries.
+ */
+export function splitLongParagraph(text: string, maxLen: number): string[] {
+  if (text.length <= maxLen) return [text];
+
+  // Split at sentence boundaries: . ! ? followed by space/newline, or CJK sentence-end marks
+  const sentencePattern = /(?<=[.!?])\s+|(?<=[。！？])/g;
+  const sentences: string[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = sentencePattern.exec(text)) !== null) {
+    sentences.push(text.slice(lastIndex, match.index + match[0].length));
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    sentences.push(text.slice(lastIndex));
+  }
+
+  // If no sentence boundaries found, force-split at maxLen
+  if (sentences.length <= 1) {
+    const result: string[] = [];
+    for (let i = 0; i < text.length; i += maxLen) {
+      result.push(text.slice(i, i + maxLen));
+    }
+    return result;
+  }
+
+  // Group sentences up to maxLen
+  const result: string[] = [];
+  let buf = '';
+  for (const sentence of sentences) {
+    if (buf.length + sentence.length > maxLen && buf.length > 0) {
+      result.push(buf);
+      buf = sentence;
+    } else {
+      buf += sentence;
+    }
+  }
+  if (buf) result.push(buf);
+  return result;
+}
+
 export function splitIntoChunks(text: string, chunkTarget: number): string[] {
   // Convert token target to character limit based on the text's language mix
   const charLimit = tokenTargetToCharLimit(text, chunkTarget);
@@ -107,7 +153,22 @@ export function splitIntoChunks(text: string, chunkTarget: number): string[] {
   }
 
   const paragraphs = text.split(/\n{2,}/);
-  return dedupChunks(groupSegments(paragraphs.map((p) => p + '\n\n'), charLimit));
+
+  // Secondary split: break very long paragraphs at sentence boundaries
+  const refined: string[] = [];
+  for (const p of paragraphs) {
+    const withTrailing = p + '\n\n';
+    if (p.length > LONG_PARAGRAPH_CHARS) {
+      const subParts = splitLongParagraph(p, LONG_PARAGRAPH_CHARS);
+      for (const sub of subParts) {
+        refined.push(sub + '\n\n');
+      }
+    } else {
+      refined.push(withTrailing);
+    }
+  }
+
+  return dedupChunks(groupSegments(refined, charLimit));
 }
 
 /** Remove exact-duplicate chunks that can arise from repeated sections in input */
@@ -1150,6 +1211,7 @@ export class ChunkEngine {
 // =============================================================================
 export const _testOnly = {
   splitIntoChunks,
+  splitLongParagraph,
   tryRepairJson,
   localMerge,
   estimateTokens,
