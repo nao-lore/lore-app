@@ -163,6 +163,7 @@ describe('i18n', () => {
       transformsRemaining: [3, 30],
       proExpires: ['2026-12-31'],
       errorRateLimitWithCooldown: [30],
+      lpSnapshotsCreated: [42],
     };
 
     it('all function labels return non-empty strings for ja', () => {
