@@ -25,8 +25,15 @@ function extractKeywords(text: string): Set<string> {
     if (STOP_WORDS.has(w)) return false;
     // Keep CJK single-char tokens (they carry meaning), filter short ASCII tokens
     if (w.length < 2) {
-      const code = w.charCodeAt(0);
+      // Use codePointAt to handle surrogate pairs (CJK Extension B: U+20000+)
+      const code = w.codePointAt(0) ?? 0;
       return code >= 0x3000; // Keep CJK range (hiragana, katakana, kanji, etc.)
+    }
+    // A single CJK Extension B character is 2 UTF-16 code units (length 2)
+    // but is semantically 1 character — keep it
+    if (w.length === 2) {
+      const code = w.codePointAt(0) ?? 0;
+      if (code >= 0x20000) return true;
     }
     return true;
   }));

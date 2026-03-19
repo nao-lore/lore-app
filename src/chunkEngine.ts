@@ -24,6 +24,7 @@ import {
 } from './prompts';
 
 import { asString, asStringArray, localMerge } from './chunkMerger';
+import { normalizeInput } from './utils/normalizeInput';
 
 
 // =============================================================================
@@ -57,7 +58,7 @@ function isCJK(code: number): boolean {
     (code >= 0x3400 && code <= 0x4DBF) ||   // CJK Unified Ideographs Extension A
     (code >= 0x3040 && code <= 0x309F) ||   // Hiragana
     (code >= 0x30A0 && code <= 0x30FF) ||   // Katakana
-    (code >= 0xAC00 && code <= 0xD7AF) ||    // Hangul Syllables
+    (code >= 0xAC00 && code <= 0xD7AF) ||   // Hangul Syllables
     (code >= 0x20000 && code <= 0x2A6DF)    // CJK Unified Ideographs Extension B
   );
 }
@@ -68,15 +69,22 @@ function isCJK(code: number): boolean {
  * CJK characters: ~1-2 chars per token (each character is often its own token).
  * This provides a more accurate estimate than raw character count,
  * especially for Japanese/Chinese/Korean text which has higher token density.
+ *
+ * Uses codePointAt() to correctly handle supplementary plane characters
+ * (e.g. CJK Extension B, U+20000+) which are encoded as surrogate pairs in UTF-16.
  */
 export function estimateTokens(text: string): number {
   let asciiChars = 0;
   let cjkChars = 0;
   for (let i = 0; i < text.length; i++) {
-    const code = text.charCodeAt(i);
+    const code = text.codePointAt(i)!;
     if (isCJK(code)) {
       cjkChars++;
+      // Skip the low surrogate of a supplementary character
+      if (code > 0xFFFF) i++;
     } else {
+      // Skip the low surrogate of any non-CJK supplementary character
+      if (code > 0xFFFF) i++;
       asciiChars++;
     }
   }
@@ -832,6 +840,7 @@ export class ChunkEngine {
   ): Promise<PartialResult> {
     this._paused = false;
     this._cancelled = false;
+    sourceText = normalizeInput(sourceText);
     const config = getModeConfig(mode, sourceText.length);
     const hash = computeSourceHash(sourceText);
     let session = await loadSession(hash);

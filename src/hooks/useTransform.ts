@@ -304,7 +304,12 @@ export function useTransform(params: UseTransformParams) {
         if (raw.includes('[API Key]')) {
           setError(t('errorApiKey', lang));
         } else if (raw.includes('[Rate Limit]')) {
-          setError(shouldUseBuiltinApi() ? t('errorRateLimitBuiltin', lang) : t('errorRateLimit', lang));
+          const cooldownMatch = raw.match(/\[Rate Limit:(\d+)\]/);
+          if (cooldownMatch) {
+            setError(tf('errorRateLimitWithCooldown', lang, parseInt(cooldownMatch[1], 10)));
+          } else {
+            setError(shouldUseBuiltinApi() ? t('errorRateLimitBuiltin', lang) : t('errorRateLimit', lang));
+          }
         } else if (raw.includes('[Overloaded]')) {
           setError(t('errorServiceDown', lang));
         } else if (raw.includes('[Truncated]')) {
