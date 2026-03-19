@@ -4,6 +4,7 @@ import { LANG_KEY, THEME_KEY, LOGS_KEY, PROJECTS_KEY, MASTER_NOTES_KEY, TODOS_KE
 import { deleteLog } from './logs';
 import { deleteProject } from './projects';
 import { isEncrypted, getCachedKey } from '../utils/crypto';
+import { safeJsonParse } from '../utils/safeJsonParse';
 
 // ─── Settings ───
 
@@ -130,7 +131,7 @@ export function recordActivity(): void {
   const today = new Date().toISOString().slice(0, 10);
   try {
     const raw = safeGetItem(ACTIVITY_DATES_KEY);
-    const dates: string[] = raw ? JSON.parse(raw) : [];
+    const dates: string[] = safeJsonParse<string[]>(raw, []);
     if (!dates.includes(today)) {
       dates.push(today);
       // Keep only last 90 days
@@ -144,7 +145,7 @@ export function getStreak(): number {
   try {
     const raw = safeGetItem(ACTIVITY_DATES_KEY);
     if (!raw) return 0;
-    const dates: string[] = JSON.parse(raw);
+    const dates: string[] = safeJsonParse<string[]>(raw, []);
     let streak = 0;
     const today = new Date();
     for (let i = 0; i <= 90; i++) {
@@ -175,7 +176,8 @@ export function exportAllData(): LoreBackup {
   for (const key of DATA_KEYS) {
     const raw = safeGetItem(key);
     if (raw) {
-      try { data[key] = JSON.parse(raw); } catch (err) { if (import.meta.env.DEV) console.warn('[storage] exportAllData parse', err); }
+      const parsed = safeJsonParse<unknown[]>(raw, []);
+      if (parsed.length > 0) data[key] = parsed;
     }
   }
   return { version: 1, exportedAt: new Date().toISOString(), data };
@@ -222,10 +224,7 @@ export function importData(backup: LoreBackup, mode: 'merge' | 'overwrite'): Imp
     } else {
       // Merge: combine by id, incoming wins on conflict
       const raw = safeGetItem(key);
-      let existing: Record<string, unknown>[] = [];
-      if (raw) {
-        try { existing = JSON.parse(raw); } catch (err) { if (import.meta.env.DEV) console.warn('[storage] importData parse', err); }
-      }
+      const existing: Record<string, unknown>[] = safeJsonParse<Record<string, unknown>[]>(raw, []);
       const map = new Map<string, unknown>();
       for (const item of existing) {
         const id = item.id || item.projectId;
@@ -297,30 +296,24 @@ export function purgeExpiredTrash(): void {
   // Logs — use deleteLog() for cascade cleanup
   const rawLogs = safeGetItem(LOGS_KEY);
   if (rawLogs) {
-    try {
-      const logs: LogEntry[] = JSON.parse(rawLogs);
-      const expired = logs.filter((l) => l.trashedAt && now - l.trashedAt >= TRASH_RETENTION_MS);
-      for (const l of expired) deleteLog(l.id);
-    } catch (err) { if (import.meta.env.DEV) console.warn('[storage] purgeExpiredTrash logs', err); }
+    const logs = safeJsonParse<LogEntry[]>(rawLogs, []);
+    const expired = logs.filter((l) => l.trashedAt && now - l.trashedAt >= TRASH_RETENTION_MS);
+    for (const l of expired) deleteLog(l.id);
   }
 
   // Projects — use deleteProject() for cascade cleanup
   const rawProjects = safeGetItem(PROJECTS_KEY);
   if (rawProjects) {
-    try {
-      const projects: Project[] = JSON.parse(rawProjects);
-      const expired = projects.filter((p) => p.trashedAt && now - p.trashedAt >= TRASH_RETENTION_MS);
-      for (const p of expired) deleteProject(p.id);
-    } catch (err) { if (import.meta.env.DEV) console.warn('[storage] purgeExpiredTrash projects', err); }
+    const projects = safeJsonParse<Project[]>(rawProjects, []);
+    const expired = projects.filter((p) => p.trashedAt && now - p.trashedAt >= TRASH_RETENTION_MS);
+    for (const p of expired) deleteProject(p.id);
   }
 
   // Todos — simple removal (no cascade needed)
   const rawTodos = safeGetItem(TODOS_KEY);
   if (rawTodos) {
-    try {
-      const todos: Todo[] = JSON.parse(rawTodos);
-      const kept = todos.filter((t) => !t.trashedAt || now - t.trashedAt < TRASH_RETENTION_MS);
-      if (kept.length !== todos.length) { safeSetItem(TODOS_KEY, JSON.stringify(kept)); invalidateTodosCache(); }
-    } catch (err) { if (import.meta.env.DEV) console.warn('[storage] purgeExpiredTrash todos', err); }
+    const todos = safeJsonParse<Todo[]>(rawTodos, []);
+    const kept = todos.filter((t) => !t.trashedAt || now - t.trashedAt < TRASH_RETENTION_MS);
+    if (kept.length !== todos.length) { safeSetItem(TODOS_KEY, JSON.stringify(kept)); invalidateTodosCache(); }
   }
 }

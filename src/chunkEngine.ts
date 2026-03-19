@@ -11,7 +11,7 @@ import { computeSourceHash, loadSession, saveSession, deleteSession } from './ch
 import { getLang } from './storage';
 import { callProvider, callProviderStream, getActiveProvider } from './provider';
 import type { StreamCallback } from './provider';
-import { filterResolvedBlockers, normalizeResumeChecklist, normalizeHandoffMeta, normalizeHandoffFields, detectLanguage, extractJson } from './transform';
+import { normalizeResumeChecklist, normalizeHandoffMeta, normalizeHandoffFields, detectLanguage, extractJson } from './transform';
 import { dedupDecisions } from './utils/decisions';
 import {
   CHUNK_HANDOFF_EXTRACT_PROMPT as HANDOFF_EXTRACT_PROMPT,
@@ -193,6 +193,16 @@ async function reformatToJson(
   proseText: string,
   schemaHint: string,
 ): Promise<PartialResult> {
+  // Skip AI call if input is too short to contain useful content
+  if (proseText.trim().length < 20) {
+    throw new Error('[Reformat Skip] Input too short for meaningful conversion');
+  }
+
+  // Try local JSON repair first — the prose might actually contain JSON that
+  // was missed by the caller's simple '{' check (e.g., leading whitespace quirks)
+  const localRepair = tryRepairJson(proseText);
+  if (localRepair) return localRepair;
+
   _reformatCallCount++;
   if (import.meta.env.DEV) console.warn(`[Reformat Fallback #${_reformatCallCount}] Sending ${proseText.length} chars of prose back for JSON conversion`);
 
@@ -405,8 +415,7 @@ function toWorklog(raw: PartialResult): TransformResult {
 }
 
 function toHandoff(raw: PartialResult): HandoffResult {
-  const completed = asStringArray(raw.completed);
-  const { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta } = normalizeHandoffFields(raw);
+  const { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta, currentStatus, completed, blockers, constraints, tags } = normalizeHandoffFields(raw);
   let resumeContext: string[];
   if (resumeChecklist.length > 0) {
     resumeContext = resumeChecklist.map(r => r.action);
@@ -420,18 +429,18 @@ function toHandoff(raw: PartialResult): HandoffResult {
   return {
     title: asString(raw.title) || 'Untitled',
     handoffMeta,
-    currentStatus: asStringArray(raw.currentStatus),
+    currentStatus,
     resumeChecklist,
     resumeContext,
     nextActions,
     nextActionItems,
     actionBacklog: actionBacklog.length > 0 ? actionBacklog : undefined,
     completed,
-    blockers: filterResolvedBlockers(asStringArray(raw.blockers), completed, decisions),
+    blockers,
     decisions,
     decisionRationales,
-    constraints: asStringArray(raw.constraints),
-    tags: asStringArray(raw.tags),
+    constraints,
+    tags,
   };
 }
 

@@ -476,7 +476,8 @@ export function normalizeActionBacklog(raw: unknown): NextActionItem[] {
 /**
  * Normalize all handoff-specific fields from a parsed AI response.
  * Centralizes the repeated pattern of normalizing decisions, nextActions,
- * resumeChecklist, actionBacklog, and handoffMeta with overflow enforcement.
+ * resumeChecklist, actionBacklog, handoffMeta, and array fields with
+ * type coercion, dedup, and overflow enforcement.
  */
 export function normalizeHandoffFields(parsed: Record<string, unknown>): {
   decisions: string[];
@@ -486,6 +487,11 @@ export function normalizeHandoffFields(parsed: Record<string, unknown>): {
   resumeChecklist: ResumeChecklistItem[];
   actionBacklog: NextActionItem[];
   handoffMeta: HandoffMeta;
+  currentStatus: string[];
+  completed: string[];
+  blockers: string[];
+  constraints: string[];
+  tags: string[];
 } {
   const rawDecisions = Array.isArray(parsed.decisions) ? parsed.decisions : [];
   const { decisions, decisionRationales } = normalizeDecisions(rawDecisions);
@@ -501,7 +507,15 @@ export function normalizeHandoffFields(parsed: Record<string, unknown>): {
     nextActions = nextActionItems.map(i => i.action);
     actionBacklog = [...overflow, ...actionBacklog].slice(0, 7);
   }
-  return { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta };
+  // Normalize remaining array fields with type coercion and dedup
+  const completed = fuzzyDedupStrings(toStringArray(parsed.completed));
+  const currentStatus = fuzzyDedupStrings(toStringArray(parsed.currentStatus));
+  const blockers = fuzzyDedupStrings(
+    filterResolvedBlockers(toStringArray(parsed.blockers), completed, decisions),
+  );
+  const constraints = toStringArray(parsed.constraints);
+  const tags = toStringArray(parsed.tags);
+  return { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta, currentStatus, completed, blockers, constraints, tags };
 }
 
 /**
@@ -569,12 +583,11 @@ async function transformHandoffOnce(sourceText: string, opts?: { onStream?: Stre
     // Validate handoff fields (title, currentStatus, resumeChecklist, nextActions, completed, tags)
     validateHandoffResult(parsed, sourceText);
     warnOutputLanguageMismatch(parsed, lang);
-    const completed = fuzzyDedupStrings(parsed.completed);
-    const { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta } = normalizeHandoffFields(parsed as Record<string, unknown>);
+    const { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta, currentStatus, completed, blockers, constraints, tags } = normalizeHandoffFields(parsed as Record<string, unknown>);
     return {
       title: parsed.title || 'Untitled',
       handoffMeta,
-      currentStatus: fuzzyDedupStrings(parsed.currentStatus),
+      currentStatus,
       resumeChecklist,
       resumeContext: resumeChecklist.length > 0
         ? resumeChecklist.map(r => r.action)
@@ -583,11 +596,11 @@ async function transformHandoffOnce(sourceText: string, opts?: { onStream?: Stre
       nextActionItems,
       actionBacklog: actionBacklog.length > 0 ? actionBacklog : undefined,
       completed,
-      blockers: fuzzyDedupStrings(filterResolvedBlockers(parsed.blockers, completed, decisions)),
+      blockers,
       decisions,
       decisionRationales,
-      constraints: parsed.constraints,
-      tags: parsed.tags,
+      constraints,
+      tags,
     };
   } catch (error) {
     if (import.meta.env.DEV) console.warn('[Transform] Parse error:', error);
@@ -711,14 +724,15 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
         // Validate handoff fields (title, currentStatus, resumeChecklist, nextActions, completed, tags)
         validateHandoffResult(h, sourceText);
         warnOutputLanguageMismatch(h, lang);
-        const hCompleted = fuzzyDedupStrings(toStringArray(h.completed));
         const hFields = normalizeHandoffFields(h);
         const hTitle = typeof h.title === 'string' ? h.title : '';
         const wTitle = typeof w.title === 'string' ? w.title : '';
+        // For tags, fall back to worklog tags if handoff has none
+        const hTags = hFields.tags.length > 0 ? hFields.tags : toStringArray(w.tags);
         return {
           title: hTitle || wTitle || 'Untitled',
           handoffMeta: hFields.handoffMeta,
-          currentStatus: fuzzyDedupStrings(toStringArray(h.currentStatus)),
+          currentStatus: hFields.currentStatus,
           resumeChecklist: hFields.resumeChecklist,
           resumeContext: hFields.resumeChecklist.length > 0
             ? hFields.resumeChecklist.map(r => r.action)
@@ -726,12 +740,12 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
           nextActions: hFields.nextActions,
           nextActionItems: hFields.nextActionItems,
           actionBacklog: hFields.actionBacklog.length > 0 ? hFields.actionBacklog : undefined,
-          completed: hCompleted,
-          blockers: fuzzyDedupStrings(filterResolvedBlockers(toStringArray(h.blockers), hCompleted, hFields.decisions)),
+          completed: hFields.completed,
+          blockers: hFields.blockers,
           decisions: hFields.decisions,
           decisionRationales: hFields.decisionRationales,
-          constraints: toStringArray(h.constraints),
-          tags: toStringArray(h.tags || w.tags),
+          constraints: hFields.constraints,
+          tags: hTags,
         };
       })(),
       classification: c && typeof c === 'object' ? (() => {

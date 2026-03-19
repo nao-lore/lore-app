@@ -2,6 +2,7 @@ import type { LogEntry, Project } from './types';
 import { callProvider, shouldUseBuiltinApi } from './provider';
 import { getApiKey, safeGetItem, safeSetItem } from './storage';
 import { extractJson } from './transform';
+import { safeJsonParse } from './utils/safeJsonParse';
 
 const CORRECTIONS_KEY = 'threadlog_classify_corrections';
 
@@ -19,12 +20,9 @@ interface Correction {
 // --- Correction storage for learning ---
 
 export function loadCorrections(): Correction[] {
-  try {
-    const raw = safeGetItem(CORRECTIONS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) { if (import.meta.env.DEV) console.warn('[classify] loadCorrections:', err); return []; }
+  const raw = safeGetItem(CORRECTIONS_KEY);
+  const parsed = safeJsonParse<unknown>(raw, []);
+  return Array.isArray(parsed) ? parsed as Correction[] : [];
 }
 
 export function saveCorrection(log: LogEntry, projectId: string): void {

@@ -4,6 +4,7 @@
 import { addLog, addProject, saveMasterNote, addTodosFromLogWithMeta, safeGetItem, safeSetItem } from './storage';
 import type { LogEntry, MasterNote } from './types';
 import type { Lang } from './i18n';
+import { safeJsonParse } from './utils/safeJsonParse';
 
 const SAMPLE_SEEDED_KEY = 'threadlog_sample_seeded';
 
@@ -611,7 +612,7 @@ export function seedSampleData(lang: Lang = 'en'): void {
   const project = addProject(c.projectName);
   project.pinned = true;
   project.icon = '🚀';
-  const projects = JSON.parse(safeGetItem('threadlog_projects') || '[]');
+  const projects = safeJsonParse<{ id: string }[]>(safeGetItem('threadlog_projects'), []);
   const idx = projects.findIndex((p: { id: string }) => p.id === project.id);
   if (idx >= 0) { projects[idx] = project; safeSetItem('threadlog_projects', JSON.stringify(projects)); }
 
@@ -691,7 +692,7 @@ export function seedSampleData(lang: Lang = 'en'): void {
   const project3 = addProject(isJa3 ? 'プロダクトローンチ戦略' : 'Product Launch Campaign');
   project3.icon = '📊';
   // pinned defaults to false — leave it unpinned
-  const projects3 = JSON.parse(safeGetItem('threadlog_projects') || '[]');
+  const projects3 = safeJsonParse<{ id: string }[]>(safeGetItem('threadlog_projects'), []);
   const idx3 = projects3.findIndex((p: { id: string }) => p.id === project3.id);
   if (idx3 >= 0) { projects3[idx3] = project3; safeSetItem('threadlog_projects', JSON.stringify(projects3)); }
 
@@ -776,7 +777,7 @@ export function seedSampleData(lang: Lang = 'en'): void {
   const project4 = addProject(isJa4 ? 'YouTube チャンネル運営' : 'YouTube Channel Growth');
   project4.pinned = true;
   project4.icon = '🎬';
-  const projects4 = JSON.parse(safeGetItem('threadlog_projects') || '[]');
+  const projects4 = safeJsonParse<{ id: string }[]>(safeGetItem('threadlog_projects'), []);
   const idx4 = projects4.findIndex((p: { id: string }) => p.id === project4.id);
   if (idx4 >= 0) { projects4[idx4] = project4; safeSetItem('threadlog_projects', JSON.stringify(projects4)); }
 

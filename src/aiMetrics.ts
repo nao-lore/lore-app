@@ -1,4 +1,5 @@
 import { safeGetItem, safeSetItem } from './storage';
+import { safeJsonParse } from './utils/safeJsonParse';
 
 const STORAGE_KEY = 'threadlog_ai_metrics';
 const MAX_METRICS = 200;
@@ -15,12 +16,8 @@ export interface TransformMetric {
 }
 
 function loadMetrics(): TransformMetric[] {
-  try {
-    const raw = safeGetItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  const raw = safeGetItem(STORAGE_KEY);
+  return safeJsonParse<TransformMetric[]>(raw, []);
 }
 
 let cache: TransformMetric[] | null = null;
