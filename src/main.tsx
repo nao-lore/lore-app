@@ -11,6 +11,18 @@ inject();
 
 initSentry();
 
+// Capture UTM parameters on first load for analytics
+(function captureUtmParams() {
+  const params = new URLSearchParams(window.location.search);
+  const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign'] as const;
+  for (const key of utmKeys) {
+    const value = params.get(key);
+    if (value) {
+      sessionStorage.setItem(key, value);
+    }
+  }
+})();
+
 // Catch unhandled promise rejections globally to prevent silent crashes
 window.addEventListener('unhandledrejection', (event) => {
   console.error('[Unhandled Rejection]', event.reason);

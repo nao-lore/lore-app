@@ -207,6 +207,31 @@ export default async function handler(req: Request): Promise<Response> {
     );
   }
 
+  // Input size validation
+  const MAX_SYSTEM_BYTES = 10 * 1024; // 10 KB
+  const MAX_USER_MESSAGE_BYTES = 100 * 1024; // 100 KB
+  const MIN_MAX_TOKENS = 100;
+  const MAX_MAX_TOKENS = 16384;
+
+  if (new TextEncoder().encode(system).length > MAX_SYSTEM_BYTES) {
+    return new Response(
+      JSON.stringify({ error: `System prompt exceeds maximum size of ${MAX_SYSTEM_BYTES / 1024}KB.` }),
+      { status: 400, headers: { ...cors, ...rlHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
+  if (new TextEncoder().encode(userMessage).length > MAX_USER_MESSAGE_BYTES) {
+    return new Response(
+      JSON.stringify({ error: `User message exceeds maximum size of ${MAX_USER_MESSAGE_BYTES / 1024}KB.` }),
+      { status: 400, headers: { ...cors, ...rlHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
+  if (typeof maxTokens === 'number' && (maxTokens < MIN_MAX_TOKENS || maxTokens > MAX_MAX_TOKENS)) {
+    return new Response(
+      JSON.stringify({ error: `maxTokens must be between ${MIN_MAX_TOKENS} and ${MAX_MAX_TOKENS}.` }),
+      { status: 400, headers: { ...cors, ...rlHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
+
   const geminiBody = {
     system_instruction: { parts: [{ text: system }] },
     contents: [{ role: 'user', parts: [{ text: userMessage }] }],
