@@ -174,7 +174,7 @@ export const HistoryCardItem = memo(function HistoryCardItem({ log, ctx }: { log
   } = ctx;
 
   const preview = buildPreview(log);
-  const modeLabel = log.outputMode === 'handoff' ? 'Handoff' : 'Log';
+  const modeLabel = log.outputMode === 'handoff' ? t('badgeSnapshot', lang) : t('badgeLog', lang);
   const today = isToday(log.createdAt);
   const isSelected = selected.has(log.id);
   const projectColor = log.projectId ? getProjectColor(projects.find((p) => p.id === log.projectId)?.color) : undefined;

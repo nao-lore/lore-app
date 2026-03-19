@@ -109,7 +109,7 @@ const RelatedLogsSection = memo(function RelatedLogsSection({ log, onOpenLog, la
                     onClick={() => handleLink(c.id)}
                   >
                     <span className={`${c.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'} shrink-0`}>
-                      {c.outputMode === 'handoff' ? 'H' : 'L'}
+                      {c.outputMode === 'handoff' ? t('badgeSnapshotShort', lang) : t('badgeLogShort', lang)}
                     </span>
                     <span className="truncate flex-1">{c.title}</span>
                   </button>
@@ -126,7 +126,7 @@ const RelatedLogsSection = memo(function RelatedLogsSection({ log, onOpenLog, la
           {linkedLogs.map((r) => (
             <span key={r.id} className="linked-log-chip">
               <span className={r.outputMode === 'handoff' ? 'badge-handoff-sm' : 'badge-worklog-sm'}>
-                {r.outputMode === 'handoff' ? 'H' : 'L'}
+                {r.outputMode === 'handoff' ? t('badgeSnapshotShort', lang) : t('badgeLogShort', lang)}
               </span>
               <span
                 className="linked-log-chip-title"

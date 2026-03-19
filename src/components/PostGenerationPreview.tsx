@@ -74,7 +74,7 @@ export default memo(function PostGenerationPreview({ savedResult, lang, showToas
           <button className="btn" onClick={async () => {
             try {
               await navigator.share({
-                title: 'Lore Handoff',
+                title: t('shareTitle', lang),
                 text: savedResult.fullContext || savedResult.markdown,
               });
             } catch (err) { if (import.meta.env.DEV) console.warn('[PostGenerationPreview] share:', err); }
