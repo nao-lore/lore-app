@@ -4,12 +4,12 @@
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
   <url>
-    <loc>https://lore-app.vercel.app/</loc>
+    <loc>https://loresync.dev/</loc>
     <lastmod>2026-03-14</lastmod>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://lore-app.vercel.app/lp/</loc>
+    <loc>https://loresync.dev/lp/</loc>
     <lastmod>2026-03-14</lastmod>
     <priority>0.8</priority>
   </url>

@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://lore-app.vercel.app">Live App</a> ·
+  <a href="https://loresync.dev">Live App</a> ·
   <a href="#features">Features</a> ·
   <a href="#getting-started">Getting Started</a> ·
   <a href="#chrome-extension">Chrome Extension</a>
@@ -93,7 +93,7 @@ Paste your ChatGPT / Claude / Gemini conversation into Lore, and it automaticall
 
 ### Use the hosted version
 
-Go to **[lore-app.vercel.app](https://lore-app.vercel.app)** — no signup required.
+Go to **[lore-app.vercel.app](https://loresync.dev)** — no signup required.
 
 1. Set up a free Gemini API key at [aistudio.google.com](https://aistudio.google.com)
 2. Paste it in Settings
