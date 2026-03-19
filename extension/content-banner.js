@@ -25,6 +25,7 @@
 
   var dismissed = false;   // User clicked "x" this session
   var injectedIds = {};    // projectId → true for this session
+  var injectedThisSession = false; // Flag to prevent double injection from banner
   var bannerEl = null;     // Current banner DOM element (or null)
   var checkTimer = null;   // setInterval handle
 
@@ -84,15 +85,6 @@
         resolve(null);
       }
     });
-  }
-
-  function getTabId() {
-    // Content scripts don't have direct access to their own tab ID,
-    // so we use a unique session identifier instead.
-    if (!window.__loreTabId) {
-      window.__loreTabId = 'tab_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-    }
-    return window.__loreTabId;
   }
 
   // =========================================================================
@@ -232,7 +224,7 @@
     var textSpan = document.createElement('span');
     textSpan.className = 'lore-banner-text';
     var label = '\uD83D\uDD35 Lore: ' + primaryContext.projectName + ' context available';
-    label += ' (updated ' + relativeTime(primaryContext.updatedAt) + ')';
+    label += ' (updated ' + relativeTime(primaryContext.lastUpdated) + ')';
     if (extraCount > 0) {
       label += ' (+' + extraCount + ' more)';
     }
@@ -287,18 +279,20 @@
   // =========================================================================
 
   async function handleLoadContext(ctx) {
-    var formattedText = formatContext(currentSite, ctx.projectName, ctx.updatedAt, ctx.fullContext);
+    // Prevent double injection from banner
+    if (injectedThisSession) return;
+
+    var formattedText = formatContext(currentSite, ctx.projectName, ctx.lastUpdated, ctx.fullContext);
     var success = injectText(currentSite, formattedText);
 
     if (success) {
-      var tabId = getTabId();
       injectedIds[ctx.projectId] = true;
+      injectedThisSession = true;
 
-      // Mark as injected in background for cross-check
+      // Mark as injected in background for cross-check (URL-based key)
       await sendMessage({
         type: 'mark-injected',
         projectId: ctx.projectId,
-        tabId: tabId,
         url: location.href,
       });
 
@@ -339,36 +333,38 @@
     if (dismissed) return;
 
     var response = await sendMessage({ type: 'get-contexts' });
-    if (!response || !response.contexts || response.contexts.length === 0) {
+    if (!response || !response.contexts || Object.keys(response.contexts).length === 0) {
       removeBanner(true);
       return;
     }
 
-    var contexts = response.contexts;
+    var contextsObj = response.contexts;
 
-    // Sort by updatedAt descending (most recent first)
-    contexts.sort(function (a, b) {
-      return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+    // Convert object to entries and sort by lastUpdated descending (most recent first)
+    var entries = Object.entries(contextsObj).sort(function (a, b) {
+      return new Date(b[1].lastUpdated || 0).getTime() - new Date(a[1].lastUpdated || 0).getTime();
     });
 
     // Find the first context that hasn't been injected this session
-    var tabId = getTabId();
     var primary = null;
     var available = [];
 
-    for (var i = 0; i < contexts.length; i++) {
-      var ctx = contexts[i];
-      if (injectedIds[ctx.projectId]) continue;
+    for (var i = 0; i < entries.length; i++) {
+      var projectId = entries[i][0];
+      var ctx = entries[i][1];
+      ctx.projectId = projectId; // attach projectId for downstream use
 
-      // Also check with background for cross-session injection tracking
+      if (injectedIds[projectId]) continue;
+
+      // Also check with background for cross-session injection tracking (URL-based)
       var wasInjectedResp = await sendMessage({
         type: 'was-injected',
-        projectId: ctx.projectId,
-        tabId: tabId,
+        projectId: projectId,
+        url: location.href,
       });
 
-      if (wasInjectedResp && wasInjectedResp.injected) {
-        injectedIds[ctx.projectId] = true;
+      if (wasInjectedResp?.injected) {
+        injectedIds[projectId] = true;
         continue;
       }
 
@@ -390,8 +386,8 @@
   // Lifecycle
   // =========================================================================
 
-  // Initial check after a short delay to let the page settle
-  setTimeout(checkAndShowBanner, 1500);
+  // Initial check after a delay to let the page settle and bridge sync complete
+  setTimeout(checkAndShowBanner, 2000);
 
   // Periodic re-check
   checkTimer = setInterval(checkAndShowBanner, CHECK_INTERVAL_MS);

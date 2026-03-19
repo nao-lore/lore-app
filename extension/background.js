@@ -18,6 +18,17 @@ const BADGE_COLOR = '#7c5cfc';
 const STORAGE_KEY = 'lore_contexts';
 const INJECTION_PREFIX = 'injected_';
 
+/**
+ * Simple string hash for creating URL-based session storage keys.
+ */
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
 // ---------------------------------------------------------------------------
 // Badge helpers
 // ---------------------------------------------------------------------------
@@ -46,8 +57,8 @@ async function updateBadge(tabId, url) {
 
   try {
     const result = await chrome.storage.local.get(STORAGE_KEY);
-    const contexts = result[STORAGE_KEY] ?? [];
-    const count = Array.isArray(contexts) ? contexts.length : 0;
+    const contexts = result[STORAGE_KEY] ?? {};
+    const count = typeof contexts === 'object' && contexts !== null ? Object.keys(contexts).length : 0;
 
     if (count > 0) {
       await chrome.action.setBadgeBackgroundColor({ color: BADGE_COLOR, tabId });
@@ -120,7 +131,7 @@ async function handleMessage(message, sender) {
     // -----------------------------------------------------------------------
     case 'get-contexts': {
       const result = await chrome.storage.local.get(STORAGE_KEY);
-      return { contexts: result[STORAGE_KEY] ?? [] };
+      return { contexts: result[STORAGE_KEY] ?? {} };
     }
 
     // -----------------------------------------------------------------------
@@ -129,8 +140,8 @@ async function handleMessage(message, sender) {
     case 'get-context': {
       const { projectId } = message;
       const result = await chrome.storage.local.get(STORAGE_KEY);
-      const contexts = result[STORAGE_KEY] ?? [];
-      const found = contexts.find((c) => c.projectId === projectId) ?? null;
+      const contexts = result[STORAGE_KEY] ?? {};
+      const found = contexts[projectId] ?? null;
       return { context: found };
     }
 
@@ -139,9 +150,10 @@ async function handleMessage(message, sender) {
     // -----------------------------------------------------------------------
     case 'mark-injected': {
       const { projectId, tabId, url } = message;
-      const key = `${INJECTION_PREFIX}${projectId}_${tabId}`;
+      const urlHash = url ? simpleHash(url) : (tabId || 'unknown');
+      const key = `${INJECTION_PREFIX}${projectId}_${urlHash}`;
       await chrome.storage.session.set({
-        [key]: { projectId, tabId, url, injectedAt: Date.now() },
+        [key]: { projectId, url, injectedAt: Date.now() },
       });
 
       // Flash checkmark on the originating tab
@@ -156,8 +168,9 @@ async function handleMessage(message, sender) {
     // Check if a context was already injected into a tab
     // -----------------------------------------------------------------------
     case 'was-injected': {
-      const { projectId, tabId } = message;
-      const key = `${INJECTION_PREFIX}${projectId}_${tabId}`;
+      const { projectId, tabId, url } = message;
+      const urlHash = url ? simpleHash(url) : (tabId || 'unknown');
+      const key = `${INJECTION_PREFIX}${projectId}_${urlHash}`;
       const result = await chrome.storage.session.get(key);
       return { injected: !!result[key] };
     }
@@ -167,8 +180,8 @@ async function handleMessage(message, sender) {
     // -----------------------------------------------------------------------
     case 'sync-from-lore': {
       const { contexts } = message;
-      if (!Array.isArray(contexts)) {
-        return { error: 'contexts must be an array' };
+      if (typeof contexts !== 'object' || contexts === null || Array.isArray(contexts)) {
+        return { error: 'contexts must be a non-null object keyed by projectId' };
       }
       await chrome.storage.local.set({ [STORAGE_KEY]: contexts });
 
@@ -180,7 +193,7 @@ async function handleMessage(message, sender) {
         }
       }
 
-      return { success: true, count: contexts.length };
+      return { success: true, count: Object.keys(contexts).length };
     }
 
     default:

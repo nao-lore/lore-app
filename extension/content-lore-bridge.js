@@ -6,11 +6,11 @@
  * 2. Listening for `lore-context-updated` custom events for live updates
  *
  * The PWA writes context data to localStorage under the key
- * `lore_extension_contexts`, and this script forwards it to the
+ * `lore_contexts`, and this script forwards it to the
  * background service worker via chrome.runtime.sendMessage.
  */
 
-const LORE_STORAGE_KEY = 'lore_extension_contexts';
+const LORE_STORAGE_KEY = 'lore_contexts';
 
 /**
  * Read contexts from localStorage and send them to the background worker.
@@ -21,8 +21,8 @@ async function syncContexts() {
     if (!raw) return;
 
     const contexts = JSON.parse(raw);
-    if (!Array.isArray(contexts)) {
-      console.warn('[Lore Bridge] Expected array in localStorage, got:', typeof contexts);
+    if (typeof contexts !== 'object' || contexts === null || Array.isArray(contexts)) {
+      console.warn('[Lore Bridge] Expected object in localStorage, got:', typeof contexts);
       return;
     }
 
