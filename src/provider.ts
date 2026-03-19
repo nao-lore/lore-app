@@ -11,7 +11,7 @@
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import { callWithRetry } from './utils/retryManager';
 import { parseSSEStream, extractGeminiText, extractAnthropicText } from './utils/streamParser';
-import { encrypt, decrypt, isEncrypted, getCachedKey, setCachedKey } from './utils/crypto';
+import { encrypt, decrypt, isEncrypted, getCachedKey, setCachedKey, readKeyForSlot } from './utils/crypto';
 
 export type ProviderName = 'anthropic' | 'gemini' | 'openai';
 
@@ -614,19 +614,13 @@ export function setActiveProvider(name: ProviderName): void {
  * Encrypted keys require initKeyCache() to have run first.
  */
 export function getProviderApiKey(provider: ProviderName): string {
-  // Check shared decrypted cache first (populated by initKeyCache or setProviderApiKey)
-  const cached = getCachedKey(provider);
-  if (cached !== undefined) return cached;
-
   const stored = safeGetItem(`threadlog_api_key_${provider}`) || '';
-  if (!stored) return '';
-
-  // If encrypted and not yet cached, return empty (initKeyCache will populate)
-  if (isEncrypted(stored)) return '';
-
-  // Plaintext — cache and return
-  setCachedKey(provider, stored);
-  return stored;
+  const key = readKeyForSlot(provider, stored);
+  // Cache plaintext keys on first read so subsequent sync reads are fast
+  if (key && !isEncrypted(stored)) {
+    setCachedKey(provider, key);
+  }
+  return key;
 }
 
 /**

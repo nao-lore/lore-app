@@ -415,8 +415,6 @@ NOTE: Do NOT output handoffMeta or resumeChecklist — those are generated at fi
 
 Language: Match input. Japanese → Japanese (keep file names/code terms in English). English → English.`;
 
-/** Alias — same as CHUNK_HANDOFF_EXTRACT_PROMPT */
-export const CHUNK_HANDOFF_EXTRACT_LIGHT_PROMPT = CHUNK_HANDOFF_EXTRACT_PROMPT;
 
 export const CHUNK_HANDOFF_EXTRACT_ULTRA_PROMPT = `JSON extraction machine. Output ONLY valid JSON. No text before/after. No markdown.
 

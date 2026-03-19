@@ -33,6 +33,22 @@ export function isEncrypted(value: string): boolean {
   return value.startsWith(ENCRYPTED_PREFIX);
 }
 
+/**
+ * Read an API key for a given storage slot.
+ * Checks the decrypted cache first, then falls back to raw localStorage.
+ * Encrypted keys that haven't been cached yet return '' (initKeyCache populates them).
+ *
+ * This is the single source of truth for API key retrieval — used by both
+ * getApiKey (storage/settings.ts) and getProviderApiKey (provider.ts).
+ */
+export function readKeyForSlot(slot: string, rawValue: string): string {
+  const cached = decryptedKeyCache.get(slot);
+  if (cached !== undefined) return cached;
+  if (!rawValue) return '';
+  if (rawValue.startsWith(ENCRYPTED_PREFIX)) return '';
+  return rawValue;
+}
+
 /** Derive a stable device fingerprint (not cryptographically strong, but prevents casual reads) */
 function getDeviceFingerprint(): string {
   const parts: string[] = [];
