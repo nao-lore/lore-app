@@ -4401,10 +4401,28 @@ button[disabled] {
     border: 1px solid ButtonText;
   }
 
-  /* Ensure focus indicators are visible */
+  /* Ensure focus indicators use system colors with transparent outline fallback */
   :focus-visible {
     outline: 2px solid Highlight;
     outline-offset: 2px;
+  }
+
+  /* Transparent outlines become visible in forced-colors mode */
+  .btn:focus-visible,
+  .input:focus-visible,
+  .card:focus-visible,
+  .sidebar-nav-item:focus-visible,
+  .tag:focus-visible,
+  .content-card:focus-visible,
+  .action-sheet button:focus-visible,
+  .list-row:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  /* Ensure text uses system colors for readability */
+  .btn {
+    color: ButtonText;
   }
 
   /* Badges need visible borders */
@@ -4414,6 +4432,11 @@ button[disabled] {
 
   /* Tags */
   .tag {
+    border: 1px solid ButtonText;
+  }
+
+  /* Dropdown / select elements */
+  select, .dropdown, .select-wrapper select {
     border: 1px solid ButtonText;
   }
 
@@ -4432,9 +4455,30 @@ button[disabled] {
     border: 1px solid ButtonText;
   }
 
+  /* Modal / dialog borders */
+  .modal, .dialog, .tooltip {
+    border: 1px solid CanvasText;
+  }
+
   /* Color-only indicators need borders */
   .priority-dot, .snooze-badge, .overdue-badge {
     border: 1px solid ButtonText;
+  }
+
+  /* Dividers and separators */
+  hr, .divider {
+    border-color: CanvasText;
+  }
+
+  /* Links should use system link colors */
+  a {
+    color: LinkText;
+  }
+
+  /* Disabled state */
+  .btn:disabled, button:disabled {
+    color: GrayText;
+    border-color: GrayText;
   }
 
   /* Selected states */
@@ -4442,6 +4486,11 @@ button[disabled] {
   .card-selected,
   .list-row-selected {
     outline: 2px solid Highlight;
+  }
+
+  /* Checkbox and toggle indicators */
+  .todo-checkbox, .toggle-track {
+    border: 1px solid ButtonText;
   }
 }
 
