@@ -12,6 +12,6 @@ You paste your Claude conversation (or ChatGPT/Gemini), and it extracts a struct
 
 It's free (20 transforms/day, no API key needed) and runs entirely in your browser — nothing stored on any server.
 
-https://loresync.dev
+https://loresync.dev?utm_source=reddit
 
 Still in beta, so feedback is very welcome. What would make this more useful for how you use Claude?
