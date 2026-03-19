@@ -1589,7 +1589,9 @@ textarea.input:focus {
   transition: opacity 0.12s ease;
   flex-shrink: 0;
 }
-.sidebar-project-item:hover .sidebar-project-actions {
+.sidebar-project-item:hover .sidebar-project-actions,
+.sidebar-project-item:focus-within .sidebar-project-actions,
+.sidebar-project-actions:focus-within {
   opacity: 1;
 }
 
@@ -2193,7 +2195,9 @@ textarea.input:focus {
   transition: opacity 0.15s;
   flex-shrink: 0;
 }
-.mn-editable-list-item:hover .mn-item-remove {
+.mn-editable-list-item:hover .mn-item-remove,
+.mn-editable-list-item:focus-within .mn-item-remove,
+.mn-item-remove:focus-visible {
   opacity: 1;
 }
 .mn-item-remove:hover {
@@ -4302,7 +4306,8 @@ button[disabled] {
   transition: opacity 0.2s, transform 0.2s;
   z-index: 100;
 }
-.scroll-to-top.visible {
+.scroll-to-top.visible,
+.scroll-to-top:focus-visible {
   opacity: 1;
   transform: translateY(0);
 }

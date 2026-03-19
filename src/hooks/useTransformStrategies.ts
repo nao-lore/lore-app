@@ -44,11 +44,11 @@ export function djb2Hash(str: string): string {
 }
 
 /** Compute a cache key from text content and action.
- *  Uses only the first 1000 chars as prefix to avoid memory explosion on large inputs.
+ *  Hashes the full text (djb2 processes char-by-char, no memory overhead).
  *  Includes model version so model upgrades don't return stale results. */
 export function hashCacheKey(text: string, action: string, provider: string, lang: string, model: string): string {
-  const prefix = text.slice(0, 1000);
-  const composite = `${action}:${provider}:${model}:${lang}:${text.length}:${prefix}`;
+  const textHash = djb2Hash(text);
+  const composite = `${action}:${provider}:${model}:${lang}:${text.length}:${textHash}`;
   return djb2Hash(composite);
 }
 
