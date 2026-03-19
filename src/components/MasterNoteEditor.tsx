@@ -42,7 +42,7 @@ export const ReadOnlyText = memo(function ReadOnlyText({ label, value }: { label
   return (
     <div className="content-card">
       <div className="content-card-header">{label}</div>
-      <p className="text-body" style={{ lineHeight: 1.7, margin: 0 }}>
+      <p className="text-body text-body-prose">
         {value || '\u00a0'}
       </p>
     </div>
@@ -70,7 +70,7 @@ export const ReadOnlyList = memo(function ReadOnlyList({
             .map((id) => ({ id, log: logs.find((l) => l.id === id) }))
             .filter((s): s is { id: string; log: LogEntry } => !!s.log);
           return (
-            <li key={i} style={{ fontSize: 14, lineHeight: 1.7, marginBottom: 4 }}>
+            <li key={i} className="mn-list-item">
               {item.text}
               {validSources.length > 0 && (
                 <span className="mn-source-links">

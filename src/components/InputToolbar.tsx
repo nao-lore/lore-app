@@ -69,7 +69,7 @@ export default memo(function InputToolbar({
           {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
 
-        <input ref={fileImportRef} type="file" accept=".txt,.md,.docx,.json" multiple onChange={handleFiles} aria-label={t('ariaSelectFile', lang)} style={{ display: 'none' }} />
+        <input ref={fileImportRef} type="file" accept=".txt,.md,.docx,.json" multiple onChange={handleFiles} aria-label={t('ariaSelectFile', lang)} className="input-file-hidden" />
         <button className="input input-sm input-import-btn" onClick={() => fileImportRef.current?.click()} disabled={loading}>
           + {files.length === 0 ? t('importFiles', lang) : t('addMoreFiles', lang)}
         </button>
