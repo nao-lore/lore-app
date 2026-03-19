@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useFocusTrap } from './useFocusTrap';
 import { Check, Download, Upload, AlertTriangle } from 'lucide-react';
-import { getLang, setLang, getUiLang, exportAllData, validateBackup, importData, getDataUsage, formatBytes, getAutoReportSetting, setAutoReportSetting, isDemoMode, setDemoMode, getFeatureEnabled, setFeatureEnabled, safeGetItem } from './storage';
+import { getLang, setLang, getUiLang, exportAllData, validateBackup, importData, getDataUsage, formatBytes, getAutoReportSetting, setAutoReportSetting, isDemoMode, setDemoMode, getFeatureEnabled, setFeatureEnabled, safeGetItem, getWeeklyGoal, setWeeklyGoal } from './storage';
 import { resetOnboarding } from './onboardingState';
 import type { ThemePref, LoreBackup } from './storage';
 import {
@@ -53,6 +53,9 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
 
   // Auto weekly report
   const [autoReport, setAutoReport] = useState(getAutoReportSetting);
+
+  // Weekly goal
+  const [weeklyGoalValue, setWeeklyGoalValue] = useState(() => getWeeklyGoal());
 
   const [keyErrors, setKeyErrors] = useState<Record<ProviderName, string>>({ anthropic: '', gemini: '', openai: '' });
   const [notionError, setNotionError] = useState('');
@@ -499,6 +502,29 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
                 </div>
               </div>
             </label>
+          </div>
+        </div>
+
+        {/* Weekly Goal */}
+        <div className="content-card">
+          <div className="content-card-header">{t('weeklyGoalLabel', lang)}</div>
+          <div className="flex-row-gap-sm" style={{ alignItems: 'center' }}>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={weeklyGoalValue}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                if (!isNaN(v)) {
+                  setWeeklyGoalValue(v);
+                  setWeeklyGoal(v);
+                }
+              }}
+              className="input"
+              style={{ width: 80 }}
+              aria-label={t('weeklyGoalLabel', lang)}
+            />
           </div>
         </div>
 

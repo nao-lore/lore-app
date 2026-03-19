@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { Clipboard, Zap, LayoutDashboard, ArrowRight, Globe, MessageSquare, Github, Shield, CheckCircle, WifiOff, Users, Mail } from 'lucide-react';
+import { Clipboard, Zap, LayoutDashboard, ArrowRight, Globe, MessageSquare, Github, Shield, CheckCircle, WifiOff, Users, Mail, Chrome } from 'lucide-react';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { getTotalSnapshots } from './storage';
@@ -185,6 +185,32 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
             <h3 className="lp-feature-title">{t('lpFeature3Title', lang)}</h3>
             <p className="lp-feature-desc">{t('lpFeature3Desc', lang)}</p>
           </div>
+        </div>
+      </section>
+
+      {/* Chrome Extension Section */}
+      <section className="lp-section" aria-labelledby="lp-extension">
+        <h2 id="lp-extension" className="lp-section-title">
+          <Chrome size={24} aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: 8 }} />
+          {t('lpExtensionTitle', lang)}
+        </h2>
+        <p className="lp-hero-subheadline" style={{ maxWidth: 640, margin: '0 auto 16px' }}>
+          {t('lpExtensionHeadline', lang)}
+        </p>
+        <p style={{ maxWidth: 640, margin: '0 auto 24px', fontSize: 15, lineHeight: 1.7, color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
+          {t('lpExtensionDesc', lang)}
+        </p>
+        <div style={{ textAlign: 'center' }}>
+          <a
+            href={CHROME_EXTENSION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary lp-cta-primary"
+            onClick={() => { if (typeof gtag === 'function') gtag('event', 'extension_lp_click'); }}
+          >
+            <Chrome size={16} aria-hidden="true" />
+            {t('lpExtensionCta', lang)}
+          </a>
         </div>
       </section>
 

@@ -224,7 +224,30 @@ TAGS rules:
 OUTPUT LANGUAGE RULE:
 - Japanese input → output in Japanese. BUT keep file names (chunkEngine.ts), code identifiers (currentStatus, parseConversationJson), API names, and technical terms (API, JSON, chunk, retry) in English.
 - English input → output in English.
-- Style: Japanese sentences with English technical terms inline. Example: "Workspace.tsx のerror handling を修正済み。rate limit時のretry loopが安定動作する。"`;
+- Style: Japanese sentences with English technical terms inline. Example: "Workspace.tsx のerror handling を修正済み。rate limit時のretry loopが安定動作する。"
+
+GOLDEN EXAMPLE — shows the expected quality and format:
+
+Input conversation snippet:
+User: I need to decide between PostgreSQL and MongoDB for the new analytics service.
+Assistant: PostgreSQL is better for complex queries, MongoDB for flexible schemas.
+User: Good points. Let's go with PostgreSQL — we need JOIN support for the dashboard queries.
+User: Next I need to set up the connection pooling with PgBouncer before we deploy.
+
+Expected output:
+{
+  "title": "Analytics DB Selection: PostgreSQL",
+  "handoffMeta": {"sessionFocus": "Database selection for analytics service", "whyThisSession": "DB choice blocks schema design and deployment pipeline", "timePressure": null},
+  "currentStatus": ["PostgreSQL is selected as the analytics DB. Connection pooling setup with PgBouncer is not yet started."],
+  "resumeChecklist": [{"action": "Verify PostgreSQL instance is provisioned and accessible", "whyNow": "PgBouncer config depends on a running PostgreSQL instance", "ifSkipped": "Connection pooling setup will fail without a target DB"}],
+  "nextActions": [{"action": "Set up PgBouncer connection pooling for PostgreSQL", "whyImportant": "Required before deployment — app cannot handle production load without pooling", "priorityReason": "Blocks deployment", "dueBy": null, "dependsOn": ["PostgreSQL instance provisioned"]}],
+  "actionBacklog": [],
+  "completed": ["Selected PostgreSQL over MongoDB for analytics service"],
+  "blockers": [],
+  "decisions": [{"decision": "Use PostgreSQL for analytics service", "rationale": "JOIN support needed for dashboard queries"}],
+  "constraints": [],
+  "tags": ["database", "PostgreSQL", "analytics", "infrastructure"]
+}`;
 
 export const BOTH_PROMPT = VERSION_HEADER + `You extract BOTH a work log AND a restart memo from an AI chat history in a single pass.
 You are strict and conservative. You only extract what the USER explicitly stated or confirmed.
@@ -413,7 +436,14 @@ Field rules:
 
 NOTE: Do NOT output handoffMeta or resumeChecklist — those are generated at final merge.
 
-Language: Match input. Japanese → Japanese (keep file names/code terms in English). English → English.`;
+Language: Match input. Japanese → Japanese (keep file names/code terms in English). English → English.
+
+GOLDEN EXAMPLE — chunk extraction output:
+
+Input: "User: Let's switch the cache layer from Redis to Memcached. Assistant: OK. User: Also need to update the TTL to 300s in config.yaml."
+
+Expected:
+{"title":"Cache layer migration","currentStatus":["Cache layer is switching from Redis to Memcached. TTL update to 300s in config.yaml is pending."],"nextActions":[{"action":"Update TTL to 300s in config.yaml","whyImportant":"Config must match new Memcached setup","priorityReason":null,"dueBy":null,"dependsOn":null}],"actionBacklog":[],"decisions":[{"decision":"Switch cache from Redis to Memcached","rationale":null}],"blockers":[],"constraints":[]}`;
 
 
 export const CHUNK_HANDOFF_EXTRACT_ULTRA_PROMPT = `JSON extraction machine. Output ONLY valid JSON. No text before/after. No markdown.

@@ -152,6 +152,22 @@ export function getStreak(): number {
   } catch (err) { if (import.meta.env.DEV) console.warn('[storage] getStreak', err); return 0; }
 }
 
+// ─── Weekly Goal ───
+
+const WEEKLY_GOAL_KEY = 'threadlog_weekly_goal';
+
+export function getWeeklyGoal(): number {
+  const raw = safeGetItem(WEEKLY_GOAL_KEY);
+  if (!raw) return 5;
+  const n = Number(raw);
+  return isNaN(n) || n < 1 || n > 50 ? 5 : n;
+}
+
+export function setWeeklyGoal(n: number): void {
+  const clamped = Math.max(1, Math.min(50, Math.round(n)));
+  safeSetItem(WEEKLY_GOAL_KEY, String(clamped));
+}
+
 // ─── Data Export / Import ───
 
 const WEEKLY_REPORTS_KEY = 'threadlog_weekly_reports';

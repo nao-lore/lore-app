@@ -10,6 +10,7 @@ import type { ChunkSession, PartialResult } from './chunkDb';
 import { computeSourceHash, loadSession, saveSession, deleteSession } from './chunkDb';
 import { getLang } from './storage';
 import { callProvider, callProviderStream, getActiveProvider } from './provider';
+import type { ProviderName } from './provider';
 import type { StreamCallback } from './provider';
 import { normalizeResumeChecklist, normalizeHandoffMeta, normalizeHandoffFields, detectLanguage, extractJson } from './transform';
 import { dedupDecisions } from './utils/decisions';
@@ -65,16 +66,36 @@ function isCJK(code: number): boolean {
 }
 
 /**
- * Estimate token count for a string.
- * English/ASCII: ~4 chars per token (GPT-style BPE average).
- * CJK characters: ~1-2 chars per token (each character is often its own token).
- * This provides a more accurate estimate than raw character count,
- * especially for Japanese/Chinese/Korean text which has higher token density.
+ * Provider-specific character-per-token ratios.
+ * Each tokenizer behaves differently:
+ * - Gemini: ~3.5 chars/token for English, ~1.5 for CJK
+ * - Anthropic (Claude): ~3.8 chars/token for English, ~1.3 for CJK
+ * - OpenAI: ~4.0 chars/token for English, ~1.5 for CJK
+ */
+const TOKEN_RATIOS: Record<ProviderName, { english: number; cjk: number }> = {
+  gemini:    { english: 3.5, cjk: 1.5 },
+  anthropic: { english: 3.8, cjk: 1.3 },
+  openai:    { english: 4.0, cjk: 1.5 },
+};
+
+/** Default ratios used when no provider is specified (Gemini-like) */
+const DEFAULT_TOKEN_RATIO = TOKEN_RATIOS.gemini;
+
+/**
+ * Estimate token count for a string, using provider-specific ratios.
+ *
+ * Each provider's tokenizer handles English and CJK text differently.
+ * When no provider is specified, falls back to the active provider setting,
+ * then to Gemini defaults.
  *
  * Uses codePointAt() to correctly handle supplementary plane characters
  * (e.g. CJK Extension B, U+20000+) which are encoded as surrogate pairs in UTF-16.
  */
-export function estimateTokens(text: string): number {
+export function estimateTokens(text: string, provider?: ProviderName): number {
+  const ratios = provider
+    ? (TOKEN_RATIOS[provider] ?? DEFAULT_TOKEN_RATIO)
+    : (TOKEN_RATIOS[getActiveProvider()] ?? DEFAULT_TOKEN_RATIO);
+
   let asciiChars = 0;
   let cjkChars = 0;
   for (let i = 0; i < text.length; i++) {
@@ -89,8 +110,7 @@ export function estimateTokens(text: string): number {
       asciiChars++;
     }
   }
-  // English: ~4 chars/token, CJK: ~1.5 chars/token (conservative)
-  return Math.ceil(asciiChars / 4 + cjkChars / 1.5);
+  return Math.ceil(asciiChars / ratios.english + cjkChars / ratios.cjk);
 }
 
 /** Convert a token target to an approximate character limit for the given text */

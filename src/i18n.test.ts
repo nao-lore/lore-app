@@ -164,6 +164,7 @@ describe('i18n', () => {
       proExpires: ['2026-12-31'],
       errorRateLimitWithCooldown: [30],
       lpSnapshotsCreated: [42],
+      weeklyGoalProgress: [3, 5],
     };
 
     it('all function labels return non-empty strings for ja', () => {
