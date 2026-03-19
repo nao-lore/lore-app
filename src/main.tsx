@@ -6,6 +6,7 @@ import App from './App.tsx'
 import { initSentry } from './utils/sentry'
 import { initKeyCache } from './provider'
 import { isTransformActive } from './utils/transformState'
+import { observeWebVitals } from './utils/webVitals'
 
 inject();
 
@@ -41,6 +42,9 @@ window.addEventListener('beforeunload', (e) => {
 initKeyCache().catch(() => {
   // Decryption failed — keys remain empty, user can re-enter in Settings
 });
+
+// Collect Web Vitals (FCP, LCP, CLS, INP) — logs in dev, sends to Vercel Analytics in prod
+observeWebVitals();
 
 if (import.meta.env.DEV) {
   import('@axe-core/react').then(({ default: axe }) => {
