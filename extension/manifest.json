@@ -25,7 +25,10 @@
     "*://chat.openai.com/*",
     "*://claude.ai/*",
     "*://gemini.google.com/*",
-    "*://loresync.dev/*"
+    "*://loresync.dev/*",
+    "http://localhost:5173/*",
+    "http://localhost:5178/*",
+    "http://localhost:4173/*"
   ],
   "content_scripts": [
     {
@@ -35,7 +38,7 @@
       "run_at": "document_idle"
     },
     {
-      "matches": ["*://loresync.dev/*"],
+      "matches": ["*://loresync.dev/*", "http://localhost:5173/*", "http://localhost:5178/*", "http://localhost:4173/*"],
       "js": ["content-lore-bridge.js"],
       "run_at": "document_idle"
     }
