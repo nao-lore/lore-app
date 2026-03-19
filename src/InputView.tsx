@@ -405,7 +405,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
             if (trial.remaining !== undefined) {
               return (
                 <span className="input-usage-counter">
-                  {tf('transformsRemaining', lang, trial.remaining)}
+                  {tf('transformsRemaining', lang, trial.remaining, DAILY_LIMIT_FREE)}
                 </span>
               );
             }

@@ -160,7 +160,7 @@ describe('i18n', () => {
       trialActive: [5],
       pricingUsedToday: [3, 5],
       dailyLimitReached: [5, 5],
-      transformsRemaining: [3],
+      transformsRemaining: [3, 30],
       proExpires: ['2026-12-31'],
     };
 
