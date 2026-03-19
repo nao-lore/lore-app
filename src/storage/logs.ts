@@ -22,7 +22,7 @@ export function loadAllLogs(): LogEntry[] {
   const raw = safeGetItem(LOGS_KEY);
   if (!raw) return [];
   try {
-    const logs: LogEntry[] = JSON.parse(raw);
+    const logs: LogEntry[] = safeJsonParse<LogEntry[]>(raw, []);
     // Auto-migrate: strip sourceText from old logs on first load
     if (!safeGetItem(MIGRATION_KEY) && logs.some((l) => l.sourceText)) {
       const migrated = logs.map((l) => {
