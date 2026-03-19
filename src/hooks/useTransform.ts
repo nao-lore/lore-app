@@ -22,6 +22,7 @@ import { isStaleMasterNote } from '../utils/staleness';
 import { canTransform, incrementDailyUsage, DAILY_LIMIT_FREE } from '../utils/trialManager';
 import { AIError } from '../errors';
 import { setTransformActive } from '../utils/transformState';
+import { saveContextForExtension } from '../utils/extensionBridge';
 
 import type { TransformContext, ActionResult } from './useTransformStrategies';
 import {
@@ -185,6 +186,13 @@ export function useTransform(params: UseTransformParams) {
           const md = formatHandoffMarkdown(actionResult.savedHandoffLog);
           setSavedResult({ log: actionResult.savedHandoffLog, markdown: md, fullContext: null });
           setWasFirstTransform(isFirstTransform);
+
+          // Persist context for Chrome extension
+          const effectivePid = actionResult.savedHandoffLog.projectId || selectedProjectId;
+          if (effectivePid) {
+            const pName = projects.find(p => p.id === effectivePid)?.name ?? '';
+            saveContextForExtension(effectivePid, pName, md, md, actionResult.savedHandoffLog.title);
+          }
         }
         setSavedId(actionResult.lastEntryId);
         if (actionResult.todoCount > 0) showToast?.(tf('toastTodosExtracted', lang, actionResult.todoCount), 'success');
@@ -265,6 +273,15 @@ export function useTransform(params: UseTransformParams) {
         }
         setSavedResult({ log: actionResult.savedHandoffLog, markdown: handoffMd, fullContext: fullContextMd });
         setWasFirstTransform(isFirstTransform);
+
+        // Persist context for Chrome extension
+        const effectivePid = actionResult.savedHandoffLog.projectId || selectedProjectId;
+        if (effectivePid) {
+          const pName = projects.find(p => p.id === effectivePid)?.name ?? '';
+          const contextForExt = fullContextMd || handoffMd;
+          saveContextForExtension(effectivePid, pName, contextForExt, handoffMd, actionResult.savedHandoffLog.title);
+        }
+
         if (isHandoffTodo && actionResult.todoCount > 0) {
           const todoMsg = tf('toastTodosExtracted', lang, actionResult.todoCount);
           showToast?.(isFirstTransform ? `🎉 ${todoMsg}` : todoMsg, 'success');

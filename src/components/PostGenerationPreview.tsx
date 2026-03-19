@@ -4,6 +4,7 @@ import { HandoffResultDisplay } from '../ResultDisplay';
 import { t } from '../i18n';
 import type { Lang } from '../i18n';
 import type { SavedResult } from '../hooks/useTransform';
+import { saveContextForExtension } from '../utils/extensionBridge';
 
 type SavedResultData = SavedResult;
 
@@ -48,6 +49,16 @@ export default memo(function PostGenerationPreview({ savedResult, lang, showToas
             onClick={() => {
               const text = savedResult.fullContext + '\n\n---\n\n' + savedResult.markdown;
               try { navigator.clipboard.writeText(text); } catch (err) { if (import.meta.env.DEV) console.warn('[PostGenerationPreview] clipboard write:', err); }
+              // Persist for Chrome extension
+              if (savedResult.log.projectId) {
+                saveContextForExtension(
+                  savedResult.log.projectId,
+                  savedResult.log.title,
+                  text,
+                  savedResult.markdown,
+                  savedResult.log.title,
+                );
+              }
               showToast?.(t('copiedToClipboard', lang), 'success');
             }}
           >
@@ -58,6 +69,16 @@ export default memo(function PostGenerationPreview({ savedResult, lang, showToas
             className="btn btn-primary"
             onClick={() => {
               try { navigator.clipboard.writeText(savedResult.markdown); } catch (err) { if (import.meta.env.DEV) console.warn('[PostGenerationPreview] clipboard write:', err); }
+              // Persist for Chrome extension
+              if (savedResult.log.projectId) {
+                saveContextForExtension(
+                  savedResult.log.projectId,
+                  savedResult.log.title,
+                  savedResult.markdown,
+                  savedResult.markdown,
+                  savedResult.log.title,
+                );
+              }
               showToast?.(t('copiedToClipboard', lang), 'success');
             }}
           >

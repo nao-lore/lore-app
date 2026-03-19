@@ -1,9 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Lore Capture",
-  "version": "0.1.0",
-  "description": "Capture any AI conversation and send it to Lore with one click. Lore turns it into a structured project snapshot — status, decisions, and next actions — so your next session starts with full context.",
-  "permissions": ["activeTab", "scripting", "tabs"],
+  "name": "Lore — AI Context Sync",
+  "version": "0.2.0",
+  "description": "Capture AI conversations and inject project context. Your AI sessions never start from zero again.",
+  "permissions": ["activeTab", "scripting", "tabs", "storage"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -21,7 +24,21 @@
     "*://chatgpt.com/*",
     "*://chat.openai.com/*",
     "*://claude.ai/*",
-    "*://gemini.google.com/*"
+    "*://gemini.google.com/*",
+    "*://loresync.dev/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://claude.ai/*", "*://chatgpt.com/*", "*://chat.openai.com/*", "*://gemini.google.com/*"],
+      "js": ["content-banner.js"],
+      "css": ["content-banner.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://loresync.dev/*"],
+      "js": ["content-lore-bridge.js"],
+      "run_at": "document_idle"
+    }
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'"
