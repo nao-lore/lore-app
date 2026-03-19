@@ -180,6 +180,9 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
           <p className="meta meta-desc">
             {t('apiKeyDesc', lang)}
           </p>
+          <p className="meta meta-desc fs-12">
+            {t('modelHint', lang)}
+          </p>
           <div className="flex-row-gap-sm">
             <input
               className="input settings-flex-max"

@@ -2153,6 +2153,18 @@ const labels = {
   // Share title
   shareTitle: { ja: 'Lore スナップショット', en: 'Lore Snapshot', es: 'Lore Snapshot', fr: 'Lore Snapshot', de: 'Lore Snapshot', zh: 'Lore 快照', ko: 'Lore 스냅샷', pt: 'Lore Snapshot' },
 
+  // Model hint (Settings)
+  modelHint: {
+    ja: 'Gemini Flash: 最速・無料枠あり。独自のAPIキーを設定すると他のモデルも使えます。',
+    en: 'Gemini Flash: fastest, free tier available. Set your own API key to use other models.',
+    es: 'Gemini Flash: el más rápido, nivel gratuito disponible. Configure su propia clave API para usar otros modelos.',
+    fr: 'Gemini Flash : le plus rapide, offre gratuite disponible. Configurez votre propre clé API pour utiliser d\'autres modèles.',
+    de: 'Gemini Flash: schnellstes Modell, kostenlose Stufe verfügbar. Eigenen API-Schlüssel eingeben, um andere Modelle zu nutzen.',
+    zh: 'Gemini Flash：最快，有免费额度。设置您自己的API密钥以使用其他模型。',
+    ko: 'Gemini Flash: 가장 빠르며 무료 티어 제공. 다른 모델을 사용하려면 자체 API 키를 설정하세요.',
+    pt: 'Gemini Flash: mais rápido, nível gratuito disponível. Configure sua própria chave API para usar outros modelos.',
+  },
+
 } as const;
 
 /** Exported for testing — do not use in application code. */
