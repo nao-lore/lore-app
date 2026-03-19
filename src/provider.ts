@@ -10,7 +10,7 @@
 
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import { callWithRetry } from './utils/retryManager';
-import { parseSSEStream, extractGeminiText, extractAnthropicText } from './utils/streamParser';
+import { parseSSEStream, extractGeminiText, extractAnthropicText, extractOpenAIText } from './utils/streamParser';
 import { encrypt, decrypt, isEncrypted, getCachedKey, setCachedKey, readKeyForSlot } from './utils/crypto';
 
 export type ProviderName = 'anthropic' | 'gemini' | 'openai';
@@ -378,37 +378,7 @@ async function callOpenAIStream(req: ProviderRequest, onChunk: StreamCallback): 
     const reader = res.body?.getReader();
     if (!reader) throw new Error('[Stream] ReadableStream not supported');
 
-    const decoder = new TextDecoder();
-    let accumulated = '';
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (!data || data === '[DONE]') continue;
-
-        try {
-          const event = JSON.parse(data);
-          const text = event.choices?.[0]?.delta?.content;
-          if (text) {
-            accumulated += text;
-            onChunk(text, accumulated);
-          }
-        } catch (e) {
-          if (e instanceof SyntaxError) continue;
-          throw e;
-        }
-      }
-    }
-
+    const accumulated = await parseSSEStream(reader, extractOpenAIText, onChunk);
     if (!accumulated) throw new Error('[AI Response] Empty streaming response from OpenAI. Try again.');
     return accumulated;
   } catch (e) {

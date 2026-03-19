@@ -57,6 +57,12 @@ export function extractGeminiText(event: Record<string, unknown>): string | unde
   return candidates?.[0]?.content?.parts?.[0]?.text;
 }
 
+/** Extract text from an OpenAI SSE event */
+export function extractOpenAIText(event: Record<string, unknown>): string | undefined {
+  const choices = event.choices as Array<{ delta?: { content?: string } }> | undefined;
+  return choices?.[0]?.delta?.content;
+}
+
 /** Extract text from an Anthropic SSE event */
 export function extractAnthropicText(event: Record<string, unknown>): string | undefined {
   if (event.type === 'content_block_delta') {

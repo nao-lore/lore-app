@@ -162,6 +162,7 @@ describe('i18n', () => {
       dailyLimitReached: [5, 5],
       transformsRemaining: [3, 30],
       proExpires: ['2026-12-31'],
+      errorRateLimitWithCooldown: [30],
     };
 
     it('all function labels return non-empty strings for ja', () => {

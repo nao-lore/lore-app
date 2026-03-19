@@ -10,6 +10,7 @@ import { safeParse, WorklogResultSchema, HandoffResultSchema, TodoOnlyResultSche
 import { AIError } from './errors';
 import { parseJsonWithRepair } from './utils/jsonRepair';
 import { fuzzyDedupStrings } from './utils/fuzzyDedup';
+import { normalizeInput } from './utils/normalizeInput';
 
 /** Safely coerce an unknown value to string[], filtering out non-strings. */
 function toStringArray(val: unknown): string[] {
@@ -66,7 +67,8 @@ export function filterResolvedBlockers(
 }
 
 export function detectLanguage(text: string): 'ja' | 'en' {
-  const jaPattern = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/g;
+  // Match CJK characters including Extension B (U+20000-U+2A6DF) via Unicode property escapes
+  const jaPattern = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3400-\u4DBF]|\p{Script=Han}/gu;
   const jaMatches = text.match(jaPattern);
   const jaRatio = (jaMatches?.length ?? 0) / text.length;
   return jaRatio > 0.1 ? 'ja' : 'en';
@@ -310,6 +312,7 @@ export async function transformText(sourceText: string, opts?: { onStream?: Stre
 }
 
 async function transformTextOnce(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<TransformResult> {
+  sourceText = normalizeInput(sourceText);
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) {
     throw new AIError('API_KEY_MISSING', '[API Key] Not set. Go to Settings and enter your API key.');
@@ -562,6 +565,7 @@ export async function transformHandoff(sourceText: string, opts?: { onStream?: S
 }
 
 async function transformHandoffOnce(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<HandoffResult> {
+  sourceText = normalizeInput(sourceText);
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) {
     throw new AIError('API_KEY_MISSING', '[API Key] Not set. Go to Settings and enter your API key.');
@@ -629,6 +633,7 @@ export async function transformTodoOnly(sourceText: string, opts?: { onStream?: 
 }
 
 async function transformTodoOnlyOnce(sourceText: string, opts?: { onStream?: StreamCallback }): Promise<TodoOnlyResult> {
+  sourceText = normalizeInput(sourceText);
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) {
     throw new AIError('API_KEY_MISSING', '[API Key] Not set. Go to Settings and enter your API key.');
@@ -681,6 +686,7 @@ export interface TransformBothOptions {
 }
 
 export async function transformBoth(sourceText: string, opts?: TransformBothOptions): Promise<BothResult> {
+  sourceText = normalizeInput(sourceText);
   const { onStream, projects } = opts || {};
   const apiKey = getApiKey();
   if (!apiKey && !shouldUseBuiltinApi()) {
