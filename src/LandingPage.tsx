@@ -51,7 +51,10 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
           </button>
         </div>
         <div className="lp-demo-screenshot">
-          <img src="/hero-screenshot.png" alt="Lore structured snapshot — decisions, TODOs, blockers extracted from an AI conversation" loading="eager" />
+          <picture>
+            <source srcSet="/hero-screenshot.webp" type="image/webp" />
+            <img src="/hero-screenshot.png" alt="Lore structured snapshot — decisions, TODOs, blockers extracted from an AI conversation" loading="eager" />
+          </picture>
         </div>
       </section>
 

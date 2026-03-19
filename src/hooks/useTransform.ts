@@ -21,6 +21,7 @@ import { recordMetric } from '../aiMetrics';
 import { isStaleMasterNote } from '../utils/staleness';
 import { canTransform, incrementDailyUsage, DAILY_LIMIT_FREE } from '../utils/trialManager';
 import { AIError } from '../errors';
+import { setTransformActive } from '../utils/transformState';
 
 import type { TransformContext, ActionResult } from './useTransformStrategies';
 import {
@@ -133,7 +134,7 @@ export function useTransform(params: UseTransformParams) {
     setTransformAction(action);
     safeSetItem('threadlog_transform_action', action);
 
-    setError(''); setLoading(true); setResult(null); setSavedId(null); setSavedHandoffId(null); setSavedResult(null); setProgress(null); setSimStep(0); setStreamDetail(null);
+    setError(''); setLoading(true); setTransformActive(true); setResult(null); setSavedId(null); setSavedHandoffId(null); setSavedResult(null); setProgress(null); setSimStep(0); setStreamDetail(null);
 
     const isFirstTransform = loadLogs().length === 0;
     const _t0 = performance.now();
@@ -337,7 +338,7 @@ export function useTransform(params: UseTransformParams) {
           console.log(`[Perf] render: ${(_t2 - _t1).toFixed(0)}ms`);
         });
       }
-      setLoading(false); setProgress(null); engineRef.current = null;
+      setLoading(false); setTransformActive(false); setProgress(null); engineRef.current = null;
     }
   }, [loading, combined, lang, selectedProjectId, projects, willChunk, text, files, onSaved, showToast, buildSourceReference, triggerClassification]);
 

@@ -149,7 +149,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     if (demoPrefilled.current) return;
     demoPrefilled.current = true;
     if (isDemoMode() && !text && files.length === 0) {
-      loadDemoData().then(({ getDemoConversation }) => setText(getDemoConversation(lang)));
+      loadDemoData().then(({ getDemoConversation }) => setText(getDemoConversation(lang))).catch(() => { /* demo data load failed — ignore */ });
     }
   }, [text, files.length, lang]);
 
@@ -346,7 +346,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
               loadDemoData().then(({ getDemoConversation }) => {
                 setText(getDemoConversation(lang));
                 textareaRef.current?.focus();
-              });
+              }).catch(() => { /* demo data load failed — ignore */ });
             }}
           >
             {t('trySampleConversation', lang)}
