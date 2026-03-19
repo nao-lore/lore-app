@@ -143,6 +143,22 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
   // Auto-focus textarea on mount
   useEffect(() => { textareaRef.current?.focus(); }, []);
 
+  // Populate input from share_target ?text= param (PWA Web Share Target)
+  const shareHandled = useRef(false);
+  useEffect(() => {
+    if (shareHandled.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const sharedText = params.get('text');
+    if (sharedText) {
+      shareHandled.current = true;
+      setText(sharedText);
+      // Clean up URL param
+      const url = new URL(window.location.href);
+      url.searchParams.delete('text');
+      window.history.replaceState({}, '', url.pathname + url.search);
+    }
+  }, []);
+
   // Pre-fill demo conversation if demo mode and empty (mount-only via ref guard)
   const demoPrefilled = useRef(false);
   useEffect(() => {

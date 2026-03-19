@@ -6,6 +6,11 @@ import { isPro } from './proManager';
 export const TRIAL_DAYS = 7;
 export const DAILY_LIMIT_FREE = 30;
 
+// LIMITATION: Daily usage counter is stored in localStorage only (client-side).
+// A user can reset the counter by clearing localStorage or using incognito mode.
+// This is an acceptable trade-off for a client-side app with no backend.
+// If abuse becomes a problem, consider fingerprinting or server-side tracking.
+
 const TRIAL_START_KEY = 'threadlog_trial_start';
 const DAILY_USAGE_KEY = 'threadlog_daily_usage';
 

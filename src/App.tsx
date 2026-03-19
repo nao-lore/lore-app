@@ -70,9 +70,20 @@ function resolveEffectiveTheme(pref: ThemePref): 'light' | 'dark' | 'high-contra
 export default function App() {
   const { inputDirtyRef, scrollRef, scrollPositionRef, shortcutsTrapRef, ...s } = useAppState();
   const [showLanding, setShowLanding] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
     // Static LP is now separate — skip React LP, go straight to onboarding
     // ?home forces LP display (for testing only)
-    if (new URLSearchParams(window.location.search).has('home')) return true;
+    if (params.has('home')) return true;
+    // ?ref=lp — user clicked "Get Started" on the static landing page
+    // Always show onboarding for LP referrals, even if they have some stale state
+    if (params.has('ref') && params.get('ref') === 'lp') {
+      s.setShowOnboarding(true);
+      // Clean up the ref param
+      const url = new URL(window.location.href);
+      url.searchParams.delete('ref');
+      window.history.replaceState({}, '', url.pathname + url.search);
+      return false;
+    }
     // New users go to onboarding, not LP
     if (s.logs.length === 0 && !isOnboardingDone()) {
       s.setShowOnboarding(true);
