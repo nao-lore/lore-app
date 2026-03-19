@@ -404,7 +404,7 @@ Field rules:
 - title: 1 short phrase, max 8 words
 - currentStatus: 3-5 bullets. PROJECT STATE right now — ONLY present-tense. NO completed actions → skip.
 - nextActions (immediate only, max 4): Tasks that MUST be done now or next work is blocked. Each MUST be {"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}. Non-blocking tasks → actionBacklog.
-  - whyImportant: Infer from context — what depends on this task? What breaks without it? Almost always fillable. null only if truly no context.
+  - whyImportant: REQUIRED — always provide a reason, even if inferred from context. What depends on this task? What breaks without it?
   - priorityReason: Infer ordering signal from conversation flow. null only if all tasks equally urgent.
 - actionBacklog (max 7): Important but not immediately blocking. Same format. whyImportant should explain why this task is in the backlog.
 - decisions (active only, max 6): Only decisions still constraining future work. Each {"decision":"string","rationale":"string or null"}. EXCLUDE completed/overturned decisions.

@@ -22,6 +22,14 @@
       "text": "text"
     }
   },
+  "shortcuts": [
+    {
+      "name": "New Snapshot",
+      "short_name": "New",
+      "url": "/?action=new",
+      "icons": [{"src": "/favicon-32.png", "sizes": "32x32"}]
+    }
+  ],
   "screenshots": [
     {
       "src": "/docs/screenshots/home-input.png",

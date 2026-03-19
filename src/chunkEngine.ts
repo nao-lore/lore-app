@@ -25,6 +25,7 @@ import {
 
 import { asString, asStringArray, localMerge } from './chunkMerger';
 import { normalizeInput } from './utils/normalizeInput';
+import { recordMetric } from './aiMetrics';
 
 
 // =============================================================================
@@ -274,6 +275,16 @@ async function reformatToJson(
 
   _reformatCallCount++;
   if (import.meta.env.DEV) console.warn(`[Reformat Fallback #${_reformatCallCount}] Sending ${proseText.length} chars of prose back for JSON conversion`);
+  recordMetric({
+    timestamp: Date.now(),
+    action: 'reformatToJson',
+    inputLength: proseText.length,
+    outputValid: true, // will be updated if parse fails
+    decisionsCount: 0,
+    todosCount: 0,
+    durationMs: 0,
+    cached: false,
+  });
 
   const rawText = await callProvider({
     apiKey,
@@ -484,7 +495,7 @@ function toWorklog(raw: PartialResult): TransformResult {
 }
 
 function toHandoff(raw: PartialResult): HandoffResult {
-  const { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta, currentStatus, completed, blockers, constraints, tags } = normalizeHandoffFields(raw);
+  const { decisions, decisionRationales, totalDecisionsBeforeCap, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta, currentStatus, completed, blockers, constraints, tags } = normalizeHandoffFields(raw);
   let resumeContext: string[];
   if (resumeChecklist.length > 0) {
     resumeContext = resumeChecklist.map(r => r.action);
@@ -508,6 +519,7 @@ function toHandoff(raw: PartialResult): HandoffResult {
     blockers,
     decisions,
     decisionRationales,
+    totalDecisionsBeforeCap: totalDecisionsBeforeCap > decisions.length ? totalDecisionsBeforeCap : undefined,
     constraints,
     tags,
   };
@@ -702,7 +714,7 @@ export class ChunkEngine {
     skipReformat = false,
     splitDepth = 0,
   ): Promise<PartialResult> {
-    let effectiveUserMessage = userMessage;
+    const effectiveUserMessage = userMessage;
     const effectiveMaxTokens = maxTokens;
     const label = `[Chunk ${current}/${total}]`;
     for (let attempt = 0; attempt <= RETRY_MAX; attempt++) {
@@ -757,7 +769,7 @@ export class ChunkEngine {
                 current, total, maxTokens, skipReformat, splitDepth + 1,
               );
             } catch (secondErr) {
-              if (import.meta.env.DEV) console.warn(`${label} second half failed after split (depth=${splitDepth + 1}), partial data may be lost:`, secondErr);
+              console.warn(`${label} second half failed after split (depth=${splitDepth + 1}), partial data may be lost:`, secondErr);
             }
           }
 
@@ -765,7 +777,13 @@ export class ChunkEngine {
           if (secondResult) {
             return localMerge([firstResult, secondResult]);
           }
-          return firstResult;
+          // Second half failed — mark result as partial and notify user
+          onProgress({
+            phase: 'extract', current, total,
+            savedCount: Object.keys(session.partials).length,
+            message: 'extract:partial-recovery',
+          });
+          return { ...firstResult, _partialRecovery: true };
         }
 
         if ((isNonJson || isParseError) && attempt < 2) {

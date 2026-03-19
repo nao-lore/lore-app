@@ -19,8 +19,8 @@ export const HandoffResultSchema = z.object({
   currentStatus: z.array(z.string()).default([]),
   resumeChecklist: z.array(z.object({
     action: z.string(),
-    whyNow: z.string().nullable().default(null),
-    ifSkipped: z.string().nullable().default(null),
+    whyNow: z.string().nullable().transform(v => v ?? '').default(''),
+    ifSkipped: z.string().nullable().transform(v => v ?? '').default(''),
   })).default([]),
   nextActions: z.array(z.object({
     action: z.string(),

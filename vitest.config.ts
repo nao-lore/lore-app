@@ -1,3 +1,6 @@
+// NOTE: @testing-library/dom is not in devDependencies. 11 component tests
+// that rely on @testing-library/react queries (getByRole, getByText, etc.)
+// will fail until it is installed:  npm i -D @testing-library/dom
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 

@@ -7,6 +7,11 @@ export function initSentry(): void {
       environment: 'production',
       sampleRate: 1.0,
       tracesSampleRate: 0.1,
+      denyUrls: [
+        /extensions\//i,
+        /^chrome:\/\//i,
+        /^moz-extension:\/\//i,
+      ],
       // Don't send PII
       beforeSend(event) {
         // Strip any potential API keys from error messages
