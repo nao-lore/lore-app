@@ -146,7 +146,7 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
             <h3 className="lp-pricing-plan">{t('lpPricingFree', lang)}</h3>
             <p className="lp-pricing-desc">{t('lpPricingFreeDesc', lang)}</p>
           </div>
-          <div className="lp-pricing-card lp-pricing-card-pro">
+          <div className="lp-pricing-card lp-pricing-card-pro" onClick={() => { if (typeof gtag === 'function') gtag('event', 'pro_click'); }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (typeof gtag === 'function') gtag('event', 'pro_click'); } }}>
             <h3 className="lp-pricing-plan">{t('lpPricingPro', lang)}</h3>
             <p className="lp-pricing-price">{t('lpPricingProPrice', lang)}</p>
             <p className="lp-pricing-annual">{t('lpPricingAnnual', lang)}</p>
@@ -166,7 +166,7 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
             {t('lpFooterGithub', lang)}
           </a>
-          <a href={CHROME_EXTENSION_URL} target="_blank" rel="noopener noreferrer">
+          <a href={CHROME_EXTENSION_URL} target="_blank" rel="noopener noreferrer" onClick={() => { if (typeof gtag === 'function') gtag('event', 'extension_click'); }}>
             {t('lpFooterExtension', lang)}
           </a>
           <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer">
