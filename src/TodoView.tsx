@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useMemo, memo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { usePersistedState } from './usePersistedState';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Archive, CheckCircle2 } from 'lucide-react';
 import type { Todo, LogEntry } from './types';
 import { loadTodos, loadArchivedTodos, updateTodo, addManualTodo, trashTodo, trashCompletedTodos, archiveTodo, unarchiveTodo, bulkUpdateTodos, bulkTrashTodos, reorderTodos, snoozeTodo } from './storage';
 import { t, tf } from './i18n';
@@ -568,11 +568,13 @@ function TodoView({ logs, onBack, onOpenLog, lang, showToast }: TodoViewProps) {
       {/* TODO list */}
       {sorted.length === 0 && !addOpen ? (
         <div className="empty-state">
-          {activeTab !== 'archived' && <EmptyTodos lang={lang} />}
-          {activeTab === 'archived' && <div className="empty-state-icon">{'\u{1F4E6}'}</div>}
-          <p>{activeTab === 'archived' ? t('todoNoArchived', lang) : t('noTodos', lang)}</p>
+          {activeTab === 'pending' && <EmptyTodos lang={lang} />}
+          {activeTab === 'completed' && <div className="empty-state-icon"><CheckCircle2 size={48} strokeWidth={1.2} color="var(--text-muted)" opacity={0.4} /></div>}
+          {activeTab === 'archived' && <div className="empty-state-icon"><Archive size={48} strokeWidth={1.2} color="var(--text-muted)" opacity={0.4} /></div>}
+          <p>{activeTab === 'archived' ? t('todoNoArchived', lang) : activeTab === 'completed' ? t('todoNoCompleted', lang) : t('noTodos', lang)}</p>
           {activeTab === 'pending' && <p className="page-subtitle">{t('noTodosDesc', lang)}</p>}
           {activeTab === 'archived' && <p className="page-subtitle">{t('todoNoArchivedDesc', lang)}</p>}
+          {activeTab === 'completed' && <p className="page-subtitle">{t('todoNoCompletedDesc', lang)}</p>}
           {activeTab === 'pending' && (
             <button
               className="btn btn-primary mt-md"

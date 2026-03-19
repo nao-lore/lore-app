@@ -7,7 +7,7 @@ export { saveLogs, loadLogs, loadTrashedLogs, addLog, getLog, trashLog, restoreL
 
 export { loadProjects, loadTrashedProjects, saveProjects, addProject, trashProject, restoreProject, deleteProject, renameProject, updateProject, loadWeeklyReports, saveWeeklyReport, getWeeklyReport, deleteWeeklyReport, loadKnowledgeBases, getKnowledgeBase, saveKnowledgeBase, deleteKnowledgeBase, getAiContext, saveAiContext, deleteAiContext } from './projects';
 
-export { loadTodos, loadArchivedTodos, loadTrashedTodos, saveTodos, addTodosFromLog, addTodosFromLogWithMeta, addManualTodo, trashTodo, trashCompletedTodos, restoreTodo, deleteTodo, updateTodo, archiveTodo, unarchiveTodo, bulkUpdateTodos, bulkTrashTodos, reorderTodos, snoozeTodo, deleteTodosForLog } from './todos';
+export { loadTodos, loadArchivedTodos, loadTrashedTodos, saveTodos, addTodosFromLog, addTodosFromLogWithMeta, addManualTodo, trashTodo, trashCompletedTodos, restoreTodo, deleteTodo, updateTodo, archiveTodo, unarchiveTodo, bulkUpdateTodos, bulkTrashTodos, reorderTodos, snoozeTodo, deleteTodosForLog, MAX_COMPLETED } from './todos';
 
 export { loadMasterNotes, getMasterNote, saveMasterNote, deleteMasterNote, getMasterNoteHistory, deleteMasterNoteHistory, restoreMasterNoteSnapshot } from './masterNotes';
 

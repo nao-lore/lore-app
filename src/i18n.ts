@@ -756,6 +756,8 @@ const labels = {
   todoArchive: { ja: 'アーカイブ', en: 'Archive', es: 'Archivar', fr: 'Archiver', de: 'Archivieren', zh: '归档', ko: '아카이브', pt: 'Arquivar' },
   todoUnarchive: { ja: 'アーカイブ解除', en: 'Unarchive', es: 'Desarchivar', fr: 'Désarchiver', de: 'Dearchivieren', zh: '取消归档', ko: '아카이브 해제', pt: 'Desarquivar' },
   todoArchived: { ja: 'アーカイブ済み', en: 'Archived', es: 'Archivados', fr: 'Archivés', de: 'Archiviert', zh: '已归档', ko: '아카이브됨', pt: 'Arquivados' },
+  todoNoCompleted: { ja: '完了済みのTODOはありません', en: 'No completed TODOs', es: 'No hay TODOs completados', fr: 'Aucun TODO terminé', de: 'Keine abgeschlossenen TODOs', zh: '没有已完成的TODO', ko: '완료된 TODO가 없습니다', pt: 'Nenhum TODO concluído' },
+  todoNoCompletedDesc: { ja: 'TODOを完了するとここに表示されます。', en: 'Completed TODOs will appear here.', es: 'Los TODOs completados aparecerán aquí.', fr: 'Les TODOs terminés apparaîtront ici.', de: 'Abgeschlossene TODOs erscheinen hier.', zh: '完成的TODO将显示在此处。', ko: '완료된 TODO가 여기에 표시됩니다.', pt: 'TODOs concluídos aparecerão aqui.' },
   todoNoArchived: { ja: 'アーカイブ済みのTODOはありません', en: 'No archived TODOs', es: 'No hay TODOs archivados', fr: 'Aucun TODO archivé', de: 'Keine archivierten TODOs', zh: '没有已归档的TODO', ko: '아카이브된 TODO가 없습니다', pt: 'Nenhum TODO arquivado' },
   todoNoArchivedDesc: { ja: 'TODOの「…」メニューからアーカイブできます。', en: 'Archive TODOs from their "…" menu.', es: 'Archive TODOs desde su menú "…".', fr: 'Archivez les TODOs depuis leur menu « … ».', de: 'Archivieren Sie TODOs über das Menü \'...\'.', zh: '可通过TODO的“…”菜单进行归档。', ko: 'TODO의 "…" 메뉴에서 아카이브할 수 있습니다.', pt: 'Arquive TODOs pelo menu \'...\'.' },
 
@@ -1682,6 +1684,18 @@ const labels = {
   weeklyReportCreateLog: { ja: 'ログを作成する', en: 'Create a log', es: 'Crear un registro', fr: 'Créer un log', de: 'Log erstellen', zh: '创建日志', ko: '로그 만들기', pt: 'Criar um registro' },
 
   // A11y — additional labels
+  ariaTodoTabs: { ja: 'TODOタブ', en: 'TODO tabs', es: 'Pestañas de TODO', fr: 'Onglets TODO', de: 'TODO-Tabs', zh: 'TODO标签页', ko: 'TODO 탭', pt: 'Abas de TODO' },
+  ariaTodoSort: { ja: 'TODOの並べ替え', en: 'Sort TODOs', es: 'Ordenar TODOs', fr: 'Trier les TODOs', de: 'TODOs sortieren', zh: '排序TODO', ko: 'TODO 정렬', pt: 'Ordenar TODOs' },
+  ariaTodoGroup: { ja: 'TODOのグループ化', en: 'Group TODOs', es: 'Agrupar TODOs', fr: 'Grouper les TODOs', de: 'TODOs gruppieren', zh: '分组TODO', ko: 'TODO 그룹화', pt: 'Agrupar TODOs' },
+  ariaTodoFilterStale: { ja: '放置中のTODOをフィルター', en: 'Filter inactive TODOs', es: 'Filtrar TODOs inactivos', fr: 'Filtrer les TODOs inactifs', de: 'Inaktive TODOs filtern', zh: '筛选闲置TODO', ko: '방치된 TODO 필터', pt: 'Filtrar TODOs inativos' },
+  ariaTodoDueFilter: { ja: '期限フィルター', en: 'Due date filter', es: 'Filtro de fecha de vencimiento', fr: 'Filtre par date d\'échéance', de: 'Fälligkeitsfilter', zh: '截止日期筛选', ko: '마감일 필터', pt: 'Filtro de data de vencimento' },
+  ariaTodoAddBtn: { ja: 'TODOを追加', en: 'Add TODO', es: 'Agregar TODO', fr: 'Ajouter un TODO', de: 'TODO hinzufügen', zh: '添加TODO', ko: 'TODO 추가', pt: 'Adicionar TODO' },
+  ariaTodoBulkSelect: { ja: '一括選択モード', en: 'Bulk select mode', es: 'Modo de selección múltiple', fr: 'Mode de sélection multiple', de: 'Massenauswahl-Modus', zh: '批量选择模式', ko: '일괄 선택 모드', pt: 'Modo de seleção em massa' },
+  ariaTodoOverflow: { ja: 'その他のオプション', en: 'More options', es: 'Más opciones', fr: 'Plus d\'options', de: 'Weitere Optionen', zh: '更多选项', ko: '더 많은 옵션', pt: 'Mais opções' },
+  ariaTodoBulkDone: { ja: '選択したTODOを完了', en: 'Mark selected TODOs as done', es: 'Marcar TODOs seleccionados como completados', fr: 'Marquer les TODOs sélectionnés comme terminés', de: 'Ausgewählte TODOs als erledigt markieren', zh: '将选中的TODO标记为完成', ko: '선택한 TODO 완료 처리', pt: 'Marcar TODOs selecionados como concluídos' },
+  ariaTodoBulkDelete: { ja: '選択したTODOを削除', en: 'Delete selected TODOs', es: 'Eliminar TODOs seleccionados', fr: 'Supprimer les TODOs sélectionnés', de: 'Ausgewählte TODOs löschen', zh: '删除选中的TODO', ko: '선택한 TODO 삭제', pt: 'Excluir TODOs selecionados' },
+  ariaTodoBulkCopy: { ja: '選択したTODOをコピー', en: 'Copy selected TODOs', es: 'Copiar TODOs seleccionados', fr: 'Copier les TODOs sélectionnés', de: 'Ausgewählte TODOs kopieren', zh: '复制选中的TODO', ko: '선택한 TODO 복사', pt: 'Copiar TODOs selecionados' },
+  ariaTodoBulkCancel: { ja: '選択モードを終了', en: 'Exit select mode', es: 'Salir del modo de selección', fr: 'Quitter le mode de sélection', de: 'Auswahlmodus beenden', zh: '退出选择模式', ko: '선택 모드 종료', pt: 'Sair do modo de seleção' },
   ariaGoBack: { ja: '戻る', en: 'Go back', es: 'Volver', fr: 'Retour', de: 'Zurück', zh: '返回', ko: '뒤로', pt: 'Voltar' },
   ariaOpenProject: { ja: 'プロジェクトを開く', en: 'Open project', es: 'Abrir proyecto', fr: 'Ouvrir le projet', de: 'Projekt öffnen', zh: '打开项目', ko: '프로젝트 열기', pt: 'Abrir projeto' },
   ariaOpenSummary: { ja: 'サマリーを開く', en: 'Open summary', es: 'Abrir resumen', fr: 'Ouvrir le résumé', de: 'Zusammenfassung öffnen', zh: '打开摘要', ko: '요약 열기', pt: 'Abrir resumo' },
