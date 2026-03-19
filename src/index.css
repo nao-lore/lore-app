@@ -277,6 +277,17 @@
 }
 
 /* ─── Design tokens ─── */
+/*
+ * Spacing scale (4px base):
+ *   --space-xs:  4px  — tight spacing (icon gaps, inline padding)
+ *   --space-sm:  8px  — compact spacing (button padding, small gaps)
+ *   --space-md:  12px — default spacing (card padding, form gaps)
+ *   --space-lg:  16px — section spacing (card body, group gaps)
+ *   --space-xl:  24px — large spacing (section padding, page margins)
+ *   --space-2xl: 32px — extra-large spacing (page sections, hero areas)
+ *
+ * Use these tokens for all new margin/padding/gap values.
+ */
 :root {
   --space-xs: 4px;
   --space-sm: 8px;
@@ -4323,22 +4334,6 @@ button[disabled] {
   color: var(--text-secondary);
 }
 
-/* ===== RTL language support ===== */
-[dir="rtl"] .sidebar {
-  left: auto;
-  right: 0;
-}
-[dir="rtl"] .flex-row {
-  flex-direction: row-reverse;
-}
-[dir="rtl"] .sidebar-item {
-  text-align: right;
-}
-[dir="rtl"] .skip-link {
-  left: auto;
-  right: 0;
-}
-
 /* ===== Swipe-to-action on list items ===== */
 .swipe-action-container {
   position: relative;
@@ -5096,6 +5091,13 @@ button[disabled] {
 
 [dir="rtl"] .sidebar-nav-item {
   text-align: right;
+  border-left: none;
+  border-right: 3px solid transparent;
+  border-radius: 8px 0 0 8px;
+}
+
+[dir="rtl"] .sidebar-nav-item.active {
+  border-right-color: var(--accent);
 }
 
 [dir="rtl"] .input-clear-btn {
@@ -5106,6 +5108,109 @@ button[disabled] {
 [dir="rtl"] .todo-checkbox {
   margin-right: 0;
   margin-left: 8px;
+}
+
+/* Flip sidebar icon margins */
+[dir="rtl"] .sidebar-chevron-icon {
+  margin-right: 0;
+  margin-left: 4px;
+}
+
+[dir="rtl"] .sidebar-project-icon {
+  margin-right: 0;
+  margin-left: 4px;
+}
+
+[dir="rtl"] .sidebar-folder-icon {
+  margin-right: 0;
+  margin-left: 4px;
+}
+
+/* Flip sidebar reveal bar border */
+[dir="rtl"] .sidebar-reveal-bar {
+  border-right: none;
+  border-left: 1px solid var(--border-default);
+}
+
+/* Flip directional paddings/margins for content elements */
+[dir="rtl"] .mn-snapshot-ul {
+  padding-left: 0;
+  padding-right: 18px;
+}
+
+[dir="rtl"] .list-disc {
+  padding-left: 0;
+  padding-right: 20px;
+}
+
+[dir="rtl"] .md-li {
+  padding-left: 0;
+  padding-right: 8px;
+}
+
+[dir="rtl"] .diff-added {
+  padding-left: 0;
+  padding-right: 8px;
+}
+
+[dir="rtl"] .diff-removed {
+  padding-left: 0;
+  padding-right: 8px;
+}
+
+/* Flip action meta auto-margin */
+[dir="rtl"] .action-meta {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir="rtl"] .bulk-bar-label {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+[dir="rtl"] .summary-link {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+/* Flip card action position */
+[dir="rtl"] .card-action-pos {
+  right: auto;
+  left: 12px;
+}
+
+/* Flip dropdown anchor */
+[dir="rtl"] .dropdown-anchor {
+  right: auto;
+  left: 0;
+}
+
+[dir="rtl"] .search-dropdown-panel {
+  right: auto;
+  left: 0;
+}
+
+/* Flip search candidate button text alignment */
+[dir="rtl"] .search-candidate-btn {
+  text-align: right;
+}
+
+/* Flip history group label text alignment */
+[dir="rtl"] button.history-group-label-btn {
+  text-align: right;
+}
+
+/* Flip virtual list item position */
+[dir="rtl"] .virtual-item {
+  left: auto;
+  right: 0;
+}
+
+/* Flip content card pinned border */
+[dir="rtl"] .content-card-line-pinned {
+  border-left: none;
+  border-right: 3px solid var(--line-pinned);
 }
 
 /* ===== Landing Page ===== */

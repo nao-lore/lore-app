@@ -856,7 +856,22 @@ export class ChunkEngine {
     };
 
     if (workItems.length > 0) {
-      await this.runParallel(workItems, processChunk, ChunkEngine.getConcurrency());
+      try {
+        await this.runParallel(workItems, processChunk, ChunkEngine.getConcurrency());
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : '';
+        if (msg.includes('[Cancelled]')) {
+          // Check if we have any completed partials to salvage
+          const savedPartials = chunks.map((_, i) => session!.partials[String(i)]).filter(Boolean);
+          if (savedPartials.length > 0) {
+            if (import.meta.env.DEV) console.log(`[chunkEngine] Cancelled with ${savedPartials.length}/${chunks.length} partials — returning merged partial results`);
+            // Session stays in IndexedDB for potential resume; merge what we have
+            const merged = localMerge(savedPartials, mode === 'both');
+            return merged;
+          }
+        }
+        throw err;
+      }
     }
 
     const allPartials = chunks.map((_, i) => session!.partials[String(i)]).filter(Boolean);
