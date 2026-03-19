@@ -1,227 +1,272 @@
 # Lore — PH Launch Master Checklist (4/1)
 
-> 最終更新: 2026-03-19 17:00
+> 最終更新: 2026-03-19 19:00
 > このリストに載っていないタスクはやらない。載っているタスクは全部やる。
 
 ---
 
-## 🔴 BLOCKER（今すぐ〜3/22）— ✅ 全完了
+## 🔴 BLOCKER — ✅ 全完了
 
 ### B1. CORS修正 — ✅ `2cb4cab`
 ### B2. Chrome拡張URL統一 — ✅ `2cb4cab`
-### B3. カスタムドメイン取得 — ✅ loresync.dev (Namecheap + Vercel DNS)
+### B3. カスタムドメイン取得 — ✅ loresync.dev
 ### B4. 全URL更新 — ✅ `4621855` + バッチ3,4
 ### B5. GitHub URL統一 — ✅ `2cb4cab`
 ### B6. Reddit投稿URL更新 — ✅ `4621855`
 ### B7. Gemini API有料化 — ✅ Tier 1課金済み
-### B8. Stripe redirect URL — ✅ 月額・年額ともloresync.devに変更済み
+### B8. Stripe redirect URL — ✅ 両方loresync.devに変更済み
 
 ---
 
-## 🟠 HIGH（3/19〜3/25）
+## 🟠 HIGH — ほぼ完了
 
-### H1. アナリティクス
+### H1. アナリティクス — ✅ 全完了
 - [x] Vercel Analytics 有効化 — `06ea21a`
-- [x] UTMパラメータ準備 — `1154bef` (sessionStorageに保存)
-- [x] Web Vitals計測 — `f10886a` (FCP/LCP/CLS/INP → Vercel Analytics)
-- [ ] **Google Analytics 4 アカウント作成** ← 外部作業
-- [ ] GA4 タグをアプリ + LPに埋め込み
-- [ ] コンバージョンイベント設定（スナップショット完了、Pro購入クリック等）
+- [x] UTMパラメータ準備 — `1154bef`
+- [x] Web Vitals計測 — `f10886a`
+- [x] GA4 アカウント作成 + タグ埋め込み（アプリ+LP） — `5257e5a`, `a01f218`
+- [x] CSP更新（GA4/Vercel Analyticsドメイン許可） — `a01f218`
+- [x] GA4コンバージョンイベント（snapshot_created, pro_click, extension_click） — `4d818c8`
+- [x] 全CTA/投稿文にUTMパラメータ — `a01f218`
 
-### H2. OGP / SEO
-- [x] LP favicon追加 — バッチ3
-- [x] LP robots.txt / sitemap.xml — バッチ3
-- [x] 全OGP URLをloresync.devに統一 — バッチ3,4
-- [ ] **Twitter Card Validator で実機確認** ← 外部作業
-- [ ] **Facebook Sharing Debugger で確認** ← 外部作業
+### H2. OGP / SEO — コード完了、実機確認のみ残り
+- [x] LP favicon追加
+- [x] LP robots.txt / sitemap.xml
+- [x] 全OGP URLをloresync.devに統一
+- [ ] **Twitter Card Validator で実機確認** ← 外部（3/20〜）
+- [ ] **Facebook Sharing Debugger で確認** ← 外部（3/20〜）
 
-### H3. PHコミュニティ活動（今日から毎日）
+### H3. PHコミュニティ活動 — 継続中
 - [x] PHアカウント作成
 - [x] プロフィール完成
-- [ ] **毎日2-3個のプロダクトにコメント** → 4/1までに25+コメント目標
+- [x] 3/19: 3件コメント完了（OpenObserve, Claude Dispatch, Permit.io）
+- [ ] **毎日2-3件コメント継続** → 4/1までに25+コメント目標
 
-### H4. X (Twitter) 準備
-- [ ] **アカウント決定（公式 or 個人）** ← 要決定
-- [ ] プロフィール設定
-- [ ] Build in Public 投稿開始（1日1投稿目標）
+### H4. X (Twitter) — ゴーストバン解除待ち
+- [x] アカウント存在: @nao_lore_
+- [x] bio更新、宣伝投稿削除
+- [ ] **ゴーストバン解除待ち（2-3日）** → 解除後にBuild in Public開始
 
-### H5. FAQ 準備 — ✅ 完成済み（このドキュメント内 + docs/)
+### H5. FAQ 準備 — ✅ 全完了
+- [x] docs内FAQ完成済み
+- [x] アプリ内FAQ 6問追加（全8言語） — `2b40fac`
 
 ### H6. README.md 整備
-- [x] URL統一確認 — バッチ2
-- [x] リンクテキスト修正 — バッチ2
-- [ ] **スクリーンショット撮り直し（loresync.dev表示状態で）** ← 外部作業
-- [ ] 機能一覧を最新に
-- [ ] "Built with Claude Code" バッジ追加検討
+- [x] URL統一確認
+- [x] リンクテキスト修正
+- [ ] **スクリーンショット撮り直し** ← 外部（3/26）
 
-### H7. Sentry アラート設定
-- [ ] **Sentry Dashboard → Alerts → Create Alert Rule** ← 外部作業（5分）
-- [ ] 条件: 10分間に5件以上のエラー → メール通知
+### H7. Sentry アラート設定 — ✅ 完了
+- [x] 10分間5件以上 → メール通知
 
-### H8. メール配信ツール
-- [ ] **Buttondown or Resend 登録** ← 外部作業
-- [ ] Formspreeの登録者メールをエクスポート
-- [ ] PHローンチ告知メール下書き
+### H8. メール配信ツール — 下書き完了、ツール登録のみ
+- [x] ローンチメール下書き — `docs/ph-launch-email.md`
+- [ ] **Buttondown or Resend 登録** ← 外部（3/24）
+- [ ] Formspreeメールエクスポート → インポート
 
-### H9. 画像最適化
-- [x] hero-screenshot WebP変換 (504KB→145KB) — `bab52ab`
-- [x] `<picture>` タグでWebP + PNG fallback — `bab52ab`
-- [ ] **PH用スクリーンショットをloresync.devで撮影** ← 外部作業
+### H9. 画像最適化 — ✅ コード完了
+- [x] hero-screenshot WebP変換 — `bab52ab`
+- [x] `<picture>` タグ — `bab52ab`
+- [ ] **PH用スクリーンショット撮影** ← 外部（3/26）
 
-### H10. 重複Vercelプロジェクト削除
-- [ ] **`lore-app-r5dl` を削除** ← 外部作業（1分）
+### H10. 重複Vercelプロジェクト削除 — ✅ 完了
 
 ### H11. Vercel プラン確認
-- [ ] **Hobby→Pro検討** ← 要判断
+- [ ] **Hobby→Pro検討** ← 要判断（3/20〜）
 
 ---
 
-## 🟡 MEDIUM（3/20〜3/28）
+## 🟡 MEDIUM — ほぼ完了
 
-### M1. コード品質 — ✅ 全完了
-- [x] API入力サイズ制限 — `1154bef`
-- [x] streaming reader.read() try-catch — `bab52ab`
-- [x] loadDemoData() .catch() — `bab52ab`
-- [x] lore-storage-full リスナー — 既存実装確認済み
-- [x] beforeunload 警告 — `bab52ab`
-- [x] unhandledrejection リスナー — `bab52ab`
+### M1. コード品質 — ✅ 全完了（6/6項目）
+### M2. テスティモニアル — Reddit反応待ち
+- [ ] **好意的コメントにDMでテスティモニアル依頼** ← 外部
+- [ ] LPにテスティモニアルセクション追加（確保後）
 
-### M2. テスティモニアル
-- [ ] **Reddit好意的コメントにDMでテスティモニアル依頼** ← 外部作業
-- [ ] 2-3件確保
-- [ ] LPにテスティモニアルセクション追加
-- [ ] PH画像素材としても使用
+### M3. PH限定特典 — ✅ 決定済み
+- [x] Pro 3ヶ月無料（First Commentに記載済み）
 
-### M3. PH限定特典
-- [ ] **特典内容決定（例: Pro 3ヶ月無料）** ← 要決定
-- [ ] 運用フロー決定
-- [ ] First Comment に特典記載
+### M4. 競合回答テンプレ — ✅ 完了
+- [x] 7件のテンプレ — `docs/competitive-responses.md`
 
-### M4. 競合回答テンプレ — ✅ 完成済み
+### M5. コンテンツ — ✅ 下書き完了
+- [x] dev.to記事下書き — `docs/devto-article.md`
+- [ ] **レビュー＆公開** ← 外部（3/22〜23）
+- [ ] **Indie Hackers投稿** ← 外部（3/23）
 
-### M5. コンテンツ
-- [ ] **dev.to に開発ストーリー記事** ← 外部作業
-- [ ] **Indie Hackers に投稿** ← 外部作業
-
-### M6. 障害対策
-- [ ] **ブックマーク保存（Vercel Status, Google AI Studio）** ← 外部作業（1分）
-- [ ] サイトダウン時テンプレ — ✅ このドキュメント内に記載済み
-- [ ] ホットフィックスデプロイ手順確認 — ✅ git push → Vercel自動 2-3分
+### M6. 障害対策 — ✅ 完了
+- [x] 障害テンプレ — `docs/incident-templates.md`
+- [ ] **ブックマーク保存（Vercel Status, Google AI Studio）** ← 外部（1分）
 
 ---
 
-## 📋 Reddit ソフトローンチ（3/19〜3/28）
+## 📋 Reddit ソフトローンチ — 継続中
 
 ### R1. 投稿
-- [x] r/SideProject 投稿 — 3/19 12:00 JST 完了
-- [x] VibeCodingList 投稿 — 3/19 完了
-- [x] iOS flickeringバグ修正 → ユーザー報告に即対応 — `08167cf`
-- [ ] **r/ClaudeAI karma稼ぎ（2-3件の質問に回答）** ← 外部作業
-- [ ] r/ClaudeAI 投稿（karma 30+になったら）
-- [ ] r/ChatGPT メガスレッドにコメント
+- [x] r/SideProject投稿（3/19 12:00 JST）
+- [x] VibeCodingList投稿
+- [x] r/ClaudeAI投稿文下書き — `docs/reddit-claudeai-post.md`
+- [ ] **r/ClaudeAI karma稼ぎ** ← 外部（3/21〜）
+- [ ] **r/ClaudeAI投稿（karma 30+で）** ← 外部
+- [ ] **r/ChatGPTメガスレッド** ← 外部
 
 ### R2. フォローアップ
-- [x] コメント返信 — flickeringユーザーに対応済み
-- [x] バグ報告即修正 — iOS flickering修正済み
-- [ ] **好意的コメントにDMでテスティモニアル依頼** ← 外部作業
-- [ ] Reddit反応のスクショ保存（PH素材用）
+- [x] flickeringバグ修正＆返信済み
+- [ ] **テスティモニアル依頼** ← 外部
+- [ ] **Reddit反応スクショ保存** ← 外部
 
 ---
 
-## 📋 PHページ準備（3/25〜3/31）— 未着手（予定通り）
+## 📋 PHページ準備（3/25〜3/31）— コンテンツ前倒し完了
 
-### P1. プロダクトページ
-- [ ] プロダクト登録（下書き保存）
-- [ ] タグライン最終決定（60字以内）
-- [ ] 説明文最終推敲
+### P1. プロダクトページ — 下書き素材完成
+- [x] タグライン候補10個 — `docs/ph-tagline-options.md`
+- [x] 説明文 — `docs/ph-description.md`
+- [ ] **PHにプロダクト登録（下書き保存）** ← 外部（3/25）
 - [ ] トピックタグ設定
-- [ ] 全URLをloresync.devに
 
-### P2. ビジュアル素材
-- [ ] サムネイル 240×240
-- [ ] ギャラリー画像 3-5枚（1270×760）
-- [ ] デモGIF or 動画（30秒以内）
+### P2. ビジュアル素材 — 外部作業
+- [ ] **サムネイル 240×240** ← 外部（3/26）
+- [ ] **ギャラリー画像 3-5枚（1270×760）** ← 外部（3/26）
+- [ ] **デモGIF or 動画（30秒）** ← 外部（3/27）
 
-### P3. First Comment
-- [ ] 最終版作成
-- [ ] PH限定特典記載
-- [ ] 会話誘発の質問
-- [ ] CTA（loresync.dev + GitHub）
+### P3. First Comment — ✅ 下書き完成
+- [x] 最終版 — `docs/ph-first-comment.md`
+- [x] PH限定特典記載済み（Pro 3ヶ月無料）
 
 ### P4. サポーター
-- [ ] ~~友人・知人に事前告知~~ → ソロでOK、プロダクト品質で勝負
+- [x] ソロでOK、プロダクト品質で勝負
 
 ---
 
-## 📋 最終チェック（3/29〜3/31）— 未着手（予定通り）
+## 📋 最終チェック（3/29〜3/31）— スクリプト準備済み
 
-### T1. 動作テスト
-- [ ] 新規ユーザーフロー（シークレットモード）
-- [ ] Pro購入フロー（Stripeテストモード）
-- [ ] Chrome拡張フロー
-- [ ] モバイル確認（iOS Safari, Android Chrome）
-- [ ] 複数ブラウザ（Chrome, Safari, Firefox, Edge）
-- [ ] PWAインストール → オフラインUI確認
-
-### T2. エラーケーステスト
-- [ ] API枯渇時メッセージ確認
-- [ ] ネットワーク切断時メッセージ確認
-- [ ] 超長文入力（500K文字）
-- [ ] 空入力での変換ボタン
+### T1-T2. テスト
+- [x] スモークテストスクリプト — `scripts/pre-launch-check.sh`
+- [x] リンク検証スクリプト — `scripts/check-links.sh`
+- [ ] **手動テスト（新規ユーザー、Pro購入、Chrome拡張、モバイル、ブラウザ）** ← 外部（3/29-30）
 
 ### T3. インフラ最終確認
-- [ ] Sentryエラー確認
-- [ ] Vercel Analytics動作確認
-- [ ] GA4データ受信確認
-- [ ] Gemini API使用量確認
-- [ ] SSL有効確認
+- [ ] Sentry/Vercel Analytics/GA4/Gemini/SSL確認 ← 外部（3/30）
 
 ### T4. 最終デプロイ
-- [ ] tsc / vitest / vite build パス
-- [ ] git push → Vercel自動デプロイ
-- [ ] 本番確認
+- [ ] `./scripts/pre-launch-check.sh` 実行 → git push ← （3/31）
 
 ---
 
-## 📋 4/1 ローンチ当日 — 未着手（予定通り）
+## 📋 4/1 ローンチ当日
 
 ### L1. タイムライン（JST）
 - [ ] **16:01** — PH公開
-- [ ] **16:05** — First Comment 投稿
-- [ ] **16:10** — X で告知
-- [ ] **16:15** — Reddit で告知
-- [ ] **16:20** — メール告知
-- [ ] **16:30** — dev.to / Indie Hackers に告知
+- [ ] **16:05** — First Comment投稿（`docs/ph-first-comment.md`）
+- [ ] **16:10** — X告知
+- [ ] **16:15** — Reddit告知
+- [ ] **16:20** — メール告知（`docs/ph-launch-email.md`）
+- [ ] **16:30** — dev.to / Indie Hackers告知
 - [ ] **16:01-18:01** — 全コメントに即レス
 - [ ] **18:01-24:00** — 継続対応
-- [ ] **翌0:00-11:00** — 米国ピーク時間チェック
+- [ ] **翌0:00-11:00** — 米国ピーク（仮眠しつつチェック）
 
-### L2. モニタリング
-- [ ] Sentry / GA4 / Vercel / Gemini 監視
-
-### L3. トラブル対応
-- [ ] バグ即修正 → git push
-- [ ] API枯渇案内
-- [ ] サイトダウンテンプレ対応
+### L2. トラブル対応
+- [x] 障害テンプレ準備済み — `docs/incident-templates.md`
+- [x] 競合回答テンプレ準備済み — `docs/competitive-responses.md`
 
 ---
 
-## ⚫ 許容するリスク（PH後に対応）
+## 3/20〜4/1 日別プラン（残りは外部作業のみ）
+
+### 3/20（木）
+- [ ] OGP実機確認（Twitter Card Validator, Facebook Debugger）
+- [ ] Vercelプラン判断
+- [ ] PHコメント2-3件
+- [ ] X自然投稿（リンクなし）
+
+### 3/21（金）
+- [ ] r/ClaudeAIで質問2-3件に回答（karma稼ぎ）
+- [ ] PHコメント2-3件
+- [ ] X自然投稿
+- [ ] Reddit反応スクショ保存
+
+### 3/22（土）
+- [ ] dev.to記事レビュー＆公開
+- [ ] PHコメント2-3件
+- [ ] X投稿
+
+### 3/23（日）
+- [ ] Indie Hackers投稿
+- [ ] r/ClaudeAI投稿（karma足りてれば）
+- [ ] PHコメント2-3件
+
+### 3/24（月）
+- [ ] メール配信ツール登録（Buttondown）
+- [ ] Formspreeメールエクスポート→インポート
+- [ ] テスティモニアル依頼
+- [ ] PHコメント2-3件
+
+### 3/25（火）
+- [ ] PHプロダクトページ登録（下書き保存）
+- [ ] タグライン＆説明文を入力
+- [ ] PHコメント2-3件
+
+### 3/26（水）
+- [ ] loresync.devでスクショ撮影
+- [ ] ギャラリー画像作成（1270×760）5枚
+- [ ] サムネイル 240×240
+- [ ] READMEスクショ更新
+- [ ] PHコメント2-3件
+
+### 3/27（木）
+- [ ] デモGIF撮影（30秒）
+- [ ] First Commentレビュー
+- [ ] PHコメント2-3件
+
+### 3/28（金）
+- [ ] PH全素材アップロード
+- [ ] PHプレビュー最終確認
+- [ ] X予告投稿（「来週PHでローンチ」）
+- [ ] PHコメント2-3件
+
+### 3/29（土）
+- [ ] `./scripts/pre-launch-check.sh` 実行
+- [ ] `./scripts/check-links.sh` 実行
+- [ ] 手動テスト: 新規ユーザーフロー、Pro購入フロー、Chrome拡張
+
+### 3/30（日）
+- [ ] モバイルテスト（iOS Safari, Android Chrome）
+- [ ] 複数ブラウザ（Chrome, Safari, Firefox, Edge）
+- [ ] インフラ確認（Sentry, GA4, Vercel, Gemini, SSL）
+
+### 3/31（月）
+- [ ] 最終デプロイ
+- [ ] メール送信テスト
+- [ ] X予告投稿（「明日PHでローンチ」）
+- [ ] 早めに寝る
+
+### 4/1（火）— ローンチ
+- [ ] 16:01 JST — 全開
+
+---
+
+## ⚫ 許容するリスク（PH後）
 
 | リスク | 許容理由 |
 |--------|----------|
 | Pro検証がクライアント側のみ | Supabase導入後に修正 |
-| Stripe Webhook未実装 | 同上。手動対応可能 |
-| 年額プランも30日expiry | 手動延長で対応 |
+| Stripe Webhook未実装 | 同上 |
 | Rate limit が in-memory | Gemini有料化で枯渇リスク緩和 |
-| i18nバンドル270KB | 機能に影響なし。PH後に分割 |
-| mammoth.js 500KB | lazy loadで初期ロードに影響なし |
+| i18nバンドル270KB | PH後に分割 |
 
 ---
 
-## 3/19 コード改善セッション成果
+## 3/19 セッション成果
 
-18バッチ、21コミットで78問題リストを大幅消化:
+22バッチ、28コミット:
+
+| 指標 | Before | After |
+|------|--------|-------|
+| テスト | 723 | 732 |
+| ESLint | 0 | 0 |
+| TSC | 0 | 0 |
 
 | 優先度 | 消化率 |
 |--------|--------|
@@ -230,21 +275,18 @@
 | P2 | ~26/28 (93%) |
 | P3 | ~10/16 (63%) |
 
-**最終ビルド: 732テスト、ESLint 0、TSC 0**
+## 準備済みコンテンツ一覧
 
-主な改善: iOS flickering修正、WebP最適化、a11y強化（reduced-motion/forced-colors/button semantics/aria labels）、CJK Extension B対応、input normalization、OpenAI streaming統一、PWA share_target/Workbox分離/iOS meta、RTL CSS、paragraph splitting、API key統合、useClickOutside共通化、i18n 20+新キー追加
-
----
-
-## タスク集計（更新）
-
-| カテゴリ | 完了 / 合計 | 状態 |
-|----------|-------------|------|
-| 🔴 BLOCKER | 35/35 | ✅ 全完了 |
-| 🟠 HIGH | ~20/30 | ⚠️ 外部作業残り |
-| 🟡 MEDIUM | ~14/20 | ⚠️ 外部作業残り |
-| 📋 Reddit | ~6/10 | ⚠️ 継続中 |
-| 📋 PH準備 | 0/15 | 🔲 3/25〜予定 |
-| 📋 最終チェック | 0/15 | 🔲 3/29〜予定 |
-| 📋 当日 | 0/15 | 🔲 4/1 |
-| **合計** | **~75/140** | **53%完了** |
+| ファイル | 内容 |
+|----------|------|
+| `docs/ph-first-comment.md` | PH First Comment |
+| `docs/ph-description.md` | PH説明文 |
+| `docs/ph-tagline-options.md` | タグライン候補10個 |
+| `docs/ph-launch-email.md` | ローンチメール |
+| `docs/devto-article.md` | dev.to記事 |
+| `docs/reddit-claudeai-post.md` | r/ClaudeAI投稿文 |
+| `docs/reddit-posts.md` | r/SideProject投稿文 |
+| `docs/competitive-responses.md` | 競合回答テンプレ7件 |
+| `docs/incident-templates.md` | 障害対応テンプレ |
+| `scripts/pre-launch-check.sh` | プレローンチスモークテスト |
+| `scripts/check-links.sh` | リンク検証スクリプト |
