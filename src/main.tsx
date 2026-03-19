@@ -52,6 +52,13 @@ if (import.meta.env.DEV) {
   });
 }
 
+// React Profiling:
+// To profile component renders, use React DevTools browser extension.
+// 1. Install "React Developer Tools" from Chrome/Firefox extension store
+// 2. Open DevTools → Profiler tab → click Record → interact → Stop
+// 3. Vite dev builds include profiling support by default (no config needed)
+// For production profiling, add "react-dom/profiling" alias in vite.config.ts.
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
