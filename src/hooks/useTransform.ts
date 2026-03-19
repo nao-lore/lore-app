@@ -18,6 +18,7 @@ import type { Lang } from '../i18n';
 import { formatHandoffMarkdown, formatFullAiContext } from '../formatHandoff';
 import { generateProjectContext } from '../generateProjectContext';
 import { recordMetric } from '../aiMetrics';
+import { assessAndRecord } from '../utils/qualityMetrics';
 import { isStaleMasterNote } from '../utils/staleness';
 import { canTransform, incrementDailyUsage, DAILY_LIMIT_FREE } from '../utils/trialManager';
 import { AIError } from '../errors';
@@ -106,6 +107,7 @@ export function useTransform(params: UseTransformParams) {
   const [classifying, setClassifying] = useState(false);
   const [suggestion, setSuggestion] = useState<{ logId: string; projectId: string; projectName: string; confidence: number } | null>(null);
   const [postSavePickerOpen, setPostSavePickerOpen] = useState(false);
+  const [apiCallCount, setApiCallCount] = useState(0);
 
   const engineRef = useRef<ChunkEngine | null>(null);
 
@@ -284,6 +286,10 @@ export function useTransform(params: UseTransformParams) {
       // Track daily usage for trial/free limits
       incrementDailyUsage();
 
+      // Track API call count from ChunkEngine
+      const engineCalls = engineRef.current?.apiCallCount ?? 0;
+      setApiCallCount(willChunk ? engineCalls : 1);
+
       // Record AI quality metric
       const _duration = performance.now() - _t0;
       const _cachedHit = (effectiveAction === 'both' && !!getCachedResult<unknown>(combined, 'both', provider, cacheLang))
@@ -301,6 +307,13 @@ export function useTransform(params: UseTransformParams) {
         durationMs: Math.round(_duration),
         cached: _cachedHit,
       });
+
+      // Assess output quality for handoff results (#47)
+      if (actionResult.savedHandoffLog && combined) {
+        try {
+          assessAndRecord(combined, actionResult.savedHandoffLog);
+        } catch { /* quality assessment is non-critical */ }
+      }
 
       if (actionResult.savedHandoffLog) {
         const handoffMd = formatHandoffMarkdown(actionResult.savedHandoffLog);
@@ -346,7 +359,10 @@ export function useTransform(params: UseTransformParams) {
         showToast?.(isFirstTransform ? `🎉 ${toastMsg}` : toastMsg, 'success');
         playSuccess();
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      // Note: the input text (textarea content) is intentionally preserved on error.
+      // The `text` state lives in InputView and is never cleared by the transform hook,
+      // so users can retry without losing their pasted content.
       if (err instanceof AIError) {
         const codeToMessage: Record<string, string> = {
           API_KEY_MISSING: t('errorApiKey', lang),
@@ -501,6 +517,7 @@ export function useTransform(params: UseTransformParams) {
     transformAction,
     setTransformAction,
     wasFirstTransform,
+    apiCallCount,
     classifying,
     suggestion,
     postSavePickerOpen,

@@ -774,6 +774,24 @@ h4 {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
+/* #22 Primary mode button (Handoff) is larger with accent styling */
+.mode-selector-btn.mode-primary {
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.mode-selector-btn.mode-secondary {
+  padding: 8px 10px;
+  font-size: 11px;
+}
+.mode-selector-btn.mode-secondary:not(.active) {
+  color: var(--text-placeholder);
+  border-color: var(--border-subtle);
+}
+/* #26 Bottom nav more menu item hover */
+.bottom-nav-more-item:hover {
+  background: var(--interactive-hover) !important;
+}
 
 .btn-danger {
   color: var(--error-text);
@@ -5573,6 +5591,15 @@ button[disabled] {
   border: 1px solid var(--border-default);
   border-radius: 999px;
   white-space: nowrap;
+}
+
+/* Beta urgency line */
+.lp-beta-urgency {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-muted, #6b7280);
+  margin: 12px 0 0;
+  font-weight: 500;
 }
 
 /* Snapshot counter (Task 3) */

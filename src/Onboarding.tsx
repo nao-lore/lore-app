@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { ClipboardPaste, Wand2, Play } from 'lucide-react';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { useFocusTrap } from './useFocusTrap';
@@ -16,7 +17,7 @@ interface StepDef {
   descKey: string;
   final?: boolean;
   descAlign?: 'left';
-  custom?: 'lang' | 'howItWorks' | 'extensionReady';
+  custom?: 'lang' | 'howItWorks' | 'snapshotPreview' | 'extensionReady';
 }
 
 const LANG_OPTIONS: { code: Lang; label: string; flag: string }[] = [
@@ -35,8 +36,8 @@ const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/lore-ai-c
 
 export default function Onboarding({ lang, onLangChange, onClose, initialStep = 0 }: OnboardingProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(true);
-  // Clamp initialStep to valid range for 3 steps
-  const [step, setStep] = useState(Math.min(initialStep, 2));
+  // Clamp initialStep to valid range for 4 steps
+  const [step, setStep] = useState(Math.min(initialStep, 3));
 
   const finish = useCallback(() => {
     markOnboardingDone();
@@ -63,6 +64,12 @@ export default function Onboarding({ lang, onLangChange, onClose, initialStep = 
       descKey: 'onboardingHowItWorksDesc',
       descAlign: 'left',
       custom: 'howItWorks',
+    },
+    {
+      titleKey: 'onboardingPreviewTitle',
+      descKey: 'onboardingPreviewDesc',
+      descAlign: 'left',
+      custom: 'snapshotPreview',
     },
     {
       titleKey: 'onboardingExtReadyTitle',
@@ -126,6 +133,40 @@ export default function Onboarding({ lang, onLangChange, onClose, initialStep = 
           /* Step 2: How it works (merged welcome + asset) */
           <div className="flex justify-center onboarding-section">
             <p className="onboarding-desc-left">
+              {t(current.descKey as Parameters<typeof t>[0], lang)}
+            </p>
+            <div className="flex-col" style={{ gap: 16, marginTop: 20 }}>
+              {[
+                { icon: ClipboardPaste, labelKey: 'onboardingStepPaste' as const, descKey: 'onboardingStepPasteDesc' as const, num: 1 },
+                { icon: Wand2, labelKey: 'onboardingStepTransform' as const, descKey: 'onboardingStepTransformDesc' as const, num: 2 },
+                { icon: Play, labelKey: 'onboardingStepResume' as const, descKey: 'onboardingStepResumeDesc' as const, num: 3 },
+              ].map((s) => {
+                const Icon = s.icon;
+                return (
+                  <div key={s.num} className="flex-row" style={{ gap: 14, alignItems: 'flex-start' }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'var(--accent-bg, rgba(99,102,241,0.1))', color: 'var(--accent)', flexShrink: 0,
+                    }}>
+                      <Icon size={20} />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-secondary" style={{ fontSize: 14 }}>
+                        {s.num}. {t(s.labelKey, lang)}
+                      </div>
+                      <div className="text-sm text-muted" style={{ marginTop: 2 }}>
+                        {t(s.descKey, lang)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : current.custom === 'snapshotPreview' ? (
+          /* Step 3: Snapshot preview (before/after) */
+          <div className="flex justify-center onboarding-section">
+            <p className="onboarding-desc-left" style={{ whiteSpace: 'pre-line' }}>
               {t(current.descKey as Parameters<typeof t>[0], lang)}
             </p>
           </div>

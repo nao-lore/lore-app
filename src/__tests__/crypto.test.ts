@@ -3,7 +3,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { encrypt, decrypt, isEncrypted, getCachedKey, setCachedKey } from '../utils/crypto';
+import { encrypt, decrypt, isEncrypted, getCachedKey, setCachedKey, isEncrypting } from '../utils/crypto';
 
 describe('isEncrypted', () => {
   it('returns false for empty string', () => {
@@ -15,8 +15,12 @@ describe('isEncrypted', () => {
     expect(isEncrypted('AIzaSyAbc123')).toBe(false);
   });
 
-  it('returns true for encrypted prefix', () => {
+  it('returns true for v1 encrypted prefix', () => {
     expect(isEncrypted('enc:v1:AAAA')).toBe(true);
+  });
+
+  it('returns true for v2 encrypted prefix', () => {
+    expect(isEncrypted('enc:v2:AAAA')).toBe(true);
   });
 });
 
@@ -119,5 +123,16 @@ describe('encrypt graceful fallback', () => {
     } finally {
       Object.defineProperty(crypto, 'subtle', { value: original, configurable: true });
     }
+  });
+});
+
+describe('v2 PBKDF2 encryption', () => {
+  it('encrypts with v2 prefix', async () => {
+    const encrypted = await encrypt('test-key-v2');
+    expect(encrypted.startsWith('enc:v2:')).toBe(true);
+  });
+
+  it('isEncrypting flag is false when not encrypting', () => {
+    expect(isEncrypting()).toBe(false);
   });
 });

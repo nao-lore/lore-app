@@ -10,7 +10,6 @@ import type { ChunkSession, PartialResult } from './chunkDb';
 import { computeSourceHash, loadSession, saveSession, deleteSession } from './chunkDb';
 import { getLang } from './storage';
 import { callProvider, callProviderStream, getActiveProvider } from './provider';
-import type { ProviderName } from './provider';
 import type { StreamCallback } from './provider';
 import { normalizeResumeChecklist, normalizeHandoffMeta, normalizeHandoffFields, detectLanguage, extractJson } from './transform';
 import { dedupDecisions } from './utils/decisions';
@@ -22,12 +21,17 @@ import {
   CHUNK_CONSISTENCY_CHECK_PROMPT as CONSISTENCY_CHECK_PROMPT,
   CHUNK_FINAL_SUMMARIZATION_PROMPT as FINAL_SUMMARIZATION_PROMPT,
   CHUNK_WORKLOG_EXTRACT_PROMPT as WORKLOG_EXTRACT_PROMPT,
+  CHUNK_POST_MERGE_PROMPT as POST_MERGE_PROMPT,
 } from './prompts';
 
 import { asString, asStringArray, localMerge } from './chunkMerger';
 import { normalizeInput } from './utils/normalizeInput';
 import { recordMetric } from './aiMetrics';
+import { estimateTokens as _estimateTokens, tokenTargetToCharLimit as _tokenTargetToCharLimit, isCJK as _isCJK } from './utils/tokenEstimation';
+import { tryRepairJson as _tryRepairJson, balanceBrackets as _balanceBrackets, fixTruncatedStrings as _fixTruncatedStrings, findMatchingBrace as _findMatchingBrace } from './utils/jsonRepair';
 
+// Re-export for backward compat (used by tests and other modules)
+export const estimateTokens = _estimateTokens;
 
 // =============================================================================
 // Chunk splitting — mode-aware
@@ -47,78 +51,6 @@ const CHUNK_TARGETS = {
 function getChunkTargets() {
   const provider = getActiveProvider();
   return CHUNK_TARGETS[provider] ?? CHUNK_TARGETS.gemini;
-}
-
-// =============================================================================
-// Token estimation — more accurate than raw character count for mixed-language text
-// =============================================================================
-
-/** CJK Unicode range check (CJK Unified Ideographs + common ranges) */
-function isCJK(code: number): boolean {
-  return (
-    (code >= 0x4E00 && code <= 0x9FFF) ||   // CJK Unified Ideographs
-    (code >= 0x3400 && code <= 0x4DBF) ||   // CJK Unified Ideographs Extension A
-    (code >= 0x3040 && code <= 0x309F) ||   // Hiragana
-    (code >= 0x30A0 && code <= 0x30FF) ||   // Katakana
-    (code >= 0xAC00 && code <= 0xD7AF) ||   // Hangul Syllables
-    (code >= 0x20000 && code <= 0x2A6DF)    // CJK Unified Ideographs Extension B
-  );
-}
-
-/**
- * Provider-specific character-per-token ratios.
- * Each tokenizer behaves differently:
- * - Gemini: ~3.5 chars/token for English, ~1.5 for CJK
- * - Anthropic (Claude): ~3.8 chars/token for English, ~1.3 for CJK
- * - OpenAI: ~4.0 chars/token for English, ~1.5 for CJK
- */
-const TOKEN_RATIOS: Record<ProviderName, { english: number; cjk: number }> = {
-  gemini:    { english: 3.5, cjk: 1.5 },
-  anthropic: { english: 3.8, cjk: 1.3 },
-  openai:    { english: 4.0, cjk: 1.5 },
-};
-
-/** Default ratios used when no provider is specified (Gemini-like) */
-const DEFAULT_TOKEN_RATIO = TOKEN_RATIOS.gemini;
-
-/**
- * Estimate token count for a string, using provider-specific ratios.
- *
- * Each provider's tokenizer handles English and CJK text differently.
- * When no provider is specified, falls back to the active provider setting,
- * then to Gemini defaults.
- *
- * Uses codePointAt() to correctly handle supplementary plane characters
- * (e.g. CJK Extension B, U+20000+) which are encoded as surrogate pairs in UTF-16.
- */
-export function estimateTokens(text: string, provider?: ProviderName): number {
-  const ratios = provider
-    ? (TOKEN_RATIOS[provider] ?? DEFAULT_TOKEN_RATIO)
-    : (TOKEN_RATIOS[getActiveProvider()] ?? DEFAULT_TOKEN_RATIO);
-
-  let asciiChars = 0;
-  let cjkChars = 0;
-  for (let i = 0; i < text.length; i++) {
-    const code = text.codePointAt(i)!;
-    if (isCJK(code)) {
-      cjkChars++;
-      // Skip the low surrogate of a supplementary character
-      if (code > 0xFFFF) i++;
-    } else {
-      // Skip the low surrogate of any non-CJK supplementary character
-      if (code > 0xFFFF) i++;
-      asciiChars++;
-    }
-  }
-  return Math.ceil(asciiChars / ratios.english + cjkChars / ratios.cjk);
-}
-
-/** Convert a token target to an approximate character limit for the given text */
-function tokenTargetToCharLimit(text: string, tokenTarget: number): number {
-  const totalTokens = estimateTokens(text);
-  if (totalTokens === 0) return tokenTarget * 4; // fallback
-  const charsPerToken = text.length / totalTokens;
-  return Math.ceil(tokenTarget * charsPerToken);
 }
 
 /** Threshold for splitting long paragraphs at sentence boundaries */
@@ -172,7 +104,7 @@ export function splitLongParagraph(text: string, maxLen: number): string[] {
 
 export function splitIntoChunks(text: string, chunkTarget: number): string[] {
   // Convert token target to character limit based on the text's language mix
-  const charLimit = tokenTargetToCharLimit(text, chunkTarget);
+  const charLimit = _tokenTargetToCharLimit(text, chunkTarget);
 
   const fileSeparator = /(?=--- FILE: .+ ---\n)/g;
   const segments = text.split(fileSeparator).filter((s) => s.trim());
@@ -322,121 +254,10 @@ let _reformatCallCount = 0;
 export function getReformatCallCount(): number { return _reformatCallCount; }
 export function resetReformatCallCount(): void { _reformatCallCount = 0; }
 
-/** Lightweight local JSON repair — fixes common model output issues without API call */
+// tryRepairJson, findMatchingBrace, balanceBrackets, fixTruncatedStrings
+// are now imported from ./utils/jsonRepair
 function tryRepairJson(raw: string): PartialResult | null {
-  let text = raw
-    .replace(/```json\s*/gi, '')
-    .replace(/```\s*/g, '')
-    .trim();
-
-  // Find the first '{'
-  const start = text.indexOf('{');
-  if (start === -1) return null;
-  text = text.slice(start);
-
-  // Strip trailing text after valid JSON using bracket-counting
-  // This handles: trailing prose, multiple concatenated JSON objects
-  const end = findMatchingBrace(text);
-  if (end !== -1) {
-    text = text.slice(0, end + 1);
-  } else {
-    // No matching close brace found — incomplete JSON, balance brackets
-    text = balanceBrackets(text);
-  }
-
-  // Fix trailing commas before } or ]
-  text = text.replace(/,\s*([}\]])/g, '$1');
-
-  // Fix unescaped newlines inside string values
-  text = text.replace(/:\s*"([^"]*)\n([^"]*)"/g, (_m, a, b) => `: "${a}\\n${b}"`);
-
-  // Fix single quotes used as string delimiters (common LLM mistake)
-  // Only replace when it looks like a JSON key/value pattern
-  text = text.replace(/(?<=[:,[{]\s*)'([^']*)'/g, '"$1"');
-
-  try {
-    const parsed = JSON.parse(text);
-    if (typeof parsed === 'object' && parsed !== null) {
-      return parsed as PartialResult;
-    }
-  } catch {
-    // Second attempt: try to fix truncated string values
-    // If JSON ends mid-string (no closing quote), close it
-    const fixedTruncated = fixTruncatedStrings(text);
-    if (fixedTruncated !== text) {
-      try {
-        const parsed = JSON.parse(fixedTruncated);
-        if (typeof parsed === 'object' && parsed !== null) {
-          return parsed as PartialResult;
-        }
-      } catch { /* fall through */ }
-    }
-    if (import.meta.env.DEV) console.warn('[chunkEngine] JSON repair failed');
-  }
-  return null;
-}
-
-/** Find the index of the closing '}' that matches the first '{' via bracket-counting */
-function findMatchingBrace(text: string): number {
-  let depth = 0;
-  let inString = false;
-  let escape = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (escape) { escape = false; continue; }
-    if (ch === '\\' && inString) { escape = true; continue; }
-    if (ch === '"') { inString = !inString; continue; }
-    if (inString) continue;
-    if (ch === '{') depth++;
-    if (ch === '}') { depth--; if (depth === 0) return i; }
-  }
-  return -1; // no matching brace found (incomplete JSON)
-}
-
-/** Balance unclosed brackets/braces for incomplete JSON */
-function balanceBrackets(text: string): string {
-  let braceCount = 0;
-  let bracketCount = 0;
-  let inString = false;
-  let escape = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (escape) { escape = false; continue; }
-    if (ch === '\\' && inString) { escape = true; continue; }
-    if (ch === '"') { inString = !inString; continue; }
-    if (inString) continue;
-    if (ch === '{') braceCount++;
-    else if (ch === '}') braceCount--;
-    else if (ch === '[') bracketCount++;
-    else if (ch === ']') bracketCount--;
-  }
-  // If we're still inside a string, close it
-  let result = text;
-  if (inString) result += '"';
-  while (bracketCount > 0) { result += ']'; bracketCount--; }
-  while (braceCount > 0) { result += '}'; braceCount--; }
-  return result;
-}
-
-/** Fix truncated string values — if the last token is an unclosed string, close it */
-function fixTruncatedStrings(text: string): string {
-  // Remove trailing incomplete key-value pairs
-  // e.g., {"a":"b","c":"trun  → {"a":"b"}
-  let result = text;
-  // Try closing an open string and removing trailing incomplete content
-  const lastQuote = result.lastIndexOf('"');
-  if (lastQuote > 0) {
-    // Check if this quote opens a string (odd number of unescaped quotes after it)
-    const after = result.slice(lastQuote + 1);
-    // If after the last quote there are only whitespace/brackets, string is closed
-    // If there's non-bracket content, the string might be truncated
-    if (after.trim() && !/^[}\],\s]*$/.test(after.trim())) {
-      // Truncated mid-string — close the string and balance
-      result = result + '"';
-      result = balanceBrackets(result);
-    }
-  }
-  return result;
+  return _tryRepairJson(raw) as PartialResult | null;
 }
 
 // Detect schema type from system prompt to provide the right hint
@@ -653,6 +474,12 @@ export interface EngineProgress {
   message: string;
   autoPaused?: boolean;
   estimatedMinutes?: number;
+  /** Current API call number (extract chunks + post-processing) */
+  apiCallCurrent?: number;
+  /** Total expected API calls (extract chunks + post-processing) */
+  apiCallTotal?: number;
+  /** Auto-resume countdown in seconds (shown during auto-pause) */
+  autoResumeIn?: number;
 }
 
 export type ProgressCallback = (p: EngineProgress) => void;
@@ -671,11 +498,17 @@ export class ChunkEngine {
   private _cancelled = false;
   private _pauseResolve: (() => void) | null = null;
   private _pausePromise: Promise<void> | null = null;
-  private _chunkDelay = 3;
+  private _chunkDelay = 1;
   private _onStream?: StreamCallback;
+  /** Tracks total API calls made during this engine run */
+  private _apiCallCount = 0;
+  /** Total expected API calls (chunks + post-processing) */
+  private _apiCallTotal = 0;
 
   get isPaused(): boolean { return this._paused; }
   get isCancelled(): boolean { return this._cancelled; }
+  /** Total API calls made during this engine run */
+  get apiCallCount(): number { return this._apiCallCount; }
 
   pause(): void {
     if (this._paused) return;
@@ -720,7 +553,7 @@ export class ChunkEngine {
   }
 
   /** Maximum depth for recursive truncation splits to prevent infinite recursion */
-  private static readonly MAX_SPLIT_DEPTH = 2;
+  private static readonly MAX_SPLIT_DEPTH = 3;
 
   private async callWithRetry(
     apiKey: string,
@@ -740,8 +573,8 @@ export class ChunkEngine {
     for (let attempt = 0; attempt <= RETRY_MAX; attempt++) {
       try {
         const result = await callApiRaw(apiKey, system, effectiveUserMessage, effectiveMaxTokens, skipReformat, this._onStream);
-        if (this._chunkDelay > 3) {
-          this._chunkDelay = Math.max(3, this._chunkDelay * 0.7);
+        if (this._chunkDelay > 1) {
+          this._chunkDelay = Math.max(1, this._chunkDelay * 0.7);
         }
         return result;
       } catch (err) {
@@ -766,6 +599,9 @@ export class ChunkEngine {
           const firstHalf = effectiveUserMessage.slice(0, cutPoint);
           const secondHalf = effectiveUserMessage.slice(cutPoint);
 
+          if (splitDepth + 1 >= ChunkEngine.MAX_SPLIT_DEPTH) {
+            console.warn(`${label} WARNING: Maximum split depth (${ChunkEngine.MAX_SPLIT_DEPTH}) reached. Input chunk may be too large for reliable extraction.`);
+          }
           if (import.meta.env.DEV) console.warn(`${label} split after Truncated (depth=${splitDepth + 1}, first=${firstHalf.length} chars, second=${secondHalf.length} chars)`);
           await this.waitInterruptible(2000);
 
@@ -815,7 +651,9 @@ export class ChunkEngine {
         if (isRetryable && attempt < RETRY_MAX) {
           const saved = Object.keys(session.partials).length;
           const is503 = msg.includes('[Overloaded]');
-          const delaySec = apiRetrySec > 0 ? apiRetrySec : is503 ? RETRY_DELAY_503 : RETRY_DELAY_429;
+          const baseDelay = is503 ? RETRY_DELAY_503 : RETRY_DELAY_429;
+          // Use retry-after from API as minimum delay, falling back to default backoff
+          const delaySec = apiRetrySec > 0 ? Math.max(apiRetrySec, baseDelay) : baseDelay;
           if (import.meta.env.DEV) console.warn(`${label} retry #${attempt + 1} after ${isRateLimit ? (is503 ? '503' : '429') : msg.slice(0, 30)} (delay=${delaySec}s${apiRetrySec > 0 ? ' from API' : ''})`);
 
           const waitEnd = Date.now() + delaySec * 1000;
@@ -839,12 +677,34 @@ export class ChunkEngine {
           const saved = Object.keys(session.partials).length;
           this._paused = true;
           this._pausePromise = new Promise((r) => { this._pauseResolve = r; });
+
+          // Auto-resume after 60 seconds if user doesn't act
+          const AUTO_RESUME_TIMEOUT = 60;
+          let countdown = AUTO_RESUME_TIMEOUT;
+          const countdownInterval = setInterval(() => {
+            if (!this._paused || this._cancelled) {
+              clearInterval(countdownInterval);
+              return;
+            }
+            countdown--;
+            onProgress({
+              phase: 'paused', current, total, savedCount: saved,
+              message: `auto-paused:${saved}:resume-in:${countdown}`,
+              autoPaused: true,
+            });
+            if (countdown <= 0) {
+              clearInterval(countdownInterval);
+              this.resume();
+            }
+          }, 1000);
+
           onProgress({
             phase: 'paused', current, total, savedCount: saved,
-            message: `auto-paused:${saved}`,
+            message: `auto-paused:${saved}:resume-in:${AUTO_RESUME_TIMEOUT}`,
             autoPaused: true,
           });
           await this._pausePromise;
+          clearInterval(countdownInterval);
           if (this._cancelled) throw new Error('[Cancelled]');
           return this.callWithRetry(apiKey, system, userMessage, onProgress, session, current, total, maxTokens, skipReformat);
         }
@@ -963,10 +823,19 @@ export class ChunkEngine {
     const completedCount = chunks.length - workItems.length;
     let finished = completedCount;
 
+    // Calculate total API calls: extract chunks + post-processing
+    // Post-processing: 1 combined call for multi-chunk, 2 for single-chunk (completed + finalSummary)
+    const postProcessCalls = chunks.length === 1 ? 2 : 1;
+    const isHandoffMode = mode === 'handoff' || mode === 'both';
+    this._apiCallTotal = chunks.length + (isHandoffMode ? postProcessCalls : 0);
+    this._apiCallCount = completedCount;
+
     onProgress({
       phase: 'extract', current: completedCount, total: chunks.length,
       savedCount: completedCount,
       message: `extract:${completedCount}:${chunks.length}`,
+      apiCallCurrent: this._apiCallCount,
+      apiCallTotal: this._apiCallTotal,
     });
 
     const processChunk = async (i: number): Promise<void> => {
@@ -984,6 +853,7 @@ export class ChunkEngine {
       );
       session.partials[String(i)] = result;
       finished++;
+      this._apiCallCount++;
       await saveSession(session).catch((err) => {
         if (import.meta.env.DEV) console.error('[chunkEngine] saveSession failed during extract:', err);
       });
@@ -992,6 +862,8 @@ export class ChunkEngine {
         phase: 'extract', current: finished, total: chunks.length,
         savedCount: finished,
         message: `extract:${finished}:${chunks.length}`,
+        apiCallCurrent: this._apiCallCount,
+        apiCallTotal: this._apiCallTotal,
       });
 
       if (getActiveProvider() === 'anthropic' && finished < chunks.length) {
@@ -1067,9 +939,9 @@ export class ChunkEngine {
 
     // --- Local merge ---
     onProgress({ phase: 'merge', current: 1, total: 1, savedCount: finished, message: 'merge:local' });
-    let mergedResult: PartialResult = localMerge(allPartials, mode === 'both');
+    const mergedResult: PartialResult = localMerge(allPartials, mode === 'both');
 
-    // --- Post-merge: completed + consistency + final summarization ---
+    // --- Post-merge: single combined finalization call (replaces 3 separate calls) ---
     if (mode === 'handoff' || mode === 'both') {
       try {
         const partialsText = allPartials.map((p, i) => {
@@ -1085,42 +957,12 @@ export class ChunkEngine {
           return `[Chunk ${i + 1}]\n${lines.join('\n')}`;
         }).join('\n\n');
 
-        const completedPromise = this.extractCompleted(apiKey, partialsText, onProgress, finished, 2);
-        const consistencyPromise = this.runConsistencyCheck(apiKey, mergedResult, mode, onProgress, finished);
-        const finalSummarizationPromise = this.extractFinalSummary(apiKey, mergedResult, mode, onProgress, finished, 3);
+        const postMergeResult = await this.runPostMergeFinalization(
+          apiKey, mergedResult, partialsText, mode, onProgress, finished,
+        );
 
-        const [completedItems, checkedRaw, finalSummary] = await Promise.all([completedPromise, consistencyPromise, finalSummarizationPromise]);
-
-        if (checkedRaw) {
-          const originalDecisions = mergedResult.decisions;
-          if (mode === 'both') {
-            mergedResult.handoff = checkedRaw;
-            mergedResult.currentStatus = checkedRaw.currentStatus;
-            mergedResult.nextActions = checkedRaw.nextActions;
-            mergedResult.blockers = checkedRaw.blockers;
-            mergedResult.constraints = checkedRaw.constraints;
-            mergedResult.resumeContext = checkedRaw.resumeContext;
-            mergedResult.decisions = originalDecisions;
-            const handoffRef = mergedResult.handoff as PartialResult | undefined;
-            if (handoffRef) handoffRef.decisions = originalDecisions;
-          } else {
-            mergedResult = checkedRaw;
-            mergedResult.decisions = originalDecisions;
-          }
-        }
-
-        if (completedItems.length > 0) {
-          const MAX_COMPLETED = 50;
-          const trimmed = completedItems.length > MAX_COMPLETED ? completedItems.slice(-MAX_COMPLETED) : completedItems;
-          mergedResult.completed = trimmed;
-          if (mode === 'both') {
-            const handoff = mergedResult.handoff as PartialResult | undefined;
-            if (handoff) handoff.completed = trimmed;
-          }
-        }
-
-        if (finalSummary) {
-          this.applyFinalSummary(finalSummary, mergedResult, mode);
+        if (postMergeResult) {
+          this.applyPostMergeResult(postMergeResult, mergedResult, mode);
         }
       } catch (err) {
         if (import.meta.env.DEV) console.warn('[chunkEngine] post-merge failed:', err);
@@ -1132,6 +974,83 @@ export class ChunkEngine {
       if (import.meta.env.DEV) console.error('[chunkEngine] deleteSession failed after merge:', err);
     });
     return mergedResult;
+  }
+
+  /** Combined post-merge finalization — replaces 3 separate API calls with 1 (#55-57) */
+  private async runPostMergeFinalization(
+    apiKey: string, mergedResult: PartialResult, partialsText: string,
+    mode: ExtractMode, onProgress: ProgressCallback, savedCount: number,
+  ): Promise<PartialResult | null> {
+    onProgress({ phase: 'consistency', current: 1, total: 1, savedCount, message: 'post-merge:finalization' });
+    try {
+      const handoffData: PartialResult | undefined = mode === 'both'
+        ? mergedResult.handoff as PartialResult | undefined
+        : mergedResult;
+      if (!handoffData) return null;
+
+      const MAX_DECISIONS_FOR_CHECK = 10;
+      const fullDecisions = handoffData.decisions;
+      let trimmedDecisions: unknown[] | undefined;
+      if (Array.isArray(fullDecisions) && fullDecisions.length > MAX_DECISIONS_FOR_CHECK) {
+        trimmedDecisions = fullDecisions.slice(-MAX_DECISIONS_FOR_CHECK);
+      }
+      const checkPayload = trimmedDecisions ? { ...handoffData, decisions: trimmedDecisions } : handoffData;
+      const handoffJson = JSON.stringify(checkPayload);
+
+      const sLang = detectLanguage(handoffJson.slice(0, 3000));
+      const langHint = sLang === 'ja'
+        ? 'Input is Japanese. Output in Japanese (keep code terms in English).'
+        : 'Output in English.';
+
+      return await callApiRaw(
+        apiKey, POST_MERGE_PROMPT,
+        `${langHint}\n\nMERGED HANDOFF:\n${handoffJson}\n\nCHUNK EXTRACTION TEXT (for completed items):\n${partialsText}`,
+        8192, true,
+      );
+    } catch (err) {
+      if (import.meta.env.DEV) console.warn('[chunkEngine] post-merge finalization failed:', err);
+      return null;
+    }
+  }
+
+  /** Apply combined post-merge result to the merged result */
+  private applyPostMergeResult(postMerge: PartialResult, mergedResult: PartialResult, mode: ExtractMode): void {
+    const originalDecisions = mergedResult.decisions;
+
+    // Apply cleaned handoff fields
+    const cleaned = postMerge.cleanedHandoff as PartialResult | undefined;
+    if (cleaned) {
+      if (mode === 'both') {
+        mergedResult.handoff = { ...(mergedResult.handoff as PartialResult), ...cleaned };
+        mergedResult.currentStatus = cleaned.currentStatus ?? mergedResult.currentStatus;
+        mergedResult.nextActions = cleaned.nextActions ?? mergedResult.nextActions;
+        mergedResult.blockers = cleaned.blockers ?? mergedResult.blockers;
+        mergedResult.constraints = cleaned.constraints ?? mergedResult.constraints;
+        mergedResult.resumeContext = cleaned.resumeContext ?? mergedResult.resumeContext;
+        mergedResult.decisions = originalDecisions;
+        const handoffRef = mergedResult.handoff as PartialResult | undefined;
+        if (handoffRef) handoffRef.decisions = originalDecisions;
+      } else {
+        Object.assign(mergedResult, cleaned);
+        mergedResult.decisions = originalDecisions;
+      }
+    }
+
+    // Apply completed items
+    const completedItems = postMerge.completed;
+    if (Array.isArray(completedItems) && completedItems.length > 0) {
+      const MAX_COMPLETED = 50;
+      const strings = completedItems.filter((x): x is string => typeof x === 'string');
+      const trimmed = strings.length > MAX_COMPLETED ? strings.slice(-MAX_COMPLETED) : strings;
+      mergedResult.completed = trimmed;
+      if (mode === 'both') {
+        const handoff = mergedResult.handoff as PartialResult | undefined;
+        if (handoff) handoff.completed = trimmed;
+      }
+    }
+
+    // Apply final summary (handoffMeta, resumeChecklist, activeDecisions)
+    this.applyFinalSummary(postMerge, mergedResult, mode);
   }
 
   /** Extract completed items from chunk text */
@@ -1295,6 +1214,6 @@ export const _testOnly = {
   splitLongParagraph,
   tryRepairJson,
   localMerge,
-  estimateTokens,
-  tokenTargetToCharLimit,
+  estimateTokens: _estimateTokens,
+  tokenTargetToCharLimit: _tokenTargetToCharLimit,
 };

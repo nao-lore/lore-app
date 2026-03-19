@@ -57,6 +57,9 @@ export default memo(function ProgressDisplay({
           percent: progressPct,
           detail: progress.phase === 'extract' ? (
             [
+              progress.apiCallCurrent && progress.apiCallTotal
+                ? tf('apiCallProgress', lang, progress.apiCallCurrent, progress.apiCallTotal)
+                : '',
               progress.savedCount > 0 ? tf('itemsSaved', lang, progress.savedCount) : '',
               progress.total - progress.current > 0 ? tf('remaining', lang, progress.total - progress.current) : t('lastItem', lang),
               estMinutes > 0 ? tf('estimatedTime', lang, estMinutes) : '',
@@ -65,7 +68,14 @@ export default memo(function ProgressDisplay({
           : progress.phase === 'completed' ? t('phaseCollectingCompletedDetail', lang)
           : progress.phase === 'consistency' ? t('phaseConsistencyCheckDetail', lang)
           : progress.phase === 'waiting' ? `${tf('waitingForApi', lang, progress.retryIn ?? 0)} · ${tf('itemsSaved', lang, progress.savedCount)}`
-          : progress.autoPaused ? t('autoPausedDesc', lang)
+          : progress.autoPaused ? (() => {
+            // Parse auto-resume countdown from message
+            const countdownMatch = progress.message.match(/resume-in:(\d+)/);
+            const countdown = countdownMatch ? parseInt(countdownMatch[1], 10) : 0;
+            return countdown > 0
+              ? tf('autoPausedCountdown', lang, countdown)
+              : t('autoPausedDesc', lang);
+          })()
           : `${tf('itemsSaved', lang, progress.savedCount)} · ${t('clickResumeHint', lang)}`,
         }}
         lang={lang}

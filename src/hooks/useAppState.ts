@@ -20,6 +20,15 @@ function resolveUiLang(): Lang {
   return getUiLang();
 }
 
+/**
+ * useAppState — intentionally large aggregator hook.
+ *
+ * This hook composes several domain hooks (useNavigation, useDataStore,
+ * useSidebarState) and adds cross-cutting app-level state (lang, theme,
+ * project, palette, onboarding, etc.). The 50+ returned properties are
+ * expected because this is the single composition point consumed by App.tsx.
+ * Do NOT split this further — it is the glue layer, not business logic.
+ */
 export function useAppState() {
   // ── Domain hooks ──────────────────────────────────────────────
   const nav = useNavigation();

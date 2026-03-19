@@ -1,10 +1,9 @@
 import type { TransformResult, HandoffResult, BothResult, DecisionWithRationale, NextActionItem, ResumeChecklistItem, HandoffMeta, LogEntry } from './types';
 import { getApiKey, getLang } from './storage';
-import { shouldUseBuiltinApi } from './provider';
-import { callProvider, callProviderStream } from './provider';
+import { shouldUseBuiltinApi, callProvider, callProviderStream, getActiveProvider } from './provider';
 import type { StreamCallback } from './provider';
 import { normalizeDecisions as normalizeDecisionsUtil } from './utils/decisions';
-import { SYSTEM_PROMPT, HANDOFF_PROMPT, BOTH_PROMPT, TODO_ONLY_PROMPT } from './prompts';
+import { SYSTEM_PROMPT, HANDOFF_PROMPT, HANDOFF_PROMPT_COMPACT, BOTH_PROMPT, TODO_ONLY_PROMPT } from './prompts';
 import { parseJsonInWorker } from './workers/parseHelper';
 import { safeParse, WorklogResultSchema, HandoffResultSchema, TodoOnlyResultSchema } from './schemas';
 import { AIError } from './errors';
@@ -546,7 +545,7 @@ export function normalizeHandoffFields(parsed: Record<string, unknown>): {
   const rawDecisions = Array.isArray(parsed.decisions) ? parsed.decisions : [];
   const { decisions, decisionRationales, totalDecisionsBeforeCap } = normalizeDecisions(rawDecisions);
   const rawNextActions = Array.isArray(parsed.nextActions) ? parsed.nextActions : [];
-  const { nextActions: allNextActions, nextActionItems: allNextActionItems } = normalizeNextActions(rawNextActions);
+  const { nextActionItems: allNextActionItems } = normalizeNextActions(rawNextActions);
   const resumeChecklist = normalizeResumeChecklist(parsed.resumeChecklist);
   const rawActionBacklog = normalizeActionBacklog(parsed.actionBacklog);
   const handoffMeta = normalizeHandoffMeta(parsed.handoffMeta);
@@ -562,7 +561,7 @@ export function normalizeHandoffFields(parsed: Record<string, unknown>): {
 
   // Deduplicate actionBacklog against nextActions (remove items already in nextActions)
   const nextActionSet = new Set(nextActions.map(a => a.toLowerCase().trim()));
-  let actionBacklog = finalActionBacklog.filter(item => !nextActionSet.has(item.action.toLowerCase().trim()));
+  const actionBacklog = finalActionBacklog.filter(item => !nextActionSet.has(item.action.toLowerCase().trim()));
   // Normalize remaining array fields with type coercion and dedup
   const completed = fuzzyDedupStrings(toStringArray(parsed.completed));
   const currentStatus = fuzzyDedupStrings(toStringArray(parsed.currentStatus));
@@ -571,6 +570,18 @@ export function normalizeHandoffFields(parsed: Record<string, unknown>): {
   );
   const constraints = toStringArray(parsed.constraints);
   const tags = toStringArray(parsed.tags);
+
+  // #67: Tag language validation — detect if tags are in a different language than the content
+  if (tags.length > 0 && (currentStatus.length > 0 || completed.length > 0 || decisions.length > 0)) {
+    const contentSample = [...currentStatus, ...completed, ...decisions].join(' ').slice(0, 2000);
+    const contentLang = detectLanguage(contentSample);
+    const tagsSample = tags.join(' ');
+    const tagsLang = detectLanguage(tagsSample);
+    if (contentLang !== tagsLang && tagsSample.length > 10) {
+      logValidationWarning(`Tag language mismatch: content=${contentLang}, tags=${tagsLang}. Tags: [${tags.slice(0, 5).join(', ')}]`);
+    }
+  }
+
   return { decisions, decisionRationales, totalDecisionsBeforeCap, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta, currentStatus, completed, blockers, constraints, tags };
 }
 
@@ -629,7 +640,9 @@ async function transformHandoffOnce(sourceText: string, opts?: { onStream?: Stre
 
   const userMessage = `${langInstruction}\n\nExtract a restart memo from the following conversation. Focus on where to resume, what's done, next actions, and unresolved issues.\n\nCHAT:\n${sourceText}`;
 
-  const req = { apiKey, system: HANDOFF_PROMPT, userMessage, maxTokens: 8192 };
+  // Use compact prompt for Gemini (large context window, handles instructions well with less guidance)
+  const handoffSystemPrompt = getActiveProvider() === 'gemini' ? HANDOFF_PROMPT_COMPACT : HANDOFF_PROMPT;
+  const req = { apiKey, system: handoffSystemPrompt, userMessage, maxTokens: 8192 };
   const rawText = opts?.onStream
     ? await callProviderStream(req, opts.onStream)
     : await callProvider(req);
