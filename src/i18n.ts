@@ -2267,6 +2267,16 @@ const labels = {
     pt: 'Limpar os dados do navegador os apagara. Use o recurso de exportacao para fazer backup. Sincronizacao na nuvem esta no roadmap.',
   },
 
+  // CardSection rich metadata
+  richWhy: { ja: '理由:', en: 'Why:', es: 'Por qué:', fr: 'Pourquoi :', de: 'Warum:', zh: '原因:', ko: '이유:', pt: 'Por quê:' },
+  richPriority: { ja: '優先度:', en: 'Priority:', es: 'Prioridad:', fr: 'Priorité :', de: 'Priorität:', zh: '优先级:', ko: '우선순위:', pt: 'Prioridade:' },
+  richDependsOn: { ja: '依存:', en: 'Depends on:', es: 'Depende de:', fr: 'Dépend de :', de: 'Abhängig von:', zh: '依赖:', ko: '의존:', pt: 'Depende de:' },
+  newBadge: { ja: 'NEW', en: 'NEW', es: 'NUEVO', fr: 'NOUVEAU', de: 'NEU', zh: '新', ko: '새', pt: 'NOVO' },
+
+  // Accessibility
+  close: { ja: '閉じる', en: 'Close', es: 'Cerrar', fr: 'Fermer', de: 'Schließen', zh: '关闭', ko: '닫기', pt: 'Fechar' },
+  filterByTag: { ja: 'タグでフィルター: {0}', en: 'Filter by tag: {0}', es: 'Filtrar por etiqueta: {0}', fr: 'Filtrer par tag : {0}', de: 'Nach Tag filtern: {0}', zh: '按标签筛选: {0}', ko: '태그로 필터: {0}', pt: 'Filtrar por tag: {0}' },
+
 } as const;
 
 /** Exported for testing — do not use in application code. */

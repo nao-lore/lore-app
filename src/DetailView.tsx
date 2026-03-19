@@ -284,6 +284,12 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
               className="tag"
               style={{ cursor: onTagFilter ? 'pointer' : undefined }}
               onClick={onTagFilter ? () => onTagFilter(tag) : undefined}
+              {...(onTagFilter ? {
+                role: 'button' as const,
+                tabIndex: 0,
+                'aria-label': t('filterByTag', lang).replace('{0}', tag),
+                onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTagFilter(tag); } },
+              } : {})}
             >
               {tag}
             </span>
@@ -330,12 +336,13 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
       <div className="flex-col gap-md">
         {isHandoff ? (
           <>
-            <CardSection title={t('sectionCurrentStatus', lang)} items={log.currentStatus || log.inProgress || []} isNew={(item) => isNewItem(item, prevHandoff?.currentStatus)} />
+            <CardSection title={t('sectionCurrentStatus', lang)} items={log.currentStatus || log.inProgress || []} isNew={(item) => isNewItem(item, prevHandoff?.currentStatus)} lang={lang} />
             <CheckableCardSection
               title={t('sectionNextActions', lang)}
               items={log.nextActions || []}
               richItems={log.nextActionItems}
               checkedIndices={log.checkedActions || []}
+              lang={lang}
               onToggle={(index) => {
                 const current = log.checkedActions || [];
                 const next = current.includes(index) ? current.filter((i) => i !== index) : [...current, index];
@@ -346,9 +353,9 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
             {log.actionBacklog && log.actionBacklog.length > 0 && (
               <CardSection title={lang === 'ja' ? 'バックログ' : 'Action Backlog'} items={log.actionBacklog.map(a => a.action)} />
             )}
-            <CardSection title={t('sectionCompleted', lang)} items={log.completed || []} isNew={(item) => isNewItem(item, prevHandoff?.completed)} />
-            <CardSection title={t('sectionDecisions', lang)} items={log.decisions} isNew={(item) => isNewItem(item, prevHandoff?.decisions)} />
-            <CardSection title={t('sectionBlockers', lang)} items={log.blockers || []} isNew={(item) => isNewItem(item, prevHandoff?.blockers)} />
+            <CardSection title={t('sectionCompleted', lang)} items={log.completed || []} isNew={(item) => isNewItem(item, prevHandoff?.completed)} lang={lang} />
+            <CardSection title={t('sectionDecisions', lang)} items={log.decisions} isNew={(item) => isNewItem(item, prevHandoff?.decisions)} lang={lang} />
+            <CardSection title={t('sectionBlockers', lang)} items={log.blockers || []} isNew={(item) => isNewItem(item, prevHandoff?.blockers)} lang={lang} />
             <CardSection title={t('sectionConstraints', lang)} items={log.constraints || []} />
           </>
         ) : (
@@ -409,12 +416,13 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
           ) : log.memo ? (
             <p className="text-body detail-memo-text">{log.memo}</p>
           ) : (
-            <p
-              className="meta detail-memo-placeholder"
+            <button
+              type="button"
+              className="btn-reset meta detail-memo-placeholder"
               onClick={() => { setMemoDraft(''); setEditingMemo(true); }}
             >
               {t('memoPlaceholder', lang)}
-            </p>
+            </button>
           )}
         </div>
       </div>
