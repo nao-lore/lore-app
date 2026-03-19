@@ -170,6 +170,22 @@ function validateHandoffResult(
     logValidationWarning(`currentStatus is empty for ${charLen}-char input — expected at least 1 item`);
   }
 
+  // Warn if currentStatus contains past-tense language (should be present-tense only)
+  if (parsed.currentStatus) {
+    // English past tense patterns: simple past, present perfect, passive voice
+    const englishPastTense = /\b(completed|implemented|added|fixed|updated|changed|created|resolved|was completed|has been|have been|were?\s+\w+ed)\b/i;
+    // Japanese past tense patterns: た form, ました, された (passive past)
+    const japanesePastTense = /済み|した$|しました|された|完了した|修正した|追加した|実装した|変更した/;
+    for (const item of parsed.currentStatus) {
+      if (englishPastTense.test(item)) {
+        logValidationWarning(`currentStatus contains past-tense language: "${item.slice(0, 60)}" — should be present-tense or moved to completed`);
+      }
+      if (japanesePastTense.test(item)) {
+        logValidationWarning(`currentStatus contains past-tense Japanese: "${item.slice(0, 60)}" — should be present-tense or moved to completed`);
+      }
+    }
+  }
+
   // Validate resumeChecklist items have required whyNow/ifSkipped
   if (Array.isArray(parsed.resumeChecklist)) {
     for (const item of parsed.resumeChecklist) {
@@ -530,20 +546,23 @@ export function normalizeHandoffFields(parsed: Record<string, unknown>): {
   const rawDecisions = Array.isArray(parsed.decisions) ? parsed.decisions : [];
   const { decisions, decisionRationales, totalDecisionsBeforeCap } = normalizeDecisions(rawDecisions);
   const rawNextActions = Array.isArray(parsed.nextActions) ? parsed.nextActions : [];
-  let { nextActions, nextActionItems } = normalizeNextActions(rawNextActions);
+  const { nextActions: allNextActions, nextActionItems: allNextActionItems } = normalizeNextActions(rawNextActions);
   const resumeChecklist = normalizeResumeChecklist(parsed.resumeChecklist);
-  let actionBacklog = normalizeActionBacklog(parsed.actionBacklog);
+  const rawActionBacklog = normalizeActionBacklog(parsed.actionBacklog);
   const handoffMeta = normalizeHandoffMeta(parsed.handoffMeta);
-  // Enforce max 4 nextActions — overflow goes to actionBacklog
-  if (nextActionItems.length > 4) {
-    const overflow = nextActionItems.slice(4);
-    nextActionItems = nextActionItems.slice(0, 4);
-    nextActions = nextActionItems.map(i => i.action);
-    actionBacklog = [...overflow, ...actionBacklog].slice(0, 7);
-  }
+
+  // Enforce max 4 nextActions — items beyond the cap overflow into actionBacklog.
+  // This ensures the "immediate actions" list stays focused while preserving
+  // lower-priority items in the backlog (capped at 7 total).
+  const finalNextActionItems = allNextActionItems.slice(0, 4);
+  const overflowToBacklog = allNextActionItems.slice(4);
+  const finalActionBacklog = [...overflowToBacklog, ...rawActionBacklog].slice(0, 7);
+  const nextActionItems = finalNextActionItems;
+  const nextActions = nextActionItems.map(i => i.action);
+
   // Deduplicate actionBacklog against nextActions (remove items already in nextActions)
   const nextActionSet = new Set(nextActions.map(a => a.toLowerCase().trim()));
-  actionBacklog = actionBacklog.filter(item => !nextActionSet.has(item.action.toLowerCase().trim()));
+  let actionBacklog = finalActionBacklog.filter(item => !nextActionSet.has(item.action.toLowerCase().trim()));
   // Normalize remaining array fields with type coercion and dedup
   const completed = fuzzyDedupStrings(toStringArray(parsed.completed));
   const currentStatus = fuzzyDedupStrings(toStringArray(parsed.currentStatus));

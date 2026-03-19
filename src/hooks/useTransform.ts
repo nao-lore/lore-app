@@ -156,11 +156,23 @@ export function useTransform(params: UseTransformParams) {
     function createStreamCallback(): { onStream?: (chunk: string, accumulated: string) => void } {
       const streamingEnabled = getFeatureEnabled('streaming', true);
       let charCount = 0;
+      let lastUpdateTime = 0;
+      const THROTTLE_MS = 200;
       return {
         onStream: streamingEnabled ? (_chunk: string, accumulated: string) => {
-          if (charCount === 0) setSimStep(2);
+          if (charCount === 0) {
+            setSimStep(2);
+            charCount = accumulated.length;
+            lastUpdateTime = Date.now();
+            setStreamDetail(`${t('streamReceiving', lang)}... ${charCount.toLocaleString()} chars`);
+            return;
+          }
           charCount = accumulated.length;
-          setStreamDetail(`${t('streamReceiving', lang)}... ${charCount.toLocaleString()} chars`);
+          const now = Date.now();
+          if (now - lastUpdateTime >= THROTTLE_MS) {
+            lastUpdateTime = now;
+            setStreamDetail(`${t('streamReceiving', lang)}... ${charCount.toLocaleString()} chars`);
+          }
         } : undefined,
       };
     }

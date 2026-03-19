@@ -11,6 +11,6 @@ export { loadTodos, loadArchivedTodos, loadTrashedTodos, saveTodos, addTodosFrom
 
 export { loadMasterNotes, getMasterNote, saveMasterNote, deleteMasterNote, getMasterNoteHistory, deleteMasterNoteHistory, restoreMasterNoteSnapshot } from './masterNotes';
 
-export { getApiKey, setApiKey, getLang, setLang, getUiLang, setUiLang, getTheme, setTheme, isDemoMode, setDemoMode, getFeatureEnabled, setFeatureEnabled, getAutoReportSetting, setAutoReportSetting, getLastReportDate, setLastReportDate, recordActivity, getStreak, exportAllData, validateBackup, importData, getDataUsage, formatBytes, purgeExpiredTrash } from './settings';
+export { getApiKey, setApiKey, getLang, setLang, getUiLang, setUiLang, getTheme, setTheme, isDemoMode, setDemoMode, getFeatureEnabled, setFeatureEnabled, getAutoReportSetting, setAutoReportSetting, getLastReportDate, setLastReportDate, recordActivity, getStreak, getWeeklyGoal, setWeeklyGoal, exportAllData, validateBackup, importData, getDataUsage, formatBytes, purgeExpiredTrash } from './settings';
 
 export type { ThemePref, LoreBackup, ImportResult, DataUsage } from './settings';

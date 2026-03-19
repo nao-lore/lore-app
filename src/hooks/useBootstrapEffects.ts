@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { purgeExpiredTrash, getAutoReportSetting, getLastReportDate, recordActivity } from '../storage';
+import { purgeExpiredTrash, getAutoReportSetting, getLastReportDate, recordActivity, safeGetItem, safeSetItem } from '../storage';
 import { isOnboardingDone } from '../onboardingState';
 import { registerSW } from 'virtual:pwa-register';
 import { t } from '../i18n';
@@ -127,7 +127,34 @@ export function useBootstrapEffects(params: BootstrapParams): void {
     }
   }, []);
 
-  // 9. Warn user before closing tab with unsaved input (mount-only)
+  // 9. In-app reminder if no snapshot in 3+ days (mount-only)
+  useEffect(() => {
+    ric(() => {
+      const { logs, lang, showToast } = paramsRef.current;
+      if (logs.length === 0) return;
+
+      // Check if last snapshot was 3+ days ago
+      const handoffs = logs.filter((l) => l.outputMode === 'handoff');
+      if (handoffs.length === 0) return;
+      const latestTs = Math.max(...handoffs.map((l) => new Date(l.createdAt).getTime()));
+      const threeDays = 3 * 24 * 60 * 60 * 1000;
+      if (Date.now() - latestTs < threeDays) return;
+
+      // Check last reminder date to avoid spamming (max once per day)
+      const REMINDER_KEY = 'threadlog_last_reminder_date';
+      const lastReminder = safeGetItem(REMINDER_KEY);
+      if (lastReminder) {
+        const lastDate = new Date(lastReminder).toISOString().slice(0, 10);
+        const today = new Date().toISOString().slice(0, 10);
+        if (lastDate === today) return;
+      }
+
+      safeSetItem(REMINDER_KEY, new Date().toISOString());
+      showToast(t('reminderNoSnapshots', lang), 'default');
+    });
+  }, []);
+
+  // 10. Warn user before closing tab with unsaved input (mount-only)
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       if ((paramsRef.current.inputDirtyRef as React.MutableRefObject<boolean>).current) {
@@ -138,7 +165,7 @@ export function useBootstrapEffects(params: BootstrapParams): void {
     return () => window.removeEventListener('beforeunload', handler);
   }, []);
 
-  // 10. Multi-tab localStorage sync (uses stable refreshLogs)
+  // 11. Multi-tab localStorage sync (uses stable refreshLogs)
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (

@@ -4,7 +4,8 @@ import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { getGreeting } from './greeting';
-import { getStreak, safeGetItem, safeSetItem, getTotalSnapshots } from './storage';
+import { getStreak, safeGetItem, safeSetItem, getTotalSnapshots, getWeeklyGoal } from './storage';
+import { checkAchievements } from './utils/achievements';
 import FirstUseTooltip from './FirstUseTooltip';
 import { EmptyDashboard } from './EmptyIllustrations';
 
@@ -523,6 +524,8 @@ export default memo(DashboardView);
 function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]; todos: Todo[]; projects: Project[]; lang: Lang }) {
   const streak = useMemo(() => getStreak(), []);
   const totalSnapshots = useMemo(() => getTotalSnapshots(), []);
+  const weeklyGoal = useMemo(() => getWeeklyGoal(), []);
+  const badges = useMemo(() => checkAchievements(), []);
 
   const stats = useMemo(() => {
     const totalLogs = logs.length;
@@ -621,6 +624,43 @@ function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]
         {totalSnapshots > 0 && (
           <div className="text-xs-placeholder" style={{ marginTop: 6 }}>
             {t('dashboardTotalSnapshots', lang)}: <span className="text-muted font-semibold">{totalSnapshots}</span>
+          </div>
+        )}
+
+        {/* Row 5: weekly goal progress */}
+        {weeklyGoal > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <div className="flex-row justify-between" style={{ fontSize: 12, marginBottom: 4 }}>
+              <span className="text-muted font-semibold">
+                {stats.thisWeekLogs >= weeklyGoal
+                  ? t('weeklyGoalReached', lang)
+                  : tf('weeklyGoalProgress', lang, stats.thisWeekLogs, weeklyGoal)}
+              </span>
+            </div>
+            <div className="progress-bar-track">
+              <div style={{
+                height: '100%',
+                width: `${Math.min((stats.thisWeekLogs / weeklyGoal) * 100, 100)}%`,
+                borderRadius: 3,
+                background: stats.thisWeekLogs >= weeklyGoal ? 'var(--success-text, #22c55e)' : 'var(--accent)',
+                transition: 'width 0.3s',
+              }} />
+            </div>
+          </div>
+        )}
+
+        {/* Badges */}
+        {badges.length > 0 && (
+          <div className="flex flex-wrap" style={{ gap: 6, marginTop: 12 }}>
+            {badges.map((badge) => (
+              <span
+                key={badge.id}
+                className="badge badge-accent font-semibold"
+                style={{ fontSize: 11, padding: '3px 8px', borderRadius: 12 }}
+              >
+                {badge.emoji} {t(badge.labelKey as Parameters<typeof t>[0], lang)}
+              </span>
+            ))}
           </div>
         )}
       </div>
