@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect, memo } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { CheckSquare, Square, MoreVertical, Trash2, Check, CheckCheck, AlertTriangle, Copy, Calendar } from 'lucide-react';
 import type { Todo } from '../types';
 import { t, tf } from '../i18n';
 import type { Lang } from '../i18n';
 import DropdownMenu from '../DropdownMenu';
 import { isOverdue, isDueToday } from './todoItemHelpers';
+import { useClickOutside } from '../hooks/useClickOutside';
 
 export type SortKey = 'created' | 'title' | 'priority' | 'due';
 export type GroupKey = 'none' | 'date' | 'priority' | 'source';
@@ -254,18 +255,8 @@ interface TodoHeaderActionsProps {
 
 export const TodoHeaderActions = memo(function TodoHeaderActions({ lang, selectMode, displayedCount, completedCount, onAdd, onStartSelect, onDeleteCompleted }: TodoHeaderActionsProps) {
   const [overflowOpen, setOverflowOpen] = useState(false);
-  const overflowRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!overflowOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (overflowRef.current && e.target instanceof Node && !overflowRef.current.contains(e.target)) {
-        setOverflowOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [overflowOpen]);
+  const closeOverflow = useCallback(() => setOverflowOpen(false), []);
+  const overflowRef = useClickOutside<HTMLDivElement>(overflowOpen, closeOverflow);
 
   return (
     <div className="flex-row" style={{ gap: 6 }}>

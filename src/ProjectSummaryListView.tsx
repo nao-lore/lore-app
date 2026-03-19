@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { FileText, ArrowRight } from 'lucide-react';
 import type { Project, LogEntry } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { getMasterNote } from './storage';
 import DropdownMenu from './DropdownMenu';
+import { useClickOutside } from './hooks/useClickOutside';
 
 function daysSince(ts: number): number {
   return Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
@@ -24,24 +25,8 @@ export default function ProjectSummaryListView({ projects, logs, onBack, onOpenS
   const [pickerOpen, setPickerOpen] = useState(false);
   const [sortKey, setSortKey] = useState<SummarySortKey>('updated_desc');
   const [filterUnreflected, setFilterUnreflected] = useState(false);
-  const pickerRef = useRef<HTMLDivElement>(null);
-
-  // Close picker on outside click or Escape
-  useEffect(() => {
-    if (!pickerOpen) return;
-    const onMouseDown = (e: MouseEvent) => {
-      if (pickerRef.current && e.target instanceof Node && !pickerRef.current.contains(e.target)) setPickerOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setPickerOpen(false);
-    };
-    document.addEventListener('mousedown', onMouseDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', onMouseDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [pickerOpen]);
+  const closePicker = useCallback(() => setPickerOpen(false), []);
+  const pickerRef = useClickOutside<HTMLDivElement>(pickerOpen, closePicker);
 
   const logCountFor = (pid: string) => logs.filter((l) => l.projectId === pid).length;
 

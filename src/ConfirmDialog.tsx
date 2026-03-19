@@ -35,9 +35,9 @@ export default memo(function ConfirmDialog({ title, description, confirmLabel, c
 
   return (
     <div className="modal-overlay" role="presentation" onClick={onCancel}>
-      <div ref={trapRef} className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" onClick={(e) => e.stopPropagation()}>
+      <div ref={trapRef} className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-title" aria-describedby={description ? 'confirm-dialog-desc' : undefined} onClick={(e) => e.stopPropagation()}>
         <div className="confirm-dialog-title" id="confirm-dialog-title">{title}</div>
-        {description && <div className="confirm-dialog-desc">{description}</div>}
+        {description && <div className="confirm-dialog-desc" id="confirm-dialog-desc">{description}</div>}
         <div className="confirm-dialog-actions">
           <button className="btn" onClick={onCancel}>{cancelLabel}</button>
           <button className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm}>{confirmLabel}</button>

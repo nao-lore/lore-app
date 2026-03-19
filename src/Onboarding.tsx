@@ -81,11 +81,16 @@ export default function Onboarding({ lang, onLangChange, onClose, initialStep = 
     <div className="onboarding-overlay">
       <div ref={trapRef} className="onboarding-card" role="dialog" aria-modal="true" aria-label={t('ariaSetupWizard', lang)}>
         {/* Progress dots */}
-        <div className="onboarding-dots">
+        <div className="onboarding-dots" role="tablist" aria-label={t('ariaOnboardingSteps', lang)}>
           {steps.map((_, i) => (
-            <div
+            <button
               key={i}
+              role="tab"
+              aria-selected={i === step}
+              aria-label={tf('onboardingStepCounter', lang, i + 1, totalSteps)}
               className={`onboarding-dot${i === step ? ' active' : ''}`}
+              onClick={() => setStep(i)}
+              tabIndex={i === step ? 0 : -1}
             />
           ))}
         </div>

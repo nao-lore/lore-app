@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect, memo } from 'react';
+import { useState, useCallback, memo } from 'react';
 import type { MasterNote, LogEntry, SourcedItem } from '../types';
 import type { Lang } from '../i18n';
 import { t } from '../i18n';
 import { ExternalLink, Pencil, MoreVertical, Copy, Download, RefreshCw, History } from 'lucide-react';
+import { useClickOutside } from '../hooks/useClickOutside';
 import { normalizeItems } from './masterNoteHelpers';
 
 function noteToMarkdown(note: MasterNote, projectName: string, lang: Lang): string {
@@ -272,18 +273,8 @@ export const OverflowMenu = memo(function OverflowMenu({
   historyCount: number;
 }) {
   const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && e.target instanceof Node && !menuRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+  const closeMenu = useCallback(() => setOpen(false), []);
+  const menuRef = useClickOutside<HTMLDivElement>(open, closeMenu);
 
   const handleCopy = async () => {
     const md = noteToMarkdown(note, projectName, lang);
