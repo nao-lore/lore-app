@@ -83,7 +83,7 @@ export default memo(function DetailHeader({
       <div className="page-header-row">
         <div className="flex-1">
           <div className="flex-row gap-10">
-            {isHandoff ? <span className="badge-handoff">Handoff</span> : <span className="badge-worklog">Log</span>}
+            {isHandoff ? <span className="badge-handoff">{t('badgeSnapshot', lang)}</span> : <span className="badge-worklog">{t('badgeLog', lang)}</span>}
             {project && (
               <span
                 className="tag detail-project-tag"

@@ -130,6 +130,15 @@ export interface ActionResult {
 // Per-action strategy functions (real API path)
 // ---------------------------------------------------------------------------
 
+// TODO(P3 #64): Cross-mode dedup — when the same source text is transformed as
+// both "worklog" and "handoff" (either via executeBoth or separate calls), the
+// resulting LogEntry items share overlapping decisions/todos/tags. Currently each
+// mode stores its result independently with no dedup across modes. A future
+// improvement could hash the source text (e.g. sourceReference.charCount + first
+// 200 chars) and, before saving, check if a log from the other mode already
+// exists for the same source. Overlapping string arrays (decisions, tags, todos)
+// could then be deduplicated using fuzzyDedupStrings from utils/fuzzyDedup.
+
 /** Execute "both" (worklog + handoff) transform */
 export async function executeBoth(ctx: TransformContext): Promise<ActionResult> {
   const { combined, apiKey, willChunk, selectedProjectId, text, files, buildSourceReference, initSingleTransform, createStreamCallback, setProgress, setResult, setOutputMode, setStreamDetail, setSimStep, projects, engineRef, _t0, provider, cacheLang } = ctx;

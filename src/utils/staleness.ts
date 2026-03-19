@@ -1,6 +1,17 @@
-export const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+/**
+ * Staleness threshold for master notes (in milliseconds).
+ *
+ * 7 days strikes a balance: long enough that notes aren't flagged as stale
+ * after a brief pause, short enough to prompt updates for actively-worked
+ * projects. This threshold is used to show a visual indicator when a
+ * project summary may be outdated and should be regenerated.
+ */
+export const STALENESS_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** Check if a master note is stale (not updated in 7+ days) */
+/** @deprecated Use STALENESS_THRESHOLD_MS instead */
+export const SEVEN_DAYS = STALENESS_THRESHOLD_MS;
+
+/** Check if a master note is stale (not updated within the staleness threshold) */
 export function isStaleMasterNote(updatedAt: number): boolean {
-  return Date.now() - updatedAt > SEVEN_DAYS;
+  return Date.now() - updatedAt > STALENESS_THRESHOLD_MS;
 }

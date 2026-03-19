@@ -61,12 +61,12 @@ export default memo(function HandoffDisplay({ log, lang, projects, showToast }: 
       {/* Session Context (handoffMeta) */}
       {log.handoffMeta && (log.handoffMeta.sessionFocus || log.handoffMeta.whyThisSession || log.handoffMeta.timePressure) && (
         <div className="resume-context-hero resume-hero-mb-sm">
-          <div className="resume-context-hero-label">{lang === 'ja' ? 'セッション概要' : 'Session Context'}</div>
+          <div className="resume-context-hero-label">{t('sessionContextLabel', lang)}</div>
           <div className="resume-context-hero-body">
             {[
-              log.handoffMeta.sessionFocus && `Focus: ${log.handoffMeta.sessionFocus}`,
-              log.handoffMeta.whyThisSession && `Why: ${log.handoffMeta.whyThisSession}`,
-              log.handoffMeta.timePressure && `Time: ${log.handoffMeta.timePressure}`,
+              log.handoffMeta.sessionFocus && `${t('sessionFocusPrefix', lang)}: ${log.handoffMeta.sessionFocus}`,
+              log.handoffMeta.whyThisSession && `${t('sessionWhyPrefix', lang)}: ${log.handoffMeta.whyThisSession}`,
+              log.handoffMeta.timePressure && `${t('sessionTimePrefix', lang)}: ${log.handoffMeta.timePressure}`,
             ].filter(Boolean).join('\n')}
           </div>
         </div>

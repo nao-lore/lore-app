@@ -2138,6 +2138,21 @@ const labels = {
   proBadge: { ja: 'PRO', en: 'PRO', es: 'PRO', fr: 'PRO', de: 'PRO', zh: 'PRO', ko: 'PRO', pt: 'PRO' },
   upgrading: { ja: 'チェックアウトにリダイレクト中...', en: 'Redirecting to checkout...', es: 'Redirigiendo al pago...', fr: 'Redirection vers le paiement...', de: 'Weiterleitung zur Kasse...', zh: '正在跳转到结账页面...', ko: '결제 페이지로 이동 중...', pt: 'Redirecionando para o checkout...' },
 
+  // Badge labels (mode indicators)
+  badgeSnapshot: { ja: 'スナップショット', en: 'Snapshot', es: 'Snapshot', fr: 'Snapshot', de: 'Snapshot', zh: '快照', ko: '스냅샷', pt: 'Snapshot' },
+  badgeLog: { ja: 'ログ', en: 'Log', es: 'Registro', fr: 'Log', de: 'Log', zh: '日志', ko: '로그', pt: 'Registro' },
+  badgeSnapshotShort: { ja: 'S', en: 'S', es: 'S', fr: 'S', de: 'S', zh: 'S', ko: 'S', pt: 'S' },
+  badgeLogShort: { ja: 'L', en: 'L', es: 'L', fr: 'L', de: 'L', zh: 'L', ko: 'L', pt: 'L' },
+
+  // Handoff display — session context
+  sessionContextLabel: { ja: 'セッション概要', en: 'Session Context', es: 'Contexto de sesión', fr: 'Contexte de session', de: 'Sitzungskontext', zh: '会话概要', ko: '세션 개요', pt: 'Contexto da sessão' },
+  sessionFocusPrefix: { ja: 'フォーカス', en: 'Focus', es: 'Enfoque', fr: 'Focus', de: 'Fokus', zh: '焦点', ko: '포커스', pt: 'Foco' },
+  sessionWhyPrefix: { ja: '理由', en: 'Why', es: 'Por qué', fr: 'Pourquoi', de: 'Warum', zh: '原因', ko: '이유', pt: 'Por quê' },
+  sessionTimePrefix: { ja: '期限', en: 'Time', es: 'Tiempo', fr: 'Délai', de: 'Zeit', zh: '时间', ko: '기한', pt: 'Prazo' },
+
+  // Share title
+  shareTitle: { ja: 'Lore スナップショット', en: 'Lore Snapshot', es: 'Lore Snapshot', fr: 'Lore Snapshot', de: 'Lore Snapshot', zh: 'Lore 快照', ko: 'Lore 스냅샷', pt: 'Lore Snapshot' },
+
 } as const;
 
 /** Exported for testing — do not use in application code. */
