@@ -182,41 +182,47 @@
   }
 
   function injectIntoGemini(text) {
-    // Gemini uses a rich text editor — try multiple selectors
-    var editor =
-      document.querySelector('.ql-editor[contenteditable="true"]') ||
-      document.querySelector('div[contenteditable="true"][aria-label]') ||
-      document.querySelector('rich-text-field div[contenteditable="true"]') ||
-      document.querySelector('div.input-area div[contenteditable="true"]') ||
-      document.querySelector('div[contenteditable="true"]');
+    // Gemini uses a Quill-based editor with class 'ql-editor'
+    var editor = document.querySelector('.ql-editor.textarea');
     if (!editor) {
-      console.warn('[Lore Banner] Gemini: no contenteditable element found');
+      editor = document.querySelector('.ql-editor[contenteditable="true"]') ||
+        document.querySelector('div[contenteditable="true"]');
+    }
+    if (!editor) {
+      console.warn('[Lore Banner] Gemini: no editor found');
       return false;
     }
+
+    console.log('[Lore Banner] Gemini: found editor', editor.className);
     editor.focus();
 
-    // Method 1: execCommand (works on many contenteditable editors)
-    var success = document.execCommand('insertText', false, text);
-    if (success && editor.textContent.length > 0) return true;
+    // Gemini's Quill editor needs: set innerHTML with <p> tags, remove ql-blank, dispatch input
+    // Quill doesn't respond to execCommand or paste events properly
+    var paragraphs = text.split('\n').map(function (line) {
+      return '<p>' + line.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
+    }).join('');
 
-    // Method 2: Clipboard paste event
+    editor.innerHTML = paragraphs;
+    editor.classList.remove('ql-blank');
+
+    // Dispatch events to make Gemini recognize the input
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
+    editor.dispatchEvent(new Event('change', { bubbles: true }));
+
+    // Also try triggering Quill's internal update via text-change
     try {
-      var dataTransfer = new DataTransfer();
-      dataTransfer.setData('text/plain', text);
-      editor.dispatchEvent(new ClipboardEvent('paste', {
+      var inputEvent = new InputEvent('input', {
         bubbles: true,
         cancelable: true,
-        clipboardData: dataTransfer,
-      }));
-      if (editor.textContent.length > 0) return true;
+        inputType: 'insertText',
+        data: text,
+      });
+      editor.dispatchEvent(inputEvent);
     } catch (e) {
-      console.warn('[Lore Banner] Gemini paste failed:', e);
+      console.warn('[Lore Banner] Gemini InputEvent failed:', e);
     }
 
-    // Method 3: Direct innerHTML + input event as last resort
-    editor.innerText = text;
-    editor.dispatchEvent(new Event('input', { bubbles: true }));
-    return true;
+    return editor.textContent.length > 0;
   }
 
   function injectText(site, text) {
