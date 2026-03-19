@@ -13,9 +13,25 @@
 const LORE_STORAGE_KEY = 'lore_contexts';
 
 /**
+ * Check if the extension runtime is still valid (not invalidated by extension reload).
+ */
+function isRuntimeValid() {
+  try {
+    return !!(chrome && chrome.runtime && chrome.runtime.sendMessage);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Read contexts from localStorage and send them to the background worker.
  */
 async function syncContexts() {
+  if (!isRuntimeValid()) {
+    console.warn('[Lore Bridge] Extension runtime invalidated — page reload required');
+    return;
+  }
+
   try {
     const raw = localStorage.getItem(LORE_STORAGE_KEY);
     if (!raw) return;

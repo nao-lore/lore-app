@@ -8,9 +8,13 @@
 (function () {
   'use strict';
 
+  console.log('[Lore Banner] Content script loaded on', location.hostname);
+
   // Prevent double-initialization if the script is injected more than once.
   if (window.__loreContentBannerLoaded) return;
   window.__loreContentBannerLoaded = true;
+
+  console.log('[Lore Banner] Initializing...');
 
   // =========================================================================
   // Constants
@@ -74,14 +78,21 @@
   function sendMessage(msg) {
     return new Promise(function (resolve) {
       try {
+        if (!chrome || !chrome.runtime || !chrome.runtime.sendMessage) {
+          console.warn('[Lore Banner] Extension runtime not available');
+          resolve(null);
+          return;
+        }
         chrome.runtime.sendMessage(msg, function (response) {
           if (chrome.runtime.lastError) {
+            console.warn('[Lore Banner] sendMessage error:', chrome.runtime.lastError.message);
             resolve(null);
           } else {
             resolve(response);
           }
         });
-      } catch {
+      } catch (e) {
+        console.warn('[Lore Banner] sendMessage exception:', e.message);
         resolve(null);
       }
     });
@@ -329,10 +340,12 @@
   // =========================================================================
 
   async function checkAndShowBanner() {
+    console.log('[Lore Banner] Checking for contexts...', { dismissed, injectedThisSession });
     // Don't show if dismissed or already showing success
     if (dismissed) return;
 
     var response = await sendMessage({ type: 'get-contexts' });
+    console.log('[Lore Banner] get-contexts response:', response);
     if (!response || !response.contexts || Object.keys(response.contexts).length === 0) {
       removeBanner(true);
       return;
