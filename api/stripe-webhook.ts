@@ -17,6 +17,13 @@ export default async function handler(req: Request): Promise<Response> {
   try {
     const body = await req.text();
 
+    // TODO(supabase-migration): Validate Stripe webhook signature before processing events.
+    // Without signature verification, any caller can forge webhook payloads.
+    // Steps: (1) Add STRIPE_WEBHOOK_SECRET to Vercel env vars,
+    //        (2) import Stripe SDK, (3) call stripe.webhooks.constructEvent(body, sig, secret),
+    //        (4) reject requests with invalid signatures (return 401).
+    // See: https://docs.stripe.com/webhooks/signatures
+    //
     // STRIPE_PLACEHOLDER: Verify webhook signature after Stripe approval
     // const sig = req.headers.get('stripe-signature');
     // const event = stripe.webhooks.constructEvent(body, sig, STRIPE_WEBHOOK_SECRET);

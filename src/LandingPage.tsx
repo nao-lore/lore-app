@@ -50,6 +50,9 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
             <ArrowRight size={16} aria-hidden="true" />
           </button>
         </div>
+        {/* TODO(ph-launch): Replace static screenshot with a demo GIF or short video
+            showing the paste → transform → snapshot flow. Keep autoplay muted loop
+            for GIF-like behavior: <video autoPlay muted loop playsInline /> */}
         <div className="lp-demo-screenshot">
           <picture>
             <source srcSet="/hero-screenshot.webp" type="image/webp" />
