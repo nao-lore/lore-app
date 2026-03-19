@@ -5,7 +5,20 @@
  * Rate-limited per IP to control costs.
  */
 
+import { z } from 'zod';
+
 export const config = { runtime: 'edge' };
+
+// ---------------------------------------------------------------------------
+// Request body schema (Zod validation)
+// ---------------------------------------------------------------------------
+
+const RequestSchema = z.object({
+  system: z.string().max(10240),
+  userMessage: z.string().max(102400),
+  maxTokens: z.number().min(100).max(16384).optional(),
+  stream: z.boolean().optional(),
+});
 
 // ---------------------------------------------------------------------------
 // Rate limiting (in-memory, resets on cold start — acceptable for beta)
@@ -188,55 +201,21 @@ export default async function handler(req: Request): Promise<Response> {
     );
   }
 
-  let body: { system?: string; userMessage?: string; maxTokens?: number; stream?: boolean };
+  let parsed: z.infer<typeof RequestSchema>;
   try {
-    body = JSON.parse(bodyText);
-  } catch {
+    const raw = JSON.parse(bodyText);
+    parsed = RequestSchema.parse(raw);
+  } catch (err) {
+    const message = err instanceof z.ZodError
+      ? err.issues.map(i => i.message).join('; ')
+      : 'Invalid JSON body';
     return new Response(
-      JSON.stringify({ error: 'Invalid JSON body' }),
+      JSON.stringify({ error: message }),
       { status: 400, headers: { ...cors, ...rlHeaders, 'Content-Type': 'application/json' } },
     );
   }
 
-  const { system, userMessage, maxTokens = 8192, stream = false } = body;
-  if (!system || !userMessage) {
-    return new Response(
-      JSON.stringify({ error: 'Missing required fields: system, userMessage' }),
-      { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } },
-    );
-  }
-
-  if (typeof system !== 'string' || typeof userMessage !== 'string') {
-    return new Response(
-      JSON.stringify({ error: 'system and userMessage must be strings' }),
-      { status: 400, headers: { ...cors, ...rlHeaders, 'Content-Type': 'application/json' } },
-    );
-  }
-
-  // Input size validation
-  const MAX_SYSTEM_BYTES = 10 * 1024; // 10 KB
-  const MAX_USER_MESSAGE_BYTES = 100 * 1024; // 100 KB
-  const MIN_MAX_TOKENS = 100;
-  const MAX_MAX_TOKENS = 16384;
-
-  if (new TextEncoder().encode(system).length > MAX_SYSTEM_BYTES) {
-    return new Response(
-      JSON.stringify({ error: `System prompt exceeds maximum size of ${MAX_SYSTEM_BYTES / 1024}KB.` }),
-      { status: 400, headers: { ...cors, ...rlHeaders, 'Content-Type': 'application/json' } },
-    );
-  }
-  if (new TextEncoder().encode(userMessage).length > MAX_USER_MESSAGE_BYTES) {
-    return new Response(
-      JSON.stringify({ error: `User message exceeds maximum size of ${MAX_USER_MESSAGE_BYTES / 1024}KB.` }),
-      { status: 400, headers: { ...cors, ...rlHeaders, 'Content-Type': 'application/json' } },
-    );
-  }
-  if (typeof maxTokens === 'number' && (maxTokens < MIN_MAX_TOKENS || maxTokens > MAX_MAX_TOKENS)) {
-    return new Response(
-      JSON.stringify({ error: `maxTokens must be between ${MIN_MAX_TOKENS} and ${MAX_MAX_TOKENS}.` }),
-      { status: 400, headers: { ...cors, ...rlHeaders, 'Content-Type': 'application/json' } },
-    );
-  }
+  const { system, userMessage, maxTokens = 8192, stream = false } = parsed;
 
   const geminiBody = {
     system_instruction: { parts: [{ text: system }] },

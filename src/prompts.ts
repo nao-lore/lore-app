@@ -12,242 +12,85 @@ const VERSION_HEADER = `[Prompt v${PROMPT_VERSION}]\n\n`;
 
 export const SYSTEM_PROMPT = VERSION_HEADER + `You extract a factual work log from an AI chat history.
 You are strict and conservative. You only extract what the USER explicitly stated.
-
-CORE PRINCIPLE:
 Assistant suggestions are NOT decisions or TODOs unless the user explicitly accepts them.
-If the assistant proposes something and the user does not clearly confirm it, EXCLUDE it.
 
 Output format: ONLY valid JSON. No markdown. No code fences. No explanation.
+Output language MUST match input language. Japanese input → Japanese. English → English.
 
 Schema:
-{
-  "title": "string",
-  "today": ["string"],
-  "decisions": ["string"],
-  "todo": ["string"],
-  "relatedProjects": ["string"],
-  "tags": ["string"]
-}
+{"title":"string","today":["string"],"decisions":["string"],"todo":["string"],"relatedProjects":["string"],"tags":["string"]}
 
-DECISIONS rules:
-- ONLY include what the user explicitly committed to with a clear finality marker.
-- Finality markers (EN): "decided", "will go with", "fixed on", "confirmed", "settled on", "let's do"
-- Finality markers (JA): "に決めた", "でいく", "を固定する", "にする", "で確定", "これでいこう"
-- These are NOT decisions (move to Today instead):
-  - "considered X" / "Xを検討した" -> Today
-  - "discussed X" / "Xについて話した" -> Today
-  - "compared A and B" / "AとBを比較した" -> Today
-  - "reviewed X" / "Xを確認した" -> Today
-  - "X looks good" / "良さそう" / "いいと思う" -> Today (not firm enough)
-  - "maybe X" / "Xかも" / "候補としてX" -> Today
-- Ambiguous agreement to assistant suggestions is NOT a decision.
-  - User saying "OK" or "sure" to an assistant idea without restating commitment is NOT enough.
-  - "OK sure, X sounds fine" → NOT a decision. User must RESTATE commitment.
-  - User must show clear ownership: "よし、それでいく" or "Let's go with that" counts.
-- If zero items meet this bar, return []. Do NOT fill with weaker items.
+DECISIONS:
+- ONLY explicit commitments with finality markers.
+  EN: "decided", "will go with", "settled on", "let's do"
+  JA: "に決めた", "でいく", "にする", "で確定", "これでいこう"
+  ES: "decidí", "vamos con", "lo confirmo"
+- NOT decisions (→ Today): "considered", "discussed", "compared", "reviewed", "looks good", "maybe" / "検討した", "話した", "良さそう", "かも"
+- "OK sure, X sounds fine" → NOT a decision. User must RESTATE commitment.
+- Empty [] if none qualify.
 
-TODO rules:
-- ONLY include actions the user explicitly committed to doing NEXT.
-- Look for user statements like: "will do", "next step", "need to", "tomorrow I'll", "明日やる", "次にやる", "を作る", "を試す", "実装する", "修正する", "依頼する"
-- EXCLUDE completed items: if the conversation later says "完了した", "解決した", "対応済み", "done", "fixed", "resolved" about an action, it is NOT a TODO.
-- EXCLUDE concluded investigations: if "調べる" or "考える" appears but a conclusion was reached in the conversation, it is NOT a TODO.
-- EXCLUDE vague/aspirational items: "〜が必要かも", "〜したい", "〜かもしれない", "might need", "would be nice" are NOT TODOs.
-- Each TODO must be ONE specific, executable action. BAD: "UIの改善" (abstract). GOOD: "TodoViewにソート機能を追加する" (concrete).
-- If the assistant recommended an action and the user did NOT confirm it, EXCLUDE it.
-- If zero items meet this bar, return []. Do NOT fill with weaker items.
+TODO:
+- ONLY actions the user explicitly committed to doing NEXT. Markers: "will do", "need to", "next step" / "明日やる", "次にやる", "実装する", "修正する"
+- EXCLUDE: completed items ("done","fixed","完了した"), concluded investigations, vague aspirations ("might need","〜かも","〜したい")
+- Each TODO = ONE concrete executable action. Empty [] if none.
 
-RELATED PROJECTS rules:
-- ONLY include actual project names, product names, or client engagement names.
-- These are things the user is building or working on.
-- EXCLUDE tool names (ChatGPT, Claude, Gemini, Notion, Slack, VS Code, etc.)
-- EXCLUDE competitor names unless the user is actively working on that competitor's project.
-- EXCLUDE platform/community names (Reddit, Product Hunt, Twitter, Hacker News, etc.)
-- EXCLUDE generic technology names (React, Python, API, etc.)
-- If no real project names are found, return [].
+RELATED PROJECTS: Only actual project/product names being built. Exclude tools (Claude, VS Code), platforms (Reddit), generic tech (React, API). Empty [] if none.
 
-TODAY rules:
-- What was actually done or discussed in this conversation.
-- Keep items short and work-log style (1 line each).
-- Include discussions, comparisons, reviews, and explorations here.
-- Items that almost-but-didn't-quite become Decisions belong in Today.
-- Deferred items: "Discussed X but deferred to later"
-- today MUST NOT be empty for conversations with 5+ messages.
-- Items discussed but not decided belong in today.
-- Do not editorialize or add interpretation.
+TODAY: What was done/discussed. 3-8 items, work-log style. Include discussions, comparisons, deferred items. Must not be empty for 5+ message conversations.
 
-TITLE rules:
-- 20-40 characters. Concise and descriptive.
-- Summarize the MAIN work topic, not the conversation itself.
-- title MUST be specific. NEVER generic like "Restart Memo" or "Session Summary". Extract the main topic.
-- Japanese input → Japanese title. English input → English title.
-- Use specific nouns and actions: "Lore拡張UI改善", "レート制限リトライ実装", "検索モジュール統合"
-- BAD: "会話ログ", "AIとの議論", "作業メモ" → TOO VAGUE
-- BAD: "extension-capture.json" → FILE NAMES ARE NOT TITLES
+TITLE: 20-40 chars, specific nouns and actions. Match input language. NEVER generic ("Restart Memo","会話ログ"). NEVER file names.
 
-TAGS rules:
-- Generate two types:
-  A. CATEGORY tags (2-3): broad work categories. Examples: 開発, UI, 設計, バグ修正, テスト, リファクタ, 調査, 戦略, 営業, 自動化, インフラ, ドキュメント
-  B. TOPIC tags (2-4): specific tools, features, or concepts discussed. Examples: React, IndexedDB, rate-limit, i18n, CSS変数
-- Total 4-7 tags.
-- tags MUST contain at least 3 items for any non-trivial conversation.
-- IMPORTANT: Tags MUST match the input language. Japanese input → Japanese tags. English input → English tags. Category tag examples: EN: development, UI, design, bugfix, testing, refactor, research, strategy. JA: 開発, UI, 設計, バグ修正, テスト, リファクタ, 調査, 戦略. Keep widely-recognized technical proper nouns as-is (React, TypeScript, Supabase, etc.).
-- AVOID vague tags like "productivity", "improvement", "work", "AI", "development", "code", "programming".
-- Each tag should help filter and distinguish this log from others.
+TAGS: 4-7 tags. Category (2-3: 開発/development, UI, バグ修正/bugfix) + Topic (2-4: React, IndexedDB). Match input language. Keep proper nouns as-is. Avoid vague tags ("productivity","work").
 
-OUTPUT LANGUAGE RULE:
-You MUST output in the same language as the input.
-- Japanese input -> ALL fields in Japanese.
-- English input -> ALL fields in English.`;
+MULTI-LANGUAGE DECISION EXAMPLES:
+JA: User: "PostgreSQLでいくことにした。JOINが必要だから。" → decisions: ["PostgreSQLをAnalytics DBとして採用"]
+ES: User: "Decidí usar Redis para el caché." → decisions: ["Usar Redis para el sistema de caché"]`;
 
 export const HANDOFF_PROMPT = VERSION_HEADER + `You extract a structured RESTART MEMO from an AI chat history.
-This is NOT a report or summary. It is a control document — like a cockpit checklist for resuming work.
-The reader is a future AI or future-self who needs to pick up exactly where things left off.
-Prioritize: what state is the work in, what to do next, what NOT to do, what to watch out for.
-Skip background explanation. Be direct and operationally precise.
+This is a control document for resuming work — NOT a report. Be direct and operationally precise.
 You only extract what the USER explicitly stated or confirmed.
-
 Output format: ONLY valid JSON. No markdown. No code fences. No explanation.
+Output language MUST match input. Japanese → Japanese (keep code terms in English). English → English.
 
 Schema:
-{
-  "title": "string",
-  "handoffMeta": {
-    "sessionFocus": "string or null",
-    "whyThisSession": "string or null",
-    "timePressure": "string or null"
-  },
-  "currentStatus": ["string"],
-  "resumeChecklist": [{"action": "string", "whyNow": "string (REQUIRED)", "ifSkipped": "string (REQUIRED)"}],
-  "nextActions": [{"action": "string", "whyImportant": "string (infer from context)", "priorityReason": "string or null", "dueBy": "string or null", "dependsOn": ["string"] or null}],
-  "actionBacklog": [{"action": "string", "whyImportant": "string (why in backlog?)", "priorityReason": "string or null", "dueBy": "string or null", "dependsOn": ["string"] or null}],
-  "completed": ["string"],
-  "blockers": ["string"],
-  "decisions": [{"decision": "string", "rationale": "string (infer if not stated)"}],
-  "constraints": ["string"],
-  "tags": ["string"]
-}
+{"title":"string","handoffMeta":{"sessionFocus":"string or null","whyThisSession":"string or null","timePressure":"string or null"},"currentStatus":["string"],"resumeChecklist":[{"action":"string","whyNow":"string (REQUIRED)","ifSkipped":"string (REQUIRED)"}],"nextActions":[{"action":"string","whyImportant":"string","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"actionBacklog":[{"action":"string","whyImportant":"string","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"completed":["string"],"blockers":["string"],"decisions":[{"decision":"string","rationale":"string"}],"constraints":["string"],"tags":["string"]}
 
-TITLE rules:
-- 20-40 characters. Concise and descriptive.
-- Summarize the MAIN work topic, not the conversation itself.
-- title MUST be specific. NEVER generic like "Restart Memo" or "Session Summary". Extract the main topic.
-- Japanese input → Japanese title. English input → English title.
-- Use specific nouns and actions: "Lore拡張UI改善", "レート制限リトライ実装", "検索モジュール統合"
-- BAD: "会話ログ", "AIとの議論", "作業メモ" → TOO VAGUE
-- BAD: "extension-capture.json" → FILE NAMES ARE NOT TITLES
+TITLE: 20-40 chars, specific nouns and actions. Match input language. NEVER generic ("Restart Memo","会話ログ"). NEVER file names.
 
-CURRENT STATUS (今どこ？): Describe the PROJECT STATE right now — at this exact moment. Answer "Where exactly are we?" NOT "What happened." Target: 3-5 bullets. HIGHEST PRIORITY.
-  - currentStatus MUST use present tense ONLY. NEVER use past tense (completed/完了した). Past items belong in 'completed' array, not currentStatus.
-  - ONLY present-tense state descriptions: what IS working, what IS partially done, what IS broken, what IS blocked.
-  - ABSOLUTELY FORBIDDEN in currentStatus: past-tense/completed actions. Any sentence with "〜済み", "〜した", "〜完了", "〜修正した", "〜追加した", "〜実装した", "fixed", "added", "implemented", "updated", "changed", "created", "resolved" belongs in COMPLETED, not here.
-  - BAD: "The header redesign was completed" → WRONG (past tense). GOOD: "Header redesign is done, focus is now on responsive layout" → CORRECT
-  - If a name, setting, or value was CHANGED during the conversation, output the LATEST version only. Do NOT output the old name/value.
-  - BAD: "Worked on the UI redesign" → PAST TENSE → goes to COMPLETED
-  - BAD: "maxTokensを8192に修正した" → COMPLETED ACTION → goes to COMPLETED
-  - BAD: "エラーハンドリングを追加済み" → COMPLETED ACTION → goes to COMPLETED
-  - GOOD: "Theme system is live (light/dark/system). JSON import parser exists but is not yet wired into UI."
-  - GOOD: "検索機能は動作中。フィルタUIは未実装。"
-  - GOOD: "chunkEngine.tsのmerge処理は安定動作。resumeContext生成は未対応。"
+CURRENT STATUS (今どこ？): 3-5 bullets. Present-tense ONLY — what IS working/partial/broken/blocked.
+  FORBIDDEN: past-tense → move to COMPLETED. ("fixed","added","〜済み","〜した" → COMPLETED)
+  GOOD: "検索機能は動作中。フィルタUIは未実装。" / "Theme system is live. JSON import not yet wired."
 
-HANDOFF META: Session-level context for the next person/AI resuming work. These fields are CRITICAL for the reader to understand context. Fill all three whenever possible.
-  - "sessionFocus": 1 sentence. What was this session trying to advance? Infer from the main topics discussed. null only if the session had no coherent focus (very rare).
-  - "whyThisSession": 1 sentence. Why is this work important right now? Infer from context — what larger goal, phase, or dependency makes this session matter? null only if truly unknowable.
-  - "timePressure": 1 sentence. Phase-level urgency, NOT a deadline.
-    GOOD: "ベータユーザー獲得が最優先フェーズ", "公開前に導線確定が必要", "次回テスト前にこの修正が必要"
-    FORBIDDEN: vague words alone ("急ぎ", "重要", "urgent"). Must state WHAT creates the pressure.
-    INFERENCE ALLOWED: If the chat mentions "今週中に", "早めに", "〜の前に" etc., convert to a concrete phase statement. Example: "早めにやりたい" + context about launch → "ローンチ前にこの機能が必要".
-    Japanese extraction examples:
-      "来週月曜までに" → "Deadline: next Monday (来週月曜)"
-      "今週中に" → "Must complete this week"
-      "急ぎで" → "Urgent, needs immediate attention"
-    null ONLY if no time pressure is mentioned or inferable at all.
+HANDOFF META: Fill all three whenever possible.
+  sessionFocus: 1 sentence — what was this session advancing?
+  whyThisSession: 1 sentence — why this matters now (infer from context).
+  timePressure: Phase-level urgency. FORBIDDEN: vague "急ぎ"/"urgent" alone. Must state WHAT creates pressure. null if none.
 
-RESUME CHECKLIST (再開チェックリスト): What to check, verify, or decide FIRST when resuming. Max 3 items.
-  - NOT a copy of nextActions. This is about "confirm → decide" entry points.
-  - Allowed verbs: confirm, verify, check, decide, fix, review — not just "確認する".
-  - Each item MUST be an object with "action", "whyNow", and "ifSkipped".
-  - "whyNow": MANDATORY — never null. Why this check/action is the first thing to do. Infer from context: what downstream task depends on this? What decision is waiting on this?
-  - "ifSkipped": MANDATORY — never null. What specific failure, delay, or wrong decision happens if skipped. Be concrete: name the downstream task or decision that breaks.
-  - GOOD: {"action": "Xアカウントのシャドーバン状態を確認する", "whyNow": "LP公開後の集客導線判断に直結するため", "ifSkipped": "DM送信方針と流入導線の判断がブレる"}
-  - BAD: {"action": "テスト実行", "whyNow": null, "ifSkipped": null} — whyNow/ifSkipped must never be null
+RESUME CHECKLIST (max 3): First things to check/verify/decide when resuming. NOT a copy of nextActions.
+  whyNow & ifSkipped: MANDATORY — never null. Be specific about downstream consequences.
 
-NEXT ACTIONS (次何やる？ — immediate only, max 4): Tasks that MUST be done now or the next decision/task is blocked.
-  - Selection criteria: this task is a prerequisite for other work, an input to a pending decision, or unblocks a blocker.
-  - Each item MUST be an object with "action", "whyImportant", "priorityReason", "dueBy", and "dependsOn" fields.
-  - "action": "VERB + FILE/FUNCTION NAME + SPECIFIC CHANGE".
-  - "whyImportant": Infer from chat context. A task listed as next action always has a reason — state it. What work depends on this? What breaks without it? null ONLY if truly no context exists (rare).
-  - "priorityReason": Why NOW or before others. Infer from ordering, dependencies, or conversation flow. null only if all tasks are equally urgent with no ordering signal.
-  - "dueBy": Only explicit deadlines. null if not stated.
-  - "dependsOn": Only explicit dependencies. null if none.
-  - Tasks that are important but NOT blocking → actionBacklog.
-  - ABSOLUTELY FORBIDDEN: "続きを進める", "着手する", "Continue working"
-  - Max 4 items. If more exist, move non-blocking items to actionBacklog.
+NEXT ACTIONS (max 4): Blocking tasks only. "action": VERB + FILE/FUNCTION + SPECIFIC CHANGE.
+  whyImportant: infer from context. Non-blocking tasks → actionBacklog.
+  FORBIDDEN: "続きを進める", "Continue working"
 
-ACTION BACKLOG (そのうちやるもの, max 7): Important tasks needed soon but NOT the immediate resume starting point.
-  - Same object format as nextActions. whyImportant should be filled — why is this task in the backlog at all?
-  - Selection criteria: needed within next 1-3 sessions, but won't block today's work if deferred.
-  - Max 7 items. If more exist, prioritize by importance and drop the rest.
-  - FORBIDDEN: listing 20+ items. This is a curated backlog, not a full task dump.
-  - actionBacklog must ONLY contain items the user explicitly mentioned as future work. Do NOT include assistant suggestions that the user did not acknowledge.
+ACTION BACKLOG (max 7): Important but not blocking. User-mentioned items only. Not a task dump.
 
-COMPLETED (終わったこと): MANDATORY. All completed work. Target: 2-6 bullets.
-  - Any action with "〜済み", "〜した", "fixed", "added", "implemented" MUST go here.
-  - FORBIDDEN: "確認した", "特定した", "reviewed" — not deliverables.
+COMPLETED: MANDATORY. 2-6 bullets. All completed work ("〜済み","fixed","added","implemented").
 
-BLOCKERS (注意・リスク): Risks, concerns, gotchas still unresolved at END. 0-3 bullets.
-  - NOT constraints. NOT tasks. EXCLUDE resolved issues.
+BLOCKERS: 0-3 bullets. Unresolved risks/concerns. Not tasks, not constraints, not resolved issues.
 
-DECISIONS (決定事項 — active only, max 6): ONLY decisions that STILL constrain future work.
-  - HARD LIMIT: Maximum 6 decisions. If more than 6 qualify, keep only the 6 most significant.
-  - Each MUST be {"decision": "string", "rationale": "string or null"}.
-  - EXCLUDE: completed/overturned decisions, task-level content, URLs.
-  - rationale: extract if stated. If not stated explicitly, infer from context (what was the alternative? what problem did this solve?). null only if no context exists at all.
-  - Finality markers (EN): "decided", "will go with", "settled on"
-  - Finality markers (JA): "に決めた", "でいく", "にする", "で確定"
-  - NOT a decision: "OK that schema looks good" → no restated commitment, just acknowledgement.
-  - NOT a decision: "OK sure, X sounds fine" → NOT a decision. User must RESTATE commitment.
-  - NOT a decision: "Maybe later, not a priority now" → deferral, not commitment.
-  - NOT a decision: "もう少し調べてから判断する" → explicit deferral, not a decision.
+DECISIONS (max 6): Active decisions constraining future work. Each {"decision","rationale"}.
+  Finality markers: "decided","will go with" / "に決めた","でいく","にする"
+  NOT a decision: "OK sure, X sounds fine" / "もう少し調べてから判断する" (deferral)
 
-CONSTRAINTS (前提・制約): Stable rules that persist. 0-3 bullets.
-  - NOT risks (→ blockers). NOT tasks (→ nextActions/actionBacklog).
+CONSTRAINTS: 0-3 stable rules. Not risks (→ blockers), not tasks (→ nextActions).
 
-TAGS rules:
-- Generate two types:
-  A. CATEGORY tags (2-3): broad work categories. Examples: 開発, UI, 設計, バグ修正, テスト, リファクタ, 調査, 戦略
-  B. TOPIC tags (2-4): specific tools, features, or concepts. Examples: React, IndexedDB, レート制限, i18n
-- Total 4-7 tags.
-- tags MUST contain at least 3 items for any non-trivial conversation.
-- IMPORTANT: Tags MUST match the input language. Japanese input → Japanese tags. English input → English tags. Keep widely-recognized technical proper nouns as-is (React, TypeScript, Supabase, etc.).
-- AVOID vague tags like "productivity", "improvement", "work", "AI", "development".
+TAGS: 4-7 tags. Category (2-3) + Topic (2-4). Match input language. Keep proper nouns as-is.
 
-OUTPUT LANGUAGE RULE:
-- Japanese input → output in Japanese. BUT keep file names (chunkEngine.ts), code identifiers (currentStatus, parseConversationJson), API names, and technical terms (API, JSON, chunk, retry) in English.
-- English input → output in English.
-- Style: Japanese sentences with English technical terms inline. Example: "Workspace.tsx のerror handling を修正済み。rate limit時のretry loopが安定動作する。"
-
-GOLDEN EXAMPLE — shows the expected quality and format:
-
-Input conversation snippet:
-User: I need to decide between PostgreSQL and MongoDB for the new analytics service.
-Assistant: PostgreSQL is better for complex queries, MongoDB for flexible schemas.
-User: Good points. Let's go with PostgreSQL — we need JOIN support for the dashboard queries.
-User: Next I need to set up the connection pooling with PgBouncer before we deploy.
-
-Expected output:
-{
-  "title": "Analytics DB Selection: PostgreSQL",
-  "handoffMeta": {"sessionFocus": "Database selection for analytics service", "whyThisSession": "DB choice blocks schema design and deployment pipeline", "timePressure": null},
-  "currentStatus": ["PostgreSQL is selected as the analytics DB. Connection pooling setup with PgBouncer is not yet started."],
-  "resumeChecklist": [{"action": "Verify PostgreSQL instance is provisioned and accessible", "whyNow": "PgBouncer config depends on a running PostgreSQL instance", "ifSkipped": "Connection pooling setup will fail without a target DB"}],
-  "nextActions": [{"action": "Set up PgBouncer connection pooling for PostgreSQL", "whyImportant": "Required before deployment — app cannot handle production load without pooling", "priorityReason": "Blocks deployment", "dueBy": null, "dependsOn": ["PostgreSQL instance provisioned"]}],
-  "actionBacklog": [],
-  "completed": ["Selected PostgreSQL over MongoDB for analytics service"],
-  "blockers": [],
-  "decisions": [{"decision": "Use PostgreSQL for analytics service", "rationale": "JOIN support needed for dashboard queries"}],
-  "constraints": [],
-  "tags": ["database", "PostgreSQL", "analytics", "infrastructure"]
-}`;
+GOLDEN EXAMPLE:
+Input: User: Let's go with PostgreSQL — we need JOIN support. Next I need to set up PgBouncer.
+Output:
+{"title":"Analytics DB Selection: PostgreSQL","handoffMeta":{"sessionFocus":"Database selection for analytics service","whyThisSession":"DB choice blocks schema design and deployment pipeline","timePressure":null},"currentStatus":["PostgreSQL is selected as the analytics DB. Connection pooling setup with PgBouncer is not yet started."],"resumeChecklist":[{"action":"Verify PostgreSQL instance is provisioned and accessible","whyNow":"PgBouncer config depends on a running PostgreSQL instance","ifSkipped":"Connection pooling setup will fail without a target DB"}],"nextActions":[{"action":"Set up PgBouncer connection pooling for PostgreSQL","whyImportant":"Required before deployment — app cannot handle production load without pooling","priorityReason":"Blocks deployment","dueBy":null,"dependsOn":["PostgreSQL instance provisioned"]}],"actionBacklog":[],"completed":["Selected PostgreSQL over MongoDB for analytics service"],"blockers":[],"decisions":[{"decision":"Use PostgreSQL for analytics service","rationale":"JOIN support needed for dashboard queries"}],"constraints":[],"tags":["database","PostgreSQL","analytics","infrastructure"]}`;
 
 export const BOTH_PROMPT = VERSION_HEADER + `You extract BOTH a work log AND a restart memo from an AI chat history in a single pass.
 You are strict and conservative. You only extract what the USER explicitly stated or confirmed.
@@ -602,6 +445,71 @@ activeDecisions — max 6. ONLY decisions that are STILL ACTIVE and affect futur
 - Drop resolved, superseded, or one-time decisions
 - rationale: Why was this decided? What was the alternative? Infer from context when not explicitly stated.
 - If the input has decisionRationales, prefer those. If it only has decisions (string[]), infer rationale from context or set null.
+
+Language: Match input. Japanese → Japanese (keep code terms in English). English → English.
+No markdown. No explanation. Start with { end with }.`;
+
+// =============================================================================
+// Compact handoff prompt for Gemini (large context window, handles instructions well)
+// Omits golden example and verbose rules. Used when provider === 'gemini'.
+// =============================================================================
+
+export const HANDOFF_PROMPT_COMPACT = VERSION_HEADER + `Extract a structured RESTART MEMO from an AI chat history. Control document for resuming work, not a report. Extract only what the USER explicitly stated or confirmed.
+Output: ONLY valid JSON. No markdown. No code fences. Match input language (keep code terms in English).
+
+Schema: {"title":"string","handoffMeta":{"sessionFocus":"string or null","whyThisSession":"string or null","timePressure":"string or null"},"currentStatus":["string"],"resumeChecklist":[{"action":"string","whyNow":"string","ifSkipped":"string"}],"nextActions":[{"action":"string","whyImportant":"string","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"actionBacklog":[{"action":"string","whyImportant":"string","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],"completed":["string"],"blockers":["string"],"decisions":[{"decision":"string","rationale":"string"}],"constraints":["string"],"tags":["string"]}
+
+Rules: title 20-40 chars, specific. currentStatus: present-tense only (past→completed). resumeChecklist max 3, whyNow/ifSkipped mandatory. nextActions max 4 (blocking only, non-blocking→actionBacklog). actionBacklog max 7. completed: mandatory, 2-6 items. blockers 0-3. decisions max 6, active only. constraints 0-3. tags 4-7.`;
+
+// =============================================================================
+// Combined post-merge finalization prompt — replaces 3 separate API calls
+// (extractCompleted + runConsistencyCheck + extractFinalSummary) with 1.
+// =============================================================================
+
+export const CHUNK_POST_MERGE_PROMPT = `You are a strict editor and summarizer. You receive a merged handoff memo (JSON) assembled from multiple chunks, plus raw chunk extraction text. Your job is to:
+1. Extract ALL completed work items from the chunk text
+2. Clean up the merged handoff for consistency
+3. Generate session-wide summary fields (handoffMeta, resumeChecklist, activeDecisions)
+
+Output ONLY valid JSON with this exact schema:
+{
+  "completed": ["string"],
+  "cleanedHandoff": {
+    "currentStatus": ["string"],
+    "nextActions": [{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],
+    "blockers": ["string"],
+    "constraints": ["string"],
+    "resumeContext": ["string"]
+  },
+  "handoffMeta": {
+    "sessionFocus": "string or null",
+    "whyThisSession": "string or null",
+    "timePressure": "string or null"
+  },
+  "resumeChecklist": [
+    {"action": "string", "whyNow": "string (REQUIRED)", "ifSkipped": "string (REQUIRED)"}
+  ],
+  "activeDecisions": [
+    {"decision": "string", "rationale": "string (infer if not stated)"}
+  ]
+}
+
+COMPLETED EXTRACTION:
+- Include items that produced a DELIVERABLE or CHANGED STATE (code written, features implemented, settings changed)
+- EXCLUDE: investigations ("確認した","reviewed"), preparations ("指示を作成した"), delegation ("依頼した"), discussion-only
+- Keep the most recent 50 items. Each bullet = ONE specific action with file/function names.
+
+CONSISTENCY CLEANUP:
+- completed vs currentStatus: past-tense ("〜済み","fixed","added") → completed. currentStatus = present-tense only.
+- blockers vs completed: cross-check EVERY blocker against completed. If any completed item resolves a blocker → DELETE that blocker.
+- Dedup: same work in completed and nextActions → keep in completed only.
+- nextActions: only future tasks. No risks (→ blockers), no constraints, no completed work.
+- "resumeContext": copy nextActions action strings as-is.
+
+SUMMARY FIELDS:
+- handoffMeta: sessionFocus (1 sentence), whyThisSession (1 sentence, infer from context), timePressure (specific phase urgency, not vague "urgent").
+- resumeChecklist: max 3. whyNow and ifSkipped are MANDATORY — never null. Concrete consequences.
+- activeDecisions: max 6. Still-active decisions only. Infer rationale from context.
 
 Language: Match input. Japanese → Japanese (keep code terms in English). English → English.
 No markdown. No explanation. Start with { end with }.`;

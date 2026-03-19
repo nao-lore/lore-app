@@ -6,6 +6,7 @@ import type { Lang } from '../i18n';
 import { updateLog } from '../storage';
 import { getProjectColor } from '../projectColors';
 import { formatRelativeTime } from '../utils/dateFormat';
+import HistoryCardActions from './HistoryCardActions';
 
 // ─── Highlight component ───
 export const Highlight = memo(function Highlight({ text, query }: { text: string; query: string }) {
@@ -187,20 +188,14 @@ export const HistoryCardItem = memo(function HistoryCardItem({ log, ctx }: { log
       )}
       <div className="flex-1">
         {!selectMode && (
-          <div className="card-action-pos" onClick={(e) => e.stopPropagation()}>
-            <button className="action-menu-btn" aria-label={t('ariaMenu', lang)} onClick={() => onSetActionSheetLog(actionSheetLog?.id === log.id ? null : log)}>
-              <MoreHorizontal size={16} />
-            </button>
-            {actionSheetLog?.id === log.id && (
-              <LogContextMenu
-                log={log}
-                lang={lang}
-                projects={projects}
-                onClose={() => onSetActionSheetLog(null)}
-                onAction={(action, value) => onLogAction(log, action, value)}
-              />
-            )}
-          </div>
+          <HistoryCardActions
+            log={log}
+            lang={lang}
+            projects={projects}
+            actionSheetLog={actionSheetLog}
+            onSetActionSheetLog={onSetActionSheetLog}
+            onLogAction={onLogAction}
+          />
         )}
         <div className="flex-row" style={{ gap: compact ? 4 : 8, marginBottom: compact ? 2 : 6 }}>
           {log.pinned && (

@@ -10,13 +10,16 @@ import Onboarding from './Onboarding';
 import ErrorBoundary from './ErrorBoundary';
 import SkeletonLoader from './SkeletonLoader';
 import FeedbackModal from './FeedbackModal';
-import { setLastReportDate, isDemoMode, setDemoMode, getFeatureEnabled, safeGetItem, safeSetItem, safeRemoveItem } from './storage';
+import { setLastReportDate, isDemoMode, setDemoMode, safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import type { ThemePref } from './storage';
 import type { FontSize } from './types';
 import { t, tf } from './i18n';
 import { useAppState } from './hooks/useAppState';
 import { useBootstrapEffects } from './hooks/useBootstrapEffects';
 import { useSwipeNavigation } from './hooks/useSwipeNavigation';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useScrollPosition } from './hooks/useScrollPosition';
+import { useThemeSync } from './hooks/useThemeSync';
 import type { View } from './hooks/useAppState';
 import { isOnboardingDone } from './onboardingState';
 import { setProFromCheckout } from './utils/proManager';
@@ -61,11 +64,6 @@ const KnowledgeBaseView = lazy(() => import('./KnowledgeBaseView'));
 const PricingView = lazy(() => import('./PricingView'));
 
 const FONT_SIZE_SCALE: Record<FontSize, number> = { small: 0.87, medium: 1, large: 1.13 };
-
-function resolveEffectiveTheme(pref: ThemePref): 'light' | 'dark' | 'high-contrast' {
-  if (pref === 'light' || pref === 'dark' || pref === 'high-contrast') return pref;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
 
 export default function App() {
   const { inputDirtyRef, scrollRef, scrollPositionRef, shortcutsTrapRef, ...s } = useAppState();
@@ -146,27 +144,26 @@ export default function App() {
   const [demoMode, setDemoModeState] = useState(() => isDemoMode());
 
   // Aria-live view transition announcements (derived from view + lang)
-  const viewAnnouncement = useMemo(() => {
-    const viewLabelMap: Partial<Record<View, string>> = {
-      input: t('tabTitleInput', s.lang),
-      detail: t('tabTitleDetail', s.lang),
-      dashboard: t('tabTitleDashboard', s.lang),
-      history: t('tabTitleHistory', s.lang),
-      todos: t('tabTitleTodos', s.lang),
-      timeline: t('tabTitleTimeline', s.lang),
-      projects: t('tabTitleProjects', s.lang),
-      settings: t('tabTitleSettings', s.lang),
-      help: t('tabTitleHelp', s.lang),
-      pricing: t('tabTitlePricing', s.lang),
-      masternote: t('tabTitleMasternote', s.lang),
-      projecthome: t('tabTitleProjecthome', s.lang),
-      weeklyreport: t('tabTitleWeeklyreport', s.lang),
-      trash: t('tabTitleTrash', s.lang),
-      summarylist: t('tabTitleSummarylist', s.lang),
-      knowledgebase: t('tabTitleKnowledgebase', s.lang),
-    };
-    return viewLabelMap[s.view] || s.view;
-  }, [s.view, s.lang]);
+  // No useMemo needed — t() is a pure lookup and this is cheap to compute
+  const viewLabelMap: Partial<Record<View, string>> = {
+    input: t('tabTitleInput', s.lang),
+    detail: t('tabTitleDetail', s.lang),
+    dashboard: t('tabTitleDashboard', s.lang),
+    history: t('tabTitleHistory', s.lang),
+    todos: t('tabTitleTodos', s.lang),
+    timeline: t('tabTitleTimeline', s.lang),
+    projects: t('tabTitleProjects', s.lang),
+    settings: t('tabTitleSettings', s.lang),
+    help: t('tabTitleHelp', s.lang),
+    pricing: t('tabTitlePricing', s.lang),
+    masternote: t('tabTitleMasternote', s.lang),
+    projecthome: t('tabTitleProjecthome', s.lang),
+    weeklyreport: t('tabTitleWeeklyreport', s.lang),
+    trash: t('tabTitleTrash', s.lang),
+    summarylist: t('tabTitleSummarylist', s.lang),
+    knowledgebase: t('tabTitleKnowledgebase', s.lang),
+  };
+  const viewAnnouncement = viewLabelMap[s.view] || s.view;
 
   // Tab title: show pending TODO count + current view
   useEffect(() => {
@@ -227,91 +224,26 @@ export default function App() {
     };
   }, [s]);
 
-  // Apply data-theme attribute
-  useEffect(() => {
-    const apply = () => {
-      const effective = resolveEffectiveTheme(s.themePref);
-      document.documentElement.setAttribute('data-theme', effective);
-    };
-    apply();
+  // Theme + lang sync (data-theme, html lang, dir) — extracted to hook
+  useThemeSync(s.themePref, s.lang);
 
-    if (s.themePref === 'system') {
-      const mq = window.matchMedia('(prefers-color-scheme: dark)');
-      mq.addEventListener('change', apply);
-      const timer = setInterval(apply, 60 * 60 * 1000);
-      return () => { mq.removeEventListener('change', apply); clearInterval(timer); };
-    }
-  }, [s.themePref]);
+  // Global keyboard shortcuts — extracted to hook
+  useKeyboardShortcuts({
+    setPaletteOpen: s.setPaletteOpen,
+    handleNewLog: s.handleNewLog,
+    goToRaw: s.goToRaw,
+    goTo: s.goTo,
+    setShortcutsOpen: s.setShortcutsOpen,
+    shortcutsOpen: s.shortcutsOpen,
+    paletteOpen: s.paletteOpen,
+    view: s.view,
+    prevView: s.prevView,
+    activeProjectId: s.activeProjectId,
+    setActiveProjectId: s.setActiveProjectId,
+  });
 
-  // Sync html lang attribute and dir with current UI language
-  useEffect(() => {
-    document.documentElement.lang = s.lang;
-    const rtlLanguages = ['ar', 'he', 'fa', 'ur'];
-    document.documentElement.dir = rtlLanguages.includes(s.lang) ? 'rtl' : 'ltr';
-  }, [s.lang]);
-
-  // Global keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (!getFeatureEnabled('keyboard_shortcuts', true)) return;
-      const mod = e.metaKey || e.ctrlKey;
-      if (mod && e.key === 'k') { e.preventDefault(); s.setPaletteOpen((v: boolean) => !v); return; }
-      if (mod && e.key === 'n') { e.preventDefault(); s.handleNewLog(); return; }
-      if (mod && e.key === ',') { e.preventDefault(); s.goToRaw('settings'); return; }
-
-      const active = document.activeElement;
-      const inInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
-
-      if (e.key === '?' && !mod && !inInput) { e.preventDefault(); s.setShortcutsOpen((v: boolean) => !v); return; }
-
-      // Number key navigation (1-5 for tab switching)
-      if (!inInput && !mod && e.key >= '1' && e.key <= '5') {
-        const views: View[] = ['input', 'dashboard', 'history', 'projects', 'todos'];
-        const idx = parseInt(e.key) - 1;
-        if (idx < views.length) {
-          e.preventDefault();
-          s.goTo(views[idx]);
-        }
-        return;
-      }
-
-      if (e.key === 'Escape') {
-        if (s.shortcutsOpen) { s.setShortcutsOpen(false); return; }
-        if (s.paletteOpen) { s.setPaletteOpen(false); return; }
-        if (inInput) return;
-        if (document.querySelector('.modal-overlay, .action-sheet-overlay, .context-menu, .confirm-dialog')) return;
-        if (s.view !== 'input') {
-          e.preventDefault();
-          if (s.view === 'detail') {
-            s.goToRaw(s.prevView === 'detail' ? (s.activeProjectId ? 'projecthome' : 'history') : s.prevView);
-          } else if (s.view === 'projecthome') {
-            s.setActiveProjectId(null);
-            s.goToRaw('input');
-          } else {
-            s.goToRaw(s.prevView === s.view ? 'input' : s.prevView);
-          }
-        }
-      }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [s]);
-
-  // Restore scroll position when view changes
-  // Only depend on view (not selectedId) to avoid iOS Safari viewport reset
-  // when handleSaved sets selectedId while PostGenerationPreview is shown.
-  const selectedIdForScroll = s.view === 'detail' ? s.selectedId : null;
-  useEffect(() => {
-    const scrollEl = scrollRef.current;
-    const positions = scrollPositionRef.current;
-    requestAnimationFrame(() => {
-      if (scrollEl) {
-        const scrollKey = selectedIdForScroll ? `detail:${selectedIdForScroll}` : s.view;
-        const saved = positions[scrollKey];
-        scrollEl.scrollTo(0, saved || 0);
-      }
-    });
-  }, [s.view, selectedIdForScroll, scrollRef, scrollPositionRef]);
+  // Scroll position restoration — extracted to hook
+  useScrollPosition(s.view, s.selectedId, scrollRef, scrollPositionRef);
 
   const backTo = (v: View) => () => s.goTo(s.prevView === v ? 'input' : s.prevView);
   const activeProject = useMemo(
@@ -325,7 +257,7 @@ export default function App() {
     pricing: () => <PricingView onBack={backTo('pricing')} lang={s.lang} showToast={s.showToast} />,
     history: () => <HistoryView logs={s.logs} onSelect={s.handleSelect} onBack={s.handleGoToInput} showBack={false} onRefresh={s.refreshLogs} lang={s.lang} activeProjectId={s.activeProjectId} projects={s.projects} showToast={s.showToast} onOpenMasterNote={s.handleOpenMasterNote} onOpenProject={s.handleOpenProjectLogs} tagFilter={s.tagFilter} onClearTagFilter={() => s.setTagFilter(null)} onTagFilter={s.setTagFilter} onDuplicate={(newId: string) => { s.refreshLogs(); s.handleSelect(newId); }} />,
     todos: () => <TodoView logs={s.logs} onBack={backTo('todos')} onOpenLog={s.handleSelect} lang={s.lang} showToast={s.showToast} />,
-    dashboard: () => <DashboardView logs={s.logs} projects={s.projects} todos={s.todos} masterNotes={s.masterNotes} lang={s.lang} onOpenLog={s.handleSelect} onOpenProject={s.handleOpenProjectLogs} onOpenTodos={s.handleGoToTodos} onOpenSummaryList={s.handleGoToSummaryList} onOpenHistory={s.handleGoToHistory} onNewLog={s.handleGoToInput} onToggleAction={s.handleDashboardToggleAction} />,
+    dashboard: () => <DashboardView logs={s.logs} projects={s.projects} todos={s.todos} masterNotes={s.masterNotes} lang={s.lang} onOpenLog={s.handleSelect} onOpenProject={s.handleOpenProjectLogs} onOpenTodos={s.handleGoToTodos} onOpenSummaryList={s.handleGoToSummaryList} onOpenHistory={s.handleGoToHistory} onNewLog={s.handleGoToInput} onToggleAction={s.handleDashboardToggleAction} onOpenWeeklyReport={s.handleGoToWeeklyReport} />,
     timeline: () => <TimelineView logs={s.logs} projects={s.projects} todos={s.todos} masterNotes={s.masterNotes} onBack={backTo('timeline')} onOpenLog={s.handleSelect} onOpenProject={s.handleOpenProjectLogs} onOpenSummary={s.handleOpenMasterNote} onNewLog={() => s.goTo('input')} lang={s.lang} />,
     weeklyreport: () => <WeeklyReportView logs={s.logs} projects={s.projects} todos={s.todos} onBack={backTo('weeklyreport')} onNewLog={s.handleGoToInput} lang={s.lang} showToast={s.showToast} />,
     trash: () => <TrashView onBack={backTo('trash')} onRefresh={s.refreshLogs} lang={s.lang} showToast={s.showToast} />,

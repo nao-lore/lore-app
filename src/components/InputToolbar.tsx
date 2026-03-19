@@ -31,6 +31,7 @@ export default memo(function InputToolbar({
         <div className="mode-selector" role="radiogroup" aria-label={t('ariaTransformMode', lang)}>
           {(['handoff', 'handoff_todo', 'todo_only'] as TransformAction[]).map((a) => {
             const isActive = transformAction === a;
+            const isPrimary = a === 'handoff';
             const label = t(
               a === 'handoff_todo' ? 'modeLabelHandoffTodo'
               : a === 'handoff' ? 'modeLabelHandoff'
@@ -42,11 +43,16 @@ export default memo(function InputToolbar({
               : a === 'handoff' ? 'tooltipHandoff'
               : 'tooltipTodoOnly',
               lang
+            ) + '\n' + t(
+              a === 'handoff_todo' ? 'tooltipHandoffTodoDesc'
+              : a === 'handoff' ? 'tooltipHandoffDesc'
+              : 'tooltipTodoOnlyDesc',
+              lang
             );
             return (
               <button
                 key={a}
-                className={`mode-selector-btn${isActive ? ' active' : ''}`}
+                className={`mode-selector-btn${isActive ? ' active' : ''}${isPrimary ? ' mode-primary' : ' mode-secondary'}`}
                 role="radio"
                 aria-checked={isActive}
                 title={tooltip}

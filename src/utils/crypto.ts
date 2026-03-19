@@ -35,7 +35,16 @@
  * ────────────────────────────────────────────────────────────────────────
  */
 
-const ENCRYPTED_PREFIX = 'enc:v1:';
+const ENCRYPTED_PREFIX_V1 = 'enc:v1:';
+const ENCRYPTED_PREFIX_V2 = 'enc:v2:';
+
+/** Flag to prevent double-writes during async encryption */
+let _encrypting = false;
+
+/** Check if an encryption operation is currently in progress */
+export function isEncrypting(): boolean {
+  return _encrypting;
+}
 
 // ---------------------------------------------------------------------------
 // Decrypted key cache — shared between provider.ts and storage/settings.ts
@@ -54,9 +63,9 @@ export function setCachedKey(slot: string, value: string): void {
   decryptedKeyCache.set(slot, value);
 }
 
-/** Check if a stored value is already encrypted */
+/** Check if a stored value is already encrypted (v1 or v2) */
 export function isEncrypted(value: string): boolean {
-  return value.startsWith(ENCRYPTED_PREFIX);
+  return value.startsWith(ENCRYPTED_PREFIX_V1) || value.startsWith(ENCRYPTED_PREFIX_V2);
 }
 
 /**
@@ -71,7 +80,7 @@ export function readKeyForSlot(slot: string, rawValue: string): string {
   const cached = decryptedKeyCache.get(slot);
   if (cached !== undefined) return cached;
   if (!rawValue) return '';
-  if (rawValue.startsWith(ENCRYPTED_PREFIX)) return '';
+  if (rawValue.startsWith(ENCRYPTED_PREFIX_V1) || rawValue.startsWith(ENCRYPTED_PREFIX_V2)) return '';
   return rawValue;
 }
 
@@ -96,8 +105,75 @@ function getDeviceFingerprint(): string {
   return parts.join('|');
 }
 
-/** Derive an AES-GCM key from the device fingerprint */
-async function deriveKey(): Promise<CryptoKey> {
+// ---------------------------------------------------------------------------
+// PBKDF2 salt management — generate once, reuse across encryptions
+// ---------------------------------------------------------------------------
+
+const PBKDF2_SALT_KEY = 'lore_pbkdf2_salt';
+const PBKDF2_ITERATIONS = 100_000;
+
+/** In-memory cache of the PBKDF2 salt for environments where localStorage is unreliable */
+let _cachedSalt: Uint8Array | null = null;
+
+function getPbkdf2Salt(): Uint8Array {
+  // Return in-memory cached salt if available
+  if (_cachedSalt) return _cachedSalt;
+
+  try {
+    const stored = localStorage.getItem(PBKDF2_SALT_KEY);
+    if (stored) {
+      const raw = atob(stored);
+      const salt = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) {
+        salt[i] = raw.charCodeAt(i);
+      }
+      _cachedSalt = salt;
+      return salt;
+    }
+  } catch {
+    // localStorage unavailable — generate ephemeral salt
+  }
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  _cachedSalt = salt;
+  try {
+    localStorage.setItem(PBKDF2_SALT_KEY, btoa(String.fromCharCode(...salt)));
+  } catch {
+    // localStorage unavailable — salt won't persist but encryption still works
+  }
+  return salt;
+}
+
+/** Derive an AES-GCM key from the device fingerprint using PBKDF2 (v2) */
+async function deriveKeyV2(): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+  const material = encoder.encode(getDeviceFingerprint());
+
+  const baseKey = await crypto.subtle.importKey(
+    'raw',
+    material,
+    'PBKDF2',
+    false,
+    ['deriveKey'],
+  );
+
+  const salt = getPbkdf2Salt();
+
+  return crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt,
+      iterations: PBKDF2_ITERATIONS,
+      hash: 'SHA-256',
+    },
+    baseKey,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt'],
+  );
+}
+
+/** Derive an AES-GCM key from the device fingerprint using SHA-256 (v1 — legacy) */
+async function deriveKeyV1(): Promise<CryptoKey> {
   const encoder = new TextEncoder();
   const material = encoder.encode(getDeviceFingerprint());
 
@@ -115,13 +191,17 @@ async function deriveKey(): Promise<CryptoKey> {
 
 /**
  * Encrypt a plaintext string.
- * Returns a prefixed base64 string: "enc:v1:<base64(iv + ciphertext)>"
+ * Returns a prefixed base64 string: "enc:v2:<base64(iv + ciphertext)>"
+ *
+ * Uses PBKDF2 key derivation (v2). The _encrypting flag prevents
+ * concurrent writes from causing race conditions.
  */
 export async function encrypt(plaintext: string): Promise<string> {
   if (!plaintext) return plaintext;
 
   try {
-    const key = await deriveKey();
+    _encrypting = true;
+    const key = await deriveKeyV2();
     const encoder = new TextEncoder();
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const encrypted = await crypto.subtle.encrypt(
@@ -137,16 +217,41 @@ export async function encrypt(plaintext: string): Promise<string> {
 
     // Encode as base64
     const base64 = btoa(String.fromCharCode(...combined));
-    return `${ENCRYPTED_PREFIX}${base64}`;
+    return `${ENCRYPTED_PREFIX_V2}${base64}`;
   } catch {
     // If encryption fails (e.g., crypto.subtle unavailable), return plaintext
     return plaintext;
+  } finally {
+    _encrypting = false;
   }
+}
+
+/**
+ * Decrypt a raw base64 payload with a given CryptoKey.
+ */
+async function decryptWithKey(base64: string, key: CryptoKey): Promise<string> {
+  const raw = atob(base64);
+  const combined = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) {
+    combined[i] = raw.charCodeAt(i);
+  }
+
+  const iv = combined.slice(0, 12);
+  const ciphertext = combined.slice(12);
+
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    ciphertext,
+  );
+
+  return new TextDecoder().decode(decrypted);
 }
 
 /**
  * Decrypt an encrypted string.
  * If the value is not encrypted (no prefix), returns it as-is (backward compatible).
+ * v1 data is decrypted with the legacy SHA-256 key. v2 uses PBKDF2.
  */
 export async function decrypt(stored: string): Promise<string> {
   if (!stored || !isEncrypted(stored)) {
@@ -154,24 +259,16 @@ export async function decrypt(stored: string): Promise<string> {
   }
 
   try {
-    const key = await deriveKey();
-    const base64 = stored.slice(ENCRYPTED_PREFIX.length);
-    const raw = atob(base64);
-    const combined = new Uint8Array(raw.length);
-    for (let i = 0; i < raw.length; i++) {
-      combined[i] = raw.charCodeAt(i);
+    if (stored.startsWith(ENCRYPTED_PREFIX_V2)) {
+      const base64 = stored.slice(ENCRYPTED_PREFIX_V2.length);
+      const key = await deriveKeyV2();
+      return await decryptWithKey(base64, key);
     }
 
-    const iv = combined.slice(0, 12);
-    const ciphertext = combined.slice(12);
-
-    const decrypted = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv },
-      key,
-      ciphertext,
-    );
-
-    return new TextDecoder().decode(decrypted);
+    // v1 path — decrypt with legacy key
+    const base64 = stored.slice(ENCRYPTED_PREFIX_V1.length);
+    const key = await deriveKeyV1();
+    return await decryptWithKey(base64, key);
   } catch {
     // Decryption failed — key material changed (different device/browser),
     // or data corrupted. Return empty to force re-entry.

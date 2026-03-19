@@ -39,7 +39,7 @@ export function useSwipeNavigation(onBack: () => void) {
       if (touch.clientX <= EDGE_ZONE) {
         // Skip swipe detection inside scrollable containers (e.g. PostGenerationPreview)
         const target = e.target as HTMLElement | null;
-        if (target?.closest('.input-preview-result, .input-preview, [data-no-swipe]')) return;
+        if (target?.closest('.input-preview-result, .input-preview, [data-no-swipe], .ql-editor, .ProseMirror, [data-radix-scroll-area], .virtual-list')) return;
         touchStartX.current = touch.clientX;
         touchStartY.current = touch.clientY;
         swiping.current = true;

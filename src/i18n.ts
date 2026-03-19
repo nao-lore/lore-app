@@ -186,6 +186,9 @@ const labels = {
   paused: { ja: '一時停止中', en: 'Paused', es: 'En pausa', fr: 'En pause', de: 'Pausiert', zh: '已暂停', ko: '일시 중지됨', pt: 'Pausado' },
   autoPaused: { ja: '処理を一時停止しました', en: 'Processing paused', es: 'Procesamiento en pausa', fr: 'Traitement en pause', de: 'Verarbeitung pausiert', zh: '处理已暂停', ko: '처리가 일시 중지되었습니다', pt: 'Processamento pausado' },
   autoPausedDesc: { ja: '途中まで処理済みです。時間をおいて再開してください。', en: 'Progress has been saved. Please wait a moment and resume.', es: 'El progreso se ha guardado. Por favor, espere un momento y reanude.', fr: 'La progression a été sauvegardée. Veuillez patienter un moment et reprendre.', de: 'Fortschritt wurde gespeichert. Bitte warten Sie einen Moment und fahren Sie fort.', zh: '已处理部分内容。请稍后再继续。', ko: '일부 처리가 완료되었습니다. 잠시 후 재개해 주세요.', pt: 'O progresso foi salvo. Por favor, aguarde um momento e retome.' },
+  autoPausedCountdown: (sec: number) => ({ ja: `${sec}秒後に自動再開します`, en: `Auto-resuming in ${sec}s`, es: `Reanudación automática en ${sec}s`, fr: `Reprise automatique dans ${sec}s`, de: `Automatische Wiederaufnahme in ${sec}s`, zh: `${sec}秒后自动恢复`, ko: `${sec}초 후 자동 재개`, pt: `Retomada automática em ${sec}s` }),
+  apiCallProgress: (current: number, total: number) => ({ ja: `API呼び出し ${current}/${total}`, en: `API call ${current} of ${total}`, es: `Llamada API ${current} de ${total}`, fr: `Appel API ${current} sur ${total}`, de: `API-Aufruf ${current} von ${total}`, zh: `API调用 ${current}/${total}`, ko: `API 호출 ${current}/${total}`, pt: `Chamada API ${current} de ${total}` }),
+  apiCallsUsed: (count: number) => ({ ja: `API呼び出し約${count}回使用`, en: `~${count} API calls used`, es: `~${count} llamadas API utilizadas`, fr: `~${count} appels API utilisés`, de: `~${count} API-Aufrufe verwendet`, zh: `约使用了${count}次API调用`, ko: `약 ${count}회 API 호출 사용`, pt: `~${count} chamadas API utilizadas` }),
   itemsSaved: (n: number) => ({
     ja: `${n}件 完了`,
     en: `${n} completed`,
@@ -1760,14 +1763,14 @@ const labels = {
   unlimitedTrial: { ja: '無制限（トライアル中）', en: 'Unlimited transforms (trial)', es: 'Transformaciones ilimitadas (prueba)', fr: 'Transformations illimitées (essai)', de: 'Unbegrenzte Transformationen (Testphase)', zh: '无限次转换（试用中）', ko: '무제한 변환 (체험)', pt: 'Transformações ilimitadas (teste)' },
   // Landing Page
   lpHeroHeadline: {
-    ja: '会話を貼り付けるだけ。30秒でプロジェクト概要が完成。',
-    en: 'Paste a conversation. Get a project briefing in 30 seconds.',
-    es: 'Pega una conversación. Obtén un resumen de proyecto en 30 segundos.',
-    fr: 'Collez une conversation. Obtenez un briefing projet en 30 secondes.',
-    de: 'Gespräch einfügen. In 30 Sekunden ein Projekt-Briefing erhalten.',
-    zh: '粘贴对话，30秒生成项目简报。',
-    ko: '대화를 붙여넣으면 30초 만에 프로젝트 브리핑 완성.',
-    pt: 'Cole uma conversa. Receba um briefing do projeto em 30 segundos.',
+    ja: 'AI会話から構造化されたプロジェクトブリーフィングを取得',
+    en: 'Get a structured project briefing from any AI conversation',
+    es: 'Obtén un briefing estructurado de cualquier conversación con IA',
+    fr: 'Obtenez un briefing projet structuré à partir de toute conversation IA',
+    de: 'Erhalte ein strukturiertes Projekt-Briefing aus jedem KI-Gespräch',
+    zh: '从任何AI对话中获取结构化项目简报',
+    ko: '모든 AI 대화에서 구조화된 프로젝트 브리핑 받기',
+    pt: 'Obtenha um briefing estruturado de qualquer conversa com IA',
   },
   lpHeroSubheadline: {
     ja: 'AIはセッションごとにすべてを忘れます。Loreがそれを解決します。会話を貼り付けるだけで、決定事項・TODO・コンテキストを保持し、次のセッションに引き継ぎます。',
@@ -2340,6 +2343,17 @@ const labels = {
     pt: 'Funciona Offline',
   },
 
+  lpBetaUrgency: {
+    ja: 'ベータ期間中は無料 — サインアップ不要',
+    en: 'Free during beta — no signup required',
+    es: 'Gratis durante la beta — sin registro',
+    fr: 'Gratuit pendant la bêta — aucune inscription requise',
+    de: 'Kostenlos während der Beta — keine Anmeldung nötig',
+    zh: 'Beta期间免费 — 无需注册',
+    ko: '베타 기간 무료 — 가입 불필요',
+    pt: 'Grátis durante o beta — sem cadastro',
+  },
+
   // LP Snapshot Counter (Task 3)
   lpSnapshotsCreated: (n: number) => ({
     ja: `${n}件のスナップショットが作成されました`,
@@ -2684,6 +2698,64 @@ const labels = {
     ko: 'Chrome Web Store에서 받기',
     pt: 'Obter na Chrome Web Store',
   },
+
+  // #18 Onboarding slide 4: snapshot preview
+  onboardingPreviewTitle: { ja: 'スナップショットの中身', en: 'What a Snapshot looks like', es: 'Así luce un Snapshot', fr: 'À quoi ressemble un Snapshot', de: 'So sieht ein Snapshot aus', zh: '快照长什么样', ko: '스냅샷 미리보기', pt: 'Como é um Snapshot' },
+  onboardingPreviewDesc: { ja: 'AIとの長い会話が、状況・決定事項・次のアクション・ブロッカーに自動構造化されます。\n\n📋 現在の状況: プロジェクトの進捗と文脈\n✅ 決定事項: 合意した内容と理由\n▶ 次のアクション: 次にやること\n🚫 ブロッカー: 障害となる要素', en: 'A long AI conversation is auto-structured into status, decisions, next actions, and blockers.\n\n📋 Current Status: Project progress and context\n✅ Decisions: What was agreed and why\n▶ Next Actions: What to do next\n🚫 Blockers: What\'s in the way', es: 'Una larga conversación con IA se estructura automáticamente en estado, decisiones, próximas acciones y bloqueadores.\n\n📋 Estado actual: Progreso y contexto del proyecto\n✅ Decisiones: Qué se acordó y por qué\n▶ Próximas acciones: Qué hacer después\n🚫 Bloqueadores: Qué impide avanzar', fr: 'Une longue conversation IA est automatiquement structurée en statut, décisions, prochaines actions et bloqueurs.\n\n📋 Statut actuel : Progrès et contexte du projet\n✅ Décisions : Ce qui a été convenu et pourquoi\n▶ Prochaines actions : Que faire ensuite\n🚫 Bloqueurs : Ce qui fait obstacle', de: 'Ein langes KI-Gespräch wird automatisch in Status, Entscheidungen, nächste Schritte und Blocker strukturiert.\n\n📋 Aktueller Status: Projektfortschritt und Kontext\n✅ Entscheidungen: Was vereinbart wurde und warum\n▶ Nächste Schritte: Was als nächstes zu tun ist\n🚫 Blocker: Was im Weg steht', zh: '长篇AI对话自动结构化为状态、决策、下一步行动和阻碍。\n\n📋 当前状态：项目进展和上下文\n✅ 决策：达成了什么共识及原因\n▶ 下一步行动：接下来做什么\n🚫 阻碍：障碍是什么', ko: '긴 AI 대화가 상태, 결정 사항, 다음 액션, 블로커로 자동 구조화됩니다.\n\n📋 현재 상태: 프로젝트 진행 상황과 맥락\n✅ 결정 사항: 합의된 내용과 이유\n▶ 다음 액션: 다음에 할 일\n🚫 블로커: 방해 요소', pt: 'Uma longa conversa com IA é automaticamente estruturada em status, decisões, próximas ações e bloqueadores.\n\n📋 Status atual: Progresso e contexto do projeto\n✅ Decisões: O que foi acordado e por quê\n▶ Próximas ações: O que fazer a seguir\n🚫 Bloqueadores: O que está no caminho' },
+
+  // #19 Onboarding step 2: visual steps
+  onboardingStepPaste: { ja: '会話を貼り付け', en: 'Paste conversation', es: 'Pegar conversación', fr: 'Coller la conversation', de: 'Gespräch einfügen', zh: '粘贴对话', ko: '대화 붙여넣기', pt: 'Colar conversa' },
+  onboardingStepTransform: { ja: 'AIが構造化', en: 'AI transforms', es: 'La IA transforma', fr: 'L\'IA transforme', de: 'KI strukturiert', zh: 'AI转换', ko: 'AI 변환', pt: 'IA transforma' },
+  onboardingStepResume: { ja: '次のセッションで再開', en: 'Resume next session', es: 'Reanudar siguiente sesión', fr: 'Reprendre la session suivante', de: 'Nächste Sitzung fortsetzen', zh: '恢复下一个会话', ko: '다음 세션에서 재개', pt: 'Retomar próxima sessão' },
+  onboardingStepPasteDesc: { ja: 'AIとの会話をコピー＆ペースト', en: 'Copy & paste your AI conversation', es: 'Copie y pegue su conversación de IA', fr: 'Copiez et collez votre conversation IA', de: 'Kopieren Sie Ihr KI-Gespräch', zh: '复制粘贴您的AI对话', ko: 'AI 대화를 복사하여 붙여넣기', pt: 'Copie e cole sua conversa com IA' },
+  onboardingStepTransformDesc: { ja: '状況・決定・次アクションに自動変換', en: 'Auto-structured into status, decisions & actions', es: 'Auto-estructurado en estado, decisiones y acciones', fr: 'Auto-structuré en statut, décisions et actions', de: 'Automatisch in Status, Entscheidungen & Aktionen strukturiert', zh: '自动结构化为状态、决策和行动', ko: '상태, 결정, 액션으로 자동 구조화', pt: 'Auto-estruturado em status, decisões e ações' },
+  onboardingStepResumeDesc: { ja: 'コンテキストを渡して続きから再開', en: 'Pass context to pick up where you left off', es: 'Pase el contexto para continuar donde lo dejó', fr: 'Transmettez le contexte pour reprendre', de: 'Kontext übergeben und dort weitermachen', zh: '传递上下文从上次中断处继续', ko: '컨텍스트를 전달하여 이어서 시작', pt: 'Passe o contexto para continuar de onde parou' },
+
+  // #22 Transform mode tooltip descriptions
+  tooltipHandoffDesc: { ja: 'AIとの会話を構造化して引き継ぎ文書に変換します', en: 'Structures your AI conversation into a handoff document', es: 'Estructura su conversación de IA en un documento de entrega', fr: 'Structure votre conversation IA en document de passation', de: 'Strukturiert Ihr KI-Gespräch in ein Übergabedokument', zh: '将您的AI对话结构化为交接文档', ko: 'AI 대화를 인수인계 문서로 구조화합니다', pt: 'Estrutura sua conversa de IA em documento de entrega' },
+  tooltipHandoffTodoDesc: { ja: 'スナップショットを作成し、TODOも同時に抽出します', en: 'Creates a snapshot and extracts TODOs at the same time', es: 'Crea un snapshot y extrae TODOs al mismo tiempo', fr: 'Crée un snapshot et extrait les TODOs en même temps', de: 'Erstellt einen Snapshot und extrahiert gleichzeitig TODOs', zh: '创建快照并同时提取待办事项', ko: '스냅샷을 생성하고 동시에 TODO를 추출합니다', pt: 'Cria um snapshot e extrai TODOs ao mesmo tempo' },
+  tooltipTodoOnlyDesc: { ja: '会話からTODOリストだけを抽出します', en: 'Extracts only the TODO list from the conversation', es: 'Extrae solo la lista de TODO de la conversación', fr: 'Extrait uniquement la liste TODO de la conversation', de: 'Extrahiert nur die TODO-Liste aus dem Gespräch', zh: '仅从对话中提取待办事项列表', ko: '대화에서 TODO 목록만 추출합니다', pt: 'Extrai apenas a lista de TODO da conversa' },
+
+  // #24 Extraction summary
+  extractionSummary: (decisions: number, actions: number, blockers: number) => ({
+    ja: `${decisions}件の決定事項、${actions}件の次アクション、${blockers}件のブロッカーを抽出しました`,
+    en: `Extracted ${decisions} decision${decisions !== 1 ? 's' : ''}, ${actions} next action${actions !== 1 ? 's' : ''}, ${blockers} blocker${blockers !== 1 ? 's' : ''}`,
+    es: `Se extrajeron ${decisions} decisión${decisions !== 1 ? 'es' : ''}, ${actions} acción${actions !== 1 ? 'es' : ''}, ${blockers} bloqueador${blockers !== 1 ? 'es' : ''}`,
+    fr: `${decisions} décision${decisions !== 1 ? 's' : ''}, ${actions} action${actions !== 1 ? 's' : ''}, ${blockers} bloqueur${blockers !== 1 ? 's' : ''} extraits`,
+    de: `${decisions} Entscheidung${decisions !== 1 ? 'en' : ''}, ${actions} Aktion${actions !== 1 ? 'en' : ''}, ${blockers} Blocker extrahiert`,
+    zh: `提取了${decisions}个决策、${actions}个下一步行动、${blockers}个阻碍`,
+    ko: `${decisions}개의 결정, ${actions}개의 다음 액션, ${blockers}개의 블로커를 추출했습니다`,
+    pt: `${decisions} decisão${decisions !== 1 ? 'ões' : ''}, ${actions} ação${actions !== 1 ? 'ões' : ''}, ${blockers} bloqueador${blockers !== 1 ? 'es' : ''} extraídos`,
+  }),
+
+  // #25 Raw markdown toggle
+  showRawMarkdown: { ja: 'マークダウンを表示', en: 'Show raw markdown', es: 'Mostrar markdown', fr: 'Afficher le markdown brut', de: 'Rohes Markdown anzeigen', zh: '显示原始Markdown', ko: '마크다운 보기', pt: 'Mostrar markdown bruto' },
+  showRichView: { ja: 'リッチビューに戻る', en: 'Show rich view', es: 'Mostrar vista enriquecida', fr: 'Afficher la vue enrichie', de: 'Rich-Ansicht anzeigen', zh: '显示富文本视图', ko: '리치 뷰 보기', pt: 'Mostrar visualização rica' },
+
+  // #26 Bottom nav "More" menu
+  navMore: { ja: 'その他', en: 'More', es: 'Más', fr: 'Plus', de: 'Mehr', zh: '更多', ko: '더보기', pt: 'Mais' },
+
+  // #35 Streak prominent card
+  streakKeepGoing: { ja: '続けよう!', en: 'Keep it going!', es: '¡Sigue así!', fr: 'Continuez !', de: 'Weiter so!', zh: '继续保持!', ko: '계속 가자!', pt: 'Continue assim!' },
+
+  // #36 View weekly report button
+  viewWeeklyReport: { ja: '週次レポートを見る', en: 'View Weekly Report', es: 'Ver informe semanal', fr: 'Voir le rapport hebdomadaire', de: 'Wochenbericht anzeigen', zh: '查看周报', ko: '주간 리포트 보기', pt: 'Ver Relatório Semanal' },
+
+  // #37 Overdue TODO toast
+  toastOverdueTodos: (count: number) => ({
+    ja: `期限超過のTODOが${count}件あります`,
+    en: `You have ${count} overdue TODO${count !== 1 ? 's' : ''}`,
+    es: `Tiene ${count} TODO${count !== 1 ? 's' : ''} vencido${count !== 1 ? 's' : ''}`,
+    fr: `Vous avez ${count} TODO${count !== 1 ? 's' : ''} en retard`,
+    de: `Sie haben ${count} überfällige${count !== 1 ? '' : 's'} TODO${count !== 1 ? 's' : ''}`,
+    zh: `您有${count}个逾期的TODO`,
+    ko: `기한이 지난 TODO가 ${count}개 있습니다`,
+    pt: `Você tem ${count} TODO${count !== 1 ? 's' : ''} atrasado${count !== 1 ? 's' : ''}`,
+  }),
+
+  // #38 Feedback buttons
+  feedbackThumbsUp: { ja: '良い結果', en: 'Good result', es: 'Buen resultado', fr: 'Bon résultat', de: 'Gutes Ergebnis', zh: '好的结果', ko: '좋은 결과', pt: 'Bom resultado' },
+  feedbackThumbsDown: { ja: '改善が必要', en: 'Needs improvement', es: 'Necesita mejora', fr: 'À améliorer', de: 'Verbesserung nötig', zh: '需要改进', ko: '개선 필요', pt: 'Precisa melhorar' },
 
 } as const;
 

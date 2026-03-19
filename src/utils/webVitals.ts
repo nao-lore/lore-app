@@ -2,8 +2,10 @@
  * Lightweight Web Vitals collection using the native Performance API.
  * Reports FCP, LCP, CLS, and INP.
  * - In dev mode: logs to console
- * - In production: sends to Vercel Analytics via track()
+ * - In production: sends to Vercel Analytics via the shared track() utility
  */
+
+import { track } from './analytics';
 
 type MetricName = 'FCP' | 'LCP' | 'CLS' | 'INP';
 
@@ -15,14 +17,11 @@ function reportMetric(name: MetricName, value: number): void {
     return;
   }
 
-  // Dynamic import is intentional: @vercel/analytics is also imported in main.tsx for
-  // pageview tracking. The duplicate dynamic import here is fine because the module is
-  // cached by the bundler — it avoids a top-level dependency that would block initial render.
-  import('@vercel/analytics').then(({ track }) => {
+  try {
     track('web-vital', { metric: name, value: rounded });
-  }).catch(() => {
+  } catch {
     // Analytics unavailable — silently ignore
-  });
+  }
 }
 
 export function observeWebVitals(): void {

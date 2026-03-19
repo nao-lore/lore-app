@@ -105,7 +105,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
   const {
     result, savedResult, error, loading, progress, simStep, streamDetail,
     savedId, savedHandoffId, outputMode, transformAction, setTransformAction,
-    wasFirstTransform, classifying, suggestion, postSavePickerOpen, setPostSavePickerOpen,
+    wasFirstTransform, apiCallCount, classifying, suggestion, postSavePickerOpen, setPostSavePickerOpen,
     runTransform, handlePauseResume, handleCancel,
     handleAcceptSuggestion, handleDismissSuggestion, handlePostSaveAssign,
     resetTransformState, setError,
@@ -275,6 +275,7 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
           showToast={showToast}
           onStartNew={handleStartNew}
           wasFirstTransform={wasFirstTransform}
+          apiCallCount={apiCallCount}
         />
       )}
 

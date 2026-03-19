@@ -100,6 +100,9 @@ describe('i18n', () => {
       waitingForApi: [30],
       waitingRetry: [10, 2, 5],
       phaseCooldown: [5],
+      autoPausedCountdown: [10],
+      apiCallProgress: [2, 5],
+      apiCallsUsed: [3],
       itemsSaved: [4],
       remaining: [6],
       estimatedTime: [3],
@@ -165,6 +168,8 @@ describe('i18n', () => {
       errorRateLimitWithCooldown: [30],
       lpSnapshotsCreated: [42],
       weeklyGoalProgress: [3, 5],
+      extractionSummary: [3, 5, 2],
+      toastOverdueTodos: [3],
     };
 
     it('all function labels return non-empty strings for ja', () => {

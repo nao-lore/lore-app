@@ -1,13 +1,14 @@
-import { useMemo, useState, useCallback, memo } from 'react';
-import { Square, CheckSquare, AlertTriangle, ChevronDown, ChevronRight, Plus, PlayCircle, Clock, FileText, FolderOpen, TrendingUp } from 'lucide-react';
+import { useMemo, useState, memo } from 'react';
+import { Square, CheckSquare, AlertTriangle, ChevronDown, ChevronRight, Plus, PlayCircle, FileText } from 'lucide-react';
 import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { getGreeting } from './greeting';
-import { getStreak, safeGetItem, safeSetItem, getTotalSnapshots, getWeeklyGoal } from './storage';
-import { checkAchievements } from './utils/achievements';
 import FirstUseTooltip from './FirstUseTooltip';
 import { EmptyDashboard } from './EmptyIllustrations';
+import ActivitySummaryCard from './components/ActivitySummaryCard';
+import TrendsSection from './components/TrendsSection';
+import NudgeCards from './components/NudgeCards';
 
 interface DashboardViewProps {
   logs: LogEntry[];
@@ -22,6 +23,7 @@ interface DashboardViewProps {
   onOpenHistory: () => void;
   onNewLog: () => void;
   onToggleAction: (logId: string, actionIndex: number) => void;
+  onOpenWeeklyReport?: () => void;
 }
 
 interface PendingAction {
@@ -43,41 +45,8 @@ interface ProjectSnapshot {
   blockers: string[];
 }
 
-// ── Notification dismissal ──
-const DISMISS_KEY = 'threadlog_notification_dismissals';
-function loadDismissals(): Record<string, number> {
-  try { return JSON.parse(safeGetItem(DISMISS_KEY) || '{}'); } catch (err) { if (import.meta.env.DEV) console.warn('[DashboardView] loadDismissals:', err); return {}; }
-}
-function saveDismissals(keys: string[]) {
-  const d = loadDismissals();
-  const now = Date.now();
-  for (const k of keys) d[k] = now;
-  safeSetItem(DISMISS_KEY, JSON.stringify(d));
-}
-function isNotDismissed(key: string, latestActivityTs: number): boolean {
-  const d = loadDismissals();
-  const dismissedAt = d[key];
-  if (!dismissedAt) return true;
-  return latestActivityTs > dismissedAt;
-}
-
-function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject, onOpenTodos, onOpenSummaryList, onOpenHistory, onNewLog, onToggleAction }: DashboardViewProps) {
+function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject, onOpenTodos, onOpenSummaryList, onOpenHistory, onNewLog, onToggleAction, onOpenWeeklyReport }: DashboardViewProps) {
   const [moreTasksOpen, setMoreTasksOpen] = useState(false);
-  const [dismissed, setDismissed] = useState<Set<string>>(() => {
-    try {
-      const saved = safeGetItem(DISMISS_KEY);
-      if (saved) {
-        const entries: Record<string, number> = JSON.parse(saved);
-        return new Set(Object.keys(entries));
-      }
-    } catch (err) { if (import.meta.env.DEV) console.warn('[DashboardView] dismissed parse:', err); }
-    return new Set();
-  });
-
-  const dismissAll = useCallback((keys: string[]) => {
-    saveDismissals(keys);
-    setDismissed((prev) => { const next = new Set(prev); for (const k of keys) next.add(k); return next; });
-  }, []);
 
   const handoffLogs = useMemo(() =>
     logs.filter((l) => l.outputMode === 'handoff').sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
@@ -127,105 +96,6 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
     }
     return snaps.sort((a, b) => new Date(b.latestHandoff.createdAt).getTime() - new Date(a.latestHandoff.createdAt).getTime());
   }, [projects, handoffLogs]);
-
-  // ── Nudge cards ──
-  const nudges = useMemo(() => {
-    const items: { key: string; emoji: string; label: string; sub: string; color: string; borderColor: string; icon: typeof Clock; onClick: () => void; dismissKeys: string[] }[] = [];
-    const today = new Date().toISOString().slice(0, 10);
-
-    // Overdue TODOs
-    const overdueTodos = todos.filter((td) => !td.done && td.dueDate && td.dueDate < today);
-    if (overdueTodos.length > 0 && !dismissed.has('overdue_todos') && isNotDismissed('overdue_todos', Math.max(...overdueTodos.map((td) => td.createdAt)))) {
-      items.push({
-        key: 'overdue_todos',
-        emoji: '⏰',
-        label: tf('nudgeOverdue', lang, overdueTodos.length),
-        sub: 'TODO',
-        color: 'var(--error-text, #ef4444)',
-        borderColor: 'var(--error-text, #ef4444)',
-        icon: Clock,
-        onClick: onOpenTodos,
-        dismissKeys: ['overdue_todos'],
-      });
-    }
-
-    // Stale summaries
-    const staleProjectIds: string[] = [];
-    for (const note of masterNotes) {
-      const projectHandoffs = logs.filter((l) => l.projectId === note.projectId && l.outputMode === 'handoff' && new Date(l.createdAt).getTime() > note.updatedAt);
-      if (projectHandoffs.length === 0) continue;
-      const latestTs = Math.max(...projectHandoffs.map((l) => new Date(l.createdAt).getTime()));
-      if (!dismissed.has(`summary_${note.projectId}`) && isNotDismissed(`summary_${note.projectId}`, latestTs)) {
-        staleProjectIds.push(note.projectId);
-      }
-    }
-    if (staleProjectIds.length > 0) {
-      items.push({
-        key: 'stale_summaries',
-        emoji: '📋',
-        label: tf('nudgeStaleCount', lang, staleProjectIds.length),
-        sub: t('nudgeStaleSub', lang),
-        color: 'var(--warning-text)',
-        borderColor: 'var(--warning-accent, orange)',
-        icon: FileText,
-        onClick: onOpenSummaryList,
-        dismissKeys: staleProjectIds.map((id) => `summary_${id}`),
-      });
-    }
-
-    // Stale projects (no logs in last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoTs = thirtyDaysAgo.getTime();
-    const staleProjects = projects.filter((p) => {
-      const projectLogs = logs.filter((l) => l.projectId === p.id);
-      if (projectLogs.length === 0) return false; // skip projects with no logs at all
-      const latestLogTs = Math.max(...projectLogs.map((l) => new Date(l.createdAt).getTime()));
-      return latestLogTs < thirtyDaysAgoTs;
-    });
-    if (staleProjects.length > 0 && !dismissed.has('stale_projects')) {
-      const staleKeys = staleProjects.map((p) => `stale_project_${p.id}`);
-      const anyNotDismissed = staleProjects.some((p) => {
-        const projectLogs = logs.filter((l) => l.projectId === p.id);
-        const latestTs = Math.max(...projectLogs.map((l) => new Date(l.createdAt).getTime()));
-        return isNotDismissed(`stale_project_${p.id}`, latestTs);
-      });
-      if (anyNotDismissed) {
-        const staleNames = staleProjects.slice(0, 3).map((p) => p.icon ? `${p.icon} ${p.name}` : p.name).join(', ');
-        items.push({
-          key: 'stale_projects',
-          emoji: '💤',
-          label: lang === 'ja'
-            ? `${staleProjects.length}件のプロジェクトが30日以上未更新`
-            : `${staleProjects.length} project${staleProjects.length > 1 ? 's' : ''} idle for 30+ days`,
-          sub: staleNames,
-          color: 'var(--text-placeholder)',
-          borderColor: 'var(--text-placeholder)',
-          icon: FolderOpen,
-          onClick: () => { if (staleProjects.length === 1) onOpenProject(staleProjects[0].id); else onOpenHistory(); },
-          dismissKeys: ['stale_projects', ...staleKeys],
-        });
-      }
-    }
-
-    // Unassigned logs
-    const unassignedCount = handoffLogs.filter((l) => !l.projectId).length;
-    if (unassignedCount > 0 && !dismissed.has('unassigned') && isNotDismissed('unassigned', handoffLogs.length > 0 ? new Date(handoffLogs[0].createdAt).getTime() : 0)) {
-      items.push({
-        key: 'unassigned',
-        emoji: '📂',
-        label: tf('nudgeUnassigned', lang, unassignedCount),
-        sub: t('statsTotalLogs', lang),
-        color: 'var(--accent)',
-        borderColor: 'var(--accent)',
-        icon: FolderOpen,
-        onClick: onOpenHistory,
-        dismissKeys: ['unassigned'],
-      });
-    }
-
-    return items;
-  }, [todos, masterNotes, logs, handoffLogs, projects, dismissed, lang, onOpenTodos, onOpenSummaryList, onOpenHistory, onOpenProject]);
 
   const focusTasks = uncheckedActions.slice(0, 5);
 
@@ -280,55 +150,19 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
           </div>
         </div>
 
-        {/* ── Nudge cards (top of dashboard, prominent with left border + icons) ── */}
-        {nudges.length > 0 && (
-          <div className="mb-2xl">
-            <div className="flex flex-wrap" style={{ gap: 10 }}>
-              {nudges.map((n) => {
-                const IconComponent = n.icon;
-                return (
-                <button
-                  type="button"
-                  key={n.key}
-                  aria-label={n.label}
-                  onClick={() => { n.onClick(); }}
-                  style={{
-                    flex: '1 1 160px', minWidth: 140, padding: '14px 16px', borderRadius: 12, cursor: 'pointer',
-                    background: `color-mix(in srgb, ${n.color} 6%, var(--card-bg))`,
-                    border: `1px solid color-mix(in srgb, ${n.color} 15%, transparent)`,
-                    borderLeft: `4px solid ${n.borderColor}`,
-                    transition: 'all 0.15s ease', position: 'relative',
-                    textAlign: 'left',
-                  }}
-                  className="nudge-card"
-                >
-                  <div className="flex-row" style={{ fontSize: 20, marginBottom: 8, gap: 6 }}>
-                    <IconComponent size={20} style={{ color: n.borderColor }} />
-                  </div>
-                  <div className="font-bold text-secondary text-sm">{n.label}</div>
-                  <div className="text-xs-muted" style={{ marginTop: 2 }}>{n.sub}</div>
-                  {/* dismiss tap target */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); dismissAll(n.dismissKeys); }}
-                    aria-label={t('ariaDismissNotification', lang)}
-                    className="nudge-dismiss-btn"
-                    style={{
-                      position: 'absolute', top: 0, right: 0,
-                      width: 44, height: 44, borderRadius: '50%', border: 'none',
-                      background: 'transparent',
-                      color: 'var(--text-placeholder)', fontSize: 11, lineHeight: 1,
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      opacity: 0, transition: 'opacity 0.15s',
-                    }}
-                  >×</button>
-                </button>
-                );
-              })}
-            </div>
-            {/* Show × on card hover */}
-            <style>{`.nudge-card:hover > .nudge-dismiss-btn { opacity: 0.5 !important; } .nudge-card:focus-within > .nudge-dismiss-btn { opacity: 0.5 !important; }`}</style>
-          </div>
-        )}
+        {/* ── Nudge cards (extracted component) ── */}
+        <NudgeCards
+          todos={todos}
+          masterNotes={masterNotes}
+          logs={logs}
+          handoffLogs={handoffLogs}
+          projects={projects}
+          lang={lang}
+          onOpenTodos={onOpenTodos}
+          onOpenSummaryList={onOpenSummaryList}
+          onOpenHistory={onOpenHistory}
+          onOpenProject={onOpenProject}
+        />
 
         {/* ── Quick access cards (horizontal scroll) ── */}
         {(lastActiveProject || projectSnapshots.length > 0) && (
@@ -510,6 +344,20 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
         {/* ── Your Activity (summary card) ── */}
         <ActivitySummaryCard logs={logs} todos={todos} projects={projects} lang={lang} />
 
+        {/* #36 View Weekly Report button */}
+        {onOpenWeeklyReport && (
+          <div className="mb-2xl">
+            <button
+              className="btn"
+              onClick={onOpenWeeklyReport}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}
+            >
+              <FileText size={14} />
+              {t('viewWeeklyReport', lang)}
+            </button>
+          </div>
+        )}
+
         {/* ── Trends ── */}
         <TrendsSection logs={logs} todos={todos} lang={lang} />
 
@@ -519,303 +367,3 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
 
 export default memo(DashboardView);
 
-// ── Activity Summary Card ──
-
-function ActivitySummaryCard({ logs, todos, projects, lang }: { logs: LogEntry[]; todos: Todo[]; projects: Project[]; lang: Lang }) {
-  const streak = useMemo(() => getStreak(), []);
-  const totalSnapshots = useMemo(() => getTotalSnapshots(), []);
-  const weeklyGoal = useMemo(() => getWeeklyGoal(), []);
-  const badges = useMemo(() => checkAchievements(), []);
-
-  const stats = useMemo(() => {
-    const totalLogs = logs.length;
-    const todosDone = todos.filter((td) => td.done).length;
-    const todosPending = todos.filter((td) => !td.done).length;
-    const activeProjects = projects.filter((p) => logs.some((l) => l.projectId === p.id)).length;
-
-    // Logs this week vs last week
-    const now = new Date();
-    const weekStart = getWeekStart(now);
-    const lastWeekStart = new Date(weekStart);
-    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-
-    const thisWeekLogs = logs.filter((l) => new Date(l.createdAt) >= weekStart).length;
-    const lastWeekLogs = logs.filter((l) => {
-      const d = new Date(l.createdAt);
-      return d >= lastWeekStart && d < weekStart;
-    }).length;
-    const weekDiff = thisWeekLogs - lastWeekLogs;
-
-    // Most active project
-    const projectCounts: Record<string, number> = {};
-    for (const l of logs) {
-      if (l.projectId) projectCounts[l.projectId] = (projectCounts[l.projectId] || 0) + 1;
-    }
-    let topProjectName: string | null = null;
-    let topCount = 0;
-    for (const [pid, count] of Object.entries(projectCounts)) {
-      if (count > topCount) {
-        topCount = count;
-        const proj = projects.find((p) => p.id === pid);
-        topProjectName = proj ? `${proj.icon || '📂'} ${proj.name}` : null;
-      }
-    }
-
-    return { totalLogs, todosDone, todosPending, activeProjects, thisWeekLogs, lastWeekLogs, weekDiff, topProjectName, topCount };
-  }, [logs, todos, projects]);
-
-  if (stats.totalLogs === 0) return null;
-
-  const diffLabel = stats.weekDiff >= 0 ? `+${stats.weekDiff}` : `${stats.weekDiff}`;
-  const diffColor = stats.weekDiff >= 0 ? 'var(--success-text, #22c55e)' : 'var(--error-text, #ef4444)';
-  const isJa = lang === 'ja';
-
-  return (
-    <div className="mb-2xl">
-      <div
-        style={{
-          padding: '18px 22px', borderRadius: 12,
-          background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
-        }}
-      >
-        <div className="flex-row justify-between mb-md">
-          <div className="section-title font-semibold font-bold">
-            {isJa ? 'あなたのアクティビティ' : 'Your Activity'}
-          </div>
-          {streak > 0 && (
-            <div className="flex-row" style={{ gap: 4, fontSize: 13, color: 'var(--warning-text, #f59e0b)' }}>
-              <span style={{ fontSize: 16 }}>🔥</span>
-              <span className="font-extrabold" style={{ fontSize: 20 }}>{streak}</span>
-              <span className="font-semibold">{isJa ? '日連続' : `day${streak > 1 ? 's' : ''} streak`}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Row 1: headline stats */}
-        <div className="flex flex-wrap items-baseline" style={{ gap: 6, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.8 }}>
-          <span className="font-extrabold text-secondary" style={{ fontSize: 22 }}>{stats.totalLogs}</span>
-          <span>{isJa ? 'ログ' : 'logs'}</span>
-          <span style={{ color: 'var(--text-placeholder)', margin: '0 2px' }}>&middot;</span>
-          <span className="font-extrabold text-secondary" style={{ fontSize: 22 }}>{stats.todosDone}</span>
-          <span>{isJa ? 'TODO完了' : 'TODOs done'}</span>
-          <span style={{ color: 'var(--text-placeholder)', margin: '0 2px' }}>&middot;</span>
-          <span className="font-extrabold text-secondary" style={{ fontSize: 22 }}>{stats.activeProjects}</span>
-          <span>{isJa ? 'プロジェクト' : 'projects'}</span>
-        </div>
-
-        {/* Row 2: this week comparison */}
-        <div className="mt-sm text-sm text-muted">
-          {isJa ? '今週' : 'This week'}: <span className="font-bold text-secondary">{stats.thisWeekLogs}</span> {isJa ? 'ログ' : 'logs'}
-          {' '}
-          <span style={{ color: diffColor, fontWeight: 600 }}>
-            ({diffLabel} {isJa ? '先週比' : 'from last week'})
-          </span>
-        </div>
-
-        {/* Row 3: most active project */}
-        {stats.topProjectName && (
-          <div className="text-xs-placeholder" style={{ marginTop: 6 }}>
-            {isJa ? '最も活発:' : 'Most active:'} <span className="text-muted font-semibold">{stats.topProjectName}</span>
-            <span style={{ opacity: 0.6 }}> ({stats.topCount} {isJa ? 'ログ' : 'logs'})</span>
-          </div>
-        )}
-
-        {/* Row 4: total snapshots */}
-        {totalSnapshots > 0 && (
-          <div className="text-xs-placeholder" style={{ marginTop: 6 }}>
-            {t('dashboardTotalSnapshots', lang)}: <span className="text-muted font-semibold">{totalSnapshots}</span>
-          </div>
-        )}
-
-        {/* Row 5: weekly goal progress */}
-        {weeklyGoal > 0 && (
-          <div style={{ marginTop: 12 }}>
-            <div className="flex-row justify-between" style={{ fontSize: 12, marginBottom: 4 }}>
-              <span className="text-muted font-semibold">
-                {stats.thisWeekLogs >= weeklyGoal
-                  ? t('weeklyGoalReached', lang)
-                  : tf('weeklyGoalProgress', lang, stats.thisWeekLogs, weeklyGoal)}
-              </span>
-            </div>
-            <div className="progress-bar-track">
-              <div style={{
-                height: '100%',
-                width: `${Math.min((stats.thisWeekLogs / weeklyGoal) * 100, 100)}%`,
-                borderRadius: 3,
-                background: stats.thisWeekLogs >= weeklyGoal ? 'var(--success-text, #22c55e)' : 'var(--accent)',
-                transition: 'width 0.3s',
-              }} />
-            </div>
-          </div>
-        )}
-
-        {/* Badges */}
-        {badges.length > 0 && (
-          <div className="flex flex-wrap" style={{ gap: 6, marginTop: 12 }}>
-            {badges.map((badge) => (
-              <span
-                key={badge.id}
-                className="badge badge-accent font-semibold"
-                style={{ fontSize: 11, padding: '3px 8px', borderRadius: 12 }}
-              >
-                {badge.emoji} {t(badge.labelKey as Parameters<typeof t>[0], lang)}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Trends Section Component ──
-
-interface WeekBucket {
-  label: string;
-  logCount: number;
-  todosCompleted: number;
-  todosTotal: number;
-}
-
-function getWeekStart(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function formatWeekLabel(start: Date): string {
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-  return `${start.getMonth() + 1}/${start.getDate()}-${end.getMonth() + 1}/${end.getDate()}`;
-}
-
-function TrendsSection({ logs, todos, lang }: { logs: LogEntry[]; todos: Todo[]; lang: Lang }) {
-  const weeklyData = useMemo(() => {
-    const now = new Date();
-    const currentWeekStart = getWeekStart(now);
-
-    // Build 4 week buckets (current week + 3 previous)
-    const buckets: WeekBucket[] = [];
-    for (let i = 3; i >= 0; i--) {
-      const weekStart = new Date(currentWeekStart);
-      weekStart.setDate(weekStart.getDate() - i * 7);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 7);
-
-      // Count logs in this week
-      const logCount = logs.filter((l) => {
-        const d = new Date(l.createdAt);
-        return d >= weekStart && d < weekEnd;
-      }).length;
-
-      // Count todos created in this week window
-      const wsTime = weekStart.getTime();
-      const weTime = weekEnd.getTime();
-      const weekTodos = todos.filter((td) => {
-        const ts = typeof td.createdAt === 'number' ? td.createdAt : new Date(td.createdAt).getTime();
-        return ts >= wsTime && ts < weTime;
-      });
-      const todosCompleted = weekTodos.filter((td) => td.done).length;
-      const todosTotal = weekTodos.length;
-
-      buckets.push({
-        label: formatWeekLabel(weekStart),
-        logCount,
-        todosCompleted,
-        todosTotal,
-      });
-    }
-    return buckets;
-  }, [logs, todos]);
-
-  const maxCount = Math.max(1, ...weeklyData.map((w) => w.logCount));
-
-  // Metrics
-  const thisWeekCount = weeklyData[3]?.logCount ?? 0;
-  const lastWeekCount = weeklyData[2]?.logCount ?? 0;
-  const avgPerWeek = weeklyData.length > 0
-    ? Math.round((weeklyData.reduce((s, w) => s + w.logCount, 0) / weeklyData.length) * 10) / 10
-    : 0;
-
-  const changePct = lastWeekCount > 0
-    ? Math.round(((thisWeekCount - lastWeekCount) / lastWeekCount) * 100)
-    : thisWeekCount > 0 ? 100 : 0;
-  const changeUp = changePct >= 0;
-
-  const totalTodosCompleted = weeklyData.reduce((s, w) => s + w.todosCompleted, 0);
-  const totalTodosAll = weeklyData.reduce((s, w) => s + w.todosTotal, 0);
-  const completionRate = totalTodosAll > 0 ? Math.round((totalTodosCompleted / totalTodosAll) * 100) : 0;
-
-  if (logs.length === 0) return null;
-
-  return (
-    <div className="mb-2xl">
-      <div className="section-header" style={{ marginBottom: 14 }}>
-        <TrendingUp size={14} style={{ opacity: 0.5 }} />
-        {t('trends', lang)}
-      </div>
-
-      {/* Weekly activity bars */}
-      <div className="flex-col gap-sm mb-lg">
-        {weeklyData.map((week, i) => (
-          <div key={i} className="flex-row gap-10">
-            <span className="text-xs-placeholder shrink-0" style={{ width: 70, textAlign: 'right' }}>
-              {week.label}
-            </span>
-            <div style={{ flex: 1, height: 18, background: 'var(--border-subtle)', borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
-              <div
-                style={{
-                  height: '100%',
-                  width: `${(week.logCount / maxCount) * 100}%`,
-                  background: 'var(--accent)',
-                  borderRadius: 4,
-                  transition: 'width 0.3s ease',
-                  minWidth: week.logCount > 0 ? 4 : 0,
-                }}
-              />
-            </div>
-            <span className="text-xs-muted shrink-0" style={{ width: 50 }}>
-              {tf('logsCount', lang, week.logCount)}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Key metrics row */}
-      <div className="flex flex-wrap gap-12">
-        {/* This week vs last week */}
-        <div className="stat-card p-card stat-card-flex">
-          <div className="stat-label mb-4" style={{ marginTop: 0 }}>
-            {t('vsLastWeek', lang)}
-          </div>
-          <div className="stat-value" style={{ fontSize: 18, color: changeUp ? 'var(--success-text, #22c55e)' : 'var(--error-text, #ef4444)' }}>
-            {changeUp ? '↑' : '↓'} {Math.abs(changePct)}%
-          </div>
-        </div>
-
-        {/* Average logs per week */}
-        <div className="stat-card p-card stat-card-flex">
-          <div className="stat-label mb-4" style={{ marginTop: 0 }}>
-            {t('avgPerWeek', lang)}
-          </div>
-          <div className="stat-value fs-18">
-            {avgPerWeek}
-          </div>
-        </div>
-
-        {/* TODO completion rate */}
-        <div className="stat-card p-card stat-card-flex">
-          <div className="stat-label mb-4" style={{ marginTop: 0 }}>
-            {t('completionRate', lang)}
-          </div>
-          <div className="stat-value fs-18">
-            {completionRate}%
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}

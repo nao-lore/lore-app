@@ -1,6 +1,8 @@
 import { lazy } from 'react';
 import type { LogEntry, Project } from './types';
 import type { Lang } from './i18n';
+import { WorkspaceProvider } from './contexts/WorkspaceContext';
+import type { WorkspaceContextValue } from './contexts/WorkspaceContext';
 
 const InputView = lazy(() => import('./InputView'));
 const DetailView = lazy(() => import('./DetailView'));
@@ -28,7 +30,21 @@ interface WorkspaceProps {
   lastLogCreatedAt: string | null;
 }
 
-export default function Workspace({ mode, selectedId, onSaved, onDeleted, onOpenLog, onBack, prevView, lang, activeProjectId, projects, onRefresh, showToast, onDirtyChange, onTagFilter, onOpenMasterNote, allLogs, pendingTodosCount, lastLogCreatedAt }: WorkspaceProps) {
-  if (mode === 'detail' && selectedId) return <DetailView id={selectedId} onDeleted={onDeleted} onOpenLog={onOpenLog} onBack={onBack} prevView={prevView} lang={lang} projects={projects} onRefresh={onRefresh} showToast={showToast} onTagFilter={onTagFilter} allLogs={allLogs} onOpenMasterNote={onOpenMasterNote} />;
-  return <InputView onSaved={onSaved} onOpenLog={onOpenLog} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onDirtyChange={onDirtyChange} pendingTodosCount={pendingTodosCount} lastLogCreatedAt={lastLogCreatedAt} />;
+export default function Workspace(props: WorkspaceProps) {
+  const { mode, selectedId, onSaved, onDeleted, onOpenLog, onBack, prevView, lang, activeProjectId, projects, onRefresh, showToast, onDirtyChange, onTagFilter, onOpenMasterNote, allLogs, pendingTodosCount, lastLogCreatedAt } = props;
+
+  const ctxValue: WorkspaceContextValue = {
+    mode, selectedId, onSaved, onDeleted, onOpenLog, onBack, prevView, lang,
+    activeProjectId, projects, onRefresh, showToast, onDirtyChange, onTagFilter,
+    onOpenMasterNote, allLogs, pendingTodosCount, lastLogCreatedAt,
+  };
+
+  return (
+    <WorkspaceProvider value={ctxValue}>
+      {mode === 'detail' && selectedId
+        ? <DetailView id={selectedId} onDeleted={onDeleted} onOpenLog={onOpenLog} onBack={onBack} prevView={prevView} lang={lang} projects={projects} onRefresh={onRefresh} showToast={showToast} onTagFilter={onTagFilter} allLogs={allLogs} onOpenMasterNote={onOpenMasterNote} />
+        : <InputView onSaved={onSaved} onOpenLog={onOpenLog} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onDirtyChange={onDirtyChange} pendingTodosCount={pendingTodosCount} lastLogCreatedAt={lastLogCreatedAt} />
+      }
+    </WorkspaceProvider>
+  );
 }

@@ -56,6 +56,10 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
           </button>
         </div>
 
+        <p className="lp-beta-urgency">
+          {t('lpBetaUrgency', lang)}
+        </p>
+
         {/* Task 3: Snapshot counter */}
         {totalSnapshots > 0 && (
           <p className="lp-snapshot-counter">

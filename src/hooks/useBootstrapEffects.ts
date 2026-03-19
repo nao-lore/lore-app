@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { purgeExpiredTrash, getAutoReportSetting, getLastReportDate, recordActivity, safeGetItem, safeSetItem } from '../storage';
+import { purgeExpiredTrash, getAutoReportSetting, getLastReportDate, recordActivity, safeGetItem, safeSetItem, loadTodos } from '../storage';
 import { isOnboardingDone } from '../onboardingState';
 import { registerSW } from 'virtual:pwa-register';
-import { t } from '../i18n';
+import { t, tf } from '../i18n';
 import type { Lang } from '../i18n';
 import type { LogEntry } from '../types';
 import type { View } from './useAppState';
@@ -120,9 +120,9 @@ export function useBootstrapEffects(params: BootstrapParams): void {
     return () => window.removeEventListener('hashchange', handleExtensionImport);
   }, []);
 
-  // 8. Show onboarding on first launch (mount-only)
+  // 8. Show onboarding if not yet completed (mount-only)
   useEffect(() => {
-    if (paramsRef.current.logs.length === 0 && !isOnboardingDone()) {
+    if (!isOnboardingDone()) {
       paramsRef.current.setShowOnboarding(true);
     }
   }, []);
@@ -165,7 +165,25 @@ export function useBootstrapEffects(params: BootstrapParams): void {
     return () => window.removeEventListener('beforeunload', handler);
   }, []);
 
-  // 11. Multi-tab localStorage sync (uses stable refreshLogs)
+  // 11. Overdue TODO toast on app load (once per day max)
+  useEffect(() => {
+    ric(() => {
+      const { lang, showToast } = paramsRef.current;
+      const today = new Date().toISOString().slice(0, 10);
+      const OVERDUE_TOAST_KEY = 'threadlog_overdue_toast_date';
+      const lastToast = safeGetItem(OVERDUE_TOAST_KEY);
+      if (lastToast === today) return;
+
+      const todos = loadTodos();
+      const overdueCount = todos.filter((td) => !td.done && td.dueDate && td.dueDate < today).length;
+      if (overdueCount > 0) {
+        safeSetItem(OVERDUE_TOAST_KEY, today);
+        showToast(tf('toastOverdueTodos', lang, overdueCount), 'default');
+      }
+    });
+  }, []);
+
+  // 12. Multi-tab localStorage sync (uses stable refreshLogs)
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (

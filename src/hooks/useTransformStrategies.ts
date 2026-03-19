@@ -76,13 +76,18 @@ export function getCachedResult<T>(text: string, action: string, provider: strin
   return undefined;
 }
 
-/** Store an AI result in the cache */
+/** Store an AI result in the cache.
+ *  Uses Map-based LRU: delete-then-set ensures the entry moves to the end
+ *  (most recently used), and eviction always removes the first (least recently used). */
 export function setCachedResult(text: string, action: string, provider: string, lang: string, result: unknown): void {
   const model = PROVIDER_MODEL_LABELS[provider as keyof typeof PROVIDER_MODEL_LABELS] ?? '';
   const key = hashCacheKey(text, action, provider, lang, model);
-  if (aiResultCache.size >= AI_CACHE_MAX && !aiResultCache.has(key)) {
-    const oldest = aiResultCache.keys().next().value;
-    if (oldest !== undefined) aiResultCache.delete(oldest);
+  // Delete first so re-insertion moves the key to the end (most-recent position)
+  aiResultCache.delete(key);
+  if (aiResultCache.size >= AI_CACHE_MAX) {
+    // Evict the least recently used entry (first key in Map iteration order)
+    const lruKey = aiResultCache.keys().next().value;
+    if (lruKey !== undefined) aiResultCache.delete(lruKey);
   }
   aiResultCache.set(key, { result, timestamp: Date.now() });
 }
