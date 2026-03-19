@@ -103,11 +103,22 @@ export function splitIntoChunks(text: string, chunkTarget: number): string[] {
   const segments = text.split(fileSeparator).filter((s) => s.trim());
 
   if (segments.length > 1) {
-    return groupSegments(segments, charLimit);
+    return dedupChunks(groupSegments(segments, charLimit));
   }
 
   const paragraphs = text.split(/\n{2,}/);
-  return groupSegments(paragraphs.map((p) => p + '\n\n'), charLimit);
+  return dedupChunks(groupSegments(paragraphs.map((p) => p + '\n\n'), charLimit));
+}
+
+/** Remove exact-duplicate chunks that can arise from repeated sections in input */
+function dedupChunks(chunks: string[]): string[] {
+  const seen = new Set<string>();
+  return chunks.filter(chunk => {
+    const key = chunk.trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /**
@@ -759,7 +770,11 @@ export class ChunkEngine {
     if (session && session.chunks.length === freshChunks.length && session.status === 'active') {
       // Resume
     } else {
-      if (session) await deleteSession(hash);
+      if (session) {
+        await deleteSession(hash).catch((err) => {
+          if (import.meta.env.DEV) console.error('[chunkEngine] deleteSession failed during init:', err);
+        });
+      }
       session = {
         sourceHash: hash,
         chunks: freshChunks,
@@ -767,7 +782,9 @@ export class ChunkEngine {
         status: 'active',
         createdAt: Date.now(),
       };
-      await saveSession(session);
+      await saveSession(session).catch((err) => {
+        if (import.meta.env.DEV) console.error('[chunkEngine] saveSession failed during init:', err);
+      });
     }
 
     const chunks = session.chunks;
@@ -816,7 +833,9 @@ export class ChunkEngine {
       );
       session.partials[String(i)] = result;
       finished++;
-      await saveSession(session);
+      await saveSession(session).catch((err) => {
+        if (import.meta.env.DEV) console.error('[chunkEngine] saveSession failed during extract:', err);
+      });
 
       onProgress({
         phase: 'extract', current: finished, total: chunks.length,
@@ -874,7 +893,9 @@ export class ChunkEngine {
           if (import.meta.env.DEV) console.warn('[SingleChunk] post-extraction failed:', err);
         }
       }
-      await deleteSession(hash);
+      await deleteSession(hash).catch((err) => {
+        if (import.meta.env.DEV) console.error('[chunkEngine] deleteSession failed after single-chunk:', err);
+      });
       return allPartials[0];
     }
 
@@ -941,7 +962,9 @@ export class ChunkEngine {
     }
 
     session.status = 'completed';
-    await deleteSession(hash);
+    await deleteSession(hash).catch((err) => {
+      if (import.meta.env.DEV) console.error('[chunkEngine] deleteSession failed after merge:', err);
+    });
     return mergedResult;
   }
 

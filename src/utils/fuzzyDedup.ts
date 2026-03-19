@@ -17,9 +17,19 @@ function extractKeywords(text: string): Set<string> {
     .toLowerCase()
     .replace(/[()（）「」『』、。,.;:：・\-–—[\]{}!?！？]/g, ' ')
     .split(/\s+/)
-    .filter(w => w.length >= 2);
+    .filter(w => w.length >= 1);
 
-  return new Set(tokens.filter(w => !STOP_WORDS.has(w)));
+  // Filter stop words, then remove single-char non-CJK tokens (English articles etc.)
+  // CJK single-char tokens that aren't stop words are kept as they carry meaning
+  return new Set(tokens.filter(w => {
+    if (STOP_WORDS.has(w)) return false;
+    // Keep CJK single-char tokens (they carry meaning), filter short ASCII tokens
+    if (w.length < 2) {
+      const code = w.charCodeAt(0);
+      return code >= 0x3000; // Keep CJK range (hiragana, katakana, kanji, etc.)
+    }
+    return true;
+  }));
 }
 
 /** Stop words for English and CJK languages */
