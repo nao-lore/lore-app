@@ -91,18 +91,29 @@ export default memo(function PostGenerationPreview({ savedResult, lang, showToas
         >
           {t('startNewLog', lang)}
         </button>
-        {typeof navigator.share === 'function' && (
-          <button className="btn" onClick={async () => {
+        <button className="btn" onClick={async () => {
+          const shareText = savedResult.fullContext || savedResult.markdown;
+          if (typeof navigator.share === 'function') {
             try {
               await navigator.share({
                 title: t('shareTitle', lang),
-                text: savedResult.fullContext || savedResult.markdown,
+                text: shareText,
               });
-            } catch (err) { if (import.meta.env.DEV) console.warn('[PostGenerationPreview] share:', err); }
-          }}>
-            <Share2 size={14} /> {t('share', lang)}
-          </button>
-        )}
+              return;
+            } catch {
+              // Share cancelled or failed — fall back to clipboard
+            }
+          }
+          // Fallback: copy to clipboard
+          try {
+            await navigator.clipboard.writeText(shareText);
+            showToast?.(t('copiedToClipboard', lang), 'success');
+          } catch {
+            showToast?.(t('copyFailed', lang), 'error');
+          }
+        }}>
+          <Share2 size={14} /> {t('share', lang)}
+        </button>
       </div>
 
       {/* Subtitle explaining the buttons */}

@@ -11,6 +11,7 @@ import { AIError } from './errors';
 import { parseJsonWithRepair } from './utils/jsonRepair';
 import { fuzzyDedupStrings } from './utils/fuzzyDedup';
 import { normalizeInput } from './utils/normalizeInput';
+import { callWithRetry } from './utils/retryManager';
 
 /** Safely coerce an unknown value to string[], filtering out non-strings. */
 function toStringArray(val: unknown): string[] {
@@ -164,36 +165,49 @@ function validateHandoffResult(
     }
   }
 
-  // Warn if currentStatus is empty for non-trivial conversations
-  if (import.meta.env.DEV && parsed.currentStatus && parsed.currentStatus.length === 0 && charLen > 2000) {
-    console.warn(`[Transform Validation] currentStatus is empty for ${charLen}-char input — expected at least 1 item`);
+  // Validate currentStatus for non-trivial conversations
+  if (parsed.currentStatus && parsed.currentStatus.length === 0 && charLen > 2000) {
+    logValidationWarning(`currentStatus is empty for ${charLen}-char input — expected at least 1 item`);
   }
 
-  // Warn if resumeChecklist items have missing whyNow/ifSkipped
-  if (import.meta.env.DEV && Array.isArray(parsed.resumeChecklist)) {
+  // Validate resumeChecklist items have required whyNow/ifSkipped
+  if (Array.isArray(parsed.resumeChecklist)) {
     for (const item of parsed.resumeChecklist) {
       if (!item.whyNow || !item.whyNow.trim()) {
-        console.warn(`[Transform Validation] resumeChecklist item "${item.action}" has empty whyNow`);
+        logValidationWarning(`resumeChecklist item "${item.action}" has empty whyNow`);
       }
       if (!item.ifSkipped || !item.ifSkipped.trim()) {
-        console.warn(`[Transform Validation] resumeChecklist item "${item.action}" has empty ifSkipped`);
+        logValidationWarning(`resumeChecklist item "${item.action}" has empty ifSkipped`);
       }
     }
   }
 
-  // Warn if nextActions is empty for non-trivial conversations
-  if (import.meta.env.DEV && parsed.nextActions && Array.isArray(parsed.nextActions) && parsed.nextActions.length === 0 && charLen > 2000) {
-    console.warn(`[Transform Validation] nextActions is empty for ${charLen}-char input — expected at least 1 item`);
+  // Validate nextActions for non-trivial conversations
+  if (parsed.nextActions && Array.isArray(parsed.nextActions) && parsed.nextActions.length === 0 && charLen > 2000) {
+    logValidationWarning(`nextActions is empty for ${charLen}-char input — expected at least 1 item`);
   }
 
-  // Warn if completed is empty for non-trivial conversations
-  if (import.meta.env.DEV && parsed.completed && parsed.completed.length === 0 && charLen > 2000) {
-    console.warn(`[Transform Validation] completed is empty for ${charLen}-char input — expected at least 1 item`);
+  // Validate completed for non-trivial conversations
+  if (parsed.completed && parsed.completed.length === 0 && charLen > 2000) {
+    logValidationWarning(`completed is empty for ${charLen}-char input — expected at least 1 item`);
   }
 
-  // Warn if too few tags
-  if (import.meta.env.DEV && parsed.tags && parsed.tags.length < 3 && charLen > 500) {
-    console.warn(`[Transform Validation] tags.length=${parsed.tags.length} for ${charLen}-char input — expected >= 3`);
+  // Validate tag count
+  if (parsed.tags && parsed.tags.length < 3 && charLen > 500) {
+    logValidationWarning(`tags.length=${parsed.tags.length} for ${charLen}-char input — expected >= 3`);
+  }
+}
+
+/** Log validation warning — always logs in DEV, reports to Sentry in production if available */
+function logValidationWarning(msg: string): void {
+  const fullMsg = `[Transform Validation] ${msg}`;
+  if (import.meta.env.DEV) {
+    console.warn(fullMsg);
+  }
+  // Report to Sentry in production if available
+  if (typeof window !== 'undefined' && (window as Record<string, unknown>).Sentry) {
+    const Sentry = (window as Record<string, unknown>).Sentry as { captureMessage?: (msg: string, level?: string) => void };
+    Sentry.captureMessage?.(fullMsg, 'warning');
   }
 }
 
@@ -247,21 +261,32 @@ async function extractAndParse(rawText: string): Promise<Record<string, unknown>
 
 /**
  * Retry wrapper for transform calls.
- * Retries once on PARSE_ERROR to handle transient AI JSON issues.
+ * Retries up to 3 times for PARSE_ERROR and rate limit errors (429/503).
+ * Uses retryManager for rate limit handling, adds PARSE_ERROR retry on top.
  */
 async function withRetry<T>(
   fn: () => Promise<T>,
   label: string,
 ): Promise<T> {
-  try {
-    return await fn();
-  } catch (err) {
-    if (err instanceof AIError && err.code === 'PARSE_ERROR') {
-      if (import.meta.env.DEV) console.warn(`[${label}] Parse failed, retrying...`);
-      return await fn(); // One retry
+  const MAX_RETRIES = 3;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await callWithRetry(fn, 0); // delegate rate limit retries to retryManager
+    } catch (err) {
+      if (attempt === MAX_RETRIES) throw err;
+      const isParseError = err instanceof AIError && err.code === 'PARSE_ERROR';
+      const isRateLimit = err instanceof Error && (
+        err.message.includes('429') || err.message.includes('503') ||
+        err.message.includes('[Overloaded]') || err.message.includes('[Rate Limit]')
+      );
+      if (!isParseError && !isRateLimit) throw err;
+      if (import.meta.env.DEV) console.warn(`[${label}] ${isParseError ? 'Parse' : 'Rate limit'} error, retry ${attempt + 1}/${MAX_RETRIES}...`);
+      const delayMatch = err instanceof Error ? err.message.match(/\[Rate Limit:(\d+)\]/) : null;
+      const delay = delayMatch ? parseInt(delayMatch[1], 10) * 1000 : 1000 * Math.pow(2, attempt);
+      await new Promise(r => setTimeout(r, delay));
     }
-    throw err;
   }
+  throw new Error('Unreachable');
 }
 
 // =============================================================================
@@ -357,27 +382,32 @@ async function transformTextOnce(sourceText: string, opts?: { onStream?: StreamC
 function normalizeDecisions(raw: unknown[]): {
   decisions: string[];
   decisionRationales: DecisionWithRationale[];
+  totalDecisionsBeforeCap: number;
 } {
   if (!Array.isArray(raw) || raw.length === 0) {
-    return { decisions: [], decisionRationales: [] };
+    return { decisions: [], decisionRationales: [], totalDecisionsBeforeCap: 0 };
   }
   const MAX_DECISIONS = 6;
   // Check if first element is an object (new format)
   if (typeof raw[0] === 'object' && raw[0] !== null && 'decision' in raw[0]) {
-    const decisionRationales: DecisionWithRationale[] = raw
+    const allRationales: DecisionWithRationale[] = raw
       .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
       .map((obj) => ({
         decision: String(obj.decision || ''),
         rationale: typeof obj.rationale === 'string' ? obj.rationale : null,
       }))
-      .filter(dr => dr.decision.trim()).slice(0, MAX_DECISIONS);
+      .filter(dr => dr.decision.trim());
+    const totalDecisionsBeforeCap = allRationales.length;
+    const decisionRationales = allRationales.slice(0, MAX_DECISIONS);
     const decisions = decisionRationales.map(dr => dr.decision);
-    return { decisions, decisionRationales };
+    return { decisions, decisionRationales, totalDecisionsBeforeCap };
   }
   // Legacy string format fallback
-  const decisions = raw.map(s => String(s)).filter(s => s.trim()).slice(0, MAX_DECISIONS);
+  const allDecisions = raw.map(s => String(s)).filter(s => s.trim());
+  const totalDecisionsBeforeCap = allDecisions.length;
+  const decisions = allDecisions.slice(0, MAX_DECISIONS);
   const decisionRationales = decisions.map(d => ({ decision: d, rationale: null }));
-  return { decisions, decisionRationales };
+  return { decisions, decisionRationales, totalDecisionsBeforeCap };
 }
 
 /**
@@ -485,6 +515,7 @@ export function normalizeActionBacklog(raw: unknown): NextActionItem[] {
 export function normalizeHandoffFields(parsed: Record<string, unknown>): {
   decisions: string[];
   decisionRationales: DecisionWithRationale[];
+  totalDecisionsBeforeCap: number;
   nextActions: string[];
   nextActionItems: NextActionItem[];
   resumeChecklist: ResumeChecklistItem[];
@@ -497,7 +528,7 @@ export function normalizeHandoffFields(parsed: Record<string, unknown>): {
   tags: string[];
 } {
   const rawDecisions = Array.isArray(parsed.decisions) ? parsed.decisions : [];
-  const { decisions, decisionRationales } = normalizeDecisions(rawDecisions);
+  const { decisions, decisionRationales, totalDecisionsBeforeCap } = normalizeDecisions(rawDecisions);
   const rawNextActions = Array.isArray(parsed.nextActions) ? parsed.nextActions : [];
   let { nextActions, nextActionItems } = normalizeNextActions(rawNextActions);
   const resumeChecklist = normalizeResumeChecklist(parsed.resumeChecklist);
@@ -510,6 +541,9 @@ export function normalizeHandoffFields(parsed: Record<string, unknown>): {
     nextActions = nextActionItems.map(i => i.action);
     actionBacklog = [...overflow, ...actionBacklog].slice(0, 7);
   }
+  // Deduplicate actionBacklog against nextActions (remove items already in nextActions)
+  const nextActionSet = new Set(nextActions.map(a => a.toLowerCase().trim()));
+  actionBacklog = actionBacklog.filter(item => !nextActionSet.has(item.action.toLowerCase().trim()));
   // Normalize remaining array fields with type coercion and dedup
   const completed = fuzzyDedupStrings(toStringArray(parsed.completed));
   const currentStatus = fuzzyDedupStrings(toStringArray(parsed.currentStatus));
@@ -518,7 +552,7 @@ export function normalizeHandoffFields(parsed: Record<string, unknown>): {
   );
   const constraints = toStringArray(parsed.constraints);
   const tags = toStringArray(parsed.tags);
-  return { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta, currentStatus, completed, blockers, constraints, tags };
+  return { decisions, decisionRationales, totalDecisionsBeforeCap, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta, currentStatus, completed, blockers, constraints, tags };
 }
 
 /**
@@ -587,7 +621,7 @@ async function transformHandoffOnce(sourceText: string, opts?: { onStream?: Stre
     // Validate handoff fields (title, currentStatus, resumeChecklist, nextActions, completed, tags)
     validateHandoffResult(parsed, sourceText);
     warnOutputLanguageMismatch(parsed, lang);
-    const { decisions, decisionRationales, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta, currentStatus, completed, blockers, constraints, tags } = normalizeHandoffFields(parsed as Record<string, unknown>);
+    const { decisions, decisionRationales, totalDecisionsBeforeCap, nextActions, nextActionItems, resumeChecklist, actionBacklog, handoffMeta, currentStatus, completed, blockers, constraints, tags } = normalizeHandoffFields(parsed as Record<string, unknown>);
     return {
       title: parsed.title || 'Untitled',
       handoffMeta,
@@ -603,6 +637,7 @@ async function transformHandoffOnce(sourceText: string, opts?: { onStream?: Stre
       blockers,
       decisions,
       decisionRationales,
+      totalDecisionsBeforeCap: totalDecisionsBeforeCap > decisions.length ? totalDecisionsBeforeCap : undefined,
       constraints,
       tags,
     };
@@ -750,6 +785,7 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
           blockers: hFields.blockers,
           decisions: hFields.decisions,
           decisionRationales: hFields.decisionRationales,
+          totalDecisionsBeforeCap: hFields.totalDecisionsBeforeCap > hFields.decisions.length ? hFields.totalDecisionsBeforeCap : undefined,
           constraints: hFields.constraints,
           tags: hTags,
         };

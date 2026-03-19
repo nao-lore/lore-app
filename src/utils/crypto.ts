@@ -7,6 +7,32 @@
  * Encrypted values are stored as: "enc:v1:<base64(iv + ciphertext)>"
  * Plaintext values (legacy) are detected by the absence of this prefix
  * and transparently migrated on next save.
+ *
+ * ─── Security Limitations (by design) ───────────────────────────────────
+ *
+ * 1. Device fingerprint is low-entropy (~2^20 combinations).
+ *    It is derived from userAgent, language, screen resolution, color depth,
+ *    and timezone — all of which are easily enumerable.
+ *
+ * 2. SHA-256 without PBKDF2 is fast to brute-force.
+ *    The key derivation uses a single SHA-256 pass rather than a slow KDF
+ *    like PBKDF2 or Argon2. An attacker with the ciphertext can try all
+ *    ~2^20 fingerprint combinations in under a second.
+ *
+ * 3. Plaintext fallback exists for older browsers.
+ *    When crypto.subtle is unavailable (e.g., non-secure contexts), encrypt()
+ *    returns the plaintext as-is. This ensures the app remains functional
+ *    but provides zero encryption in those environments.
+ *
+ * 4. This is intentional: the goal is to protect against casual snooping
+ *    (e.g., someone glancing at DevTools > Application > Local Storage),
+ *    NOT against determined attackers with filesystem or extension access.
+ *
+ * 5. Future improvement: migrate to PBKDF2 with a user-provided passphrase,
+ *    or WebAuthn-derived keys, for stronger protection. This would require
+ *    a UX flow for key setup and recovery.
+ *
+ * ────────────────────────────────────────────────────────────────────────
  */
 
 const ENCRYPTED_PREFIX = 'enc:v1:';

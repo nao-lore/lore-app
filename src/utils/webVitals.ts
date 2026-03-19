@@ -15,6 +15,9 @@ function reportMetric(name: MetricName, value: number): void {
     return;
   }
 
+  // Dynamic import is intentional: @vercel/analytics is also imported in main.tsx for
+  // pageview tracking. The duplicate dynamic import here is fine because the module is
+  // cached by the bundler — it avoids a top-level dependency that would block initial render.
   import('@vercel/analytics').then(({ track }) => {
     track('web-vital', { metric: name, value: rounded });
   }).catch(() => {

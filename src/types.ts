@@ -207,6 +207,7 @@ export interface HandoffResult {
   blockers: string[];         // 注意点・未解決
   decisions: string[];        // 決定事項 (legacy string[] for backward compat)
   decisionRationales?: DecisionWithRationale[];  // active decisions + 理由, max 6
+  totalDecisionsBeforeCap?: number;  // total decisions before capping at 6 (for UI notification)
   constraints: string[];      // 前提・制約
   resumeContext: string[];    // 再開入力 — derived from resumeChecklist
   resumeChecklist?: ResumeChecklistItem[];  // structured resume, max 3

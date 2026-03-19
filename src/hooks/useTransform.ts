@@ -21,6 +21,7 @@ import { recordMetric } from '../aiMetrics';
 import { isStaleMasterNote } from '../utils/staleness';
 import { canTransform, incrementDailyUsage, DAILY_LIMIT_FREE } from '../utils/trialManager';
 import { AIError } from '../errors';
+import type { AIErrorCode } from '../errors';
 import { setTransformActive } from '../utils/transformState';
 import { saveContextForExtension } from '../utils/extensionBridge';
 
@@ -30,6 +31,38 @@ import {
   executeBoth, executeHandoff, executeWorklog, executeHandoffTodo, executeTodoOnly,
   executeDemoBoth, executeDemoHandoffTodo, executeDemoHandoff, executeDemoTodoOnly, executeDemoWorklog,
 } from './useTransformStrategies';
+
+/** Convert a plain Error with string markers to an AIError for structured handling (backward compat). */
+function inferAIErrorFromMessage(raw: string, err: unknown): AIError | null {
+  const markerToCode: [string | RegExp, AIErrorCode][] = [
+    ['[API Key]', 'API_KEY_MISSING'],
+    ['[Rate Limit]', 'RATE_LIMIT'],
+    ['[Overloaded]', 'OVERLOADED'],
+    ['[Truncated]', 'TRUNCATED'],
+    ['[Parse Error]', 'PARSE_ERROR'],
+    ['[Non-JSON Response]', 'PARSE_ERROR'],
+    ['[Cancelled]', 'CANCELLED'],
+    ['[Too Long]', 'TOO_LONG'],
+    ['[Network]', 'NETWORK'],
+    ['Failed to fetch', 'NETWORK'],
+    ['NetworkError', 'NETWORK'],
+    ['[AI Response]', 'EMPTY_RESPONSE'],
+  ];
+  for (const [marker, code] of markerToCode) {
+    if (typeof marker === 'string' && raw.includes(marker)) {
+      return new AIError(code, raw);
+    }
+  }
+  // TypeError with fetch message → NETWORK
+  if (err instanceof TypeError && raw.includes('fetch')) {
+    return new AIError('NETWORK', raw);
+  }
+  // AbortError → TIMEOUT
+  if (err instanceof DOMException && err.name === 'AbortError') {
+    return new AIError('TIMEOUT', raw);
+  }
+  return null;
+}
 
 export type TransformAction = 'both' | 'handoff' | 'worklog' | 'todo_only' | 'worklog_handoff' | 'handoff_todo';
 
@@ -318,32 +351,34 @@ export function useTransform(params: UseTransformParams) {
         };
         setError(codeToMessage[err.code] ?? t('errorGeneric', lang));
       } else {
+        // Try to convert plain Error with marker strings to AIError for structured handling
         const raw = err instanceof Error ? err.message : 'Transform failed.';
-        if (raw.includes('[API Key]')) {
-          setError(t('errorApiKey', lang));
-        } else if (raw.includes('[Rate Limit]')) {
-          const cooldownMatch = raw.match(/\[Rate Limit:(\d+)\]/);
-          if (cooldownMatch) {
-            setError(tf('errorRateLimitWithCooldown', lang, parseInt(cooldownMatch[1], 10)));
+        const converted = inferAIErrorFromMessage(raw, err);
+        if (converted) {
+          const codeToMessage: Record<string, string> = {
+            API_KEY_MISSING: t('errorApiKey', lang),
+            RATE_LIMIT: shouldUseBuiltinApi() ? t('errorRateLimitBuiltin', lang) : t('errorRateLimit', lang),
+            OVERLOADED: t('errorServiceDown', lang),
+            TRUNCATED: t('errorTruncated', lang),
+            PARSE_ERROR: t('errorParseResponse', lang),
+            CANCELLED: '',
+            TOO_LONG: t('errorTooLong', lang),
+            NETWORK: t('errorNetwork', lang),
+            EMPTY_RESPONSE: t('errorEmptyResponse', lang),
+            TIMEOUT: t('errorTimeout', lang),
+            GENERIC: t('errorGeneric', lang),
+          };
+          // Special case: rate limit with cooldown
+          if (converted.code === 'RATE_LIMIT') {
+            const cooldownMatch = raw.match(/\[Rate Limit:(\d+)\]/);
+            if (cooldownMatch) {
+              setError(tf('errorRateLimitWithCooldown', lang, parseInt(cooldownMatch[1], 10)));
+            } else {
+              setError(codeToMessage[converted.code] ?? t('errorGeneric', lang));
+            }
           } else {
-            setError(shouldUseBuiltinApi() ? t('errorRateLimitBuiltin', lang) : t('errorRateLimit', lang));
+            setError(codeToMessage[converted.code] ?? t('errorGeneric', lang));
           }
-        } else if (raw.includes('[Overloaded]')) {
-          setError(t('errorServiceDown', lang));
-        } else if (raw.includes('[Truncated]')) {
-          setError(t('errorTruncated', lang));
-        } else if (raw.includes('[Parse Error]') || raw.includes('[Non-JSON Response]')) {
-          setError(t('errorParseResponse', lang));
-        } else if (raw.includes('[Cancelled]')) {
-          setError('');
-        } else if (raw.includes('[Too Long]')) {
-          setError(t('errorTooLong', lang));
-        } else if (raw.includes('[Network]') || raw.includes('Failed to fetch') || raw.includes('NetworkError') || (err instanceof TypeError && raw.includes('fetch'))) {
-          setError(t('errorNetwork', lang));
-        } else if (raw.includes('[AI Response]')) {
-          setError(t('errorEmptyResponse', lang));
-        } else if (err instanceof DOMException && err.name === 'AbortError') {
-          setError(t('errorTimeout', lang));
         } else if (raw.includes('[API Error]')) {
           setError(t('errorApiGeneric', lang));
         } else if (err instanceof TypeError) {

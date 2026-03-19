@@ -105,16 +105,15 @@ const ALLOWED_ORIGINS = [
   'https://loresync.dev',
   'https://lore-app.vercel.app',
   'https://lore-lp-one.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:4173',
 ];
 
 function corsHeaders(origin: string): Record<string, string> {
-  const allowed = ALLOWED_ORIGINS.some((o) => origin.startsWith(o));
+  const allowed = ALLOWED_ORIGINS.includes(origin);
   return {
     'Access-Control-Allow-Origin': allowed ? origin : ALLOWED_ORIGINS[0],
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400',
   };
 }
 
@@ -204,6 +203,13 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(
       JSON.stringify({ error: 'Missing required fields: system, userMessage' }),
       { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } },
+    );
+  }
+
+  if (typeof system !== 'string' || typeof userMessage !== 'string') {
+    return new Response(
+      JSON.stringify({ error: 'system and userMessage must be strings' }),
+      { status: 400, headers: { ...cors, ...rlHeaders, 'Content-Type': 'application/json' } },
     );
   }
 

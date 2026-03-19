@@ -3,6 +3,7 @@ import { Clipboard, Zap, LayoutDashboard, ArrowRight, Globe, MessageSquare, Gith
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { getTotalSnapshots } from './storage';
+import { redirectToCheckout } from './utils/stripe';
 
 interface LandingPageProps {
   lang: Lang;
@@ -126,6 +127,46 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
         </div>
       </section>
 
+      {/* Privacy / Trust Section — placed early for security-conscious developers */}
+      <section className="lp-section lp-section-alt lp-privacy-section" aria-labelledby="lp-privacy">
+        <div className="lp-privacy-content">
+          <Shield size={32} aria-hidden="true" className="lp-privacy-icon" />
+          <div>
+            <h2 id="lp-privacy" className="lp-section-title" style={{ textAlign: 'left', marginBottom: 8 }}>
+              {t('lpPrivacyTitle', lang)}
+            </h2>
+            <p className="lp-privacy-desc">
+              {t('lpPrivacyDesc', lang)}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Before / After Comparison */}
+      <section className="lp-section" aria-labelledby="lp-before-after">
+        <h2 id="lp-before-after" className="lp-section-title">
+          {t('lpBeforeAfterTitle', lang)}
+        </h2>
+        <div className="lp-before-after-grid">
+          <div className="lp-before-after-col lp-before-col">
+            <h3 className="lp-before-after-label lp-before-label">{t('lpBeforeLabel', lang)}</h3>
+            <ul className="lp-before-after-list">
+              <li>{t('lpBefore1', lang)}</li>
+              <li>{t('lpBefore2', lang)}</li>
+              <li>{t('lpBefore3', lang)}</li>
+            </ul>
+          </div>
+          <div className="lp-before-after-col lp-after-col">
+            <h3 className="lp-before-after-label lp-after-label">{t('lpAfterLabel', lang)}</h3>
+            <ul className="lp-before-after-list">
+              <li>{t('lpAfter1', lang)}</li>
+              <li>{t('lpAfter2', lang)}</li>
+              <li>{t('lpAfter3', lang)}</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section className="lp-section lp-section-alt" aria-labelledby="lp-features">
         <h2 id="lp-features" className="lp-section-title">
@@ -147,7 +188,7 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
         </div>
       </section>
 
-      {/* Task 4: Teams Coming Soon */}
+      {/* Teams Coming Soon */}
       <section className="lp-section" aria-labelledby="lp-teams">
         <h2 id="lp-teams" className="lp-section-title">
           <Users size={24} aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: 8 }} />
@@ -167,23 +208,8 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
         </div>
       </section>
 
-      {/* Task 1: Privacy / Trust Section */}
-      <section className="lp-section lp-section-alt lp-privacy-section" aria-labelledby="lp-privacy">
-        <div className="lp-privacy-content">
-          <Shield size={32} aria-hidden="true" className="lp-privacy-icon" />
-          <div>
-            <h2 id="lp-privacy" className="lp-section-title" style={{ textAlign: 'left', marginBottom: 8 }}>
-              {t('lpPrivacyTitle', lang)}
-            </h2>
-            <p className="lp-privacy-desc">
-              {t('lpPrivacyDesc', lang)}
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* Social Proof / Stats */}
-      <section className="lp-section" aria-labelledby="lp-social-proof">
+      <section className="lp-section lp-section-alt" aria-labelledby="lp-social-proof">
         <h2 id="lp-social-proof" className="lp-section-title">
           {t('lpSocialProofTitle', lang)}
         </h2>
@@ -204,7 +230,7 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
       </section>
 
       {/* Pricing Section */}
-      <section className="lp-section lp-section-alt" aria-labelledby="lp-pricing">
+      <section className="lp-section" aria-labelledby="lp-pricing">
         <h2 id="lp-pricing" className="lp-section-title">
           {t('lpPricingTitle', lang)}
         </h2>
@@ -213,10 +239,13 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
             <h3 className="lp-pricing-plan">{t('lpPricingFree', lang)}</h3>
             <p className="lp-pricing-desc">{t('lpPricingFreeDesc', lang)}</p>
           </div>
-          <div className="lp-pricing-card lp-pricing-card-pro" onClick={() => { if (typeof gtag === 'function') gtag('event', 'pro_click'); }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (typeof gtag === 'function') gtag('event', 'pro_click'); } }}>
+          <div className="lp-pricing-card lp-pricing-card-pro" onClick={() => { if (typeof gtag === 'function') gtag('event', 'pro_click'); redirectToCheckout('monthly'); }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (typeof gtag === 'function') gtag('event', 'pro_click'); redirectToCheckout('monthly'); } }}>
             <h3 className="lp-pricing-plan">{t('lpPricingPro', lang)}</h3>
             <p className="lp-pricing-price">{t('lpPricingProPrice', lang)}</p>
-            <p className="lp-pricing-annual">{t('lpPricingAnnual', lang)}</p>
+            <p className="lp-pricing-annual">
+              {t('lpPricingAnnual', lang)}
+              <span className="lp-pricing-save-badge">{t('lpPricingAnnualBadge', lang)}</span>
+            </p>
             <p className="lp-pricing-desc">{t('lpPricingProDesc', lang)}</p>
           </div>
         </div>
