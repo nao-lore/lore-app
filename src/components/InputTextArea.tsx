@@ -107,7 +107,7 @@ export const InputTextArea = memo(function InputTextArea({
       {!text.trim() && filesCount === 0 && !loading && (
         <button
           type="button"
-          className={`try-sample-btn try-sample-btn-prominent${getTotalSnapshots() === 0 ? ' try-sample-btn-pulse' : ''}`}
+          className={`try-sample-btn${getTotalSnapshots() === 0 ? ' try-sample-btn-prominent try-sample-btn-pulse' : ''}`}
           onClick={onLoadDemo}
         >
           {t('trySampleConversation', lang)}
