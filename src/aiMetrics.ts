@@ -13,6 +13,7 @@ export interface TransformMetric {
   todosCount: number;
   durationMs: number;
   cached: boolean;
+  qualityWarnings?: string[];
 }
 
 function loadMetrics(): TransformMetric[] {

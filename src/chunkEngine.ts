@@ -286,6 +286,11 @@ async function callApiRaw(
   // Step 1: Try local JSON repair first (no API call)
   const repaired = tryRepairJson(rawText);
   if (repaired) return repaired;
+  if (import.meta.env.DEV) console.warn('[chunkEngine] repair_stage_1_failed: tryRepairJson returned null');
+  recordMetric({
+    timestamp: Date.now(), action: 'repair_stage_1_failed', inputLength: rawText.length,
+    outputValid: false, decisionsCount: 0, todosCount: 0, durationMs: 0, cached: false,
+  });
 
   // Step 2: Detect non-JSON — no '{' at all, model returned prose
   const firstBrace = rawText.indexOf('{');
@@ -296,7 +301,11 @@ async function callApiRaw(
         const schemaHint = extractSchemaHint(system);
         return await reformatToJson(apiKey, rawText, schemaHint);
       } catch (err) {
-        if (import.meta.env.DEV) console.warn('[chunkEngine] reformat fallback failed:', err);
+        if (import.meta.env.DEV) console.warn('[chunkEngine] repair_all_failed: reformat fallback failed:', err);
+        recordMetric({
+          timestamp: Date.now(), action: 'repair_all_failed', inputLength: rawText.length,
+          outputValid: false, decisionsCount: 0, todosCount: 0, durationMs: 0, cached: false,
+        });
       }
     }
     throw new Error('[Non-JSON Response]');
@@ -307,7 +316,11 @@ async function callApiRaw(
     const jsonText = extractJson(rawText);
     return JSON.parse(jsonText) as PartialResult;
   } catch (err) {
-    if (import.meta.env.DEV) console.warn('[chunkEngine] extractJson/parse failed:', err);
+    if (import.meta.env.DEV) console.warn('[chunkEngine] repair_stage_2_failed: extractJson/parse failed:', err);
+    recordMetric({
+      timestamp: Date.now(), action: 'repair_stage_2_failed', inputLength: rawText.length,
+      outputValid: false, decisionsCount: 0, todosCount: 0, durationMs: 0, cached: false,
+    });
     const stripped = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
     const hasCloseBrace = stripped.lastIndexOf('}') > stripped.indexOf('{');
     if (!hasCloseBrace) {

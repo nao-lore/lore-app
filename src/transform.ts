@@ -7,6 +7,7 @@ import { SYSTEM_PROMPT, HANDOFF_PROMPT, HANDOFF_PROMPT_COMPACT, BOTH_PROMPT, TOD
 import { parseJsonInWorker } from './workers/parseHelper';
 import { safeParse, WorklogResultSchema, HandoffResultSchema, TodoOnlyResultSchema } from './schemas';
 import { AIError } from './errors';
+import { recordMetric } from './aiMetrics';
 import { parseJsonWithRepair } from './utils/jsonRepair';
 import { fuzzyDedupStrings } from './utils/fuzzyDedup';
 import { normalizeInput } from './utils/normalizeInput';
@@ -71,7 +72,7 @@ export function detectLanguage(text: string): 'ja' | 'en' {
   const jaPattern = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3400-\u4DBF]|\p{Script=Han}/gu;
   const jaMatches = text.match(jaPattern);
   const jaRatio = (jaMatches?.length ?? 0) / text.length;
-  return jaRatio > 0.1 ? 'ja' : 'en';
+  return jaRatio > 0.15 ? 'ja' : 'en';
 }
 
 // =============================================================================
@@ -112,6 +113,7 @@ function validateWorklogResult(
   sourceText: string,
 ): void {
   const charLen = sourceText.length;
+  const qualityWarnings: string[] = [];
 
   // Cap decisions at 6
   if (parsed.decisions && parsed.decisions.length > 6) {
@@ -119,13 +121,17 @@ function validateWorklogResult(
   }
 
   // Warn if too few tags for non-trivial conversations
-  if (import.meta.env.DEV && parsed.tags && parsed.tags.length < 3 && charLen > 500) {
-    console.warn(`[Transform Validation] tags.length=${parsed.tags.length} for ${charLen}-char input — expected >= 3`);
+  if (parsed.tags && parsed.tags.length < 3 && charLen > 500) {
+    const warn = `tags.length=${parsed.tags.length} for ${charLen}-char input — expected >= 3`;
+    if (import.meta.env.DEV) console.warn(`[Transform Validation] ${warn}`);
+    qualityWarnings.push(warn);
   }
 
   // Warn if today is empty for long conversations
-  if (import.meta.env.DEV && parsed.today && parsed.today.length === 0 && charLen > 2000) {
-    console.warn(`[Transform Validation] today is empty for ${charLen}-char input — expected at least 1 item`);
+  if (parsed.today && parsed.today.length === 0 && charLen > 2000) {
+    const warn = `today is empty for ${charLen}-char input — expected at least 1 item`;
+    if (import.meta.env.DEV) console.warn(`[Transform Validation] ${warn}`);
+    qualityWarnings.push(warn);
   }
 
   // Fix generic / empty titles
@@ -135,6 +141,21 @@ function validateWorklogResult(
     if (fallback) {
       parsed.title = fallback;
     }
+  }
+
+  // Record quality warnings in aiMetrics (A4)
+  if (qualityWarnings.length > 0) {
+    recordMetric({
+      timestamp: Date.now(),
+      action: 'quality_warning',
+      inputLength: charLen,
+      outputValid: true,
+      decisionsCount: 0,
+      todosCount: 0,
+      durationMs: 0,
+      cached: false,
+      qualityWarnings,
+    });
   }
 }
 
@@ -186,13 +207,18 @@ function validateHandoffResult(
   }
 
   // Validate resumeChecklist items have required whyNow/ifSkipped
+  const qualityWarnings: string[] = [];
   if (Array.isArray(parsed.resumeChecklist)) {
     for (const item of parsed.resumeChecklist) {
       if (!item.whyNow || !item.whyNow.trim()) {
-        logValidationWarning(`resumeChecklist item "${item.action}" has empty whyNow`);
+        const warn = `resumeChecklist item "${item.action}" has empty whyNow`;
+        logValidationWarning(warn);
+        qualityWarnings.push(warn);
       }
       if (!item.ifSkipped || !item.ifSkipped.trim()) {
-        logValidationWarning(`resumeChecklist item "${item.action}" has empty ifSkipped`);
+        const warn = `resumeChecklist item "${item.action}" has empty ifSkipped`;
+        logValidationWarning(warn);
+        qualityWarnings.push(warn);
       }
     }
   }
@@ -210,6 +236,21 @@ function validateHandoffResult(
   // Validate tag count
   if (parsed.tags && parsed.tags.length < 3 && charLen > 500) {
     logValidationWarning(`tags.length=${parsed.tags.length} for ${charLen}-char input — expected >= 3`);
+  }
+
+  // Record quality warnings in aiMetrics (A1/A4)
+  if (qualityWarnings.length > 0) {
+    recordMetric({
+      timestamp: Date.now(),
+      action: 'quality_warning',
+      inputLength: charLen,
+      outputValid: true,
+      decisionsCount: 0,
+      todosCount: 0,
+      durationMs: 0,
+      cached: false,
+      qualityWarnings,
+    });
   }
 }
 
@@ -289,12 +330,13 @@ async function withRetry<T>(
       return await callWithRetry(fn, 0); // delegate rate limit retries to retryManager
     } catch (err) {
       if (attempt === MAX_RETRIES) throw err;
+      const isRetryableByFlag = err instanceof AIError && err.retryable;
       const isParseError = err instanceof AIError && err.code === 'PARSE_ERROR';
       const isRateLimit = err instanceof Error && (
         err.message.includes('429') || err.message.includes('503') ||
         err.message.includes('[Overloaded]') || err.message.includes('[Rate Limit]')
       );
-      if (!isParseError && !isRateLimit) throw err;
+      if (!isRetryableByFlag && !isParseError && !isRateLimit) throw err;
       if (import.meta.env.DEV) console.warn(`[${label}] ${isParseError ? 'Parse' : 'Rate limit'} error, retry ${attempt + 1}/${MAX_RETRIES}...`);
       const delayMatch = err instanceof Error ? err.message.match(/\[Rate Limit:(\d+)\]/) : null;
       const delay = delayMatch ? parseInt(delayMatch[1], 10) * 1000 : 1000 * Math.pow(2, attempt);

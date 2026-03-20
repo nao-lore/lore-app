@@ -107,9 +107,14 @@ describe('detectLanguage', () => {
     expect(detectLanguage('This is a test with only English text and numbers 123.')).toBe('en');
   });
 
-  it('detects Japanese when ratio exceeds 10%', () => {
-    // 5 Japanese chars + ~40 ASCII chars => ~12% ratio => 'ja'
-    expect(detectLanguage('Hello world this is a test テスト確認中')).toBe('ja');
+  it('detects English when Japanese ratio is between 10-15% (A11 threshold)', () => {
+    // 6 Japanese chars (テスト確認中) in ~50 total chars => ~12% ratio => 'en' (below 15% threshold)
+    expect(detectLanguage('Hello world this is a longer test sentence テスト確認中')).toBe('en');
+  });
+
+  it('detects Japanese when ratio is above 15%', () => {
+    // Many Japanese chars relative to total => above 15% threshold => 'ja'
+    expect(detectLanguage('テスト確認中のReact component')).toBe('ja');
   });
 
   it('returns en for empty string', () => {
