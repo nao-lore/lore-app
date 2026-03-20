@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, lazy, Suspense } from 'react';
-import { Menu, ChevronUp, ArrowLeft, Download } from 'lucide-react';
+import { Menu, ChevronUp, ArrowLeft, Download, X } from 'lucide-react';
 import Sidebar from './Sidebar';
 import CommandPalette from './CommandPalette';
 import BottomNav from './BottomNav';
@@ -78,6 +78,7 @@ export default function App() {
 
   // P8: Capture beforeinstallprompt to prevent duplicate install banners
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installDismissed, setInstallDismissed] = useState(() => { try { return sessionStorage.getItem('pwa-install-dismissed') === '1'; } catch { return false; } });
   useEffect(() => {
     if (isStandalone) return; // already installed
     const handler = (e: Event) => {
@@ -140,11 +141,16 @@ export default function App() {
           <span>{t('pwaBackButton', s.lang)}</span>
         </button>
       )}
-      {!isStandalone && deferredInstallPrompt && (
-        <button className="pwa-install-btn" onClick={handleInstallClick} aria-label={t('pwaInstallApp', s.lang)}>
-          <Download size={16} />
-          <span>{t('pwaInstallApp', s.lang)}</span>
-        </button>
+      {!isStandalone && deferredInstallPrompt && !installDismissed && (
+        <div className="pwa-install-wrapper">
+          <button className="pwa-install-btn" onClick={handleInstallClick} aria-label={t('pwaInstallApp', s.lang)}>
+            <Download size={16} />
+            <span>{t('pwaInstallApp', s.lang)}</span>
+          </button>
+          <button className="pwa-install-dismiss" onClick={() => { setInstallDismissed(true); try { sessionStorage.setItem('pwa-install-dismissed', '1'); } catch {} }} aria-label="Dismiss install prompt">
+            <X size={12} />
+          </button>
+        </div>
       )}
       <main id="main-content" tabIndex={-1} ref={scrollRef} data-main-scroll className="main-content">
         {demoMode && <DemoBanner lang={s.lang} onExitDemo={() => { setDemoMode(false); setDemoModeState(false); s.setLogsVersion((v: number) => v + 1); }} />}

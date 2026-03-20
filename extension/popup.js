@@ -200,10 +200,21 @@ async function loadContexts() {
 
       const timeAgo = ctx.lastUpdated ? getRelativeTime(new Date(ctx.lastUpdated)) : '';
 
-      card.innerHTML =
-        `<div class="project-name">📋 ${escapeHtml(ctx.projectName || 'Untitled')}</div>` +
-        `<div class="project-meta">${escapeHtml(ctx.handoffTitle || '')}${timeAgo ? ' · ' + timeAgo : ''}</div>` +
-        `<div class="project-summary">${escapeHtml(ctx.summary || '')}</div>`;
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'project-name';
+      nameDiv.textContent = '📋 ' + (ctx.projectName || 'Untitled');
+
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'project-meta';
+      metaDiv.textContent = (ctx.handoffTitle || '') + (timeAgo ? ' · ' + timeAgo : '');
+
+      const summaryDiv = document.createElement('div');
+      summaryDiv.className = 'project-summary';
+      summaryDiv.textContent = ctx.summary || '';
+
+      card.appendChild(nameDiv);
+      card.appendChild(metaDiv);
+      card.appendChild(summaryDiv);
 
       const btn = document.createElement('button');
       btn.className = 'btn-inject';

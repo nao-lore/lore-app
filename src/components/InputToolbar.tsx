@@ -26,8 +26,8 @@ export default memo(function InputToolbar({
   loading, files, setFiles, fileImportRef, handleFiles, lang, projects, showToast,
 }: InputToolbarProps) {
   return (
-    <div className="flex-col input-toolbar">
-      <div className="flex-row flex-wrap gap-10">
+    <div className="input-toolbar">
+      <div className="input-toolbar-row">
         <div className="mode-selector" role="radiogroup" aria-label={t('ariaTransformMode', lang)}>
           {(['handoff', 'handoff_todo', 'todo_only'] as TransformAction[]).map((a) => {
             const isActive = transformAction === a;

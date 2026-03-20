@@ -62,7 +62,7 @@ async function updateBadge(tabId, url) {
 
     if (count > 0) {
       await chrome.action.setBadgeBackgroundColor({ color: BADGE_COLOR, tabId });
-      await chrome.action.setBadgeText({ text: String(count), tabId });
+      await chrome.action.setBadgeText({ text: count >= 10 ? '9+' : String(count), tabId });
     } else {
       await chrome.action.setBadgeText({ text: '', tabId });
     }
@@ -111,8 +111,16 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 // Message handling
 // ---------------------------------------------------------------------------
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  handleMessage(message, _sender)
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // E6: Verify sender is trusted (own extension or loresync.dev)
+  const isSelf = sender.id === chrome.runtime.id;
+  const isLore = sender.url && sender.url.includes('loresync.dev');
+  if (!isSelf && !isLore) {
+    sendResponse({ error: 'untrusted' });
+    return true;
+  }
+
+  handleMessage(message, sender)
     .then(sendResponse)
     .catch((err) => {
       console.error('[Lore] Message handler error:', err);
@@ -183,7 +191,36 @@ async function handleMessage(message, sender) {
       if (typeof contexts !== 'object' || contexts === null || Array.isArray(contexts)) {
         return { error: 'contexts must be a non-null object keyed by projectId' };
       }
+
+      // E5: Check storage capacity before writing (8MB limit for chrome.storage.local)
+      const MAX_BYTES = 8 * 1024 * 1024; // 8MB
+      try {
+        const bytesInUse = await chrome.storage.local.getBytesInUse(null);
+        const dataSize = new Blob([JSON.stringify(contexts)]).size;
+        if (bytesInUse + dataSize > MAX_BYTES) {
+          // Trim oldest contexts until within budget
+          const entries = Object.entries(contexts);
+          entries.sort((a, b) => new Date(a[1].lastUpdated || 0) - new Date(b[1].lastUpdated || 0));
+          while (entries.length > 0) {
+            entries.shift(); // Remove oldest
+            const trimmed = Object.fromEntries(entries);
+            const trimmedSize = new Blob([JSON.stringify(trimmed)]).size;
+            if (bytesInUse + trimmedSize <= MAX_BYTES) {
+              Object.keys(contexts).forEach((k) => {
+                if (!trimmed[k]) delete contexts[k];
+              });
+              break;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[Lore] Storage capacity check failed:', err);
+      }
+
       await chrome.storage.local.set({ [STORAGE_KEY]: contexts });
+      if (chrome.runtime.lastError) {
+        return { error: 'Storage write failed: ' + chrome.runtime.lastError.message };
+      }
 
       // Update badge on all currently open AI-site tabs
       const tabs = await chrome.tabs.query({});
