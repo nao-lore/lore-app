@@ -475,6 +475,7 @@ function LandingPage({ lang, onGetStarted, onChangeLang }: LandingPageProps) {
             {t('lpFooterFeedback', lang)}
           </a>
         </div>
+        <p className="lp-footer-refund">{t('lpFooterRefund', lang)}</p>
         <p className="lp-footer-copy">Lore</p>
       </footer>
     </div>

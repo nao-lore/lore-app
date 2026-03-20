@@ -2124,6 +2124,16 @@ const labels = {
     ko: '피드백',
     pt: 'Feedback',
   },
+  lpFooterRefund: {
+    ja: '30日間返金保証。理由は問いません。',
+    en: '30-day money-back guarantee. No questions asked.',
+    es: 'Garantía de devolución de 30 días. Sin preguntas.',
+    fr: 'Garantie de remboursement de 30 jours. Sans condition.',
+    de: '30-Tage-Geld-zurück-Garantie. Ohne Rückfragen.',
+    zh: '30天无条件退款保证。',
+    ko: '30일 환불 보장. 조건 없음.',
+    pt: 'Garantia de reembolso de 30 dias. Sem perguntas.',
+  },
 
   // Stripe / Pro plan
   proActive: { ja: 'Proプラン利用中', en: 'Pro plan active', es: 'Plan Pro activo', fr: 'Plan Pro actif', de: 'Pro-Plan aktiv', zh: 'Pro方案已激活', ko: 'Pro 플랜 활성', pt: 'Plano Pro ativo' },
