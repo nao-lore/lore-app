@@ -116,8 +116,6 @@ const GEMINI_MODELS = ['gemini-2.5-flash'];
 
 const ALLOWED_ORIGINS = [
   'https://loresync.dev',
-  'https://lore-app.vercel.app',
-  'https://lore-lp-one.vercel.app',
 ];
 
 function corsHeaders(origin: string): Record<string, string> {
