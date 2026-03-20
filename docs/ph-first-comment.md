@@ -1,20 +1,21 @@
 # Product Hunt — First Comment
 
-Hey everyone! I'm Nao, a 21-year-old solo dev from Japan. I dropped out of university and have zero formal coding background — I built Lore entirely with Claude Code over the span of about 5 days.
+If you use AI for anything beyond one-off questions, you know the feeling: you open a new conversation, and the AI has no idea what you were working on yesterday. You re-explain the project. You re-state the decisions. You try to remember where you left off. It's like onboarding a new teammate every single day.
 
-**The problem that drove me crazy:** Every time I start a new AI conversation, I lose all context. The AI forgets what we built yesterday, what decisions we made, what's left to do. I was copy-pasting notes into every session just to get back to where I left off. It felt broken.
+That's the problem Lore solves. Here's how it works in practice:
 
-**So I built Lore.** It takes your AI conversation exports (Claude, ChatGPT, Gemini) and transforms them into structured project docs — handoff snapshots, worklogs, TODOs, and master notes. Think of it as project memory that survives between sessions.
+**Step 1: Capture.** Paste a conversation from Claude, ChatGPT, or Gemini into Lore — or use the Chrome extension to capture it directly from the chat interface.
 
-A few things I'm proud of:
+**Step 2: Extract.** Lore processes the conversation and pulls out structured context: what was decided (and why), open TODOs with priorities, blockers, and a resume checklist that tells you exactly where to pick up.
 
-- Fully open source: [github.com/nao-lore/lore-app](https://github.com/nao-lore/lore-app)
-- 732 tests (I'm slightly obsessive about reliability)
-- Works offline as a PWA — your data stays on your device
-- Supports 8 languages
+**Step 3: Continue.** Next time you start a session, the Chrome extension injects your project context into the AI with one click. No copy-pasting, no re-explaining.
 
-**PH-exclusive offer:** PH users get Pro free for 3 months — just comment here and I'll set you up.
+Each snapshot feeds into a project dashboard, so over weeks and months you build up a structured history of your AI-assisted work. You can see what's stale, what's blocked, and what's progressing — across all your projects and providers.
 
-Try it at [loresync.dev](https://loresync.dev?utm_source=producthunt) and let me know what you think. I read every piece of feedback.
+**On the Chrome extension:** it works with Claude, ChatGPT, and Gemini. One click to capture a conversation, one click to inject context back. It's the piece that closes the loop and makes the whole workflow feel seamless.
 
-What's your biggest frustration with AI context loss? I'd love to hear how you deal with it.
+**On the tech side:** Lore is a React + TypeScript PWA built with Vite. It runs entirely in your browser — no backend, no database, no account. Your data stays on your device in IndexedDB. The codebase has 775 tests and is fully open source: [github.com/nao-lore/lore-app](https://github.com/nao-lore/lore-app)
+
+**PH exclusive:** Use code PHLORE2026 for 3 months of Pro, completely free. No credit card, no strings.
+
+I built this solo because I needed it for my own workflow. If you work with AI regularly, I think you'll find it useful too. Happy to answer any questions here.
