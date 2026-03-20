@@ -70,7 +70,8 @@ RESUME CHECKLIST (max 3): First things to check/verify/decide when resuming. NOT
   whyNow & ifSkipped: MANDATORY — never null. Be specific about downstream consequences.
 
 NEXT ACTIONS (max 4): Blocking tasks only. "action": VERB + FILE/FUNCTION + SPECIFIC CHANGE.
-  whyImportant: infer from context. Non-blocking tasks → actionBacklog.
+  whyImportant: infer from context. If you cannot infer whyImportant from context, write "Priority not stated" — NEVER return null or empty string.
+  Non-blocking tasks → actionBacklog.
   FORBIDDEN: "続きを進める", "Continue working"
 
 ACTION BACKLOG (max 7): Important but not blocking. User-mentioned items only. Not a task dump.
@@ -82,6 +83,8 @@ BLOCKERS: 0-3 bullets. Unresolved risks/concerns. Not tasks, not constraints, no
 DECISIONS (max 6): Active decisions constraining future work. Each {"decision","rationale"}.
   Finality markers: "decided","will go with" / "に決めた","でいく","にする"
   NOT a decision: "OK sure, X sounds fine" / "もう少し調べてから判断する" (deferral)
+  GOOD rationale: "Chosen for scalability over SQLite" / "Team agreed async-first reduces meetings" / "SSR architecture makes Cookie-based sessions natural"
+  BAD rationale (NEVER output these): null, "", "because they decided", "it was discussed"
 
 CONSTRAINTS: 0-3 stable rules. Not risks (→ blockers), not tasks (→ nextActions).
 
@@ -140,7 +143,7 @@ TITLE: Same as worklog title (reuse). title MUST be specific. NEVER generic like
 HANDOFF META: sessionFocus (1 sentence: what to move forward), whyThisSession (1 sentence: why this matters now — infer from context), timePressure (1 sentence: phase-level urgency; FORBIDDEN: vague "急ぎ"/"重要" alone — must state WHAT creates pressure; INFERENCE ALLOWED: convert weak expressions like "今週中に"/"早めに" into concrete phase statements using context; Japanese examples: "来週月曜までに" → "Deadline: next Monday (来週月曜)", "今週中に" → "Must complete this week", "急ぎで" → "Urgent, needs immediate attention"; null ONLY if no pressure mentioned or inferable).
 CURRENT STATUS (今どこ？): PROJECT STATE right now. 3-5 bullets. ONLY present-tense — NO completed actions → COMPLETED. currentStatus MUST use present tense ONLY. NEVER use past tense (completed/完了した). Past items belong in 'completed' array, not currentStatus. BAD: "The header redesign was completed" → WRONG. GOOD: "Header redesign is done, focus is now on responsive layout".
 RESUME CHECKLIST (max 3): What to check/verify/decide FIRST when resuming. Each {"action":"string","whyNow":"string","ifSkipped":"string"}. whyNow and ifSkipped are MANDATORY — NEVER null. Infer from context: what downstream task depends on this? What breaks if skipped? NOT a copy of nextActions.
-NEXT ACTIONS (immediate only, max 4): Tasks that MUST be done now or next work is blocked. Same object format. whyImportant: infer from context (what depends on this?), null only if truly no context. priorityReason: infer ordering signal. Non-blocking tasks → actionBacklog.
+NEXT ACTIONS (immediate only, max 4): Tasks that MUST be done now or next work is blocked. Same object format. whyImportant: infer from context (what depends on this?). If you cannot infer whyImportant from context, write "Priority not stated" — NEVER return null or empty string. priorityReason: infer ordering signal. Non-blocking tasks → actionBacklog.
 ACTION BACKLOG (max 7): Important but not immediately blocking. Same object format. whyImportant: why is this in the backlog? FORBIDDEN: 20+ items. actionBacklog must ONLY contain items the user explicitly mentioned as future work. Do NOT include assistant suggestions that the user did not acknowledge.
 COMPLETED (終わったこと): MANDATORY. All completed work. 2-6 bullets. FORBIDDEN: "確認した", "特定した".
 BLOCKERS: Risks still unresolved at end. 0-3 bullets.
@@ -149,6 +152,8 @@ DECISIONS (active only, max 6): Only decisions still constraining future work. H
   - NOT a decision: "OK sure, X sounds fine" → NOT a decision. User must RESTATE commitment.
   - NOT a decision: "Maybe later, not a priority now" → deferral, not commitment.
   - NOT a decision: "もう少し調べてから判断する" → explicit deferral, not a decision.
+  GOOD rationale: "Chosen for scalability over SQLite" / "Team agreed async-first reduces meetings" / "SSR architecture makes Cookie-based sessions natural"
+  BAD rationale (NEVER output these): null, "", "because they decided", "it was discussed"
 CONSTRAINTS: Stable rules. 0-3 bullets.
 TAGS: Can reuse worklog tags. tags MUST contain at least 3 items for any non-trivial conversation.
 
@@ -163,7 +168,12 @@ If a PROJECTS list is provided, match the log to the best project.
 - Assistant suggestions are NOT decisions/TODOs unless user explicitly accepts them.
 - Japanese input → Japanese output (keep file names and code terms in English).
 - English input → English output.
-- Output the ENTIRE JSON object. Start with { and end with }.`;
+- Output the ENTIRE JSON object. Start with { and end with }.
+
+=== GOLDEN EXAMPLE (both mode) ===
+Input: "User: Let's use Redis for caching — Memcached doesn't support TTL per key. I also finished the user login endpoint in auth.ts. Next I need to write integration tests for the cache layer."
+Output:
+{"worklog":{"title":"Cache layer: Redis selection + auth endpoint","today":["Selected Redis over Memcached for caching","Implemented user login endpoint in auth.ts","Planned integration tests for cache layer"],"decisions":["Use Redis for caching"],"todo":["Write integration tests for cache layer"],"relatedProjects":[],"tags":["caching","Redis","authentication","backend"]},"handoff":{"title":"Cache layer: Redis selection + auth endpoint","handoffMeta":{"sessionFocus":"Cache infrastructure and auth endpoint","whyThisSession":"Cache layer selection unblocks downstream API work","timePressure":null},"currentStatus":["Redis is selected as caching backend. Integration tests for cache layer are not yet written.","User login endpoint in auth.ts is complete."],"resumeChecklist":[{"action":"Verify Redis instance is accessible and configured","whyNow":"Integration tests require a running Redis instance","ifSkipped":"Tests will fail or be skipped, delaying cache validation"}],"nextActions":[{"action":"Write integration tests for cache layer","whyImportant":"Validates Redis integration before production deployment","priorityReason":"Blocks deployment","dueBy":null,"dependsOn":null}],"actionBacklog":[],"completed":["Implemented user login endpoint in auth.ts","Selected Redis over Memcached for caching"],"blockers":[],"decisions":[{"decision":"Use Redis for caching","rationale":"Memcached doesn't support TTL per key"}],"constraints":[],"tags":["caching","Redis","authentication","backend"]},"classification":{"projectId":null,"confidence":0}}`;
 
 export const TODO_ONLY_PROMPT = VERSION_HEADER + `You extract a TODO list from an AI chat history.
 You are strict and conservative. You only extract what the USER explicitly committed to doing.
@@ -237,7 +247,12 @@ Field rules:
 - decisions: Only items with explicit commitment markers ("decided", "でいく", "にする"). Empty [] if none.
 - todo: Only next actions the user explicitly committed to. Empty [] if none.
 
-Language: Match input language. Japanese input → Japanese output. English → English.`;
+Language: Match input language. Japanese input → Japanese output. English → English.
+
+GOLDEN EXAMPLE:
+Input: "User: Changed CHUNK_TARGET from 25k to 15k in chunkEngine.ts. Also decided to use streaming for all providers. Assistant: Good choice. User: Next I need to add retry logic for 429 errors."
+Expected:
+{"title":"Chunk engine tuning","today":["Changed CHUNK_TARGET from 25k to 15k in chunkEngine.ts","Decided to use streaming for all providers"],"decisions":["Use streaming for all providers"],"todo":["Add retry logic for 429 errors"]}`;
 
 export const CHUNK_HANDOFF_EXTRACT_PROMPT = `You are a JSON extraction machine. You read chat logs and output structured JSON. Nothing else.
 
@@ -274,6 +289,8 @@ Field rules:
   - priorityReason: Infer ordering signal from conversation flow. null only if all tasks equally urgent.
 - actionBacklog (max 7): Important but not immediately blocking. Same format. whyImportant should explain why this task is in the backlog.
 - decisions (active only, max 6): Only decisions still constraining future work. Each {"decision":"string","rationale":"string or null"}. EXCLUDE completed/overturned decisions.
+  GOOD rationale: "Chosen for scalability over SQLite" / "Team agreed async-first reduces meetings"
+  BAD rationale (NEVER output these): null, "", "because they decided", "it was discussed"
 - blockers: Risks still unresolved at end. 0-3 bullets.
 - constraints: Stable rules. 0-3 bullets.
 
@@ -286,7 +303,12 @@ GOLDEN EXAMPLE — chunk extraction output:
 Input: "User: Let's switch the cache layer from Redis to Memcached. Assistant: OK. User: Also need to update the TTL to 300s in config.yaml."
 
 Expected:
-{"title":"Cache layer migration","currentStatus":["Cache layer is switching from Redis to Memcached. TTL update to 300s in config.yaml is pending."],"nextActions":[{"action":"Update TTL to 300s in config.yaml","whyImportant":"Config must match new Memcached setup","priorityReason":null,"dueBy":null,"dependsOn":null}],"actionBacklog":[],"decisions":[{"decision":"Switch cache from Redis to Memcached","rationale":null}],"blockers":[],"constraints":[]}`;
+{"title":"Cache layer migration","currentStatus":["Cache layer is switching from Redis to Memcached. TTL update to 300s in config.yaml is pending."],"nextActions":[{"action":"Update TTL to 300s in config.yaml","whyImportant":"Config must match new Memcached setup","priorityReason":null,"dueBy":null,"dependsOn":null}],"actionBacklog":[],"decisions":[{"decision":"Switch cache from Redis to Memcached","rationale":null}],"blockers":[],"constraints":[]}
+
+GOLDEN EXAMPLE 2 — partial context chunk:
+Input: "User: auth.tsのミドルウェアでCORS問題が出てた。credentials: trueを追加して解決した。次はユニットテストを書く。"
+Expected:
+{"title":"Auth middleware CORS fix","currentStatus":["Auth middleware CORS issue is resolved. Unit tests for auth.ts are pending."],"nextActions":[{"action":"Write unit tests for auth.ts middleware","whyImportant":"Validates CORS fix and prevents regression","priorityReason":null,"dueBy":null,"dependsOn":null}],"actionBacklog":[],"decisions":[],"blockers":[],"constraints":[]}`;
 
 
 export const CHUNK_HANDOFF_EXTRACT_ULTRA_PROMPT = `JSON extraction machine. Output ONLY valid JSON. No text before/after. No markdown.
@@ -336,7 +358,12 @@ handoff field rules:
 - constraints: Stable rules. 0-3 bullets.
 - Do NOT output handoffMeta or resumeChecklist — those are generated at final merge.
 
-Language: Match input language. Japanese input → Japanese output. English → English.`;
+Language: Match input language. Japanese input → Japanese output. English → English.
+
+GOLDEN EXAMPLE:
+Input: "User: PostgreSQLでいく。JOINが必要だから。PgBouncerも設定する必要がある。"
+Expected:
+{"worklog":{"title":"DB選定: PostgreSQL採用","today":["PostgreSQLをAnalytics DBとして選定","PgBouncer設定の必要性を確認"],"decisions":["PostgreSQLを採用"],"todo":["PgBouncer接続プーリングを設定"],"relatedProjects":[],"tags":["database","PostgreSQL","infrastructure"]},"handoff":{"title":"DB選定: PostgreSQL採用","currentStatus":["PostgreSQLが選定済み。PgBouncer設定は未着手。"],"nextActions":[{"action":"PgBouncer接続プーリングを設定","whyImportant":"本番環境のコネクション管理に必須","priorityReason":null,"dueBy":null,"dependsOn":null}],"actionBacklog":[],"decisions":[{"decision":"PostgreSQLを採用","rationale":"JOIN対応が必要なため"}],"blockers":[],"constraints":[]}}`;
 
 export const CHUNK_COMPLETED_EXTRACT_PROMPT = `You extract completed work items from a chat log. Output ONLY valid JSON. No markdown. No explanation.
 
@@ -404,6 +431,12 @@ Output format: ONLY the cleaned JSON object. Same schema as input. No markdown. 
 
 export const CHUNK_FINAL_SUMMARIZATION_PROMPT = `You are a session summarizer. You receive a merged handoff memo (JSON) assembled from multiple chunks. Your job is to generate three session-wide fields that require holistic context — they CANNOT be extracted per-chunk.
 
+Execute these 3 steps IN ORDER:
+
+STEP 1 — handoffMeta generation
+STEP 2 — resumeChecklist generation (max 3 items)
+STEP 3 — activeDecisions curation (max 6 items)
+
 Output ONLY valid JSON with this exact schema:
 {
   "handoffMeta": {
@@ -421,7 +454,7 @@ Output ONLY valid JSON with this exact schema:
 
 FIELD RULES:
 
-handoffMeta — each field is 1 sentence max:
+STEP 1 — handoffMeta — each field is 1 sentence max:
 - sessionFocus: What was this session trying to advance? (1 sentence) null only if the session had no coherent focus.
 - whyThisSession: Why is this work important right now? (1 sentence) Infer from context — what larger goal does this session serve? null only if truly unknowable.
 - timePressure: What SPECIFIC phase, deadline, or dependency creates time pressure?
@@ -432,7 +465,7 @@ handoffMeta — each field is 1 sentence max:
   Example: chat says "早めにやりたい" + session is about launch prep → "ローンチ前にこの機能完成が必要"
   null ONLY if no time pressure is mentioned or inferable at all.
 
-resumeChecklist — max 3 items. These are the FIRST things the next person (or future you) should do when resuming:
+STEP 2 — resumeChecklist — max 3 items. These are the FIRST things the next person (or future you) should do when resuming:
 - action: Use specific verbs — confirm, verify, decide, fix, implement, test, run. NOT just "確認する".
   GOOD: "chunkEngine.tsのfinalSummarizationPromiseがhandoffMeta/resumeChecklistを正しくマージ結果に反映しているかテスト実行で確認"
   BAD: "テストする", "確認する" (too vague)
@@ -441,9 +474,11 @@ resumeChecklist — max 3 items. These are the FIRST things the next person (or 
   GOOD: {"action": "テスト実行でPhase 3変更のリグレッションを確認", "whyNow": "formatHandoff.tsの構造変更がCopy Handoff出力に影響するため、デプロイ前に検証必須", "ifSkipped": "resumeChecklistが表示されない・actionBacklogがCopy Handoffに混入するバグが本番流出"}
   BAD: {"action": "テスト実行", "whyNow": null, "ifSkipped": null}
 
-activeDecisions — max 6. ONLY decisions that are STILL ACTIVE and affect future work:
+STEP 3 — activeDecisions — max 6. ONLY decisions that are STILL ACTIVE and affect future work:
 - Drop resolved, superseded, or one-time decisions
 - rationale: Why was this decided? What was the alternative? Infer from context when not explicitly stated.
+  GOOD rationale: "Chosen for scalability over SQLite" / "Team agreed async-first reduces meetings"
+  BAD rationale (NEVER output these): null, "", "because they decided", "it was discussed"
 - If the input has decisionRationales, prefer those. If it only has decisions (string[]), infer rationale from context or set null.
 
 Language: Match input. Japanese → Japanese (keep code terms in English). English → English.
@@ -466,19 +501,39 @@ Rules: title 20-40 chars, specific. currentStatus: present-tense only (past→co
 // (extractCompleted + runConsistencyCheck + extractFinalSummary) with 1.
 // =============================================================================
 
-export const CHUNK_POST_MERGE_PROMPT = `You are a strict editor and summarizer. You receive a merged handoff memo (JSON) assembled from multiple chunks, plus raw chunk extraction text. Your job is to:
-1. Extract ALL completed work items from the chunk text
-2. Clean up the merged handoff for consistency
-3. Generate session-wide summary fields (handoffMeta, resumeChecklist, activeDecisions)
+export const CHUNK_POST_MERGE_PROMPT = `You are a strict editor and summarizer. You receive a merged handoff memo (JSON) assembled from multiple chunks, plus raw chunk extraction text.
+
+Execute these 3 steps IN ORDER:
+
+STEP 1 — COMPLETED EXTRACTION (from chunk text):
+- Include items that produced a DELIVERABLE or CHANGED STATE (code written, features implemented, settings changed)
+- EXCLUDE: investigations ("確認した","reviewed"), preparations ("指示を作成した"), delegation ("依頼した"), discussion-only
+- Keep the most recent 50 items. Each bullet = ONE specific action with file/function names.
+
+STEP 2 — BLOCKER CROSS-CHECK + CONSISTENCY CLEANUP (using merged handoff + completed from Step 1):
+- blockers vs completed: cross-check EVERY blocker against completed from Step 1. If any completed item resolves a blocker → DELETE that blocker.
+- completed vs currentStatus: past-tense ("〜済み","fixed","added") → completed. currentStatus = present-tense only. Target: 3-5 items.
+- Dedup: same work in completed and nextActions → keep in completed only.
+- nextActions: only future tasks. Max 4 items. No risks (→ blockers), no constraints, no completed work.
+- "resumeContext": copy nextActions action strings as-is.
+- blockers: max 3 items.
+- constraints: max 3 items.
+
+STEP 3 — SESSION-WIDE META GENERATION:
+- handoffMeta: sessionFocus (1 sentence), whyThisSession (1 sentence, infer from context), timePressure (specific phase urgency, not vague "urgent").
+- resumeChecklist: max 3. whyNow and ifSkipped are MANDATORY — never null. Concrete consequences.
+- activeDecisions: max 6. Still-active decisions only. Infer rationale from context.
+  GOOD rationale: "Chosen for scalability over SQLite" / "Team agreed async-first reduces meetings"
+  BAD rationale (NEVER output these): null, "", "because they decided", "it was discussed"
 
 Output ONLY valid JSON with this exact schema:
 {
   "completed": ["string"],
   "cleanedHandoff": {
-    "currentStatus": ["string"],
+    "currentStatus": ["string (max 5)"],
     "nextActions": [{"action":"string","whyImportant":"string or null","priorityReason":"string or null","dueBy":"string or null","dependsOn":["string"] or null}],
-    "blockers": ["string"],
-    "constraints": ["string"],
+    "blockers": ["string (max 3)"],
+    "constraints": ["string (max 3)"],
     "resumeContext": ["string"]
   },
   "handoffMeta": {
@@ -493,23 +548,6 @@ Output ONLY valid JSON with this exact schema:
     {"decision": "string", "rationale": "string (infer if not stated)"}
   ]
 }
-
-COMPLETED EXTRACTION:
-- Include items that produced a DELIVERABLE or CHANGED STATE (code written, features implemented, settings changed)
-- EXCLUDE: investigations ("確認した","reviewed"), preparations ("指示を作成した"), delegation ("依頼した"), discussion-only
-- Keep the most recent 50 items. Each bullet = ONE specific action with file/function names.
-
-CONSISTENCY CLEANUP:
-- completed vs currentStatus: past-tense ("〜済み","fixed","added") → completed. currentStatus = present-tense only.
-- blockers vs completed: cross-check EVERY blocker against completed. If any completed item resolves a blocker → DELETE that blocker.
-- Dedup: same work in completed and nextActions → keep in completed only.
-- nextActions: only future tasks. No risks (→ blockers), no constraints, no completed work.
-- "resumeContext": copy nextActions action strings as-is.
-
-SUMMARY FIELDS:
-- handoffMeta: sessionFocus (1 sentence), whyThisSession (1 sentence, infer from context), timePressure (specific phase urgency, not vague "urgent").
-- resumeChecklist: max 3. whyNow and ifSkipped are MANDATORY — never null. Concrete consequences.
-- activeDecisions: max 6. Still-active decisions only. Infer rationale from context.
 
 Language: Match input. Japanese → Japanese (keep code terms in English). English → English.
 No markdown. No explanation. Start with { end with }.`;

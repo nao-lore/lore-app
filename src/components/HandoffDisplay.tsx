@@ -80,8 +80,8 @@ export default memo(function HandoffDisplay({ log, lang, projects, showToast }: 
               <div className="resume-context-hero-body">
                 {log.resumeChecklist.map((item, i) => {
                   const parts = [item.action];
-                  if (item.whyNow) parts.push(`  → ${item.whyNow}`);
-                  if (item.ifSkipped) parts.push(`  ⚠ ${item.ifSkipped}`);
+                  parts.push(`  → ${item.whyNow || '—'}`);
+                  parts.push(`  ⚠ ${item.ifSkipped || '—'}`);
                   return `${i + 1}. ${parts.join('\n')}`;
                 }).join('\n')}
               </div>

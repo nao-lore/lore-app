@@ -108,7 +108,7 @@ describe('HandoffResultSchema', () => {
     const result = HandoffResultSchema.parse(input);
     expect(result.nextActions[0]).toEqual({
       action: 'Fix bug',
-      whyImportant: null,
+      whyImportant: 'Priority not stated',
       priorityReason: null,
       dueBy: null,
       dependsOn: null,

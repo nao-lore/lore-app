@@ -224,6 +224,16 @@ describe('detectLanguage', () => {
   it('returns en for empty-ish text (low ja ratio)', () => {
     expect(detectLanguage('abc')).toBe('en');
   });
+
+  it('detects mixed content with few Japanese chars as English (A11 threshold)', () => {
+    // "React componentのテスト実装" has some Japanese but mostly English/ASCII
+    // With the 0.15 threshold, texts with ~10-14% Japanese ratio are classified as English
+    expect(detectLanguage('React componentのテスト implementation in the testing framework')).toBe('en');
+  });
+
+  it('detects mixed content with enough Japanese as Japanese (A11 threshold)', () => {
+    expect(detectLanguage('React componentのテスト実装を完了した')).toBe('ja');
+  });
 });
 
 // =============================================================================

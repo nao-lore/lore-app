@@ -24,14 +24,14 @@ export const HandoffResultSchema = z.object({
   })).default([]),
   nextActions: z.array(z.object({
     action: z.string(),
-    whyImportant: z.string().nullable().optional().default(null),
+    whyImportant: z.string().nullable().optional().transform(v => v ?? 'Priority not stated').default('Priority not stated'),
     priorityReason: z.string().nullable().optional().default(null),
     dueBy: z.string().nullable().optional().default(null),
     dependsOn: z.array(z.string()).nullable().optional().default(null),
   })).default([]),
   actionBacklog: z.array(z.object({
     action: z.string(),
-    whyImportant: z.string().nullable().optional().default(null),
+    whyImportant: z.string().nullable().optional().transform(v => v ?? 'Priority not stated').default('Priority not stated'),
     priorityReason: z.string().nullable().optional().default(null),
     dueBy: z.string().nullable().optional().default(null),
     dependsOn: z.array(z.string()).nullable().optional().default(null),
