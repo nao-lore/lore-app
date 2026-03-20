@@ -1,10 +1,11 @@
 /**
  * External integrations — Notion & Slack.
- * Settings are stored in localStorage.
+ * Settings are stored in localStorage with encryption.
  */
 import type { LogEntry } from './types';
 import { logToMarkdown } from './markdown';
 import { safeGetItem, safeSetItem } from './storage';
+import { encrypt, decrypt } from './utils/crypto';
 
 // ─── Storage keys ───
 const NOTION_KEY = 'threadlog_notion_api_key';
@@ -13,38 +14,60 @@ const SLACK_WEBHOOK_KEY = 'threadlog_slack_webhook_url';
 
 // ─── Notion settings ───
 
-export function getNotionApiKey(): string {
-  return safeGetItem(NOTION_KEY) || '';
+export async function getNotionApiKey(): Promise<string> {
+  const raw = safeGetItem(NOTION_KEY) || '';
+  if (!raw) return '';
+  return decrypt(raw);
 }
 
-export function setNotionApiKey(key: string): void {
-  safeSetItem(NOTION_KEY, key);
+export async function setNotionApiKey(key: string): Promise<void> {
+  if (!key) {
+    safeSetItem(NOTION_KEY, '');
+    return;
+  }
+  const encrypted = await encrypt(key);
+  safeSetItem(NOTION_KEY, encrypted);
 }
 
-export function getNotionDatabaseId(): string {
-  return safeGetItem(NOTION_DB_KEY) || '';
+export async function getNotionDatabaseId(): Promise<string> {
+  const raw = safeGetItem(NOTION_DB_KEY) || '';
+  if (!raw) return '';
+  return decrypt(raw);
 }
 
-export function setNotionDatabaseId(id: string): void {
-  safeSetItem(NOTION_DB_KEY, id);
+export async function setNotionDatabaseId(id: string): Promise<void> {
+  if (!id) {
+    safeSetItem(NOTION_DB_KEY, '');
+    return;
+  }
+  const encrypted = await encrypt(id);
+  safeSetItem(NOTION_DB_KEY, encrypted);
 }
 
-export function isNotionConfigured(): boolean {
-  return !!getNotionApiKey() && !!getNotionDatabaseId();
+export async function isNotionConfigured(): Promise<boolean> {
+  const [apiKey, dbId] = await Promise.all([getNotionApiKey(), getNotionDatabaseId()]);
+  return !!apiKey && !!dbId;
 }
 
 // ─── Slack settings ───
 
-export function getSlackWebhookUrl(): string {
-  return safeGetItem(SLACK_WEBHOOK_KEY) || '';
+export async function getSlackWebhookUrl(): Promise<string> {
+  const raw = safeGetItem(SLACK_WEBHOOK_KEY) || '';
+  if (!raw) return '';
+  return decrypt(raw);
 }
 
-export function setSlackWebhookUrl(url: string): void {
-  safeSetItem(SLACK_WEBHOOK_KEY, url);
+export async function setSlackWebhookUrl(url: string): Promise<void> {
+  if (!url) {
+    safeSetItem(SLACK_WEBHOOK_KEY, '');
+    return;
+  }
+  const encrypted = await encrypt(url);
+  safeSetItem(SLACK_WEBHOOK_KEY, encrypted);
 }
 
-export function isSlackConfigured(): boolean {
-  return !!getSlackWebhookUrl();
+export async function isSlackConfigured(): Promise<boolean> {
+  return !!(await getSlackWebhookUrl());
 }
 
 // ─── Notion API ───
@@ -106,8 +129,8 @@ function buildNotionBlocks(markdown: string): object[] {
 }
 
 export async function sendToNotion(log: LogEntry): Promise<void> {
-  const apiKey = getNotionApiKey();
-  const databaseId = getNotionDatabaseId();
+  const apiKey = await getNotionApiKey();
+  const databaseId = await getNotionDatabaseId();
   if (!apiKey || !databaseId) {
     throw new Error('Notion API key or Database ID not configured.');
   }
@@ -152,12 +175,15 @@ export async function sendToNotion(log: LogEntry): Promise<void> {
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      let msg = `Notion API error: ${res.status}`;
-      try {
-        const err = JSON.parse(text);
-        if (err.message) msg = `Notion: ${err.message}`;
-      } catch (parseErr) { if (import.meta.env.DEV) console.warn('[integrations] Notion error parse:', parseErr); }
-      throw new Error(msg);
+      if (import.meta.env.DEV) {
+        let detail = `Notion API error: ${res.status}`;
+        try {
+          const err = JSON.parse(text);
+          if (err.message) detail = `Notion: ${err.message}`;
+        } catch (parseErr) { console.warn('[integrations] Notion error parse:', parseErr); }
+        console.error('[integrations]', detail);
+      }
+      throw new Error('NOTION_EXPORT_FAILED');
     }
   } finally {
     clearTimeout(timeoutId);
@@ -184,7 +210,7 @@ function markdownToSlackMrkdwn(md: string): string {
 }
 
 export async function sendToSlack(markdown: string): Promise<void> {
-  const webhookUrl = getSlackWebhookUrl();
+  const webhookUrl = await getSlackWebhookUrl();
   if (!webhookUrl) {
     throw new Error('Slack Webhook URL not configured.');
   }
@@ -202,8 +228,11 @@ export async function sendToSlack(markdown: string): Promise<void> {
     });
 
     if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      throw new Error(`Slack error: ${res.status} ${body}`);
+      if (import.meta.env.DEV) {
+        const body = await res.text().catch(() => '');
+        console.error('[integrations] Slack error:', res.status, body);
+      }
+      throw new Error('SLACK_EXPORT_FAILED');
     }
   } finally {
     clearTimeout(timeoutId);

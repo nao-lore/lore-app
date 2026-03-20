@@ -600,7 +600,7 @@ export class ChunkEngine {
           const secondHalf = effectiveUserMessage.slice(cutPoint);
 
           if (splitDepth + 1 >= ChunkEngine.MAX_SPLIT_DEPTH) {
-            console.warn(`${label} WARNING: Maximum split depth (${ChunkEngine.MAX_SPLIT_DEPTH}) reached. Input chunk may be too large for reliable extraction.`);
+            if (import.meta.env.DEV) console.warn(`${label} WARNING: Maximum split depth (${ChunkEngine.MAX_SPLIT_DEPTH}) reached. Input chunk may be too large for reliable extraction.`);
           }
           if (import.meta.env.DEV) console.warn(`${label} split after Truncated (depth=${splitDepth + 1}, first=${firstHalf.length} chars, second=${secondHalf.length} chars)`);
           await this.waitInterruptible(2000);
@@ -625,7 +625,7 @@ export class ChunkEngine {
                 current, total, maxTokens, skipReformat, splitDepth + 1,
               );
             } catch (secondErr) {
-              console.warn(`${label} second half failed after split (depth=${splitDepth + 1}), partial data may be lost:`, secondErr);
+              if (import.meta.env.DEV) console.warn(`${label} second half failed after split (depth=${splitDepth + 1}), partial data may be lost:`, secondErr);
             }
           }
 

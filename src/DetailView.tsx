@@ -109,7 +109,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
     }
     try {
       const md = logToMarkdown(log);
-      await navigator.clipboard.writeText(ctx + '\n\n---\n\n## Latest Handoff\n' + md);
+      await navigator.clipboard.writeText(ctx + '\n\n---\n\n## Latest Snapshot\n' + md);
       showToast?.(t('logCopied', lang), 'success');
     } catch {
       showToast?.(t('copyFailed', lang), 'error');
@@ -204,7 +204,8 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
       await sendToNotion(log);
       showToast?.(t('notionSent', lang), 'success');
     } catch (err) {
-      showToast?.(err instanceof Error ? err.message : String(err), 'error');
+      if (import.meta.env.DEV) console.error('[DetailView] Notion export error:', err);
+      showToast?.(t('errorExportFailed', lang), 'error');
     } finally {
       setSendingNotion(false);
     }
@@ -222,7 +223,8 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
       await sendToSlack(logToMarkdown(log));
       showToast?.(t('slackSent', lang), 'success');
     } catch (err) {
-      showToast?.(err instanceof Error ? err.message : String(err), 'error');
+      if (import.meta.env.DEV) console.error('[DetailView] Slack export error:', err);
+      showToast?.(t('errorExportFailed', lang), 'error');
     } finally {
       setSendingSlack(false);
     }

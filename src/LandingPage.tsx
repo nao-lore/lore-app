@@ -1,13 +1,15 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useState, useCallback } from 'react';
 import { Clipboard, Zap, LayoutDashboard, ArrowRight, Globe, MessageSquare, Github, Shield, CheckCircle, WifiOff, Users, Mail, Chrome } from 'lucide-react';
-import { t, tf } from './i18n';
+import { t, tf, OUTPUT_LANGS } from './i18n';
 import type { Lang } from './i18n';
 import { getTotalSnapshots } from './storage';
+import { safeSetItem } from './storage/core';
 import { redirectToCheckout } from './utils/stripe';
 
 interface LandingPageProps {
   lang: Lang;
   onGetStarted: () => void;
+  onChangeLang?: (lang: Lang) => void;
 }
 
 const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/lore-ai-conversation-snap/opkdpjpkahbljjnhnahliedmkc';
@@ -15,8 +17,18 @@ const GITHUB_URL = 'https://github.com/nao-lore/lore-app';
 const FEEDBACK_URL = 'https://github.com/nao-lore/lore-app/issues';
 const TEAMS_NOTIFY_URL = 'https://formspree.io/f/xldjqkdl';
 
-function LandingPage({ lang, onGetStarted }: LandingPageProps) {
+function LandingPage({ lang, onGetStarted, onChangeLang }: LandingPageProps) {
   const [totalSnapshots] = useState(() => getTotalSnapshots());
+
+  // U14: Language change handler
+  const handleLangChange = useCallback((newLang: Lang) => {
+    safeSetItem('threadlog_lang', newLang);
+    if (onChangeLang) {
+      onChangeLang(newLang);
+    } else {
+      window.location.reload();
+    }
+  }, [onChangeLang]);
 
   // Override body + #root overflow:hidden so LP can scroll
   useEffect(() => {
@@ -131,6 +143,27 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
         </div>
       </section>
 
+      {/* U1: What You Get — concrete output examples */}
+      <section className="lp-section lp-section-alt" aria-labelledby="lp-what-you-get">
+        <h2 id="lp-what-you-get" className="lp-section-title">
+          {t('lpWhatYouGetTitle', lang)}
+        </h2>
+        <ul className="lp-what-you-get-list">
+          <li className="lp-what-you-get-item">
+            <CheckCircle size={18} aria-hidden="true" className="lp-what-you-get-icon" />
+            <span>{t('lpWhatYouGet1', lang)}</span>
+          </li>
+          <li className="lp-what-you-get-item">
+            <CheckCircle size={18} aria-hidden="true" className="lp-what-you-get-icon" />
+            <span>{t('lpWhatYouGet2', lang)}</span>
+          </li>
+          <li className="lp-what-you-get-item">
+            <CheckCircle size={18} aria-hidden="true" className="lp-what-you-get-icon" />
+            <span>{t('lpWhatYouGet3', lang)}</span>
+          </li>
+        </ul>
+      </section>
+
       {/* Privacy / Trust Section — placed early for security-conscious developers */}
       <section className="lp-section lp-section-alt lp-privacy-section" aria-labelledby="lp-privacy">
         <div className="lp-privacy-content">
@@ -167,6 +200,10 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
               <li>{t('lpAfter2', lang)}</li>
               <li>{t('lpAfter3', lang)}</li>
             </ul>
+            <div className="lp-after-metrics">
+              <p className="lp-after-metric">{t('lpAfterMetric1', lang)}</p>
+              <p className="lp-after-metric">{t('lpAfterMetric2', lang)}</p>
+            </div>
           </div>
         </div>
       </section>
@@ -198,18 +235,18 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
           <Chrome size={24} aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: 8 }} />
           {t('lpExtensionTitle', lang)}
         </h2>
-        <p className="lp-hero-subheadline" style={{ maxWidth: 640, margin: '0 auto 16px' }}>
+        <p className="lp-hero-subheadline lp-extension-headline">
           {t('lpExtensionHeadline', lang)}
         </p>
-        <p style={{ maxWidth: 640, margin: '0 auto 24px', fontSize: 15, lineHeight: 1.7, color: 'var(--text-muted, #6b7280)', textAlign: 'center' }}>
+        <p className="lp-extension-desc">
           {t('lpExtensionDesc', lang)}
         </p>
-        <div style={{ textAlign: 'center' }}>
+        <div className="lp-extension-cta-wrap">
           <a
             href={CHROME_EXTENSION_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-primary lp-cta-primary"
+            className="btn btn-primary lp-cta-primary lp-extension-cta-btn"
             onClick={() => { if (typeof gtag === 'function') gtag('event', 'extension_lp_click'); }}
           >
             <Chrome size={16} aria-hidden="true" />
@@ -259,8 +296,62 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
         </div>
       </section>
 
+      {/* Why Lore? Comparison Section */}
+      <section className="lp-section" aria-labelledby="lp-why-lore">
+        <h2 id="lp-why-lore" className="lp-section-title">
+          {t('lpWhyLoreTitle', lang)}
+        </h2>
+        <p className="lp-why-lore-subtext">
+          {t('lpWhyLoreSubtext', lang)}
+        </p>
+        <div className="lp-compare-table-wrap">
+          <table className="lp-compare-table" role="table">
+            <thead>
+              <tr>
+                <th>{''}</th>
+                <th>{t('lpWhyColLore', lang)}</th>
+                <th>{t('lpWhyColManualNotes', lang)}</th>
+                <th>{t('lpWhyColAiMemory', lang)}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{t('lpWhyCompareAutoStructure', lang)}</td>
+                <td className="lp-compare-yes" aria-label="Yes">&#10003;</td>
+                <td className="lp-compare-no" aria-label="No">&#10007;</td>
+                <td className="lp-compare-partial">{t('lpWhyPartial', lang)}</td>
+              </tr>
+              <tr>
+                <td>{t('lpWhyCompareOffline', lang)}</td>
+                <td className="lp-compare-yes" aria-label="Yes">&#10003;</td>
+                <td className="lp-compare-yes" aria-label="Yes">&#10003;</td>
+                <td className="lp-compare-no" aria-label="No">&#10007;</td>
+              </tr>
+              <tr>
+                <td>{t('lpWhyCompareCrossProvider', lang)}</td>
+                <td className="lp-compare-yes" aria-label="Yes">&#10003;</td>
+                <td className="lp-compare-partial">{t('lpWhyManual', lang)}</td>
+                <td className="lp-compare-no" aria-label="No">&#10007;</td>
+              </tr>
+              <tr>
+                <td>{t('lpWhyCompareOpenSource', lang)}</td>
+                <td className="lp-compare-yes" aria-label="Yes">&#10003;</td>
+                <td className="lp-compare-partial">{t('lpWhyNa', lang)}</td>
+                <td className="lp-compare-no" aria-label="No">&#10007;</td>
+              </tr>
+              <tr>
+                <td>{t('lpWhyCompareExport', lang)}</td>
+                <td className="lp-compare-yes" aria-label="Yes">&#10003;</td>
+                <td className="lp-compare-yes" aria-label="Yes">&#10003;</td>
+                <td className="lp-compare-no" aria-label="No">&#10007;</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       {/* Pricing Section */}
-      <section className="lp-section" aria-labelledby="lp-pricing">
+      <section className="lp-section lp-section-alt" aria-labelledby="lp-pricing">
         <h2 id="lp-pricing" className="lp-section-title">
           {t('lpPricingTitle', lang)}
         </h2>
@@ -272,13 +363,53 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
           <div className="lp-pricing-card lp-pricing-card-pro" onClick={() => { if (typeof gtag === 'function') gtag('event', 'pro_click'); redirectToCheckout('monthly'); }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (typeof gtag === 'function') gtag('event', 'pro_click'); redirectToCheckout('monthly'); } }}>
             <h3 className="lp-pricing-plan">{t('lpPricingPro', lang)}</h3>
             <p className="lp-pricing-price">{t('lpPricingProPrice', lang)}</p>
-            <p className="lp-pricing-annual">
+            <p className="lp-pricing-annual lp-pricing-annual-highlight">
               {t('lpPricingAnnual', lang)}
-              <span className="lp-pricing-save-badge">{t('lpPricingAnnualBadge', lang)}</span>
             </p>
             <p className="lp-pricing-desc">{t('lpPricingProDesc', lang)}</p>
           </div>
         </div>
+
+        {/* L10: Feature comparison grid */}
+        <div className="lp-pricing-compare-wrap">
+          <table className="lp-pricing-compare-table" role="table">
+            <thead>
+              <tr>
+                <th>{t('lpPricingCompareFeature', lang)}</th>
+                <th>{t('lpPricingFree', lang)}</th>
+                <th>{t('lpPricingPro', lang)}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{t('lpPricingCompareDailyTransforms', lang)}</td>
+                <td>{t('lpPricingFree20', lang)}</td>
+                <td className="lp-compare-yes">{t('lpPricingUnlimited', lang)}</td>
+              </tr>
+              <tr>
+                <td>{t('lpPricingCompareProjects', lang)}</td>
+                <td>{t('lpPricingFree3', lang)}</td>
+                <td className="lp-compare-yes">{t('lpPricingUnlimited', lang)}</td>
+              </tr>
+              <tr>
+                <td>{t('lpPricingCompareExport', lang)}</td>
+                <td className="lp-compare-yes" aria-label="Yes">&#10003;</td>
+                <td className="lp-compare-yes" aria-label="Yes">&#10003;</td>
+              </tr>
+              <tr>
+                <td>{t('lpPricingCompareChromeExt', lang)}</td>
+                <td className="lp-compare-yes" aria-label="Yes">&#10003;</td>
+                <td className="lp-compare-yes" aria-label="Yes">&#10003;</td>
+              </tr>
+              <tr>
+                <td>{t('lpPricingCompareTeam', lang)}</td>
+                <td>{t('lpPricingNa', lang)}</td>
+                <td>{t('lpPricingComingQ2', lang)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <div className="lp-pricing-cta">
           <button className="btn btn-primary" onClick={onGetStarted}>
             {t('lpCtaStartFree', lang)}
@@ -288,6 +419,22 @@ function LandingPage({ lang, onGetStarted }: LandingPageProps) {
 
       {/* Footer */}
       <footer className="lp-footer">
+        {/* U14: Language selector */}
+        <div className="lp-lang-selector" aria-label={t('lpSelectLanguage', lang)}>
+          <Globe size={14} aria-hidden="true" />
+          <select
+            value={lang}
+            onChange={(e) => handleLangChange(e.target.value as Lang)}
+            className="lp-lang-select"
+            aria-label={t('lpSelectLanguage', lang)}
+          >
+            {OUTPUT_LANGS.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.flag} {l.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="lp-footer-links">
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
             {t('lpFooterGithub', lang)}

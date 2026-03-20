@@ -60,7 +60,7 @@ export default function HelpView({ onBack, lang, onShowOnboarding, onFeedback }:
           <div className="flex-col-gap-none">
             {([
               { name: 'Worklog', key: 'helpFeatureWorklog' as const },
-              { name: 'Handoff', key: 'helpFeatureHandoff' as const },
+              { name: 'Context Snapshot', key: 'helpFeatureHandoff' as const },
               { name: 'Project', key: 'helpFeatureProject' as const },
               { name: 'Project Summary', key: 'helpFeatureProjectSummary' as const },
               { name: 'TODO', key: 'helpFeatureTodo' as const },

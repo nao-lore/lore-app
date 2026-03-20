@@ -52,7 +52,7 @@ export default memo(function PostGenerationPreview({ savedResult, lang, showToas
         <p className="text-sm text-muted mb-sm">
           {(decisionsCount > 0 || actionsCount > 0 || blockersCount > 0) && tf('extractionSummary', lang, decisionsCount, actionsCount, blockersCount)}
           {apiCallCount && apiCallCount > 0 && (decisionsCount > 0 || actionsCount > 0 || blockersCount > 0) ? ' · ' : ''}
-          {apiCallCount && apiCallCount > 0 ? tf('apiCallsUsed', lang, apiCallCount) : ''}
+          {apiCallCount && apiCallCount > 0 ? tf('processedInSteps', lang, apiCallCount) : ''}
         </p>
       )}
 

@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext } from 'react';
 import type { LogEntry, Project } from '../types';
 import type { Lang } from '../i18n';
 
@@ -23,14 +23,6 @@ export interface WorkspaceContextValue {
   lastLogCreatedAt: string | null;
 }
 
-const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
+export const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 export const WorkspaceProvider = WorkspaceContext.Provider;
-
-export function useWorkspaceContext(): WorkspaceContextValue {
-  const ctx = useContext(WorkspaceContext);
-  if (!ctx) {
-    throw new Error('useWorkspaceContext must be used within a WorkspaceProvider');
-  }
-  return ctx;
-}

@@ -47,8 +47,8 @@ vi.mock('../workload', () => ({
 
 // Mock integrations
 vi.mock('../integrations', () => ({
-  isNotionConfigured: () => false,
-  isSlackConfigured: () => false,
+  isNotionConfigured: () => Promise.resolve(false),
+  isSlackConfigured: () => Promise.resolve(false),
 }));
 
 // Mock utils/dateFormat
