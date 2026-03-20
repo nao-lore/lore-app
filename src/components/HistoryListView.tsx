@@ -97,7 +97,7 @@ export const HistorySelectModeList = memo(function HistorySelectModeList({
   const renderItem = viewMode === 'list' ? renderLogListItem : renderLogCard;
 
   if (groupKey === 'none') {
-    return <div role="list">{sorted.map((log) => <div key={log.id} role="listitem">{renderItem(log)}</div>)}</div>;
+    return <ul role="list">{sorted.map((log) => <li key={log.id}>{renderItem(log)}</li>)}</ul>;
   }
 
   return (
@@ -120,9 +120,9 @@ export const HistorySelectModeList = memo(function HistorySelectModeList({
               <span className="meta text-sm">{tf('logCount', lang, group.items.length)}</span>
             </div>
           )}
-          <div role="list">
-            {group.items.map((log) => <div key={log.id} role="listitem">{renderLogCard(log)}</div>)}
-          </div>
+          <ul role="list">
+            {group.items.map((log) => <li key={log.id}>{renderLogCard(log)}</li>)}
+          </ul>
         </div>
       ))}
     </div>
@@ -200,7 +200,7 @@ export const HistoryVirtualList = memo(function HistoryVirtualList({
       ref={scrollContainerRef}
       className="history-scroll-container"
     >
-      <div role="list" className="virtual-list-container" style={{ height: virtualizer.getTotalSize() }}>
+      <ul role="list" className="virtual-list-container" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((virtualItem) => {
           if (groupKey !== 'none') {
             const flatItem = flatItems[virtualItem.index];
@@ -243,29 +243,27 @@ export const HistoryVirtualList = memo(function HistoryVirtualList({
               );
             }
             return (
-              <div
+              <li
                 key={virtualItem.key}
-                role="listitem"
                 className="virtual-item"
                 style={{ top: virtualItem.start }}
               >
                 {renderLogCard(flatItem.log)}
-              </div>
+              </li>
             );
           }
           const log = sorted[virtualItem.index];
           return (
-            <div
+            <li
               key={virtualItem.key}
-              role="listitem"
               className="virtual-item"
               style={{ top: virtualItem.start }}
             >
               {renderItem(log)}
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </div>
   );
 });

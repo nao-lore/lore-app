@@ -4640,7 +4640,11 @@ button[disabled] {
 .input-toolbar {
   max-width: 760px;
   margin: 10px auto 0;
-  gap: 6px;
+}
+.input-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* InputView — usage counter */
@@ -4656,12 +4660,12 @@ button[disabled] {
 
 /* InputView — select/import compact controls */
 .input-select-compact {
-  min-width: 140px;
+  min-width: 120px;
   padding: 4px 8px;
   font-size: 12px;
   min-height: 0;
   width: auto;
-  flex-shrink: 0;
+  flex-shrink: 1;
 }
 
 /* InputView — import button compact */
@@ -4674,6 +4678,7 @@ button[disabled] {
   flex-shrink: 0;
   cursor: pointer;
   text-align: left;
+  white-space: nowrap;
 }
 
 /* InputView — file remove button */
@@ -6112,7 +6117,7 @@ button[disabled] {
     font-size: 12px;
     padding: 7px 14px;
   }
-  .input-toolbar {
+  .input-toolbar-row {
     flex-wrap: wrap;
   }
   .lp-hero-ctas .lp-cta-primary {
@@ -6206,11 +6211,13 @@ button[disabled] {
 }
 
 /* ─── PWA Install button ─── */
-.pwa-install-btn {
+.pwa-install-wrapper {
   position: fixed;
   bottom: 72px;
   right: 16px;
   z-index: 1100;
+}
+.pwa-install-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -6237,9 +6244,38 @@ button[disabled] {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
-[dir="rtl"] .pwa-install-btn {
+.pwa-install-dismiss {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: background 0.15s;
+}
+.pwa-install-dismiss:hover {
+  background: var(--bg-tertiary, var(--bg-secondary));
+}
+.pwa-install-dismiss:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+[dir="rtl"] .pwa-install-wrapper {
   right: auto;
   left: 16px;
+}
+[dir="rtl"] .pwa-install-dismiss {
+  right: auto;
+  left: -6px;
 }
 
 /* ===== U4: Prominent try-sample button ===== */

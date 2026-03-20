@@ -20,6 +20,8 @@ function markSampleSeeded(): void {
 
 interface SampleContent {
   projectName: string;
+  project3Name: string;
+  project4Name: string;
   log1Title: string;
   log1Tags: string[];
   log1CurrentStatus: string[];
@@ -54,6 +56,8 @@ interface SampleContent {
 const content: Record<string, SampleContent> = {
   en: {
     projectName: 'My AI Project',
+    project3Name: 'Product Launch Campaign',
+    project4Name: 'YouTube Channel Growth',
     log1Title: 'Project Setup & Core Architecture',
     log1Tags: ['setup', 'architecture', 'React', 'TypeScript'],
     log1CurrentStatus: [
@@ -126,6 +130,8 @@ const content: Record<string, SampleContent> = {
   },
   ja: {
     projectName: 'AIプロジェクト',
+    project3Name: 'プロダクトローンチ戦略',
+    project4Name: 'YouTube チャンネル運営',
     log1Title: 'プロジェクトセットアップとコアアーキテクチャ',
     log1Tags: ['セットアップ', 'アーキテクチャ', 'React', 'TypeScript'],
     log1CurrentStatus: [
@@ -198,6 +204,8 @@ const content: Record<string, SampleContent> = {
   },
   es: {
     projectName: 'Mi Proyecto de IA',
+    project3Name: 'Campaña de Lanzamiento de Producto',
+    project4Name: 'Crecimiento del Canal de YouTube',
     log1Title: 'Configuración del Proyecto y Arquitectura Base',
     log1Tags: ['configuración', 'arquitectura', 'React', 'TypeScript'],
     log1CurrentStatus: ['Estructura del proyecto completa con React + TypeScript', 'Esquema de base de datos diseñado y tablas creadas', 'Estructura básica de carpetas establecida'],
@@ -237,6 +245,8 @@ const content: Record<string, SampleContent> = {
   },
   fr: {
     projectName: 'Mon Projet IA',
+    project3Name: 'Campagne de Lancement Produit',
+    project4Name: 'Croissance de la Chaîne YouTube',
     log1Title: 'Mise en place du projet et architecture de base',
     log1Tags: ['configuration', 'architecture', 'React', 'TypeScript'],
     log1CurrentStatus: [
@@ -309,6 +319,8 @@ const content: Record<string, SampleContent> = {
   },
   de: {
     projectName: 'Mein KI-Projekt',
+    project3Name: 'Produktlaunch-Kampagne',
+    project4Name: 'YouTube-Kanal-Wachstum',
     log1Title: 'Projekteinrichtung und Kernarchitektur',
     log1Tags: ['Einrichtung', 'Architektur', 'React', 'TypeScript'],
     log1CurrentStatus: [
@@ -381,6 +393,8 @@ const content: Record<string, SampleContent> = {
   },
   zh: {
     projectName: '我的AI项目',
+    project3Name: '产品发布活动',
+    project4Name: 'YouTube 频道增长',
     log1Title: '项目搭建与核心架构',
     log1Tags: ['搭建', '架构', 'React', 'TypeScript'],
     log1CurrentStatus: [
@@ -453,6 +467,8 @@ const content: Record<string, SampleContent> = {
   },
   ko: {
     projectName: '나의 AI 프로젝트',
+    project3Name: '제품 런칭 캠페인',
+    project4Name: 'YouTube 채널 성장',
     log1Title: '프로젝트 설정 및 핵심 아키텍처',
     log1Tags: ['설정', '아키텍처', 'React', 'TypeScript'],
     log1CurrentStatus: [
@@ -525,6 +541,8 @@ const content: Record<string, SampleContent> = {
   },
   pt: {
     projectName: 'Meu Projeto de IA',
+    project3Name: 'Campanha de Lançamento de Produto',
+    project4Name: 'Crescimento do Canal do YouTube',
     log1Title: 'Configuração do Projeto e Arquitetura Base',
     log1Tags: ['configuração', 'arquitetura', 'React', 'TypeScript'],
     log1CurrentStatus: [
@@ -688,8 +706,8 @@ export function seedSampleData(lang: Lang = 'en'): void {
   saveMasterNote(masterNote);
 
   // ── Project 3: Marketer / Business persona ──────────────────
-  const isJa3 = lang === 'ja';
-  const project3 = addProject(isJa3 ? 'プロダクトローンチ戦略' : 'Product Launch Campaign');
+  const isJa = lang === 'ja';
+  const project3 = addProject(c.project3Name);
   project3.icon = '📊';
   // pinned defaults to false — leave it unpinned
   const projects3 = safeJsonParse<{ id: string }[]>(safeGetItem('threadlog_projects'), []);
@@ -701,17 +719,17 @@ export function seedSampleData(lang: Lang = 'en'): void {
   const log3_1: LogEntry = {
     id: logId3_1,
     createdAt: new Date(now - 5 * 60 * 60 * 1000).toISOString(),
-    title: isJa3 ? 'AI活用マーケティング戦略の策定' : 'AI-Assisted Marketing Strategy Session',
+    title: isJa ? 'AI活用マーケティング戦略の策定' : 'AI-Assisted Marketing Strategy Session',
     projectId: project3.id,
     outputMode: 'handoff',
     today: [],
     decisions: [],
     todo: [],
     relatedProjects: [],
-    tags: isJa3
+    tags: isJa
       ? ['マーケティング', 'AI活用', '広告', 'ファネル']
       : ['marketing', 'AI', 'ad-copy', 'funnel'],
-    currentStatus: isJa3
+    currentStatus: isJa
       ? [
           'ターゲットオーディエンスのペルソナ3パターンをAIで生成・検証済み',
           'Facebook/Instagram広告コピーのA/Bテスト案を5パターン作成',
@@ -722,7 +740,7 @@ export function seedSampleData(lang: Lang = 'en'): void {
           'Created 5 A/B test variations of Facebook/Instagram ad copy',
           'First draft of landing page funnel design is complete',
         ],
-    completed: isJa3
+    completed: isJa
       ? [
           'Claude を使って競合分析レポートを作成',
           'ペルソナごとの訴求軸とメッセージングフレームワークを整理',
@@ -733,10 +751,10 @@ export function seedSampleData(lang: Lang = 'en'): void {
           'Organized messaging framework and appeal axes per persona',
           'Generated 5 ad copy drafts and adjusted tone for each',
         ],
-    nextActions: isJa3
+    nextActions: isJa
       ? ['ファネル各ステップのメールシーケンス設計', 'LP のワイヤーフレーム確定']
       : ['Design email sequence for each funnel step', 'Finalize landing page wireframe'],
-    nextActionItems: isJa3
+    nextActionItems: isJa
       ? [
           { action: 'ファネル各ステップのメールシーケンス設計', whyImportant: 'リード育成の自動化に必須', priorityReason: 'ローンチ日までに配信設定が必要' },
           { action: 'LP のワイヤーフレーム確定', whyImportant: '広告の遷移先がないとテスト開始できない', priorityReason: '広告出稿のブロッカー' },
@@ -747,10 +765,10 @@ export function seedSampleData(lang: Lang = 'en'): void {
         ],
     actionBacklog: [],
     blockers: [],
-    constraints: isJa3
+    constraints: isJa
       ? ['広告予算は月50万円以内', 'ローンチまで2週間']
       : ['Monthly ad budget capped at $5,000', 'Two weeks until launch'],
-    decisionRationales: isJa3
+    decisionRationales: isJa
       ? [
           { decision: 'まず Facebook/Instagram 広告に集中', rationale: 'ターゲット層（30-45歳ビジネスパーソン）のリーチが最も高い' },
           { decision: 'AI で広告コピーを大量生成しA/Bテストで絞る', rationale: '少予算で最大効果を出すにはデータドリブンが不可欠' },
@@ -759,13 +777,13 @@ export function seedSampleData(lang: Lang = 'en'): void {
           { decision: 'Focus on Facebook/Instagram ads first', rationale: 'Highest reach for target demographic (30-45 business professionals)' },
           { decision: 'Use AI to bulk-generate ad copy and narrow down via A/B testing', rationale: 'Data-driven approach is essential to maximize ROI on a limited budget' },
         ],
-    resumeContext: isJa3
+    resumeContext: isJa
       ? ['ペルソナ定義は docs/personas.md を参照', '広告コピー案は Spreadsheet の「Ad Copy v2」シートにまとめ済み']
       : ['See docs/personas.md for persona definitions', 'Ad copy drafts are in the "Ad Copy v2" tab of the shared spreadsheet'],
-    resumeChecklist: isJa3
+    resumeChecklist: isJa
       ? [{ action: '広告コピー案のレビュー', whyNow: 'A/Bテスト開始前に最終チェック', ifSkipped: 'ブランドトーンと合わない広告が配信されるリスク' }]
       : [{ action: 'Review ad copy drafts', whyNow: 'Final check needed before A/B test launch', ifSkipped: 'Risk of running ads that don\'t match brand tone' }],
-    handoffMeta: isJa3
+    handoffMeta: isJa
       ? { sessionFocus: 'AIを活用した広告戦略とファネル設計', whyThisSession: 'ローンチ2週間前、広告とLPの方向性を固める必要あり', timePressure: 'ローンチまで2週間' }
       : { sessionFocus: 'AI-powered ad strategy and funnel design', whyThisSession: 'Two weeks before launch — need to lock down ad and LP direction', timePressure: 'Launch in 2 weeks' },
   };
@@ -773,8 +791,7 @@ export function seedSampleData(lang: Lang = 'en'): void {
   addLog(log3_1);
 
   // ── Project 4: YouTuber / Content Creator persona ──────────
-  const isJa4 = lang === 'ja';
-  const project4 = addProject(isJa4 ? 'YouTube チャンネル運営' : 'YouTube Channel Growth');
+  const project4 = addProject(c.project4Name);
   project4.pinned = true;
   project4.icon = '🎬';
   const projects4 = safeJsonParse<{ id: string }[]>(safeGetItem('threadlog_projects'), []);
@@ -786,17 +803,17 @@ export function seedSampleData(lang: Lang = 'en'): void {
   const log4_1: LogEntry = {
     id: logId4_1,
     createdAt: new Date(now - 8 * 60 * 60 * 1000).toISOString(),
-    title: isJa4 ? '動画企画 & AI活用プロダクション' : 'Video Planning & AI-Assisted Production',
+    title: isJa ? '動画企画 & AI活用プロダクション' : 'Video Planning & AI-Assisted Production',
     projectId: project4.id,
     outputMode: 'handoff',
     today: [],
     decisions: [],
     todo: [],
     relatedProjects: [],
-    tags: isJa4
+    tags: isJa
       ? ['YouTube', 'AI', '台本作成', 'SEO']
       : ['YouTube', 'AI', 'scripting', 'SEO'],
-    currentStatus: isJa4
+    currentStatus: isJa
       ? [
           'AIと5つの動画トピックをブレストし、上位2つに絞り込み',
           '「使ってないAIツール」動画の台本ドラフトが80%完成',
@@ -807,7 +824,7 @@ export function seedSampleData(lang: Lang = 'en'): void {
           'Draft script for "AI Tools You\'re Not Using" video is 80% done',
           'Thumbnail concept sketches generated using AI image prompts',
         ],
-    completed: isJa4
+    completed: isJa
       ? [
           'AIを使い次の3本分のキーワードリサーチを実施（検索ボリューム、競合度）',
           'AIとのコラボでフック・本編・CTAセクションを含むフル台本アウトラインを作成',
@@ -820,10 +837,10 @@ export function seedSampleData(lang: Lang = 'en'): void {
           'Created 4 thumbnail variations with AI — picked 2 finalists for A/B testing',
           'Optimized title and description with SEO keywords suggested by AI',
         ],
-    nextActions: isJa4
+    nextActions: isJa
       ? ['ドラフト台本のナレーション収録', 'コミュニティタブで2つのサムネイル候補をA/Bテスト', 'ショート動画転用のためトレンド音源をリサーチ']
       : ['Record voiceover for the drafted script', 'A/B test the two thumbnail finalists on Community tab', 'Research trending audio clips for Shorts repurposing'],
-    nextActionItems: isJa4
+    nextActionItems: isJa
       ? [
           { action: 'ドラフト台本のナレーション収録', whyImportant: '台本は完成済み、収録がボトルネック', priorityReason: '編集作業すべてのブロッカー' },
           { action: 'コミュニティタブでサムネイルA/Bテスト', whyImportant: 'サムネイルはクリック率の最重要要素', priorityReason: 'アップロード前に決定が必要' },
@@ -832,16 +849,16 @@ export function seedSampleData(lang: Lang = 'en'): void {
           { action: 'Record voiceover for the drafted script', whyImportant: 'Script is ready, recording is the bottleneck', priorityReason: 'Blocks all editing work' },
           { action: 'A/B test thumbnails via Community tab poll', whyImportant: 'Thumbnail is the #1 driver of click-through rate', priorityReason: 'Must decide before upload' },
         ],
-    actionBacklog: isJa4
+    actionBacklog: isJa
       ? [{ action: '定番動画フォーマット用のプロンプトテンプレート集を作成', whyImportant: '今後の台本作成セッションの時短', priorityReason: '効率化だが緊急ではない' }]
       : [{ action: 'Build a prompt template library for recurring video formats', whyImportant: 'Saves time on future scripting sessions', priorityReason: 'Efficiency gain but not urgent' }],
-    blockers: isJa4
+    blockers: isJa
       ? ['新しいマイクの配達待ちで収録できない']
       : ['Waiting for new microphone delivery before recording'],
-    constraints: isJa4
+    constraints: isJa
       ? ['視聴維持率のため動画は15分以内', 'アルゴリズム対策のためアップロード期限は土曜日']
       : ['Video must be under 15 minutes for optimal retention', 'Upload deadline is Saturday for algorithm consistency'],
-    decisionRationales: isJa4
+    decisionRationales: isJa
       ? [
           { decision: 'AIはフル台本ではなくアウトライン作成に使う', rationale: 'AIドラフトは無個性になりがち — アウトライン＋自分でリライトが自然' },
           { decision: 'トレンドよりSEO重視のトピック選び', rationale: 'エバーグリーンコンテンツは長期的に再生数が積み上がる' },
@@ -850,7 +867,7 @@ export function seedSampleData(lang: Lang = 'en'): void {
           { decision: 'Use AI for script outlines, not full scripts', rationale: 'AI drafts feel generic — outline + personal rewrite keeps authenticity' },
           { decision: 'Focus on SEO-driven topics over trending topics', rationale: 'Evergreen content compounds views over time vs. short spikes' },
         ],
-    resumeContext: isJa4
+    resumeContext: isJa
       ? [
           '台本ドラフトはGoogleドキュメント「AIツール動画」ファイルにある',
           'サムネイル候補はCanvaプロジェクトフォルダに保存済み',
@@ -861,10 +878,10 @@ export function seedSampleData(lang: Lang = 'en'): void {
           'Thumbnail finalists saved in Canva project folder',
           'Keyword research spreadsheet has the SEO data for next 3 videos',
         ],
-    resumeChecklist: isJa4
+    resumeChecklist: isJa
       ? [{ action: '台本ドラフトの個性と流れをレビュー', whyNow: 'AI生成アウトラインに自分の声を入れてから収録', ifSkipped: '動画がロボット的になり視聴者の信頼を損なう' }]
       : [{ action: 'Review the script draft for personality and flow', whyNow: 'AI-generated outline needs personal voice before recording', ifSkipped: 'Video will sound robotic and hurt audience trust' }],
-    handoffMeta: isJa4
+    handoffMeta: isJa
       ? { sessionFocus: 'AIを活用した次の動画企画', whyThisSession: '週末収録に向けて台本とサムネイルを準備', timePressure: 'アップロード目標は来週土曜日' }
       : { sessionFocus: 'Planning next video with AI assistance', whyThisSession: 'Need script and thumbnails ready before weekend recording', timePressure: 'Upload target is next Saturday' },
   };

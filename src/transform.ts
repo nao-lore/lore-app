@@ -540,7 +540,7 @@ function warnOutputLanguageMismatch(result: { title?: string | unknown }, expect
   if (!title) return;
   const actualLang = detectLanguage(title);
   if (actualLang !== expectedLang && title.length > 10) {
-    console.warn(`[Transform] Output language mismatch: expected=${expectedLang}, detected=${actualLang}, title="${title.slice(0, 40)}"`);
+    if (import.meta.env.DEV) console.warn(`[Transform] Output language mismatch: expected=${expectedLang}, detected=${actualLang}, title="${title.slice(0, 40)}"`);
   }
 }
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Lore — AI Context Sync",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "description": "Capture AI conversations and inject project context. Your AI sessions never start from zero again.",
   "permissions": ["activeTab", "scripting", "tabs", "storage"],
   "background": {
@@ -25,10 +25,7 @@
     "*://chat.openai.com/*",
     "*://claude.ai/*",
     "*://gemini.google.com/*",
-    "*://loresync.dev/*",
-    "http://localhost:5173/*",
-    "http://localhost:5178/*",
-    "http://localhost:4173/*"
+    "*://loresync.dev/*"
   ],
   "content_scripts": [
     {
@@ -38,7 +35,7 @@
       "run_at": "document_idle"
     },
     {
-      "matches": ["*://loresync.dev/*", "http://localhost:5173/*", "http://localhost:5178/*", "http://localhost:4173/*"],
+      "matches": ["*://loresync.dev/*"],
       "js": ["content-lore-bridge.js"],
       "run_at": "document_idle"
     }

@@ -56,7 +56,8 @@ async function syncContexts() {
       return;
     }
 
-    // Validate each context entry has required fields
+    // Validate each context entry has required fields and strip sensitive keys
+    const SENSITIVE_KEYS = ['apiKey', 'encryptedApiKey', 'api_key', 'encrypted_api_key'];
     const validated = {};
     for (const [key, value] of Object.entries(contexts)) {
       if (
@@ -68,7 +69,12 @@ async function syncContexts() {
         console.warn(`[Lore Bridge] Skipping invalid context entry: ${key}`);
         continue;
       }
-      validated[key] = value;
+      // E2: Strip API key fields before sending to extension
+      const sanitized = { ...value };
+      for (const sk of SENSITIVE_KEYS) {
+        delete sanitized[sk];
+      }
+      validated[key] = sanitized;
     }
 
     if (Object.keys(validated).length === 0) {
