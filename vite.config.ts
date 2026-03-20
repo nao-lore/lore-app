@@ -15,7 +15,7 @@ export default defineConfig({
       includeAssets: ['favicon.ico'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        globIgnores: ['**/mammoth-*.js', '**/sampleData-*.js'],
+        globIgnores: ['**/sampleData-*.js'],
         navigateFallback: 'index.html',
         runtimeCaching: [
           // AI API calls must never be cached — use NetworkOnly

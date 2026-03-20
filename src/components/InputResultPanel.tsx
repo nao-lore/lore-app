@@ -106,26 +106,17 @@ export const InputResultPanel = memo(function InputResultPanel({
           </button>
         </div>
       )}
-      {/* Post-save project picker */}
+      {/* Post-save project picker — always visible inline when no project assigned */}
       {savedId && !selectedProjectId && !suggestion && !classifying && projects.length > 0 && (
-        <div className="flex-row flex-wrap mb-lg post-save-picker">
-          <span>{t('addToProject', lang)}</span>
-          {postSavePickerOpen ? (
-            <div className="flex flex-wrap gap-6">
-              {projects.map((p) => (
-                <button key={p.id} className="btn btn-sm-compact" onClick={() => onPostSaveAssign(p.id)}>
-                  {p.name}
-                </button>
-              ))}
-              <button className="btn btn-sm-compact" onClick={() => onSetPostSavePickerOpen(false)}>
-                ×
+        <div className="post-save-picker-prominent mb-lg">
+          <p className="post-save-picker-prompt">{t('addToProjectPrompt', lang)}</p>
+          <div className="flex flex-wrap gap-6">
+            {projects.map((p) => (
+              <button key={p.id} className="btn btn-sm-compact" onClick={() => onPostSaveAssign(p.id)}>
+                {p.name}
               </button>
-            </div>
-          ) : (
-            <button className="btn btn-primary btn-sm-compact" onClick={() => onSetPostSavePickerOpen(true)}>
-              {t('addToProject', lang)}
-            </button>
-          )}
+            ))}
+          </div>
         </div>
       )}
       <h3 className="result-title">{result.title}</h3>

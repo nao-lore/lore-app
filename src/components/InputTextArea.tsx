@@ -5,6 +5,7 @@ import type { Lang } from '../i18n';
 import FirstUseTooltip from '../FirstUseTooltip';
 import { shouldUseBuiltinApi, getBuiltinUsage } from '../provider';
 import { canTransform, DAILY_LIMIT_FREE } from '../utils/trialManager';
+import { getTotalSnapshots } from '../storage/core';
 
 /** Strip BOM and normalize line endings before processing */
 function normalizeInput(text: string): string {
@@ -101,11 +102,11 @@ export const InputTextArea = memo(function InputTextArea({
         style={{ opacity: loading ? 0.6 : 1 }}
       />
 
-      {/* Try sample link */}
+      {/* Try sample button — prominent with pulse for first-time users */}
       {!text.trim() && filesCount === 0 && !loading && (
         <button
           type="button"
-          className="try-sample-btn"
+          className={`try-sample-btn try-sample-btn-prominent${getTotalSnapshots() === 0 ? ' try-sample-btn-pulse' : ''}`}
           onClick={onLoadDemo}
         >
           {t('trySampleConversation', lang)}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ClipboardPaste, Wand2, Play } from 'lucide-react';
+import { ClipboardPaste, Wand2, Play, CheckCircle } from 'lucide-react';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { useFocusTrap } from './useFocusTrap';
@@ -33,11 +33,42 @@ const LANG_OPTIONS: { code: Lang; label: string; flag: string }[] = [
 
 // Chrome Web Store URL — update when published
 const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/lore-ai-conversation-snap/opkdpjpgkjcjpkahbljjnhnahliedmkc';
+const CHROME_EXTENSION_ID = 'opkdpjpgkjcjpkahbljjnhnahliedmkc';
+
+/** Try to ping the Chrome extension to see if it's installed */
+function detectChromeExtension(): Promise<boolean> {
+  return new Promise((resolve) => {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+        chrome.runtime.sendMessage(CHROME_EXTENSION_ID, { type: 'ping' }, (response) => {
+          // If we get any response, extension is installed
+          if (chrome.runtime.lastError) {
+            resolve(false);
+          } else {
+            resolve(!!response);
+          }
+        });
+        // Timeout fallback — if no response in 1s, assume not installed
+        setTimeout(() => resolve(false), 1000);
+      } else {
+        resolve(false);
+      }
+    } catch {
+      resolve(false);
+    }
+  });
+}
 
 export default function Onboarding({ lang, onLangChange, onClose, initialStep = 0 }: OnboardingProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(true);
   // Clamp initialStep to valid range for 4 steps
   const [step, setStep] = useState(Math.min(initialStep, 3));
+  const [extensionDetected, setExtensionDetected] = useState(false);
+
+  // Check for Chrome extension on mount
+  useEffect(() => {
+    detectChromeExtension().then(setExtensionDetected).catch(() => {});
+  }, []);
 
   const finish = useCallback(() => {
     markOnboardingDone();
@@ -171,21 +202,30 @@ export default function Onboarding({ lang, onLangChange, onClose, initialStep = 
             </p>
           </div>
         ) : current.custom === 'extensionReady' ? (
-          /* Step 3: Chrome extension + You're all set */
+          /* Step 4: Chrome extension + You're all set */
           <>
-            <p className="onboarding-desc no-margin">
-              {t(current.descKey as Parameters<typeof t>[0], lang)}
-            </p>
-            <div className="flex justify-center mb-28">
-              <a
-                href={CHROME_EXTENSION_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary btn-onboarding onboarding-ext-link"
-              >
-                {t('onboardingExtensionInstall', lang)}
-              </a>
-            </div>
+            {extensionDetected ? (
+              <div className="flex-row justify-center mb-28 onboarding-ext-detected">
+                <CheckCircle size={20} aria-hidden="true" />
+                <span>{t('onboardingExtDetected', lang)}</span>
+              </div>
+            ) : (
+              <>
+                <p className="onboarding-desc no-margin">
+                  {t(current.descKey as Parameters<typeof t>[0], lang)}
+                </p>
+                <div className="flex justify-center mb-28">
+                  <a
+                    href={CHROME_EXTENSION_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary btn-onboarding onboarding-ext-link"
+                  >
+                    {t('onboardingExtensionInstall', lang)}
+                  </a>
+                </div>
+              </>
+            )}
           </>
         ) : (
           <p className="onboarding-desc">

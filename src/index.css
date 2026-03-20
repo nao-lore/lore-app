@@ -6161,3 +6161,186 @@ button[disabled] {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* ─── PWA Standalone back button ─── */
+.pwa-standalone-back {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 1100;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 6px 12px 6px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-subtle);
+  cursor: pointer;
+  min-height: 36px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.12s ease;
+}
+.pwa-standalone-back:hover {
+  background: var(--interactive-hover);
+  color: var(--text-body);
+}
+.pwa-standalone-back:active {
+  background: var(--interactive-active);
+}
+.pwa-standalone-back:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+[dir="rtl"] .pwa-standalone-back {
+  left: auto;
+  right: 8px;
+}
+
+/* ─── PWA Install button ─── */
+.pwa-install-btn {
+  position: fixed;
+  bottom: 72px;
+  right: 16px;
+  z-index: 1100;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #fff;
+  cursor: pointer;
+  min-height: 36px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.15s ease;
+}
+.pwa-install-btn:hover {
+  opacity: 0.9;
+}
+.pwa-install-btn:active {
+  transform: scale(0.97);
+}
+.pwa-install-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+[dir="rtl"] .pwa-install-btn {
+  right: auto;
+  left: 16px;
+}
+
+/* ===== U4: Prominent try-sample button ===== */
+.try-sample-btn-prominent {
+  display: block;
+  margin: 12px auto;
+  padding: 10px 24px;
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.try-sample-btn-prominent:hover {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+@keyframes trySamplePulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent); }
+  50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+.try-sample-btn-pulse {
+  animation: trySamplePulse 2s ease-in-out infinite;
+}
+
+/* ===== U10: Prominent post-save project picker ===== */
+.post-save-picker-prominent {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 10px;
+  padding: 16px;
+}
+.post-save-picker-prompt {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0 0 10px;
+}
+
+/* ===== U13: Extension detected indicator ===== */
+.onboarding-ext-detected {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--success-text, #22c55e);
+  font-weight: 600;
+  font-size: 16px;
+  padding: 16px;
+}
+
+/* ===== L25: FAQ section ===== */
+.lp-faq-list {
+  max-width: 700px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lp-faq-item {
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.lp-faq-item[open] {
+  border-color: var(--accent);
+}
+.lp-faq-question {
+  padding: 16px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lp-faq-question::-webkit-details-marker {
+  display: none;
+}
+.lp-faq-question::after {
+  content: '+';
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+.lp-faq-item[open] .lp-faq-question::after {
+  content: '\2212';
+}
+.lp-faq-question:hover {
+  color: var(--accent);
+}
+.lp-faq-answer {
+  padding: 0 20px 16px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-muted);
+  margin: 0;
+}

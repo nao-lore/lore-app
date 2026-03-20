@@ -4,13 +4,22 @@
  * Bridges the Lore PWA with the Chrome extension by:
  * 1. Syncing existing contexts on page load
  * 2. Listening for `lore-context-updated` custom events for live updates
+ * 3. Monitoring localStorage changes (storage event) for cross-tab/PWA updates
  *
  * The PWA writes context data to localStorage under the key
  * `lore_contexts`, and this script forwards it to the
  * background service worker via chrome.runtime.sendMessage.
+ *
+ * sync-from-lore performs a full overwrite in background.js, so if a project
+ * is deleted in the PWA the extension storage will reflect that automatically.
  */
 
 const LORE_STORAGE_KEY = 'lore_contexts';
+
+/**
+ * Flag to prevent repeated warnings after runtime invalidation (E13).
+ */
+let runtimeInvalidated = false;
 
 /**
  * Check if the extension runtime is still valid (not invalidated by extension reload).
@@ -25,26 +34,51 @@ function isRuntimeValid() {
 
 /**
  * Read contexts from localStorage and send them to the background worker.
+ * Sends the full object so that background.js overwrites its storage
+ * (deleted projects in PWA are automatically removed from extension).
  */
 async function syncContexts() {
+  // E13: Once runtime is invalidated, stop all sync attempts and only warn once
+  if (runtimeInvalidated) return;
+
   if (!isRuntimeValid()) {
+    runtimeInvalidated = true;
     console.warn('[Lore Bridge] Extension runtime invalidated — page reload required');
     return;
   }
 
   try {
     const raw = localStorage.getItem(LORE_STORAGE_KEY);
-    if (!raw) return;
-
-    const contexts = JSON.parse(raw);
+    // If key is absent or empty, sync an empty object so deletions propagate
+    const contexts = raw ? JSON.parse(raw) : {};
     if (typeof contexts !== 'object' || contexts === null || Array.isArray(contexts)) {
       console.warn('[Lore Bridge] Expected object in localStorage, got:', typeof contexts);
       return;
     }
 
+    // Validate each context entry has required fields
+    const validated = {};
+    for (const [key, value] of Object.entries(contexts)) {
+      if (
+        typeof value !== 'object' ||
+        value === null ||
+        typeof value.projectName !== 'string' ||
+        !value.projectName
+      ) {
+        console.warn(`[Lore Bridge] Skipping invalid context entry: ${key}`);
+        continue;
+      }
+      validated[key] = value;
+    }
+
+    if (Object.keys(validated).length === 0) {
+      console.warn('[Lore Bridge] No valid context entries found');
+      return;
+    }
+
     const response = await chrome.runtime.sendMessage({
       type: 'sync-from-lore',
-      contexts,
+      contexts: validated,
     });
 
     if (response?.error) {
@@ -53,7 +87,14 @@ async function syncContexts() {
       console.log(`[Lore Bridge] Synced ${response?.count ?? 0} contexts to extension`);
     }
   } catch (err) {
-    console.error('[Lore Bridge] Failed to sync contexts:', err);
+    // If sendMessage fails due to invalidated context, flag it (E13)
+    if (String(err).includes('Extension context invalidated') ||
+        String(err).includes('runtime.sendMessage')) {
+      runtimeInvalidated = true;
+      console.warn('[Lore Bridge] Extension runtime invalidated — page reload required');
+    } else {
+      console.error('[Lore Bridge] Failed to sync contexts:', err);
+    }
   }
 }
 
@@ -63,6 +104,18 @@ async function syncContexts() {
 
 window.addEventListener('lore-context-updated', () => {
   syncContexts();
+});
+
+// ---------------------------------------------------------------------------
+// E8: Monitor localStorage changes from other tabs / PWA service worker
+// The 'storage' event fires when localStorage is modified by *another* context
+// (another tab, iframe, or SW), which covers PWA-side project deletions.
+// ---------------------------------------------------------------------------
+
+window.addEventListener('storage', (event) => {
+  if (event.key === LORE_STORAGE_KEY) {
+    syncContexts();
+  }
 });
 
 // ---------------------------------------------------------------------------

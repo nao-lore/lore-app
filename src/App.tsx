@@ -1,5 +1,5 @@
-import React, { useEffect, useState, lazy, Suspense } from 'react';
-import { Menu, ChevronUp } from 'lucide-react';
+import React, { useEffect, useState, useCallback, lazy, Suspense } from 'react';
+import { Menu, ChevronUp, ArrowLeft, Download } from 'lucide-react';
 import Sidebar from './Sidebar';
 import CommandPalette from './CommandPalette';
 import BottomNav from './BottomNav';
@@ -36,6 +36,11 @@ const VIEW_DEPTH: Record<View, number> = {
   projecthome: 2, masternote: 3, knowledgebase: 3, detail: 3,
 };
 
+const isStandalone = typeof window !== 'undefined' &&
+  typeof window.matchMedia === 'function' &&
+  (window.matchMedia('(display-mode: standalone)').matches ||
+   (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
+
 const FONT_SIZE_SCALE: Record<FontSize, number> = { small: 0.87, medium: 1, large: 1.13 };
 
 export default function App() {
@@ -70,6 +75,27 @@ export default function App() {
   }, [s, s.lang]);
 
   const [demoMode, setDemoModeState] = useState(() => isDemoMode());
+
+  // P8: Capture beforeinstallprompt to prevent duplicate install banners
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  useEffect(() => {
+    if (isStandalone) return; // already installed
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = useCallback(async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const result = await deferredInstallPrompt.userChoice;
+    if (result.outcome === 'accepted') {
+      setDeferredInstallPrompt(null);
+    }
+  }, [deferredInstallPrompt]);
 
   const viewLabelMap: Partial<Record<View, string>> = {
     input: t('tabTitleInput', s.lang), detail: t('tabTitleDetail', s.lang), dashboard: t('tabTitleDashboard', s.lang),
@@ -108,6 +134,18 @@ export default function App() {
       {!s.sidebarOpen && s.sidebarHidden && <button className="mobile-menu-btn" onClick={() => { s.setSidebarHidden(false); s.setSidebarOpen(true); safeSetItem(s.SIDEBAR_KEY, 'open'); }} title={t('showSidebar', s.lang)} aria-label={t('ariaShowSidebar', s.lang)}><Menu size={20} /></button>}
       {s.sidebarHidden && <button className="sidebar-reveal-bar" onClick={() => { s.setSidebarHidden(false); s.setSidebarOpen(true); safeSetItem(s.SIDEBAR_KEY, 'open'); }} title={t('showSidebar', s.lang)} aria-label={t('ariaShowSidebar', s.lang)} />}
       {s.sidebarOpen && <aside aria-label="Sidebar"><Sidebar logs={s.logs} projects={s.projects} todos={s.todos} selectedId={s.selectedId} activeProjectId={s.activeProjectId} activeView={s.view} onSelect={s.handleSelect} onNewLog={s.handleNewLog} onOpenSettings={s.handleGoToSettings} onOpenHistory={s.handleGoToHistory} onOpenProjects={s.handleGoToProjects} onOpenTodos={s.handleGoToTodos} onOpenProjectSummaryList={s.handleGoToSummaryList} onOpenDashboard={s.handleGoToDashboard} onOpenTimeline={s.handleGoToTimeline} onOpenWeeklyReport={s.handleGoToWeeklyReport} onOpenTrash={s.handleGoToTrash} onOpenHelp={s.handleGoToHelp} onOpenPricing={s.handleGoToPricing} onCollapse={s.handleCollapseSidebar} onHide={s.handleHideSidebar} onSelectProject={s.handleOpenProjectLogs} onOpenMasterNote={s.handleOpenMasterNote} onRefresh={s.refreshLogs} onDeleted={s.handleDeleted} lang={s.lang} showToast={s.showToast} masterNotes={s.masterNotes} /></aside>}
+      {isStandalone && (VIEW_DEPTH[s.view] ?? 0) >= 1 && (
+        <button className="pwa-standalone-back" onClick={() => window.history.back()} aria-label={t('ariaGoBack', s.lang)}>
+          <ArrowLeft size={18} />
+          <span>{t('pwaBackButton', s.lang)}</span>
+        </button>
+      )}
+      {!isStandalone && deferredInstallPrompt && (
+        <button className="pwa-install-btn" onClick={handleInstallClick} aria-label={t('pwaInstallApp', s.lang)}>
+          <Download size={16} />
+          <span>{t('pwaInstallApp', s.lang)}</span>
+        </button>
+      )}
       <main id="main-content" tabIndex={-1} ref={scrollRef} data-main-scroll className="main-content">
         {demoMode && <DemoBanner lang={s.lang} onExitDemo={() => { setDemoMode(false); setDemoModeState(false); s.setLogsVersion((v: number) => v + 1); }} />}
         <div className="h-full">

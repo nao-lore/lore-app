@@ -417,6 +417,35 @@ function LandingPage({ lang, onGetStarted, onChangeLang }: LandingPageProps) {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section className="lp-section" aria-labelledby="lp-faq">
+        <h2 id="lp-faq" className="lp-section-title">
+          {t('lpFaqTitle', lang)}
+        </h2>
+        <div className="lp-faq-list">
+          <details className="lp-faq-item">
+            <summary className="lp-faq-question">{t('lpFaqDataQ', lang)}</summary>
+            <p className="lp-faq-answer">{t('lpFaqDataA', lang)}</p>
+          </details>
+          <details className="lp-faq-item">
+            <summary className="lp-faq-question">{t('lpFaqServicesQ', lang)}</summary>
+            <p className="lp-faq-answer">{t('lpFaqServicesA', lang)}</p>
+          </details>
+          <details className="lp-faq-item">
+            <summary className="lp-faq-question">{t('lpFaqFreeTierQ', lang)}</summary>
+            <p className="lp-faq-answer">{t('lpFaqFreeTierA', lang)}</p>
+          </details>
+          <details className="lp-faq-item">
+            <summary className="lp-faq-question">{t('lpFaqExportQ', lang)}</summary>
+            <p className="lp-faq-answer">{t('lpFaqExportA', lang)}</p>
+          </details>
+          <details className="lp-faq-item">
+            <summary className="lp-faq-question">{t('lpFaqOpenSourceQ', lang)}</summary>
+            <p className="lp-faq-answer">{t('lpFaqOpenSourceA', lang)}</p>
+          </details>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="lp-footer">
         {/* U14: Language selector */}
