@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Lore — AI Context Sync",
-  "version": "0.1.0",
-  "description": "Capture AI conversations and inject project context. Your AI sessions never start from zero again.",
+  "version": "0.2.0",
+  "description": "Capture and transform AI conversations into structured snapshots — decisions, TODOs, and resume checklists. One click.",
   "permissions": ["activeTab", "scripting", "tabs", "storage"],
   "background": {
     "service_worker": "background.js"
