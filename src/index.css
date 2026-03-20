@@ -4646,6 +4646,11 @@ button[disabled] {
   align-items: center;
   gap: 10px;
 }
+.input-toolbar-row .input-mode-btn {
+  white-space: nowrap;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+}
 
 /* InputView — usage counter */
 .input-usage-counter {

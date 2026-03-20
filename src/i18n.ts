@@ -132,7 +132,7 @@ const labels = {
 
   // Output mode
   createBtnHandoff: { ja: 'スナップショット作成', en: 'Create Snapshot', es: 'Crear Snapshot', fr: 'Créer Snapshot', de: 'Snapshot erstellen', zh: '创建快照', ko: '스냅샷 생성', pt: 'Criar Snapshot' },
-  modeLabelHandoff: { ja: 'コンテキストスナップショット', en: 'Context Snapshot', es: 'Snapshot de Contexto', fr: 'Snapshot de Contexte', de: 'Kontext-Snapshot', zh: '上下文快照', ko: '컨텍스트 스냅샷', pt: 'Snapshot de Contexto' },
+  modeLabelHandoff: { ja: 'スナップショット', en: 'Context Snapshot', es: 'Snapshot', fr: 'Snapshot', de: 'Snapshot', zh: '快照', ko: '스냅샷', pt: 'Snapshot' },
   modeLabelTodoOnly: { ja: 'TODO抽出', en: 'TODO Only', es: 'Solo TODO', fr: 'TODO uniquement', de: 'Nur TODO', zh: 'TODO提取', ko: 'TODO 추출', pt: 'Apenas TODO' },
   modeLabelHandoffTodo: { ja: 'スナップショット＋TODO', en: 'Snapshot + TODO', es: 'Snapshot + TODO', fr: 'Snapshot + TODO', de: 'Snapshot + TODO', zh: '快照＋TODO', ko: '스냅샷＋TODO', pt: 'Snapshot + TODO' },
   createBtnTodoOnly: { ja: 'TODOを抽出', en: 'Extract TODOs', es: 'Extraer TODOs', fr: 'Extraire les TODOs', de: 'TODOs extrahieren', zh: '提取TODO', ko: 'TODO 추출', pt: 'Extrair TODOs' },
