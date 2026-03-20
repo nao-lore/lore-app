@@ -5,7 +5,11 @@
  * 1. Monitor tabs and show badge when Lore contexts are available on AI sites
  * 2. Route messages between content scripts and popup
  * 3. Manage context storage (chrome.storage.local) and injection tracking (chrome.storage.session)
+ * 4. Run transforms via built-in API (extension-native processing)
  */
+
+/* global LoreTransform */
+importScripts('transform.js');
 
 const AI_SITE_PATTERNS = [
   'claude.ai',
@@ -49,13 +53,13 @@ function isAiSite(url) {
  * Update the extension badge for a given tab based on available contexts.
  */
 async function updateBadge(tabId, url) {
-  // Clear badge for non-AI tabs
-  if (!url || !isAiSite(url)) {
-    await chrome.action.setBadgeText({ text: '', tabId });
-    return;
-  }
-
   try {
+    // Clear badge for non-AI tabs
+    if (!url || !isAiSite(url)) {
+      await chrome.action.setBadgeText({ text: '', tabId });
+      return;
+    }
+
     const result = await chrome.storage.local.get(STORAGE_KEY);
     const contexts = result[STORAGE_KEY] ?? {};
     const count = typeof contexts === 'object' && contexts !== null ? Object.keys(contexts).length : 0;
@@ -66,9 +70,8 @@ async function updateBadge(tabId, url) {
     } else {
       await chrome.action.setBadgeText({ text: '', tabId });
     }
-  } catch (err) {
-    console.error('[Lore] Failed to update badge:', err);
-    await chrome.action.setBadgeText({ text: '', tabId });
+  } catch {
+    // Tab may have been closed — ignore silently.
   }
 }
 
@@ -231,6 +234,47 @@ async function handleMessage(message, sender) {
       }
 
       return { success: true, count: Object.keys(contexts).length };
+    }
+
+    // -----------------------------------------------------------------------
+    // Run transform via built-in API
+    // -----------------------------------------------------------------------
+    case 'transform': {
+      const { mode, conversationText, projectId, projectsList } = message;
+      if (!conversationText) return { error: 'No conversation text' };
+
+      const { result, remaining } = await LoreTransform.runTransform(
+        mode || 'handoff',
+        conversationText,
+        projectsList || [],
+      );
+
+      const logEntry = LoreTransform.buildLogEntry(mode || 'handoff', result, projectId);
+
+      // Store as pending log for sync to loresync.dev
+      const pending = await chrome.storage.local.get('lore_pending_logs');
+      const logs = pending.lore_pending_logs || [];
+      logs.push(logEntry);
+      await chrome.storage.local.set({ lore_pending_logs: logs });
+
+      const markdown = LoreTransform.formatLogAsMarkdown(logEntry);
+      return { success: true, logEntry, remaining, markdown };
+    }
+
+    // -----------------------------------------------------------------------
+    // Get pending logs (for bridge sync)
+    // -----------------------------------------------------------------------
+    case 'get-pending-logs': {
+      const pending = await chrome.storage.local.get('lore_pending_logs');
+      return { logs: pending.lore_pending_logs || [] };
+    }
+
+    // -----------------------------------------------------------------------
+    // Clear pending logs after sync
+    // -----------------------------------------------------------------------
+    case 'clear-pending-logs': {
+      await chrome.storage.local.remove('lore_pending_logs');
+      return { success: true };
     }
 
     default:

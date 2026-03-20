@@ -6,7 +6,6 @@ import type { TransformAction } from '../hooks/useTransform';
 import FirstUseTooltip from '../FirstUseTooltip';
 import { shouldUseBuiltinApi, getBuiltinUsage } from '../provider';
 import { canTransform, DAILY_LIMIT_FREE } from '../utils/trialManager';
-import { getTotalSnapshots } from '../storage/core';
 
 /** Strip BOM and normalize line endings before processing */
 function normalizeInput(text: string): string {
@@ -31,14 +30,13 @@ interface InputTextAreaProps {
   dragging: boolean;
   lang: Lang;
   onRunTransform: (action: TransformAction) => Promise<void> | void;
-  onLoadDemo: () => void;
   onClearWithUndo: () => void;
 }
 
 export const InputTextArea = memo(function InputTextArea({
   text, setText, textareaRef, loading, combined, overLimit, overWarn, willChunk,
   filesCount, filesCharTotal, transformAction, progressLabel, dragging,
-  lang, onRunTransform, onLoadDemo, onClearWithUndo,
+  lang, onRunTransform, onClearWithUndo,
 }: InputTextAreaProps) {
   const [pasteFeedback, setPasteFeedback] = useState<string | null>(null);
 
@@ -102,17 +100,6 @@ export const InputTextArea = memo(function InputTextArea({
         placeholder={t('inputPlaceholder', lang)}
         style={{ opacity: loading ? 0.6 : 1 }}
       />
-
-      {/* Try sample button — prominent with pulse for first-time users */}
-      {!text.trim() && filesCount === 0 && !loading && (
-        <button
-          type="button"
-          className={`try-sample-btn${getTotalSnapshots() === 0 ? ' try-sample-btn-prominent try-sample-btn-pulse' : ''}`}
-          onClick={onLoadDemo}
-        >
-          {t('trySampleConversation', lang)}
-        </button>
-      )}
 
       {/* Bottom bar: char count + keyboard hint */}
       <div className="flex-row justify-between input-bottom-bar">

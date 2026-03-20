@@ -39,7 +39,7 @@ function buildSourceReference(_pastedText: string, files: ImportedFile[], charCo
   return { sourceType: 'paste', importedAt: now, charCount };
 }
 
-function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, pendingTodosCount, lastLogCreatedAt }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onDirtyChange?: (dirty: boolean) => void; pendingTodosCount: number; lastLogCreatedAt: string | null }) {
+function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, pendingTodosCount, lastLogCreatedAt, onRefresh }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onDirtyChange?: (dirty: boolean) => void; pendingTodosCount: number; lastLogCreatedAt: string | null; onRefresh?: () => void }) {
   const [text, setText] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const shared = params.get('text');
@@ -103,7 +103,6 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
     if (prev.trim()) showToast?.(t('inputCleared', lang) || 'Cleared', 'default', { label: t('undo', lang) || 'Undo', onClick: () => setText(prev) });
   };
 
-  const handleLoadDemo = () => { loadDemoData().then(({ getDemoConversation }) => { setText(getDemoConversation(lang)); textareaRef.current?.focus(); }).catch(() => {}); };
   const filesCharTotal = files.reduce((sum, f) => sum + f.content.length, 0);
 
   return (
@@ -115,9 +114,9 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
       {savedResult && <PostGenerationPreview savedResult={savedResult} lang={lang} showToast={showToast} onStartNew={handleStartNew} wasFirstTransform={wasFirstTransform} apiCallCount={apiCallCount} />}
 
-      {!savedResult && <InputTextArea text={text} setText={setText} textareaRef={textareaRef} loading={loading} combined={combined} overLimit={overLimit} overWarn={overWarn} willChunk={willChunk} filesCount={files.length} filesCharTotal={filesCharTotal} transformAction={transformAction} progressLabel={progressLabel} dragging={!!fh.dragging} lang={lang} onRunTransform={runTransform} onLoadDemo={handleLoadDemo} onClearWithUndo={handleClearWithUndo} />}
+      {!savedResult && <InputTextArea text={text} setText={setText} textareaRef={textareaRef} loading={loading} combined={combined} overLimit={overLimit} overWarn={overWarn} willChunk={willChunk} filesCount={files.length} filesCharTotal={filesCharTotal} transformAction={transformAction} progressLabel={progressLabel} dragging={!!fh.dragging} lang={lang} onRunTransform={runTransform} onClearWithUndo={handleClearWithUndo} />}
 
-      {!savedResult && <InputToolbar transformAction={transformAction} setTransformAction={setTransformAction} selectedProjectId={selectedProjectId} setSelectedProjectId={setSelectedProjectId} loading={loading} files={files} setFiles={setFiles} fileImportRef={fileImportRef} handleFiles={fh.handleFiles} lang={lang} projects={projects} showToast={showToast} />}
+      {!savedResult && <InputToolbar transformAction={transformAction} setTransformAction={setTransformAction} selectedProjectId={selectedProjectId} setSelectedProjectId={setSelectedProjectId} loading={loading} files={files} setFiles={setFiles} fileImportRef={fileImportRef} handleFiles={fh.handleFiles} lang={lang} projects={projects} showToast={showToast} onProjectAdded={onRefresh} />}
 
       {fh.captureInfo && <CaptureBanner captureInfo={fh.captureInfo} lang={lang} onDismiss={() => fh.setCaptureInfo(null)} />}
 

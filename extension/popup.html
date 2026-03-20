@@ -13,12 +13,12 @@
     </div>
 
     <div class="tabs">
-      <button class="tab active" data-tab="inject">📤 Inject Context</button>
-      <button class="tab" data-tab="capture">📥 Capture</button>
+      <button class="tab active" data-tab="capture">⚡ Snapshot</button>
+      <button class="tab" data-tab="inject">▶️ Resume</button>
     </div>
 
     <!-- Inject Tab -->
-    <div class="tab-content active" id="tab-inject">
+    <div class="tab-content" id="tab-inject">
       <div id="inject-loading" class="loading">Loading contexts...</div>
       <div id="inject-empty" class="empty" style="display:none">
         <p>No project contexts available.</p>
@@ -30,9 +30,30 @@
     </div>
 
     <!-- Capture Tab -->
-    <div class="tab-content" id="tab-capture">
+    <div class="tab-content active" id="tab-capture">
       <p id="stats" class="stats">Detecting AI conversation...</p>
-      <button id="btn-send" class="btn btn-primary" disabled>Send to Lore</button>
+      <div id="capture-options" style="display:none">
+        <label class="capture-label">Project</label>
+        <select id="capture-project" class="capture-select">
+          <option value="">None (assign later)</option>
+        </select>
+        <label class="capture-label">Mode</label>
+        <div class="capture-modes">
+          <button class="capture-mode active" data-mode="handoff">Snapshot</button>
+          <button class="capture-mode" data-mode="handoff_todo">+ TODO</button>
+          <button class="capture-mode" data-mode="todo_only">TODO Only</button>
+        </div>
+      </div>
+      <button id="btn-transform" class="btn btn-primary" disabled>Transform</button>
+      <div id="transform-progress" style="display:none">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <p class="stats" id="transform-status">Transforming...</p>
+      </div>
+      <div id="transform-done" style="display:none">
+        <p class="stats transform-success">✅ Snapshot created &amp; copied!</p>
+        <button id="btn-view-in-lore" class="btn btn-primary">View in Lore →</button>
+        <p class="stats remaining-hint" id="remaining-hint"></p>
+      </div>
     </div>
   </div>
   <script src="popup.js"></script>

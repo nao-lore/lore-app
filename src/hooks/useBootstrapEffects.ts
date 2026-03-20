@@ -104,23 +104,42 @@ export function useBootstrapEffects(params: BootstrapParams): void {
     }
   }, []);
 
-  // 7. Chrome extension import (mount-only, attaches hashchange listener)
+  // 7. Chrome extension import + deep link (mount-only, attaches hashchange listener)
   useEffect(() => {
-    const handleExtensionImport = () => {
-      if (window.location.hash.startsWith('#import=')) {
+    const handleExtensionHash = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#import=')) {
         paramsRef.current.setSelectedId(null);
         paramsRef.current.setInputKey((k: number) => k + 1);
         (paramsRef.current.inputDirtyRef as React.MutableRefObject<boolean>).current = false;
         paramsRef.current.setView('input');
         paramsRef.current.showToast(t('extensionReceived', paramsRef.current.lang), 'success');
+      } else if (hash.startsWith('#log=')) {
+        const logId = hash.slice(5);
+        window.location.hash = '';
+        if (logId) {
+          paramsRef.current.refreshLogs();
+          paramsRef.current.setSelectedId(logId);
+          paramsRef.current.setView('detail');
+        }
       }
     };
-    handleExtensionImport();
-    window.addEventListener('hashchange', handleExtensionImport);
-    return () => window.removeEventListener('hashchange', handleExtensionImport);
+    handleExtensionHash();
+    window.addEventListener('hashchange', handleExtensionHash);
+    return () => window.removeEventListener('hashchange', handleExtensionHash);
   }, []);
 
-  // 8. Show onboarding if not yet completed (mount-only)
+  // 8. Listen for extension bridge log imports (mount-only)
+  useEffect(() => {
+    const handleLogsUpdated = () => {
+      paramsRef.current.refreshLogs();
+      paramsRef.current.showToast(t('extensionReceived', paramsRef.current.lang), 'success');
+    };
+    window.addEventListener('lore-logs-updated', handleLogsUpdated);
+    return () => window.removeEventListener('lore-logs-updated', handleLogsUpdated);
+  }, []);
+
+  // 9. Show onboarding if not yet completed (mount-only)
   useEffect(() => {
     if (!isOnboardingDone()) {
       paramsRef.current.setShowOnboarding(true);

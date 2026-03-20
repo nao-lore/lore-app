@@ -206,3 +206,102 @@ body {
   opacity: 0.35;
   cursor: default;
 }
+
+/* Capture options */
+.capture-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  margin-top: 10px;
+}
+
+.capture-label:first-child {
+  margin-top: 0;
+}
+
+.capture-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1a1a2e;
+  background: #fff;
+  cursor: pointer;
+}
+
+.capture-select:focus {
+  outline: none;
+  border-color: #7c5cfc;
+}
+
+.capture-modes {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.capture-mode {
+  flex: 1;
+  padding: 6px 4px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.capture-mode:hover {
+  border-color: #7c5cfc;
+  color: #7c5cfc;
+}
+
+.capture-mode.active {
+  background: #7c5cfc;
+  border-color: #7c5cfc;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Progress bar */
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #7c5cfc;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Transform done */
+.transform-success {
+  color: #22c55e !important;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.remaining-hint {
+  text-align: center;
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 8px;
+}
