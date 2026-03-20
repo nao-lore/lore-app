@@ -43,7 +43,7 @@ export default function Workspace(props: WorkspaceProps) {
     <WorkspaceProvider value={ctxValue}>
       {mode === 'detail' && selectedId
         ? <DetailView id={selectedId} onDeleted={onDeleted} onOpenLog={onOpenLog} onBack={onBack} prevView={prevView} lang={lang} projects={projects} onRefresh={onRefresh} showToast={showToast} onTagFilter={onTagFilter} allLogs={allLogs} onOpenMasterNote={onOpenMasterNote} />
-        : <InputView onSaved={onSaved} onOpenLog={onOpenLog} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onDirtyChange={onDirtyChange} pendingTodosCount={pendingTodosCount} lastLogCreatedAt={lastLogCreatedAt} />
+        : <InputView onSaved={onSaved} onOpenLog={onOpenLog} lang={lang} activeProjectId={activeProjectId} projects={projects} showToast={showToast} onDirtyChange={onDirtyChange} pendingTodosCount={pendingTodosCount} lastLogCreatedAt={lastLogCreatedAt} onRefresh={onRefresh} />
       }
     </WorkspaceProvider>
   );

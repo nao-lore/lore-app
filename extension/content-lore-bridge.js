@@ -125,7 +125,60 @@ window.addEventListener('storage', (event) => {
 });
 
 // ---------------------------------------------------------------------------
+// Reverse sync: Import pending logs from extension into PWA localStorage
+// ---------------------------------------------------------------------------
+
+async function importPendingLogs() {
+  if (runtimeInvalidated || !isRuntimeValid()) return;
+
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'get-pending-logs' });
+    const pendingLogs = response?.logs;
+    if (!pendingLogs || pendingLogs.length === 0) return;
+
+    // Read current logs from PWA localStorage
+    const LOGS_KEY = 'threadlog_logs';
+    const raw = localStorage.getItem(LOGS_KEY);
+    let logs = [];
+    try { logs = raw ? JSON.parse(raw) : []; } catch { logs = []; }
+    if (!Array.isArray(logs)) logs = [];
+
+    // Add pending logs (prepend — newest first), avoiding duplicates
+    const existingIds = new Set(logs.map((l) => l.id));
+    let added = 0;
+    for (const entry of pendingLogs) {
+      if (entry.id && !existingIds.has(entry.id)) {
+        logs.unshift(entry);
+        existingIds.add(entry.id);
+        added++;
+      }
+    }
+
+    if (added > 0) {
+      localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+      // Increment snapshot counter
+      const counterRaw = localStorage.getItem('lore_snapshot_count');
+      const counter = counterRaw ? parseInt(counterRaw, 10) : 0;
+      localStorage.setItem('lore_snapshot_count', String(counter + added));
+      // Dispatch event so the PWA picks up changes
+      window.dispatchEvent(new CustomEvent('lore-logs-updated'));
+      console.log(`[Lore Bridge] Imported ${added} pending log(s) from extension`);
+    }
+
+    // Clear pending logs in extension
+    await chrome.runtime.sendMessage({ type: 'clear-pending-logs' });
+  } catch (err) {
+    if (String(err).includes('Extension context invalidated') || String(err).includes('runtime.sendMessage')) {
+      runtimeInvalidated = true;
+    } else {
+      console.error('[Lore Bridge] Failed to import pending logs:', err);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Initial sync on page load
 // ---------------------------------------------------------------------------
 
 syncContexts();
+importPendingLogs();

@@ -237,9 +237,51 @@ loadContexts();
 // =============================================================================
 
 const statsEl = document.getElementById('stats');
-const btnSend = document.getElementById('btn-send');
+const btnTransform = document.getElementById('btn-transform');
+const captureOptionsEl = document.getElementById('capture-options');
+const captureProjectEl = document.getElementById('capture-project');
+const transformProgressEl = document.getElementById('transform-progress');
+const transformDoneEl = document.getElementById('transform-done');
+const progressFillEl = document.getElementById('progress-fill');
+const transformStatusEl = document.getElementById('transform-status');
+const remainingHintEl = document.getElementById('remaining-hint');
+const btnViewInLore = document.getElementById('btn-view-in-lore');
 
 let extractedJson = null;
+let extractedConversationText = null;
+let selectedMode = 'handoff';
+let createdLogId = null;
+
+// Mode selector buttons
+document.querySelectorAll('.capture-mode').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.capture-mode').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedMode = btn.dataset.mode;
+  });
+});
+
+// Load projects from extension storage (synced from loresync.dev)
+async function loadProjectsForCapture() {
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'get-contexts' });
+    const contextsObj = response?.contexts || {};
+    const seen = new Set();
+    for (const [projectId, ctx] of Object.entries(contextsObj)) {
+      if (ctx.projectName && !seen.has(projectId)) {
+        seen.add(projectId);
+        const opt = document.createElement('option');
+        opt.value = projectId;
+        opt.textContent = ctx.projectName;
+        captureProjectEl.appendChild(opt);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load projects for capture:', err);
+  }
+}
+
+loadProjectsForCapture();
 
 function setStats(text, isError) {
   statsEl.textContent = text;
@@ -332,20 +374,87 @@ async function runCapture() {
 
     extractedJson = buildJson(result, extractor.source, tab.url);
 
+    // Build plain conversation text for transform
+    extractedConversationText = result.messages
+      .map((m) => (m.role === 'user' ? 'User: ' : 'Assistant: ') + m.content)
+      .join('\n\n');
+
     const msgCount = result.messages.length;
-    setStats(msgCount + ' messages captured from this chat');
-    btnSend.disabled = false;
+    setStats(msgCount + ' messages captured from ' + extractor.name);
+    captureOptionsEl.style.display = 'block';
+    btnTransform.disabled = false;
   } catch (err) {
     console.error('Extraction failed:', err);
     setStats('Failed to extract. Try refreshing.', true);
   }
 }
 
-btnSend.addEventListener('click', async () => {
-  if (!extractedJson) return;
+btnTransform.addEventListener('click', async () => {
+  if (!extractedConversationText) return;
 
-  const importHash = '#import=' + encodeURIComponent(extractedJson);
+  // Show progress
+  btnTransform.style.display = 'none';
+  captureOptionsEl.style.display = 'none';
+  transformProgressEl.style.display = 'block';
+
+  // Animate progress bar
+  let pct = 0;
+  const progressInterval = setInterval(() => {
+    pct = Math.min(pct + (90 - pct) * 0.05, 90);
+    progressFillEl.style.width = pct + '%';
+  }, 200);
+
+  try {
+    const projectId = captureProjectEl.value || undefined;
+    const response = await chrome.runtime.sendMessage({
+      type: 'transform',
+      mode: selectedMode,
+      conversationText: extractedConversationText,
+      projectId,
+    });
+
+    clearInterval(progressInterval);
+
+    if (response.error) {
+      throw new Error(response.error);
+    }
+
+    // Success
+    progressFillEl.style.width = '100%';
+    createdLogId = response.logEntry?.id;
+
+    // Copy result to clipboard
+    if (response.markdown) {
+      try {
+        await navigator.clipboard.writeText(response.markdown);
+      } catch {
+        // Clipboard API may fail in popup — ignore
+      }
+    }
+
+    setTimeout(() => {
+      transformProgressEl.style.display = 'none';
+      transformDoneEl.style.display = 'block';
+      statsEl.style.display = 'none';
+
+      if (response.remaining !== null && response.remaining !== undefined) {
+        remainingHintEl.textContent = response.remaining + ' transforms remaining today';
+      }
+    }, 300);
+  } catch (err) {
+    clearInterval(progressInterval);
+    transformProgressEl.style.display = 'none';
+    btnTransform.style.display = 'block';
+    captureOptionsEl.style.display = 'block';
+    setStats('Transform failed: ' + err.message, true);
+    btnTransform.disabled = false;
+  }
+});
+
+// View in Lore button
+btnViewInLore.addEventListener('click', async () => {
   const baseUrl = 'https://loresync.dev';
+  const hash = createdLogId ? '#log=' + createdLogId : '';
 
   try {
     const tabs = await chrome.tabs.query({});
@@ -353,20 +462,15 @@ btnSend.addEventListener('click', async () => {
 
     if (existing) {
       await chrome.tabs.update(existing.id, {
-        url: baseUrl + '/' + importHash,
+        url: baseUrl + '/' + hash,
         active: true,
       });
       await chrome.windows.update(existing.windowId, { focused: true });
     } else {
-      await chrome.tabs.create({ url: baseUrl + '/' + importHash });
+      await chrome.tabs.create({ url: baseUrl + '/' + hash });
     }
-
-    btnSend.textContent = 'Sent!';
-    setTimeout(() => {
-      btnSend.textContent = 'Send to Lore';
-    }, 2000);
   } catch (err) {
-    setStats('Failed to send: ' + err.message, true);
+    console.error('Failed to open Lore:', err);
   }
 });
 

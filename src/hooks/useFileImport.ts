@@ -106,7 +106,7 @@ export function useFileImport(params: UseFileImportParams) {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   }, [setFiles]);
 
-  // Import from URL hash (extension "Send to Lore" flow)
+  // Import from URL hash (extension "Send to Lore" flow — legacy capture-only mode)
   const handleHashImport = useCallback(() => {
     const hash = window.location.hash;
     if (!hash.startsWith('#import=')) return;
