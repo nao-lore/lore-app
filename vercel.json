@@ -1,5 +1,4 @@
 {
-  "_comment_csp": "TODO: CSP strict-dynamic requires nonce-based script loading. This means generating a unique nonce per request (needs a serverless middleware or edge function to inject it into both the CSP header and every <script> tag). Too invasive for the current static-deploy architecture — revisit when migrating to SSR or adding a Vercel Edge Middleware layer.",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "headers": [
