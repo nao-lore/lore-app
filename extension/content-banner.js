@@ -196,13 +196,25 @@
     console.log('[Lore Banner] Gemini: found editor', editor.className);
     editor.focus();
 
-    // Gemini's Quill editor needs: set innerHTML with <p> tags, remove ql-blank, dispatch input
-    // Quill doesn't respond to execCommand or paste events properly
-    var paragraphs = text.split('\n').map(function (line) {
+    // E11: Use Quill document API if available for proper internal state sync
+    var quill = editor.__quill;
+    if (quill && typeof quill.setText === 'function' && typeof quill.clipboard === 'object') {
+      console.log('[Lore Banner] Gemini: using Quill API');
+      var paragraphs = text.split('\n').map(function (line) {
+        return '<p>' + line.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
+      }).join('');
+      quill.setText('');
+      quill.clipboard.dangerouslyPasteHTML(0, paragraphs);
+      return quill.getLength() > 1;
+    }
+
+    // Fallback: innerHTML injection for when __quill is not exposed
+    console.log('[Lore Banner] Gemini: Quill API not available, using innerHTML fallback');
+    var paragraphsHtml = text.split('\n').map(function (line) {
       return '<p>' + line.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
     }).join('');
 
-    editor.innerHTML = paragraphs;
+    editor.innerHTML = paragraphsHtml;
     editor.classList.remove('ql-blank');
 
     // Dispatch events to make Gemini recognize the input

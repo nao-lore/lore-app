@@ -208,7 +208,7 @@ describe('InputView', () => {
   it('textarea is present and accepts input', () => {
     render(<InputView {...defaultProps} />);
     // Multiple elements may share the same aria-label; find the textarea specifically
-    const textareas = screen.getAllByLabelText(/Paste an AI conversation/i);
+    const textareas = screen.getAllByLabelText(/Paste.*AI conversation/i);
     const textarea = textareas.find((el) => el.tagName === 'TEXTAREA');
     expect(textarea).toBeTruthy();
     expect(textarea!.tagName).toBe('TEXTAREA');

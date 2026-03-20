@@ -70,12 +70,17 @@ function formatContextForSite(ctx, site) {
 /**
  * This function is serialized and executed inside the AI site's page context
  * via chrome.scripting.executeScript, so it cannot reference any outer scope.
+ *
+ * E14: Clears existing content before injecting to prevent collision with
+ * user's in-progress typing (overwrite mode).
  */
 function injectText(text, site) {
   if (site === 'claude') {
     const editor = document.querySelector('div.ProseMirror[contenteditable="true"]');
     if (!editor) return false;
     editor.focus();
+    // E14: Clear existing content before injection
+    editor.innerHTML = '';
     const dt = new DataTransfer();
     dt.setData('text/plain', text);
     editor.dispatchEvent(
@@ -87,11 +92,14 @@ function injectText(text, site) {
     const editor = document.querySelector('#prompt-textarea');
     if (!editor) return false;
     if (editor.tagName === 'TEXTAREA') {
+      // E14: Overwrite — setter replaces entire value
       const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
       setter.call(editor, text);
       editor.dispatchEvent(new Event('input', { bubbles: true }));
     } else {
       editor.focus();
+      // E14: Clear existing content before injection
+      editor.innerHTML = '';
       const dt = new DataTransfer();
       dt.setData('text/plain', text);
       editor.dispatchEvent(
@@ -106,6 +114,8 @@ function injectText(text, site) {
       document.querySelector('div[contenteditable="true"][aria-label]');
     if (!editor) return false;
     editor.focus();
+    // E14: Clear existing content before injection
+    editor.innerHTML = '';
     const dt = new DataTransfer();
     dt.setData('text/plain', text);
     editor.dispatchEvent(
@@ -292,7 +302,12 @@ async function runCapture() {
       !Array.isArray(result.messages) ||
       result.messages.length === 0
     ) {
-      setStats('No messages found.', true);
+      // E10: Show extraction error message from content script if available
+      if (result && result.extractionError) {
+        setStats(result.extractionError, true);
+      } else {
+        setStats('No messages found.', true);
+      }
       return;
     }
 

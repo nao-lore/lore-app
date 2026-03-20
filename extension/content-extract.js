@@ -101,7 +101,7 @@
       }
     }
 
-    // Fallback: conversation turn containers
+    // Fallback 1: conversation turn containers
     if (messages.length === 0) {
       var turns = document.querySelectorAll('[data-testid^="conversation-turn-"]');
       for (var j = 0; j < turns.length; j++) {
@@ -123,6 +123,40 @@
           timestamp: extractTimestamp(turn),
         });
       }
+    }
+
+    // Fallback 2 (E10): innerText-based last resort using .markdown elements
+    if (messages.length === 0) {
+      var markdownEls = document.querySelectorAll('.markdown');
+      for (var m = 0; m < markdownEls.length; m++) {
+        var mdEl = markdownEls[m];
+        var mdText = extractText(mdEl);
+        if (!mdText) continue;
+
+        // Heuristic: check closest ancestor for role hints
+        var ancestor = mdEl.closest('[data-message-author-role]');
+        var mdRole = 'assistant';
+        if (ancestor) {
+          var attrRole = ancestor.getAttribute('data-message-author-role');
+          if (attrRole === 'user') mdRole = 'user';
+        }
+
+        messages.push({
+          role: mdRole,
+          content: mdText,
+          timestamp: null,
+        });
+      }
+    }
+
+    // If all selectors failed, return a user-facing error message
+    if (messages.length === 0) {
+      return {
+        messages: [],
+        title: null,
+        url: window.location.href,
+        extractionError: 'Could not extract messages. Please copy the conversation manually and paste it in Lore.',
+      };
     }
 
     var title = getPageTitle(/\s*[\|\-]\s*ChatGPT\s*$/i);
