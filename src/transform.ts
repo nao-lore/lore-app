@@ -261,8 +261,8 @@ function logValidationWarning(msg: string): void {
     console.warn(fullMsg);
   }
   // Report to Sentry in production if available
-  if (typeof window !== 'undefined' && (window as Record<string, unknown>).Sentry) {
-    const Sentry = (window as Record<string, unknown>).Sentry as { captureMessage?: (msg: string, level?: string) => void };
+  if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).Sentry) {
+    const Sentry = (window as unknown as Record<string, unknown>).Sentry as { captureMessage?: (msg: string, level?: string) => void };
     Sentry.captureMessage?.(fullMsg, 'warning');
   }
 }

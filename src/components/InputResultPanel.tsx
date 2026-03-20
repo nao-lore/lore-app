@@ -30,7 +30,7 @@ interface InputResultPanelProps {
 export const InputResultPanel = memo(function InputResultPanel({
   result, outputMode, savedId, savedHandoffId,
   classifying, suggestion, selectedProjectId, projects,
-  postSavePickerOpen, onSetPostSavePickerOpen,
+  postSavePickerOpen: _postSavePickerOpen, onSetPostSavePickerOpen,
   onAcceptSuggestion, onDismissSuggestion, onPostSaveAssign,
   onOpenLog, lang, showToast,
 }: InputResultPanelProps) {

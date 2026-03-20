@@ -18,7 +18,6 @@ import {
   CHUNK_HANDOFF_EXTRACT_ULTRA_PROMPT as HANDOFF_EXTRACT_ULTRA_PROMPT,
   CHUNK_BOTH_EXTRACT_PROMPT as BOTH_EXTRACT_PROMPT,
   CHUNK_COMPLETED_EXTRACT_PROMPT as COMPLETED_EXTRACT_PROMPT,
-  CHUNK_CONSISTENCY_CHECK_PROMPT as CONSISTENCY_CHECK_PROMPT,
   CHUNK_FINAL_SUMMARIZATION_PROMPT as FINAL_SUMMARIZATION_PROMPT,
   CHUNK_WORKLOG_EXTRACT_PROMPT as WORKLOG_EXTRACT_PROMPT,
   CHUNK_POST_MERGE_PROMPT as POST_MERGE_PROMPT,
@@ -1091,38 +1090,6 @@ export class ChunkEngine {
     } catch (err) {
       if (import.meta.env.DEV) console.warn('[chunkEngine] completed extraction failed:', err);
       return [];
-    }
-  }
-
-  /** Run consistency check on merged handoff */
-  private async runConsistencyCheck(
-    apiKey: string, mergedResult: PartialResult, mode: ExtractMode, onProgress: ProgressCallback, savedCount: number,
-  ): Promise<PartialResult | null> {
-    onProgress({ phase: 'consistency', current: 2, total: 2, savedCount, message: 'consistency:check' });
-    try {
-      const handoffData: PartialResult | undefined = mode === 'both'
-        ? mergedResult.handoff as PartialResult | undefined
-        : mergedResult;
-
-      if (handoffData) {
-        const MAX_DECISIONS_FOR_CHECK = 10;
-        const fullDecisions = handoffData.decisions;
-        let trimmedDecisions: unknown[] | undefined;
-        if (Array.isArray(fullDecisions) && fullDecisions.length > MAX_DECISIONS_FOR_CHECK) {
-          trimmedDecisions = fullDecisions.slice(-MAX_DECISIONS_FOR_CHECK);
-        }
-        const checkPayload = trimmedDecisions ? { ...handoffData, decisions: trimmedDecisions } : handoffData;
-        const handoffJson = JSON.stringify(checkPayload);
-        return await callApiRaw(
-          apiKey, CONSISTENCY_CHECK_PROMPT,
-          `Clean up and output the final handoff JSON:\n\n${handoffJson}`,
-          8192, true,
-        );
-      }
-      return null;
-    } catch (err) {
-      if (import.meta.env.DEV) console.warn('[chunkEngine] consistency check failed:', err);
-      return null;
     }
   }
 
