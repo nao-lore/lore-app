@@ -54,7 +54,7 @@ export interface RouteMapDeps {
   handleOpenKnowledgeBase: (projectId: string) => void;
   handleNewLog: () => void;
   handleSaved: (id: string) => void;
-  handleDeleted: (id: string) => void;
+  handleDeleted: () => void;
   handleBack: () => void;
   handleDashboardToggleAction: (logId: string, idx: number) => void;
   handleThemeChange: (t: ThemePref) => void;

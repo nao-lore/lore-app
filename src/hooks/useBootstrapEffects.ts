@@ -16,7 +16,7 @@ interface BootstrapParams {
   inputDirtyRef: React.RefObject<boolean>;
   setView: (v: View) => void;
   setShowOnboarding: (v: boolean) => void;
-  setOfflineStatus: (v: 'online' | 'offline' | 'back') => void;
+  setOfflineStatus: (v: 'online' | 'offline' | 'back-online') => void;
   setOfflineDismissed: (v: boolean) => void;
   setShowScrollTop: (v: boolean) => void;
   scrollRef: React.RefObject<HTMLElement | null>;
@@ -49,7 +49,7 @@ export function useBootstrapEffects(params: BootstrapParams): void {
       paramsRef.current.setOfflineDismissed(false);
     };
     const handleOnline = () => {
-      paramsRef.current.setOfflineStatus('back');
+      paramsRef.current.setOfflineStatus('back-online');
       onlineTimer = setTimeout(() => paramsRef.current.setOfflineStatus('online'), 3000);
     };
     window.addEventListener('offline', handleOffline);

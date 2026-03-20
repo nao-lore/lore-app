@@ -311,7 +311,7 @@ export function useTransform(params: UseTransformParams) {
       // Assess output quality for handoff results (#47)
       if (actionResult.savedHandoffLog && combined) {
         try {
-          assessAndRecord(combined, actionResult.savedHandoffLog);
+          assessAndRecord(combined, actionResult.savedHandoffLog as unknown as HandoffResult);
         } catch { /* quality assessment is non-critical */ }
       }
 

@@ -52,7 +52,7 @@ export function useAppState() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const shortcutsTrapRef = useFocusTrap<HTMLDivElement>(shortcutsOpen);
   const [showReportReminder, setShowReportReminder] = useState(false);
-  const [offlineStatus, setOfflineStatus] = useState<'online' | 'offline' | 'back'>(() =>
+  const [offlineStatus, setOfflineStatus] = useState<'online' | 'offline' | 'back-online'>(() =>
     navigator.onLine ? 'online' : 'offline'
   );
   const [offlineDismissed, setOfflineDismissed] = useState(false);

@@ -2,6 +2,7 @@ import { useState, memo } from 'react';
 import { X } from 'lucide-react';
 import { t, tf } from '../i18n';
 import type { Lang } from '../i18n';
+import type { TransformAction } from '../hooks/useTransform';
 import FirstUseTooltip from '../FirstUseTooltip';
 import { shouldUseBuiltinApi, getBuiltinUsage } from '../provider';
 import { canTransform, DAILY_LIMIT_FREE } from '../utils/trialManager';
@@ -25,11 +26,11 @@ interface InputTextAreaProps {
   willChunk: boolean;
   filesCount: number;
   filesCharTotal: number;
-  transformAction: string;
+  transformAction: TransformAction;
   progressLabel: string;
   dragging: boolean;
   lang: Lang;
-  onRunTransform: (action: string) => void;
+  onRunTransform: (action: TransformAction) => Promise<void> | void;
   onLoadDemo: () => void;
   onClearWithUndo: () => void;
 }

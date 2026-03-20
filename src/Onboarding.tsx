@@ -42,7 +42,7 @@ function detectChromeExtension(): Promise<boolean> {
       if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
         chrome.runtime.sendMessage(CHROME_EXTENSION_ID, { type: 'ping' }, (response) => {
           // If we get any response, extension is installed
-          if (chrome.runtime.lastError) {
+          if (chrome?.runtime?.lastError) {
             resolve(false);
           } else {
             resolve(!!response);
