@@ -12,6 +12,7 @@ import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import { callWithRetry } from './utils/retryManager';
 import { parseSSEStream, extractGeminiText, extractAnthropicText, extractOpenAIText } from './utils/streamParser';
 import { encrypt, decrypt, isEncrypted, setCachedKey, readKeyForSlot } from './utils/crypto';
+import { acquire as acquireRateLimit } from './utils/rateLimiter';
 
 export type ProviderName = 'anthropic' | 'gemini' | 'openai';
 
@@ -66,6 +67,7 @@ export type StreamCallback = (chunk: string, accumulated: string) => void;
 // ---------------------------------------------------------------------------
 
 async function callAnthropic(req: ProviderRequest): Promise<string> {
+  await acquireRateLimit('anthropic');
   const body = {
     model: ANTHROPIC_MODEL,
     max_tokens: req.maxTokens,
@@ -107,6 +109,7 @@ async function callAnthropic(req: ProviderRequest): Promise<string> {
 // ---------------------------------------------------------------------------
 
 async function callGeminiWithModel(req: ProviderRequest, model: string): Promise<Response> {
+  await acquireRateLimit('gemini');
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
   const generationConfig: Record<string, unknown> = {
@@ -182,6 +185,7 @@ async function callGemini(req: ProviderRequest): Promise<string> {
 // ---------------------------------------------------------------------------
 
 async function callOpenAI(req: ProviderRequest): Promise<string> {
+  await acquireRateLimit('openai');
   const body = {
     model: OPENAI_MODEL,
     max_tokens: req.maxTokens,
@@ -223,6 +227,7 @@ async function callOpenAI(req: ProviderRequest): Promise<string> {
 // ---------------------------------------------------------------------------
 
 async function callGeminiStreamWithModel(req: ProviderRequest, model: string, onChunk: StreamCallback): Promise<string> {
+  await acquireRateLimit('gemini');
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
 
   const streamGenerationConfig: Record<string, unknown> = {
@@ -298,6 +303,7 @@ async function callGeminiStream(req: ProviderRequest, onChunk: StreamCallback): 
 // ---------------------------------------------------------------------------
 
 async function callAnthropicStream(req: ProviderRequest, onChunk: StreamCallback): Promise<string> {
+  await acquireRateLimit('anthropic');
   const body = {
     model: ANTHROPIC_MODEL,
     max_tokens: req.maxTokens,
@@ -347,6 +353,7 @@ async function callAnthropicStream(req: ProviderRequest, onChunk: StreamCallback
 // ---------------------------------------------------------------------------
 
 async function callOpenAIStream(req: ProviderRequest, onChunk: StreamCallback): Promise<string> {
+  await acquireRateLimit('openai');
   const body = {
     model: OPENAI_MODEL,
     max_tokens: req.maxTokens,
@@ -432,7 +439,8 @@ function handleHttpError(status: number, body: string): never {
   if (status === 413 || body.includes('too long') || body.includes('too large')) {
     throw new Error('[Too Long] Input too large for the API.');
   }
-  throw new Error(`[API Error] ${status}: ${(errorMessage || body).slice(0, 500)}`);
+  if (import.meta.env.DEV) console.error(`[provider] API Error ${status}:`, (errorMessage || body).slice(0, 500));
+  throw new Error(`[API Error] ${status}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -472,6 +480,7 @@ function captureRateLimit(res: Response): void {
 }
 
 async function callBuiltin(req: ProviderRequest): Promise<string> {
+  await acquireRateLimit('builtin');
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 60000);
   try {
@@ -513,6 +522,7 @@ async function callBuiltin(req: ProviderRequest): Promise<string> {
 }
 
 async function callBuiltinStream(req: ProviderRequest, onChunk: StreamCallback): Promise<string> {
+  await acquireRateLimit('builtin');
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 60000);
   try {

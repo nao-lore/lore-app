@@ -35,6 +35,8 @@
  * ────────────────────────────────────────────────────────────────────────
  */
 
+import { safeGetItem, safeSetItem } from '../storage/core';
+
 const ENCRYPTED_PREFIX_V1 = 'enc:v1:';
 const ENCRYPTED_PREFIX_V2 = 'enc:v2:';
 
@@ -110,7 +112,7 @@ function getDeviceFingerprint(): string {
 // ---------------------------------------------------------------------------
 
 const PBKDF2_SALT_KEY = 'lore_pbkdf2_salt';
-const PBKDF2_ITERATIONS = 100_000;
+const PBKDF2_ITERATIONS = 600_000;
 
 /** In-memory cache of the PBKDF2 salt for environments where localStorage is unreliable */
 let _cachedSalt: Uint8Array | null = null;
@@ -119,9 +121,9 @@ function getPbkdf2Salt(): Uint8Array {
   // Return in-memory cached salt if available
   if (_cachedSalt) return _cachedSalt;
 
-  try {
-    const stored = localStorage.getItem(PBKDF2_SALT_KEY);
-    if (stored) {
+  const stored = safeGetItem(PBKDF2_SALT_KEY);
+  if (stored) {
+    try {
       const raw = atob(stored);
       const salt = new Uint8Array(raw.length);
       for (let i = 0; i < raw.length; i++) {
@@ -129,17 +131,13 @@ function getPbkdf2Salt(): Uint8Array {
       }
       _cachedSalt = salt;
       return salt;
+    } catch {
+      // Corrupted base64 — fall through to generate new salt
     }
-  } catch {
-    // localStorage unavailable — generate ephemeral salt
   }
   const salt = crypto.getRandomValues(new Uint8Array(16));
   _cachedSalt = salt;
-  try {
-    localStorage.setItem(PBKDF2_SALT_KEY, btoa(String.fromCharCode(...salt)));
-  } catch {
-    // localStorage unavailable — salt won't persist but encryption still works
-  }
+  safeSetItem(PBKDF2_SALT_KEY, btoa(String.fromCharCode(...salt)));
   return salt;
 }
 

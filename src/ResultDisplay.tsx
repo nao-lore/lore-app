@@ -71,11 +71,12 @@ export function HandoffResultDisplay({ result, lang }: { result: HandoffResult; 
   );
 }
 
-function Section({ title, items }: { title: string; items: string[] | undefined }) {
+function Section({ title, items, headingLevel = 3 }: { title: string; items: string[] | undefined; headingLevel?: 2 | 3 | 4 }) {
   if (!items || items.length === 0) return null;
+  const Heading = `h${headingLevel}` as const;
   return (
     <div className="section">
-      <h4>{title}</h4>
+      <Heading>{title}</Heading>
       <ul>
         {items.map((item, i) => <li key={i}>{item}</li>)}
       </ul>

@@ -25,7 +25,7 @@ export default memo(function ErrorRetryBanner({ message, retryLabel, dismissLabe
   };
 
   return (
-    <div className="error-retry-banner" role="alert">
+    <div className="error-retry-banner" role="alert" aria-live="assertive">
       <span className="flex-1">{message}</span>
       {onRetry && (
         <button

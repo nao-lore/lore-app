@@ -170,6 +170,8 @@ describe('i18n', () => {
       weeklyGoalProgress: [3, 5],
       extractionSummary: [3, 5, 2],
       toastOverdueTodos: [3],
+      transformsToday: [5, 20],
+      processedInSteps: [3],
     };
 
     it('all function labels return non-empty strings for ja', () => {

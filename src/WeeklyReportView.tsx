@@ -171,7 +171,8 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
       await sendToSlack(weeklyReportToMarkdown(report, pName));
       showToast?.(t('slackSent', lang), 'success');
     } catch (err) {
-      showToast?.(err instanceof Error ? err.message : String(err), 'error');
+      if (import.meta.env.DEV) console.error('[WeeklyReportView] Slack export error:', err);
+      showToast?.(t('errorExportFailed', lang), 'error');
     } finally {
       setSendingSlack(false);
     }

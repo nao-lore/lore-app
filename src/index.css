@@ -5575,7 +5575,7 @@ button[disabled] {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
   margin-top: 20px;
 }
 
@@ -5584,7 +5584,7 @@ button[disabled] {
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-muted);
   background: var(--bg-surface);
@@ -5806,6 +5806,164 @@ button[disabled] {
   }
 }
 
+/* L15: Mobile LP headline adjustment */
+@media (max-width: 640px) {
+  .lp-hero-headline {
+    font-size: 24px;
+  }
+  .lp-hero-subheadline {
+    font-size: 15px;
+  }
+}
+
+/* L4: After metrics */
+.lp-after-metrics {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.lp-after-metric {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
+/* L6: Chrome extension CTA styles */
+.lp-extension-headline {
+  max-width: 640px;
+  margin: 0 auto 16px;
+}
+
+.lp-extension-desc {
+  max-width: 640px;
+  margin: 0 auto 24px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-muted, #6b7280);
+  text-align: center;
+}
+
+.lp-extension-cta-wrap {
+  text-align: center;
+}
+
+.lp-extension-cta-btn {
+  font-size: 16px;
+  padding: 14px 28px;
+}
+
+/* L11: Annual pricing highlight */
+.lp-pricing-annual-highlight {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 15px;
+  margin: 8px 0;
+  display: inline-block;
+}
+
+/* L10: Pricing comparison table */
+.lp-pricing-compare-wrap {
+  max-width: 640px;
+  margin: 32px auto 0;
+  overflow-x: auto;
+}
+
+.lp-pricing-compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.lp-pricing-compare-table th,
+.lp-pricing-compare-table td {
+  padding: 10px 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.lp-pricing-compare-table th:first-child,
+.lp-pricing-compare-table td:first-child {
+  text-align: left;
+}
+
+.lp-pricing-compare-table th {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.lp-pricing-compare-table td {
+  color: var(--text-body);
+}
+
+/* L21: Why Lore comparison section */
+.lp-why-lore-subtext {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 17px;
+  line-height: 1.6;
+  max-width: 600px;
+  margin: -16px auto 32px;
+}
+
+.lp-compare-table-wrap {
+  max-width: 700px;
+  margin: 0 auto;
+  overflow-x: auto;
+}
+
+.lp-compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.lp-compare-table th,
+.lp-compare-table td {
+  padding: 10px 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.lp-compare-table th:first-child,
+.lp-compare-table td:first-child {
+  text-align: left;
+}
+
+.lp-compare-table th {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.lp-compare-table td {
+  color: var(--text-body);
+}
+
+.lp-compare-yes {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.lp-compare-no {
+  color: var(--text-muted);
+}
+
+.lp-compare-partial {
+  color: var(--text-body);
+  font-style: italic;
+}
+
 /* ===== Extracted inline-style classes (P2 #44) ===== */
 .bulk-action-bar {
   position: sticky;
@@ -5898,4 +6056,108 @@ button[disabled] {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+}
+
+/* ===== U1: LP "What You Get" section ===== */
+.lp-what-you-get-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.lp-what-you-get-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-body);
+}
+.lp-what-you-get-icon {
+  color: var(--success-text);
+  flex-shrink: 0;
+}
+
+/* ===== U5: Free limit reached CTA ===== */
+.input-limit-reached-cta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ===== U6: Small mobile adjustments (640px) ===== */
+@media (max-width: 640px) {
+  .input-card-hero {
+    padding-bottom: 56px;
+    border-radius: 12px;
+  }
+  .input-card-textarea {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+  .input-transform-area {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .btn-transform {
+    font-size: 12px;
+    padding: 7px 14px;
+  }
+  .input-toolbar {
+    flex-wrap: wrap;
+  }
+  .lp-hero-ctas .lp-cta-primary {
+    min-width: 100%;
+  }
+  .lp-hero-headline {
+    font-size: 24px;
+  }
+  .lp-hero-subheadline {
+    font-size: 15px;
+  }
+  .lp-section-title {
+    font-size: 20px;
+  }
+  .result-actions {
+    flex-wrap: wrap;
+  }
+}
+
+/* ===== U7: ErrorBoundary recovery message ===== */
+.error-boundary-recovery {
+  color: var(--success-text);
+  font-size: 14px;
+  font-weight: 500;
+  margin: 8px 0 0;
+}
+
+/* ===== U14: LP language selector ===== */
+.lp-lang-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  color: var(--text-muted);
+}
+.lp-lang-select {
+  appearance: auto;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  background: var(--bg-surface);
+  color: var(--text-body);
+  cursor: pointer;
+}
+.lp-lang-select:hover {
+  border-color: var(--border-hover);
+}
+.lp-lang-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
