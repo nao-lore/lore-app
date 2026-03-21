@@ -28,4 +28,4 @@ Yes. Every snapshot can be exported as JSON. Your project data is stored in stan
 
 **Q: Is it open source?**
 
-Yes, fully. The entire codebase is on GitHub at [github.com/nao-lore/lore-app](https://github.com/nao-lore/lore-app). 775 tests, TypeScript throughout, MIT licensed. Contributions and feedback are welcome.
+Yes, fully. The entire codebase is on GitHub at [github.com/nao-lore/lore-app](https://github.com/nao-lore/lore-app). 778 tests, TypeScript throughout, MIT licensed. Contributions and feedback are welcome.

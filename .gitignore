@@ -29,3 +29,24 @@ test-results/
 .env*.local
 .claude/worktrees/
 lore-landing/
+
+# Personal / private docs (never commit)
+docs/interview-cheatsheet.md
+docs/job-search-plan.md
+docs/learning-guide.md
+docs/life-blueprint.md
+docs/tech-learning-guide.md
+docs/note-article-draft.md
+extension.zip
+
+# Scrapers (separate repo later)
+scripts/scrape-jobs.mjs
+scripts/scrape-reddit.mjs
+
+# Strategy docs (competitive intel, launch plans)
+docs/competitive-responses.md
+docs/PH_LAUNCH_MASTER_CHECKLIST.md
+docs/ph-launch-email.md
+docs/reddit-posts.md
+docs/reddit-claudeai-post.md
+docs/incident-templates.md
