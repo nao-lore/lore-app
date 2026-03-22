@@ -1,13 +1,14 @@
 import type { LogEntry, Todo, WeeklyReport } from './types';
-import { getApiKey } from './storage';
+import { getApiKey, getLang } from './storage';
 import { callProvider, shouldUseBuiltinApi } from './provider';
 import type { ProviderRequest } from './provider';
-import { extractJson } from './transform';
+import { extractJson, detectLanguage, getLangInstruction } from './transform';
 
 const SYSTEM_PROMPT = `You are a weekly report generator. Given a set of work logs and TODO items from a week, generate a structured weekly report in JSON format.
 
 Rules:
 - Write in the same language as the input logs (auto-detect: Japanese or English).
+{LANG_OVERRIDE}
 - Be concise but comprehensive. Each bullet should be a single clear sentence.
 - "summary" should be 3-5 sentences summarizing the entire week.
 - "achievements" lists completed work and progress made.
@@ -107,9 +108,13 @@ export async function generateWeeklyReport(opts: GenerateWeeklyReportOptions): P
 
   opts.onProgress?.('generating');
 
+  const lang = getLang();
+  const resolvedLang = lang !== 'auto' ? lang : detectLanguage(userMessage);
+  const langInstruction = getLangInstruction(resolvedLang);
+
   const req: ProviderRequest = {
     apiKey,
-    system: SYSTEM_PROMPT,
+    system: SYSTEM_PROMPT.replace('{LANG_OVERRIDE}', langInstruction),
     userMessage,
     maxTokens: 8192,
   };

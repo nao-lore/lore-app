@@ -384,7 +384,7 @@ function resolveLang(sourceText: string): string {
   return detectLanguage(sourceText);
 }
 
-function getLangInstruction(lang: string): string {
+export function getLangInstruction(lang: string): string {
   return LANG_INSTRUCTIONS[lang] || LANG_INSTRUCTIONS.en;
 }
 

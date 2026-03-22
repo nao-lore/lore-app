@@ -1,7 +1,7 @@
 import type { LogEntry, MasterNote, LogSummary, SourcedItem } from './types';
 import { callProvider, shouldUseBuiltinApi } from './provider';
-import { getApiKey, getLogSummary, saveLogSummary } from './storage';
-import { extractJson } from './transform';
+import { getApiKey, getLang, getLogSummary, saveLogSummary } from './storage';
+import { extractJson, detectLanguage, getLangInstruction } from './transform';
 
 // ---------------------------------------------------------------------------
 // Step 1: Extract structured summary from a single log (cached)
@@ -21,7 +21,17 @@ Rules:
 - Be concise — one sentence per item
 - Only include items that exist in the log
 - Empty arrays for missing sections
-- Match the language of the input (Japanese or English)`;
+- Match the language of the input (Japanese or English)
+{LANG_OVERRIDE}`;
+
+function resolveLangHint(inputText: string): string {
+  const lang = getLang();
+  if (lang === 'auto') {
+    const detected = detectLanguage(inputText);
+    return getLangInstruction(detected);
+  }
+  return getLangInstruction(lang);
+}
 
 function logToInputText(log: LogEntry): string {
   const parts: string[] = [];
@@ -50,10 +60,12 @@ async function extractLogSummary(log: LogEntry, apiKey: string): Promise<LogSumm
   }
 
   if (import.meta.env.DEV) console.log('[MasterNote] extractLogSummary API call:', log.id);
+  const inputText = logToInputText(log);
+  const langInstruction = resolveLangHint(inputText);
   const rawText = await callProvider({
     apiKey,
-    system: EXTRACT_PROMPT,
-    userMessage: logToInputText(log),
+    system: EXTRACT_PROMPT.replace('{LANG_OVERRIDE}', langInstruction),
+    userMessage: inputText,
     maxTokens: 8192,
   });
 
@@ -103,8 +115,8 @@ Rules:
 - Each item: one clear sentence. No sub-bullets.
 - Drop anything completed, obsolete, or low priority.
 - Prioritize recency — later logs override earlier ones.
-- Match the language of the input (Japanese or English)
-- sourceLogIds MUST use the exact logId values provided in the input`;
+- sourceLogIds MUST use the exact logId values provided in the input
+{LANG_OVERRIDE}`;
 
 function summariesToMergeInput(
   summaries: LogSummary[],
@@ -186,7 +198,8 @@ Rules:
 - Keep unchanged sections as-is
 - decisions: max 5, openIssues: max 4, nextActions: max 3
 - Write concisely — each item should be one clear sentence
-- Match the language of the existing summary`;
+- Match the language of the existing summary
+{LANG_OVERRIDE}`;
 
 export async function refineMasterNote(
   note: MasterNote,
@@ -202,10 +215,12 @@ export async function refineMasterNote(
     nextActions: note.nextActions,
   }, null, 2);
 
+  const userMessage = `Current summary:\n${currentJson}\n\nUser instruction:\n${instruction}`;
+  const langInstruction = resolveLangHint(userMessage);
   const rawText = await callProvider({
     apiKey,
-    system: REFINE_PROMPT,
-    userMessage: `Current summary:\n${currentJson}\n\nUser instruction:\n${instruction}`,
+    system: REFINE_PROMPT.replace('{LANG_OVERRIDE}', langInstruction),
+    userMessage,
     maxTokens: 8192,
   });
 
@@ -264,10 +279,11 @@ export async function generateMasterNote(
   if (import.meta.env.DEV) console.log('[MasterNote] Starting merge with', summaries.length, 'summaries');
 
   const mergeInput = summariesToMergeInput(summaries, existing);
+  const langInstruction = resolveLangHint(mergeInput);
 
   const rawText = await callProvider({
     apiKey,
-    system: MERGE_PROMPT,
+    system: MERGE_PROMPT.replace('{LANG_OVERRIDE}', langInstruction),
     userMessage: mergeInput,
     maxTokens: 8192,
   });

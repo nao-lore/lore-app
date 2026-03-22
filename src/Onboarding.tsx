@@ -17,7 +17,7 @@ interface StepDef {
   descKey: string;
   final?: boolean;
   descAlign?: 'left';
-  custom?: 'lang' | 'howItWorks' | 'snapshotPreview' | 'extensionReady';
+  custom?: 'lang' | 'howToUse' | 'howItWorks' | 'snapshotPreview' | 'extensionReady';
 }
 
 const LANG_OPTIONS: { code: Lang; label: string; flag: string }[] = [
@@ -61,8 +61,8 @@ function detectChromeExtension(): Promise<boolean> {
 
 export default function Onboarding({ lang, onLangChange, onClose, initialStep = 0 }: OnboardingProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(true);
-  // Clamp initialStep to valid range for 4 steps
-  const [step, setStep] = useState(Math.min(initialStep, 3));
+  // Clamp initialStep to valid range for 5 steps
+  const [step, setStep] = useState(Math.min(initialStep, 4));
   const [extensionDetected, setExtensionDetected] = useState(false);
 
   // Check for Chrome extension on mount
@@ -89,6 +89,11 @@ export default function Onboarding({ lang, onLangChange, onClose, initialStep = 
       titleKey: 'onboardingLangTitle',
       descKey: 'onboardingLangDesc',
       custom: 'lang',
+    },
+    {
+      titleKey: 'onboardingHowToUseTitle',
+      descKey: 'onboardingHowToUseDesc',
+      custom: 'howToUse',
     },
     {
       titleKey: 'onboardingHowItWorksTitle',
@@ -160,13 +165,13 @@ export default function Onboarding({ lang, onLangChange, onClose, initialStep = 
               {t(current.descKey as Parameters<typeof t>[0], lang)}
             </p>
           </div>
-        ) : current.custom === 'howItWorks' ? (
-          /* Step 2: How it works (merged welcome + asset) */
+        ) : current.custom === 'howToUse' ? (
+          /* Step 2: How to use — 3 icon cards */
           <div className="flex justify-center onboarding-section">
-            <p className="onboarding-desc-left">
+            <p className="onboarding-desc" style={{ marginBottom: 8 }}>
               {t(current.descKey as Parameters<typeof t>[0], lang)}
             </p>
-            <div className="flex-col" style={{ gap: 16, marginTop: 20 }}>
+            <div className="flex-col" style={{ gap: 16, marginTop: 12 }}>
               {[
                 { icon: ClipboardPaste, labelKey: 'onboardingStepPaste' as const, descKey: 'onboardingStepPasteDesc' as const, num: 1 },
                 { icon: Wand2, labelKey: 'onboardingStepTransform' as const, descKey: 'onboardingStepTransformDesc' as const, num: 2 },
@@ -194,15 +199,22 @@ export default function Onboarding({ lang, onLangChange, onClose, initialStep = 
               })}
             </div>
           </div>
+        ) : current.custom === 'howItWorks' ? (
+          /* Step 3: How it works — 5-step text */
+          <div className="flex justify-center onboarding-section">
+            <p className="onboarding-desc-left" style={{ whiteSpace: 'pre-line' }}>
+              {t(current.descKey as Parameters<typeof t>[0], lang)}
+            </p>
+          </div>
         ) : current.custom === 'snapshotPreview' ? (
-          /* Step 3: Snapshot preview (before/after) */
+          /* Step 4: Snapshot preview (before/after) */
           <div className="flex justify-center onboarding-section">
             <p className="onboarding-desc-left" style={{ whiteSpace: 'pre-line' }}>
               {t(current.descKey as Parameters<typeof t>[0], lang)}
             </p>
           </div>
         ) : current.custom === 'extensionReady' ? (
-          /* Step 4: Chrome extension + You're all set */
+          /* Step 5: Chrome extension + You're all set */
           <>
             {extensionDetected ? (
               <div className="flex-row justify-center mb-28 onboarding-ext-detected">

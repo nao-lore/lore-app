@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import type { ReactNode } from 'react';
-import { Pin, Copy, Check, Activity, MoreVertical } from 'lucide-react';
+import { Pin, Copy, Check, Activity, MoreVertical, ArrowLeft } from 'lucide-react';
 import { loadLogs, updateLog, getFeatureEnabled } from '../storage';
 import { WORKLOAD_CONFIG } from '../workload';
 import { formatDateTimeFull } from '../utils/dateFormat';
@@ -43,6 +43,14 @@ export default memo(function DetailHeader({
   return (
     <div className="page-header">
       <nav className="flex-row flex-wrap mb-md detail-breadcrumb">
+        <button
+          type="button"
+          className="detail-back-btn"
+          onClick={onBack}
+          aria-label={t('ariaGoBack', lang)}
+        >
+          <ArrowLeft size={16} />
+        </button>
         <button
           type="button"
           className="text-muted cursor-pointer breadcrumb-btn"

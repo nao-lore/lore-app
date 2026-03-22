@@ -1875,6 +1875,18 @@ textarea.input:focus {
   letter-spacing: 0.4px;
   margin-bottom: 14px;
 }
+.badge-coming-soon {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--accent-bg, rgba(99,102,241,0.1));
+  color: var(--accent);
+  line-height: 1.4;
+}
 
 /* ===== Page grid ===== */
 .page-grid {
@@ -4862,10 +4874,34 @@ button[disabled] {
   padding-top: 16px;
 }
 
+/* DetailView — back button */
+.detail-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-right: 2px;
+  transition: background 0.15s, color 0.15s;
+}
+.detail-back-btn:hover {
+  background: var(--interactive-hover);
+  color: var(--text-secondary);
+}
+
 /* DetailView — breadcrumb nav */
 .detail-breadcrumb {
   font-size: 12px;
   gap: 2px;
+  align-items: center;
 }
 
 /* DetailView — breadcrumb separator */

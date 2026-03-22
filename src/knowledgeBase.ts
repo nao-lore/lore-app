@@ -1,6 +1,7 @@
 import type { LogEntry, KnowledgeBase, KnowledgeEntry, SourcedItem } from './types';
 import { callProvider, shouldUseBuiltinApi } from './provider';
-import { getApiKey, getLogSummary, saveLogSummary } from './storage';
+import { getApiKey, getLang, getLogSummary, saveLogSummary } from './storage';
+import { detectLanguage, getLangInstruction } from './transform';
 
 // Re-use the log summary extraction from masterNote.ts (cached per log)
 const EXTRACT_PROMPT = `Extract structured project information from this work log.
@@ -17,7 +18,17 @@ Rules:
 - Be concise — one sentence per item
 - Only include items that exist in the log
 - Empty arrays for missing sections
-- Match the language of the input (Japanese or English)`;
+- Match the language of the input (Japanese or English)
+{LANG_OVERRIDE}`;
+
+function resolveLangHint(inputText: string): string {
+  const lang = getLang();
+  if (lang === 'auto') {
+    const detected = detectLanguage(inputText);
+    return getLangInstruction(detected);
+  }
+  return getLangInstruction(lang);
+}
 
 function logToInputText(log: LogEntry): string {
   const parts: string[] = [];
@@ -43,10 +54,12 @@ async function ensureLogSummary(log: LogEntry, apiKey: string) {
   const cached = getLogSummary(log.id);
   if (cached) return cached;
 
+  const inputText = logToInputText(log);
+  const langInstruction = resolveLangHint(inputText);
   const rawText = await callProvider({
     apiKey,
-    system: EXTRACT_PROMPT,
-    userMessage: logToInputText(log),
+    system: EXTRACT_PROMPT.replace('{LANG_OVERRIDE}', langInstruction),
+    userMessage: inputText,
     maxTokens: 8192,
   });
 
@@ -106,8 +119,8 @@ Rules:
 - commonDecisions: decisions that shaped the project direction
 - sourceLogIds MUST use exact logId values from the input
 - Write concisely — each item should be one clear sentence
-- Match the language of the input (Japanese or English)
-- Sort patterns by frequency (most frequent first)`;
+- Sort patterns by frequency (most frequent first)
+{LANG_OVERRIDE}`;
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -153,10 +166,11 @@ export async function generateKnowledgeBase(
   }
 
   const input = `${summaries.length} log summaries from the project:\n\n${parts.join('\n\n')}`;
+  const langInstruction = resolveLangHint(input);
 
   const rawText = await callProvider({
     apiKey,
-    system: KB_PROMPT,
+    system: KB_PROMPT.replace('{LANG_OVERRIDE}', langInstruction),
     userMessage: input,
     maxTokens: 8192,
   });
