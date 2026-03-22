@@ -309,31 +309,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
         />
       )}
 
-      {/* External integrations */}
-      {(!!(safeGetItem('threadlog_notion_api_key') && safeGetItem('threadlog_notion_database_id')) || !!safeGetItem('threadlog_slack_webhook_url')) && (
-        <div className="flex flex-wrap gap-sm mb-md">
-          {!!(safeGetItem('threadlog_notion_api_key') && safeGetItem('threadlog_notion_database_id')) && (
-            <button
-              className="btn flex-row detail-integration-btn"
-              onClick={handleSendNotion}
-              disabled={sendingNotion}
-            >
-              <ExternalLink size={12} />
-              {sendingNotion ? t('notionSending', lang) : t('notionSend', lang)}
-            </button>
-          )}
-          {!!safeGetItem('threadlog_slack_webhook_url') && (
-            <button
-              className="btn flex-row detail-integration-btn"
-              onClick={handleSendSlack}
-              disabled={sendingSlack}
-            >
-              <ExternalLink size={12} />
-              {sendingSlack ? t('slackSending', lang) : t('slackSend', lang)}
-            </button>
-          )}
-        </div>
-      )}
+      {/* External integrations — disabled until cloud sync is ready */}
 
       <div className="flex-col gap-md">
         {isHandoff ? (

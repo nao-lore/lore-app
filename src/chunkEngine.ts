@@ -11,7 +11,7 @@ import { computeSourceHash, loadSession, saveSession, deleteSession } from './ch
 import { getLang } from './storage';
 import { callProvider, callProviderStream, getActiveProvider } from './provider';
 import type { StreamCallback } from './provider';
-import { normalizeResumeChecklist, normalizeHandoffMeta, normalizeHandoffFields, detectLanguage, extractJson } from './transform';
+import { normalizeResumeChecklist, normalizeHandoffMeta, normalizeHandoffFields, detectLanguage, extractJson, getLangInstruction } from './transform';
 import { dedupDecisions } from './utils/decisions';
 import {
   CHUNK_HANDOFF_EXTRACT_PROMPT as HANDOFF_EXTRACT_PROMPT,
@@ -237,9 +237,13 @@ async function reformatToJson(
     cached: false,
   });
 
+  const lang = getLang();
+  const resolvedLang = lang !== 'auto' ? lang : detectLanguage(proseText);
+  const langHint = getLangInstruction(resolvedLang);
+
   const rawText = await callProvider({
     apiKey,
-    system: 'You convert text into structured JSON. Output ONLY a valid JSON object. No prose, no explanation, no markdown.',
+    system: `You convert text into structured JSON. Output ONLY a valid JSON object. No prose, no explanation, no markdown.\n${langHint}`,
     userMessage: `Convert the following text into the required JSON schema. Output JSON only.\n\nRequired schema:\n${schemaHint}\n\nText to convert:\n${proseText}`,
     maxTokens: 8192,
   });

@@ -26,11 +26,22 @@ export function useNavigation() {
   const goToRawRef = useRef<(next: View) => void>(null!);
   const goToRef = useRef<(next: View) => void>(null!);
 
+  // Flag to suppress pushState during popstate handling
+  const isPopstateRef = useRef(false);
+  // Ref to track current selectedId for popstate
+  const selectedIdRef = useRef<string | null>(null);
+  selectedIdRef.current = selectedId;
+
   // Navigation core
   const goToRaw = useCallback((next: View) => {
     if (scrollRef.current) {
       const scrollKey = view === 'detail' && selectedId ? `detail:${selectedId}` : view;
       scrollPositionRef.current[scrollKey] = scrollRef.current.scrollTop;
+    }
+    // Push browser history state (skip during popstate to avoid duplicate entries)
+    if (!isPopstateRef.current) {
+      const historyState = { view: next, selectedId: next === 'detail' ? selectedIdRef.current : null };
+      window.history.pushState(historyState, '');
     }
     startTransition(() => {
       setPrevView(view);
@@ -54,8 +65,44 @@ export function useNavigation() {
     goToRef.current = goTo;
   });
 
+  // Browser back/forward button support (popstate)
+  useEffect(() => {
+    // Set initial history state
+    const initialState = { view, selectedId };
+    window.history.replaceState(initialState, '');
+
+    const handlePopstate = (e: PopStateEvent) => {
+      const state = e.state as { view?: View; selectedId?: string | null } | null;
+      if (!state?.view) return;
+      isPopstateRef.current = true;
+      if (state.selectedId) {
+        setSelectedId(state.selectedId);
+      }
+      goToRawRef.current(state.view);
+      isPopstateRef.current = false;
+    };
+    window.addEventListener('popstate', handlePopstate);
+    return () => window.removeEventListener('popstate', handlePopstate);
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSelect = useCallback((id: string) => {
-    const doNav = () => { setSelectedId(id); goToRawRef.current('detail'); };
+    const doNav = () => {
+      setSelectedId(id);
+      selectedIdRef.current = id;
+      // Push history with the selected id
+      if (!isPopstateRef.current) {
+        window.history.pushState({ view: 'detail', selectedId: id }, '');
+      }
+      startTransition(() => {
+        setView((currentView) => {
+          setPrevView(currentView);
+          return 'detail';
+        });
+      });
+      requestAnimationFrame(() => scrollRef.current?.focus());
+    };
     if (view === 'input' && inputDirtyRef.current) {
       setPendingNav(() => doNav);
       return;

@@ -205,15 +205,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
             <button className="btn btn-sm-action" onClick={handlePrint}>
               <Printer size={12} /> {t('weeklyReportPrint', lang)}
             </button>
-            {!!safeGetItem('threadlog_slack_webhook_url') && (
-              <button
-                className="btn btn-sm-action"
-                onClick={() => handleSlackPost(report)}
-                disabled={sendingSlack}
-              >
-                {sendingSlack ? t('slackSending', lang) : t('slackPost', lang)}
-              </button>
-            )}
+            {/* Slack integration — disabled until cloud sync is ready */}
             <button className="btn btn-sm-action" style={{ color: 'var(--error-text)' }} onClick={() => setConfirmDeleteId(report.id)}>
               <Trash2 size={12} />
             </button>
