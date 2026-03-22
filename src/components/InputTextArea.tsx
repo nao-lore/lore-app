@@ -35,7 +35,7 @@ interface InputTextAreaProps {
 
 export const InputTextArea = memo(function InputTextArea({
   text, setText, textareaRef, loading, combined, overLimit, overWarn, willChunk,
-  filesCount, filesCharTotal, transformAction, progressLabel, dragging,
+  filesCount: _filesCount, filesCharTotal, transformAction, progressLabel, dragging,
   lang, onRunTransform, onClearWithUndo,
 }: InputTextAreaProps) {
   const [pasteFeedback, setPasteFeedback] = useState<string | null>(null);

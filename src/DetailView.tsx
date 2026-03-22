@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
-import { trashLog, restoreLog, updateLog, getAiContext, getMasterNote, safeGetItem } from './storage';
+import { trashLog, restoreLog, updateLog, getAiContext, getMasterNote } from './storage';
 import { saveCorrection } from './classify';
-import { ExternalLink } from 'lucide-react';
+// ExternalLink removed — Notion/Slack integrations disabled until cloud sync
 import { logToMarkdown } from './markdown';
 import { playDelete } from './sounds';
 import type { LogEntry, Project } from './types';
@@ -29,8 +29,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
   const [editingMemo, setEditingMemo] = useState(false);
   const [memoDraft, setMemoDraft] = useState('');
   const [analyzingWorkload, setAnalyzingWorkload] = useState(false);
-  const [sendingNotion, setSendingNotion] = useState(false);
-  const [sendingSlack, setSendingSlack] = useState(false);
+  // sendingNotion/sendingSlack removed — integrations disabled until cloud sync
   const [showSaved, setShowSaved] = useState(false);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -192,43 +191,7 @@ function DetailView({ id, onDeleted, onOpenLog, onBack, prevView: _prevView, lan
     }
   };
 
-  const handleSendNotion = async () => {
-    if (!log) return;
-    if (!(safeGetItem('threadlog_notion_api_key') && safeGetItem('threadlog_notion_database_id'))) {
-      showToast?.(t('notionNotConfigured', lang), 'error');
-      return;
-    }
-    setSendingNotion(true);
-    try {
-      const { sendToNotion } = await import('./integrations');
-      await sendToNotion(log);
-      showToast?.(t('notionSent', lang), 'success');
-    } catch (err) {
-      if (import.meta.env.DEV) console.error('[DetailView] Notion export error:', err);
-      showToast?.(t('errorExportFailed', lang), 'error');
-    } finally {
-      setSendingNotion(false);
-    }
-  };
-
-  const handleSendSlack = async () => {
-    if (!log) return;
-    if (!safeGetItem('threadlog_slack_webhook_url')) {
-      showToast?.(t('slackNotConfigured', lang), 'error');
-      return;
-    }
-    setSendingSlack(true);
-    try {
-      const { sendToSlack } = await import('./integrations');
-      await sendToSlack(logToMarkdown(log));
-      showToast?.(t('slackSent', lang), 'success');
-    } catch (err) {
-      if (import.meta.env.DEV) console.error('[DetailView] Slack export error:', err);
-      showToast?.(t('errorExportFailed', lang), 'error');
-    } finally {
-      setSendingSlack(false);
-    }
-  };
+  // handleSendNotion/handleSendSlack removed — integrations disabled until cloud sync
 
   const isHandoff = log.outputMode === 'handoff';
   const project = log.projectId ? projects.find((p) => p.id === log.projectId) : undefined;

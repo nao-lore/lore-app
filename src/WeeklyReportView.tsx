@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Copy, Printer, Trash2, FileBarChart } from '
 import type { LogEntry, Project, Todo, WeeklyReport } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
-import { loadWeeklyReports, saveWeeklyReport, getWeeklyReport, deleteWeeklyReport, setLastReportDate, safeGetItem } from './storage';
+import { loadWeeklyReports, saveWeeklyReport, getWeeklyReport, deleteWeeklyReport, setLastReportDate } from './storage';
 import { generateWeeklyReport, weeklyReportToMarkdown } from './weeklyReport';
 import ConfirmDialog from './ConfirmDialog';
 import { WORKLOAD_CONFIG } from './workload';
@@ -64,7 +64,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
   const [confirmOverwrite, setConfirmOverwrite] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [reportsVersion, setReportsVersion] = useState(0);
-  const [sendingSlack, setSendingSlack] = useState(false);
+  // sendingSlack removed — Slack integration disabled until cloud sync
 
   const weekStart = useMemo(() => {
     const now = new Date();
@@ -159,24 +159,7 @@ export default function WeeklyReportView({ logs, projects, todos, onBack, onNewL
     window.print();
   };
 
-  const handleSlackPost = async (report: WeeklyReport) => {
-    if (!safeGetItem('threadlog_slack_webhook_url')) {
-      showToast?.(t('slackNotConfigured', lang), 'error');
-      return;
-    }
-    setSendingSlack(true);
-    try {
-      const pName = report.projectId ? projects.find((p) => p.id === report.projectId)?.name : undefined;
-      const { sendToSlack } = await import('./integrations');
-      await sendToSlack(weeklyReportToMarkdown(report, pName));
-      showToast?.(t('slackSent', lang), 'success');
-    } catch (err) {
-      if (import.meta.env.DEV) console.error('[WeeklyReportView] Slack export error:', err);
-      showToast?.(t('errorExportFailed', lang), 'error');
-    } finally {
-      setSendingSlack(false);
-    }
-  };
+  // handleSlackPost removed — Slack integration disabled until cloud sync
 
   const handleDelete = (id: string) => {
     deleteWeeklyReport(id);
