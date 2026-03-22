@@ -16,6 +16,6 @@ Each snapshot feeds into a project dashboard, so over weeks and months you build
 
 **On the tech side:** Lore is a React + TypeScript PWA built with Vite. It runs entirely in your browser — no backend, no database, no account. Your data stays on your device in IndexedDB. The codebase has 778 tests and is fully open source: [github.com/nao-lore/lore-app](https://github.com/nao-lore/lore-app)
 
-**PH exclusive:** Use code PHLORE2026 for 3 months of Pro, completely free. No credit card, no strings.
+**PH exclusive:** Use code PHLORE2026 for 1 month of Pro, completely free. No credit card, no strings.
 
 I built this solo because I needed it for my own workflow. If you work with AI regularly, I think you'll find it useful too. Happy to answer any questions here.

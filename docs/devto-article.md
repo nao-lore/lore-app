@@ -3,7 +3,7 @@ title: "I'm 21 with zero coding experience. I built a full SaaS in 5 days with C
 published: false
 description: "How I went from university dropout with no programming background to shipping a production React app — using AI as my entire engineering team."
 tags: ai, webdev, buildinpublic, beginners
-cover_image: https://loresync.dev?utm_source=devto/og-image.png
+cover_image: https://loresync.dev/og-image.png
 ---
 
 ## The backstory nobody asked for
@@ -38,7 +38,7 @@ Here's roughly how it went:
 
 **Day 4: UX and polish.** Dashboard, navigation, settings, 8-language internationalization (Japanese, English, Spanish, French, German, Chinese, Korean, Portuguese). This is where I learned how much of "building software" is just making things not feel broken.
 
-**Day 5: Testing and hardening.** This is the part I'm most proud of. The app now has **732 tests**. Not because I'm a testing zealot, but because when you're building with AI, tests are your safety net. Every time Claude Code changed something, the tests told me if something else broke.
+**Day 5: Testing and hardening.** This is the part I'm most proud of. The app now has **778+ tests**. Not because I'm a testing zealot, but because when you're building with AI, tests are your safety net. Every time Claude Code changed something, the tests told me if something else broke.
 
 ## What the stack looks like
 
@@ -57,7 +57,7 @@ A few stats from the build process:
 
 - **78 issues** identified and fixed in a single evaluation session. I had Claude Code audit the entire codebase for UX problems, security gaps, accessibility issues, and performance bottlenecks. It found 78 things. We fixed them in prioritized batches.
 - **18 parallel agent batches** — at one point I was running 18 Claude Code agents simultaneously, each working on a different fix. This is where things got wild. Merge conflicts everywhere, but it worked.
-- **732 tests** passing. Started from zero. The testing discipline came from necessity, not ideology.
+- **778+ tests** passing. Started from zero. The testing discipline came from necessity, not ideology.
 - **8 languages** with ~238KB of bundled translations. Claude Code is genuinely good at translation.
 
 ## What worked

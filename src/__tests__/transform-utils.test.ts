@@ -323,6 +323,14 @@ describe('normalizeHandoffMeta', () => {
     expect(result.whyThisSession).toBeNull();
     expect(result.timePressure).toBeNull();
   });
+
+  it('coerces literal string "null" to null', () => {
+    const raw = { sessionFocus: 'null', whyThisSession: 'NULL', timePressure: ' Null ' };
+    const result = normalizeHandoffMeta(raw);
+    expect(result.sessionFocus).toBeNull();
+    expect(result.whyThisSession).toBeNull();
+    expect(result.timePressure).toBeNull();
+  });
 });
 
 // =============================================================================

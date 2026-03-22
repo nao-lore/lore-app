@@ -544,15 +544,23 @@ function warnOutputLanguageMismatch(result: { title?: string | unknown }, expect
   }
 }
 
+/** Coerce AI string field: treat empty, whitespace-only, and literal "null" as null. */
+function coerceNullableString(val: unknown): string | null {
+  if (typeof val !== 'string') return null;
+  const trimmed = val.trim();
+  if (!trimmed || trimmed.toLowerCase() === 'null') return null;
+  return val;
+}
+
 /** Normalize handoffMeta from AI response. */
 export function normalizeHandoffMeta(raw: unknown): HandoffMeta {
   const defaults: HandoffMeta = { sessionFocus: null, whyThisSession: null, timePressure: null };
   if (!raw || typeof raw !== 'object') return defaults;
   const obj = raw as { sessionFocus?: unknown; whyThisSession?: unknown; timePressure?: unknown };
   return {
-    sessionFocus: typeof obj.sessionFocus === 'string' && obj.sessionFocus.trim() ? obj.sessionFocus : null,
-    whyThisSession: typeof obj.whyThisSession === 'string' && obj.whyThisSession.trim() ? obj.whyThisSession : null,
-    timePressure: typeof obj.timePressure === 'string' && obj.timePressure.trim() ? obj.timePressure : null,
+    sessionFocus: coerceNullableString(obj.sessionFocus),
+    whyThisSession: coerceNullableString(obj.whyThisSession),
+    timePressure: coerceNullableString(obj.timePressure),
   };
 }
 
