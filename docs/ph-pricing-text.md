@@ -18,4 +18,4 @@ For use in PH description and landing page.
 - Export to JSON
 - Priority support
 
-**PH exclusive:** Use code **PHLORE2026** at checkout for 3 months of Pro, completely free. No credit card required to start.
+**PH exclusive:** Use code **PHLORE2026** at checkout for 1 month of Pro, completely free. No credit card required to start.

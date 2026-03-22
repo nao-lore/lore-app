@@ -13,7 +13,7 @@
 
 ## Description
 
-**PH exclusive: 3 months Pro free (code: PHLORE2026)**
+**PH exclusive: 1 month Pro free (code: PHLORE2026)**
 
 Lore turns your AI conversations into structured project context.
 

@@ -8,6 +8,6 @@ I was spending 10-15 minutes per session just getting the AI back up to speed. S
 
 A few things worth mentioning: everything runs in your browser — there's no server, no account, no data leaving your machine. It works across Claude, ChatGPT, and Gemini, so you're not locked into one provider. And it's fully open source.
 
-PH exclusive: use code PHLORE2026 for 3 months of Pro, free.
+PH exclusive: use code PHLORE2026 for 1 month of Pro, free.
 
 I'd genuinely love to hear how you deal with AI context loss today — and what would make Lore more useful for your workflow.
