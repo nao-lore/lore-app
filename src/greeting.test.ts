@@ -1,9 +1,13 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getGreeting } from './greeting';
 
 describe('getGreeting', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it('returns a non-empty string for ja', () => {
@@ -18,16 +22,11 @@ describe('getGreeting', () => {
     expect(result.length).toBeGreaterThan(0);
   });
 
-  it('returns Japanese greeting for ja', () => {
+  it('returns Japanese morning greeting at 9am', () => {
     vi.setSystemTime(new Date(2026, 2, 12, 9, 0, 0));
     const result = getGreeting('ja');
-    const jaGreetings = [
-      'おはようございます', 'いい朝ですね', '今日もがんばりましょう', 'さあ、始めましょう',
-      'こんにちは', '午後もがんばりましょう', '調子はいかがですか？', 'いい調子ですね',
-      'おつかれさまです', 'もうひと踏ん張り', '今日もお疲れ様', 'いい一日でしたか？',
-      '夜遅くまでお疲れ様', 'そろそろ休みませんか？', '今日はここまでにしましょう', '遅い時間ですね',
-    ];
-    expect(jaGreetings).toContain(result);
+    const jaMorningGreetings = ['おはようございます', 'いい朝ですね', '今日もがんばりましょう', 'さあ、始めましょう'];
+    expect(jaMorningGreetings).toContain(result);
   });
 
   it('is deterministic for same date/hour', () => {
@@ -37,15 +36,16 @@ describe('getGreeting', () => {
     expect(r1).toBe(r2);
   });
 
-  it('varies by time of day', () => {
-    // Collect greetings at different hours to verify period-based selection
+  it('varies by time of day: morning and evening return different period greetings', () => {
+    const jaMorningGreetings = ['おはようございます', 'いい朝ですね', '今日もがんばりましょう', 'さあ、始めましょう'];
+    const jaEveningGreetings = ['おつかれさまです', 'もうひと踏ん張り', '今日もお疲れ様', 'いい一日でしたか？'];
+
     vi.setSystemTime(new Date(2026, 2, 12, 9, 0, 0));
     const morning = getGreeting('ja');
     vi.setSystemTime(new Date(2026, 2, 12, 20, 0, 0));
     const evening = getGreeting('ja');
-    // Different periods should (usually) give different greetings
-    // At minimum both should be non-empty
-    expect(morning.length).toBeGreaterThan(0);
-    expect(evening.length).toBeGreaterThan(0);
+
+    expect(jaMorningGreetings).toContain(morning);
+    expect(jaEveningGreetings).toContain(evening);
   });
 });

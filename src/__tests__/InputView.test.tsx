@@ -56,23 +56,17 @@ vi.mock('../hooks/useTransform', () => ({
 // Mock useFileImport hook
 vi.mock('../hooks/useFileImport', () => ({
   useFileImport: () => ({
-    files: [],
     dragging: false,
     captureInfo: null,
-    pasteFeedback: null,
+    setCaptureInfo: vi.fn(),
     fileRef: { current: null },
-    handleFileSelect: vi.fn(),
+    handleFiles: vi.fn(),
     handleDrop: vi.fn(),
     handleDragOver: vi.fn(),
     handleDragLeave: vi.fn(),
     removeFile: vi.fn(),
-    clearFiles: vi.fn(),
-    setPasteFeedback: vi.fn(),
   }),
   readFileContent: vi.fn(),
-  buildCombinedText: (text: string) => text,
-  buildSourceReference: vi.fn(() => ({})),
-  CHAR_WARN: 50000,
 }));
 
 // Mock provider
