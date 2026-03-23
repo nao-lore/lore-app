@@ -15,9 +15,9 @@ test('app loads with Lore title', async ({ page }) => {
   await expect(page).toHaveTitle(/Lore/);
 });
 
-test('sidebar shows app name and Create Log button', async ({ page }) => {
+test('sidebar shows app name and New Snapshot button', async ({ page }) => {
   await expect(page.getByText('Lore', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '+ Create Log' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '+ New Snapshot' })).toBeVisible();
 });
 
 test('navigate to Dashboard via sidebar', async ({ page }) => {
@@ -28,11 +28,6 @@ test('navigate to Dashboard via sidebar', async ({ page }) => {
 test('navigate to TODO via sidebar', async ({ page }) => {
   await page.locator('.sidebar-nav-item').filter({ hasText: 'TODO' }).click();
   await expect(page.locator('.sidebar-nav-item.active').filter({ hasText: 'TODO' })).toBeVisible();
-});
-
-test('navigate to Timeline via sidebar', async ({ page }) => {
-  await page.locator('.sidebar-nav-item').filter({ hasText: 'Timeline' }).click();
-  await expect(page.locator('.sidebar-nav-item.active').filter({ hasText: 'Timeline' })).toBeVisible();
 });
 
 test('navigate to Logs via sidebar', async ({ page }) => {

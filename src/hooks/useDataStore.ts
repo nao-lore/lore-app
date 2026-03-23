@@ -16,7 +16,7 @@ export function useDataStore() {
 
   const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const overdueTodos = useMemo(() => {
-    return todos.filter((td) => !td.done && td.dueDate && td.dueDate < todayKey);
+    return todos.filter((td) => !td.done && !td.archivedAt && td.dueDate && td.dueDate < todayKey);
   }, [todos, todayKey]);
 
   const refreshLogs = useCallback(() => setLogsVersion((v) => v + 1), []);

@@ -66,5 +66,5 @@ test('language preference persists across page reload', async ({ page }) => {
   await page.waitForSelector('.sidebar', { timeout: 10000 });
 
   // Sidebar should show Japanese text
-  await expect(page.getByText('ホーム').first()).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText('ダッシュボード').first()).toBeVisible({ timeout: 10000 });
 });
