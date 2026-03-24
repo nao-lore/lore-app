@@ -32,8 +32,8 @@ const LANG_OPTIONS: { code: Lang; label: string; flag: string }[] = [
 ];
 
 // Chrome Web Store URL — update when published
-const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/lore-ai-conversation-snap/opkdpjpgkjcjpkahbljjnhnahliedmkc';
-const CHROME_EXTENSION_ID = 'opkdpjpgkjcjpkahbljjnhnahliedmkc';
+const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/ioaccmbgjkaklailnmgklmipccmbneen';
+const CHROME_EXTENSION_ID = 'ioaccmbgjkaklailnmgklmipccmbneen';
 
 /** Try to ping the Chrome extension to see if it's installed */
 function detectChromeExtension(): Promise<boolean> {
@@ -167,11 +167,11 @@ export default function Onboarding({ lang, onLangChange, onClose, initialStep = 
           </div>
         ) : current.custom === 'howToUse' ? (
           /* Step 2: How to use — 3 icon cards */
-          <div className="flex justify-center onboarding-section">
+          <div className="onboarding-section">
             <p className="onboarding-desc" style={{ marginBottom: 8 }}>
               {t(current.descKey as Parameters<typeof t>[0], lang)}
             </p>
-            <div className="flex-col" style={{ gap: 16, marginTop: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 12, width: '100%' }}>
               {[
                 { icon: ClipboardPaste, labelKey: 'onboardingStepPaste' as const, descKey: 'onboardingStepPasteDesc' as const, num: 1 },
                 { icon: Wand2, labelKey: 'onboardingStepTransform' as const, descKey: 'onboardingStepTransformDesc' as const, num: 2 },
@@ -179,14 +179,14 @@ export default function Onboarding({ lang, onLangChange, onClose, initialStep = 
               ].map((s) => {
                 const Icon = s.icon;
                 return (
-                  <div key={s.num} className="flex-row" style={{ gap: 14, alignItems: 'flex-start' }}>
+                  <div key={s.num} style={{ display: 'flex', flexDirection: 'row', gap: 14, alignItems: 'flex-start', width: '100%' }}>
                     <div style={{
-                      width: 40, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 40, minWidth: 40, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: 'var(--accent-bg, rgba(99,102,241,0.1))', color: 'var(--accent)', flexShrink: 0,
                     }}>
                       <Icon size={20} />
                     </div>
-                    <div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
                       <div className="font-semibold text-secondary" style={{ fontSize: 14 }}>
                         {s.num}. {t(s.labelKey, lang)}
                       </div>
