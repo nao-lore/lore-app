@@ -4,7 +4,7 @@ import type { Lang } from './i18n';
 import { shouldUseBuiltinApi } from './provider';
 import { isPro, checkProStatus } from './utils/proManager';
 import { redirectToCheckout, STRIPE_CUSTOMER_PORTAL_URL } from './utils/stripe';
-import { isInTrialPeriod, getDailyUsageCount, DAILY_LIMIT_FREE } from './utils/trialManager';
+import { getDailyUsageCount, DAILY_LIMIT_FREE } from './utils/trialManager';
 
 interface PricingViewProps {
   onBack: () => void;
@@ -70,13 +70,6 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
               </span>
             </div>
             {shouldUseBuiltinApi() && !userIsPro && (() => {
-              if (isInTrialPeriod()) {
-                return (
-                  <div className="text-sm text-muted" style={{ marginTop: 4 }}>
-                    {t('pricingTrialActive', lang)}
-                  </div>
-                );
-              }
               const used = getDailyUsageCount();
               return (
                 <div className="text-sm text-muted" style={{ marginTop: 4 }}>
