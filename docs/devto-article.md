@@ -38,7 +38,7 @@ Here's roughly how it went:
 
 **Day 4: UX and polish.** Dashboard, navigation, settings, 8-language internationalization (Japanese, English, Spanish, French, German, Chinese, Korean, Portuguese). This is where I learned how much of "building software" is just making things not feel broken.
 
-**Day 5: Testing and hardening.** This is the part I'm most proud of. The app now has **780+ tests**. Not because I'm a testing zealot, but because when you're building with AI, tests are your safety net. Every time Claude Code changed something, the tests told me if something else broke.
+**Day 5: Testing and hardening.** This is the part I'm most proud of. The app now has a full test suite covering every major feature. Not because I'm a testing zealot, but because when you're building with AI, tests are your safety net. Every time Claude Code changed something, the tests told me if something else broke.
 
 ## What the stack looks like
 
@@ -53,12 +53,12 @@ The codebase ended up way more organized than I expected. Claude Code has strong
 
 ## The numbers that surprised me
 
-A few stats from the build process:
+A few things from the build process:
 
-- **78 issues** identified and fixed in a single evaluation session. I had Claude Code audit the entire codebase for UX problems, security gaps, accessibility issues, and performance bottlenecks. It found 78 things. We fixed them in prioritized batches.
-- **18 parallel agent batches** — at one point I was running 18 Claude Code agents simultaneously, each working on a different fix. This is where things got wild. Merge conflicts everywhere, but it worked.
-- **780+ tests** passing. Started from zero. The testing discipline came from necessity, not ideology.
-- **8 languages** with ~238KB of bundled translations. Claude Code is genuinely good at translation.
+- I had Claude Code audit the entire codebase for UX problems, security gaps, accessibility issues, and performance bottlenecks. It found dozens of things. We fixed them in prioritized batches.
+- At one point I was running multiple Claude Code agents in parallel, each working on a different fix. Merge conflicts everywhere, but it worked.
+- Full test suite covering every major feature. Started from zero. The testing discipline came from necessity, not ideology.
+- **8 languages** with bundled translations. Claude Code is genuinely good at translation.
 
 ## What worked
 
@@ -74,7 +74,7 @@ A few stats from the build process:
 
 **Understanding errors.** When something broke, Claude Code could usually fix it. But I often didn't understand *why* it broke. This is the real gap — I'm shipping production code that I can partially explain at best.
 
-**Merge conflicts with parallel agents.** Running 18 agents at once sounds cool. In practice, it means spending a lot of time resolving conflicts and making sure the agents didn't undo each other's work.
+**Merge conflicts with parallel agents.** Running multiple agents at once sounds cool. In practice, it means spending a lot of time resolving conflicts and making sure the agents didn't undo each other's work.
 
 **Knowing when to stop.** AI makes it easy to keep adding features. The hardest decision was scoping down to an MVP and shipping instead of polishing forever.
 
