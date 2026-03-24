@@ -90,10 +90,30 @@ const LANG_INSTRUCTIONS = {
 
 function detectLanguage(text) {
   const sample = text.slice(0, 2000);
+  // Japanese: hiragana, katakana, kanji
   const jaPattern = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3400-\u4DBF]/gu;
   const jaMatches = sample.match(jaPattern);
   const jaRatio = (jaMatches?.length ?? 0) / sample.length;
-  return jaRatio > 0.15 ? 'ja' : 'en';
+  if (jaRatio > 0.15) return 'ja';
+  // Chinese: CJK without Japanese kana
+  const zhPattern = /[\u4E00-\u9FFF\u3400-\u4DBF]/gu;
+  const kanaPattern = /[\u3040-\u309F\u30A0-\u30FF]/gu;
+  const zhMatches = sample.match(zhPattern);
+  const kanaMatches = sample.match(kanaPattern);
+  if ((zhMatches?.length ?? 0) / sample.length > 0.1 && (kanaMatches?.length ?? 0) < 5) return 'zh';
+  // Korean: Hangul
+  const koPattern = /[\uAC00-\uD7AF\u1100-\u11FF]/gu;
+  const koMatches = sample.match(koPattern);
+  if ((koMatches?.length ?? 0) / sample.length > 0.1) return 'ko';
+  // Spanish
+  if (/[áéíóúñ¿¡]/i.test(sample) && sample.split(/\s+/).filter(w => /^(el|la|los|las|de|en|que|por|con|para|una?|del|al|es|no|se|lo|su|más|pero|como|ya|también)$/i.test(w)).length > 5) return 'es';
+  // French
+  if (/[àâçéèêëîïôùûüÿœæ]/i.test(sample) && sample.split(/\s+/).filter(w => /^(le|la|les|de|des|du|un|une|en|et|est|que|qui|dans|pour|pas|sur|avec|ce|son|plus|mais|ou|ne|se)$/i.test(w)).length > 5) return 'fr';
+  // German
+  if (/[äöüß]/i.test(sample) && sample.split(/\s+/).filter(w => /^(der|die|das|den|dem|des|ein|eine|und|ist|von|zu|mit|auf|für|nicht|sich|als|auch|nach|wie|oder|aber|wenn)$/i.test(w)).length > 5) return 'de';
+  // Portuguese
+  if (/[ãõáéíóúâêôç]/i.test(sample) && sample.split(/\s+/).filter(w => /^(o|a|os|as|de|do|da|em|no|na|que|para|com|por|um|uma|não|se|mais|como|mas|foi|ao|dos)$/i.test(w)).length > 5) return 'pt';
+  return 'en';
 }
 
 // ---------------------------------------------------------------------------
@@ -168,8 +188,9 @@ async function callApi(system, userMessage) {
 // Transform functions
 // ---------------------------------------------------------------------------
 
-function getPromptAndMessage(mode, conversationText, projectsList) {
-  const lang = detectLanguage(conversationText);
+function getPromptAndMessage(mode, conversationText, projectsList, outputLang) {
+  const detectedLang = detectLanguage(conversationText);
+  const lang = outputLang || detectedLang;
   const langInstruction = LANG_INSTRUCTIONS[lang] || LANG_INSTRUCTIONS.en;
 
   let system, userMessage;
@@ -196,8 +217,8 @@ function getPromptAndMessage(mode, conversationText, projectsList) {
  * Run transform via the built-in API.
  * Returns { result, remaining } where result is the parsed JSON.
  */
-async function runTransform(mode, conversationText, projectsList) {
-  const { system, userMessage } = getPromptAndMessage(mode, conversationText, projectsList);
+async function runTransform(mode, conversationText, projectsList, outputLang) {
+  const { system, userMessage } = getPromptAndMessage(mode, conversationText, projectsList, outputLang);
   const { text: rawText, remaining } = await callApi(system, userMessage);
 
   const jsonStr = extractJson(rawText);
