@@ -4,7 +4,7 @@
  * Responsibilities:
  * 1. Monitor tabs and show badge when Lore contexts are available on AI sites
  * 2. Route messages between content scripts and popup
- * 3. Manage context storage (chrome.storage.local) and injection tracking (chrome.storage.session)
+ * 3. Manage context storage (chrome.storage.local)
  * 4. Run transforms via built-in API (extension-native processing)
  */
 
@@ -20,18 +20,6 @@ const AI_SITE_PATTERNS = [
 
 const BADGE_COLOR = '#7c5cfc';
 const STORAGE_KEY = 'lore_contexts';
-const INJECTION_PREFIX = 'injected_';
-
-/**
- * Simple string hash for creating URL-based session storage keys.
- */
-function simpleHash(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash).toString(36);
-}
 
 // ---------------------------------------------------------------------------
 // Badge helpers
@@ -70,19 +58,6 @@ async function updateBadge(tabId, url) {
     } else {
       await chrome.action.setBadgeText({ text: '', tabId });
     }
-  } catch {
-    // Tab may have been closed — ignore silently.
-  }
-}
-
-/**
- * Briefly flash a checkmark on the badge, then restore the normal count.
- */
-async function flashCheckmark(tabId, url) {
-  try {
-    await chrome.action.setBadgeBackgroundColor({ color: '#22c55e', tabId });
-    await chrome.action.setBadgeText({ text: '✓', tabId });
-    setTimeout(() => updateBadge(tabId, url), 1500);
   } catch {
     // Tab may have been closed — ignore silently.
   }
@@ -154,36 +129,6 @@ async function handleMessage(message, sender) {
       const contexts = result[STORAGE_KEY] ?? {};
       const found = contexts[projectId] ?? null;
       return { context: found };
-    }
-
-    // -----------------------------------------------------------------------
-    // Record that a context was injected into a specific tab
-    // -----------------------------------------------------------------------
-    case 'mark-injected': {
-      const { projectId, tabId, url } = message;
-      const urlHash = url ? simpleHash(url) : (tabId || 'unknown');
-      const key = `${INJECTION_PREFIX}${projectId}_${urlHash}`;
-      await chrome.storage.session.set({
-        [key]: { projectId, url, injectedAt: Date.now() },
-      });
-
-      // Flash checkmark on the originating tab
-      if (tabId) {
-        flashCheckmark(tabId, url);
-      }
-
-      return { success: true };
-    }
-
-    // -----------------------------------------------------------------------
-    // Check if a context was already injected into a tab
-    // -----------------------------------------------------------------------
-    case 'was-injected': {
-      const { projectId, tabId, url } = message;
-      const urlHash = url ? simpleHash(url) : (tabId || 'unknown');
-      const key = `${INJECTION_PREFIX}${projectId}_${urlHash}`;
-      const result = await chrome.storage.session.get(key);
-      return { injected: !!result[key] };
     }
 
     // -----------------------------------------------------------------------
