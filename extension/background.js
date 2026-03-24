@@ -237,16 +237,36 @@ async function handleMessage(message, sender) {
     }
 
     // -----------------------------------------------------------------------
+    // Sync language setting from Lore PWA
+    // -----------------------------------------------------------------------
+    case 'sync-lang': {
+      const { lang } = message;
+      if (lang && typeof lang === 'string') {
+        await chrome.storage.local.set({ lore_output_lang: lang });
+        return { success: true, lang };
+      }
+      return { error: 'Invalid lang' };
+    }
+
+    // -----------------------------------------------------------------------
     // Run transform via built-in API
     // -----------------------------------------------------------------------
     case 'transform': {
-      const { mode, conversationText, projectId, projectsList } = message;
+      const { mode, conversationText, projectId, projectsList, outputLang } = message;
       if (!conversationText) return { error: 'No conversation text' };
+
+      // Get language from message or from synced settings
+      let lang = outputLang;
+      if (!lang) {
+        const stored = await chrome.storage.local.get('lore_output_lang');
+        lang = stored.lore_output_lang || null;
+      }
 
       const { result, remaining } = await LoreTransform.runTransform(
         mode || 'handoff',
         conversationText,
         projectsList || [],
+        lang,
       );
 
       const logEntry = LoreTransform.buildLogEntry(mode || 'handoff', result, projectId);

@@ -177,8 +177,35 @@ async function importPendingLogs() {
 }
 
 // ---------------------------------------------------------------------------
+// Sync language setting from Lore PWA to extension
+// ---------------------------------------------------------------------------
+
+async function syncLanguage() {
+  if (runtimeInvalidated || !isRuntimeValid()) return;
+
+  try {
+    const lang = localStorage.getItem('threadlog_lang');
+    if (lang) {
+      await chrome.runtime.sendMessage({ type: 'sync-lang', lang });
+    }
+  } catch (err) {
+    if (String(err).includes('Extension context invalidated') || String(err).includes('runtime.sendMessage')) {
+      runtimeInvalidated = true;
+    }
+  }
+}
+
+// Also sync when language changes
+window.addEventListener('storage', (event) => {
+  if (event.key === 'threadlog_lang') {
+    syncLanguage();
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Initial sync on page load
 // ---------------------------------------------------------------------------
 
 syncContexts();
 importPendingLogs();
+syncLanguage();
