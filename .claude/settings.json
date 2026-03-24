@@ -8,6 +8,14 @@
             "command": "bin/suggest-claude-md-hook.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[SESSION] SESSION.md を更新してください' >&2"
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -16,6 +24,63 @@
           {
             "type": "command",
             "command": "bin/suggest-claude-md-hook.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[SESSION] SESSION.md を更新してください' >&2"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "tool == 'Edit' && tool_input.file_path matches '\\.(ts|tsx)$'",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx tsc --noEmit --pretty 2>&1 | head -20 || true"
+          }
+        ]
+      },
+      {
+        "matcher": "tool == 'Write' && tool_input.file_path matches '\\.(ts|tsx)$'",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/nn/threadlog && npx tsc --noEmit --pretty 2>&1 | head -20 || true"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "tool == 'Write' && tool_input.file_path matches '\\.md$' && !(tool_input.file_path matches '(README|CLAUDE|CHANGELOG|MEMORY|SESSION)\\.md')",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[Hook] .md file creation detected. Is this really needed?' >&2"
+          }
+        ]
+      },
+      {
+        "matcher": "tool == 'Bash'",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/nn/threadlog/.claude/hooks/check-careful.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "tool == 'Edit' || tool == 'Write'",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/nn/threadlog/.claude/hooks/check-freeze.sh"
           }
         ]
       }

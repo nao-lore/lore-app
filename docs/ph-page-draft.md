@@ -6,7 +6,7 @@
 - **Topics:** Productivity, Developer Tools, Artificial Intelligence, Open Source
 - **Pricing:** Free (20/day) + Pro ($12/mo)
 - **Website:** https://loresync.dev?utm_source=producthunt
-- **Chrome Extension:** https://chromewebstore.google.com/detail/lore-ai-conversation-snap/opkdpjpkjcjpkahbljjnhnahliedmkc
+- **Chrome Extension:** https://chromewebstore.google.com/detail/ioaccmbgjkaklailnmgklmipccmbneen
 - **GitHub:** https://github.com/nao-lore/lore-app
 
 ---
