@@ -118,9 +118,29 @@ export function useBootstrapEffects(params: BootstrapParams): void {
         const logId = hash.slice(5);
         window.location.hash = '';
         if (logId) {
-          paramsRef.current.refreshLogs();
-          paramsRef.current.setSelectedId(logId);
-          paramsRef.current.setView('detail');
+          const tryNavigate = () => {
+            paramsRef.current.refreshLogs();
+            paramsRef.current.setSelectedId(logId);
+            paramsRef.current.setView('detail');
+          };
+          // Try immediately — if log exists in localStorage, navigate right away
+          const raw = localStorage.getItem('threadlog_logs');
+          const existing = raw ? JSON.parse(raw) as { id: string }[] : [];
+          if (existing.some((l) => l.id === logId)) {
+            tryNavigate();
+          } else {
+            // Log not yet imported from extension — wait for bridge sync
+            const onLogsImported = () => {
+              window.removeEventListener('lore-logs-updated', onLogsImported);
+              tryNavigate();
+            };
+            window.addEventListener('lore-logs-updated', onLogsImported);
+            // Timeout fallback: if bridge doesn't fire in 3s, try anyway
+            setTimeout(() => {
+              window.removeEventListener('lore-logs-updated', onLogsImported);
+              tryNavigate();
+            }, 3000);
+          }
         }
       }
     };
