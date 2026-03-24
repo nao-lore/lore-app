@@ -1,0 +1,5 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`HistoryView > matches snapshot with empty logs 1`] = `"<div class="workspace-content-wide flex-col"><div data-testid="page-header"><button data-testid="back-btn">Back</button><h2></h2></div><div data-testid="history-filters"><input data-testid="search-input" placeholder="Search logs..." value=""></div><div data-testid="empty-state">No logs yet (en)</div></div>"`;
+
+exports[`HistoryView > matches snapshot with logs 1`] = `"<div class="workspace-content-wide flex-col"><div data-testid="page-header"><button data-testid="back-btn">Back</button><h2></h2></div><div data-testid="history-filters"><input data-testid="search-input" placeholder="Search logs..." value=""></div><div data-testid="virtual-list" data-count="2"></div></div>"`;
