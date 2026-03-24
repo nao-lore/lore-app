@@ -12,24 +12,7 @@
       <span class="title">Lore</span>
     </div>
 
-    <div class="tabs">
-      <button class="tab active" data-tab="capture">⚡ Snapshot</button>
-      <button class="tab" data-tab="inject">▶️ Resume</button>
-    </div>
-
-    <!-- Inject Tab -->
-    <div class="tab-content" id="tab-inject">
-      <div id="inject-loading" class="loading">Loading contexts...</div>
-      <div id="inject-empty" class="empty" style="display:none">
-        <p>No project contexts available.</p>
-        <p class="hint">Generate a snapshot in Lore first.</p>
-      </div>
-      <div id="inject-list" style="display:none">
-        <!-- Filled dynamically -->
-      </div>
-    </div>
-
-    <!-- Capture Tab -->
+    <!-- Capture (Snapshot) -->
     <div class="tab-content active" id="tab-capture">
       <p id="stats" class="stats">Detecting AI conversation...</p>
       <div id="capture-options" style="display:none">
