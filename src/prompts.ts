@@ -208,7 +208,9 @@ PRIORITY rules:
 
 DUE DATE rules:
 - Only set dueDate if the user explicitly mentioned a date or timeframe.
-- "明日" / "tomorrow" → next calendar day. "今週中" / "this week" → end of current week (Sunday). "来週" / "next week" → next Monday.
+- IMPORTANT: Today's date is {{TODAY}}. Use this to resolve relative dates.
+- "明日" / "tomorrow" → next calendar day from {{TODAY}}. "今週中" / "this week" → end of current week (Sunday). "来週" / "next week" → next Monday.
+- "3月25日" / "March 25" without a year → assume the CURRENT year ({{YEAR}}).
 - If no date/timeframe is mentioned, set dueDate to null.
 
 OUTPUT LANGUAGE RULE:
