@@ -14,8 +14,8 @@ export const config = { runtime: 'edge' };
 // ---------------------------------------------------------------------------
 
 const RequestSchema = z.object({
-  system: z.string().max(10240),
-  userMessage: z.string().max(102400),
+  system: z.string().max(16384),
+  userMessage: z.string().max(524288),
   maxTokens: z.number().min(100).max(16384).optional(),
   stream: z.boolean().optional(),
 });
