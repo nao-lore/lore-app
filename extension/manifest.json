@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Lore — AI Context Sync",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Capture and transform AI conversations into structured snapshots — decisions, TODOs, and resume checklists. One click.",
   "permissions": ["activeTab", "scripting", "tabs", "storage"],
   "background": {
