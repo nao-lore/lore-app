@@ -135,25 +135,18 @@ export const InputTextArea = memo(function InputTextArea({
           );
         })()}
         {!loading && (() => {
-          const trial = canTransform();
-          if (trial.trialDaysLeft !== undefined) {
-            return (
-              <span className="input-usage-counter">
-                {tf('trialActive', lang, trial.trialDaysLeft)}
-              </span>
-            );
-          }
-          if (!trial.allowed) {
+          const check = canTransform();
+          if (!check.allowed) {
             return (
               <span className="input-usage-counter input-usage-counter--exhausted">
-                {t('trialEnded', lang)}
+                {tf('transformsRemaining', lang, 0, DAILY_LIMIT_FREE)}
               </span>
             );
           }
-          if (trial.remaining !== undefined) {
+          if (check.remaining !== undefined) {
             return (
               <span className="input-usage-counter">
-                {tf('transformsRemaining', lang, trial.remaining, DAILY_LIMIT_FREE)}
+                {tf('transformsRemaining', lang, check.remaining, DAILY_LIMIT_FREE)}
               </span>
             );
           }

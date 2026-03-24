@@ -160,6 +160,20 @@ async function importPendingLogs() {
       const counterRaw = localStorage.getItem('lore_snapshot_count');
       const counter = counterRaw ? parseInt(counterRaw, 10) : 0;
       localStorage.setItem('lore_snapshot_count', String(counter + added));
+      // Sync daily usage counter so extension transforms are reflected in app
+      const DAILY_USAGE_KEY = 'threadlog_daily_usage';
+      const today = new Date().toISOString().slice(0, 10);
+      let dailyUsage = { date: today, count: 0 };
+      try {
+        const duRaw = localStorage.getItem(DAILY_USAGE_KEY);
+        if (duRaw) {
+          const parsed = JSON.parse(duRaw);
+          if (parsed.date === today) dailyUsage = parsed;
+        }
+      } catch { /* ignore */ }
+      dailyUsage.count += added;
+      dailyUsage.date = today;
+      localStorage.setItem(DAILY_USAGE_KEY, JSON.stringify(dailyUsage));
       // Dispatch event so the PWA picks up changes
       window.dispatchEvent(new CustomEvent('lore-logs-updated'));
       console.log(`[Lore Bridge] Imported ${added} pending log(s) from extension`);

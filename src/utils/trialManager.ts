@@ -3,41 +3,14 @@ import { isPro } from './proManager';
 
 // ─── Constants ───
 
-export const TRIAL_DAYS = 7;
-export const DAILY_LIMIT_FREE = 30;
+export const DAILY_LIMIT_FREE = 20;
 
-// LIMITATION: Daily usage counter is stored in localStorage only (client-side).
-// A user can reset the counter by clearing localStorage or using incognito mode.
-// This is an acceptable trade-off for a client-side app with no backend.
-// If abuse becomes a problem, consider fingerprinting or server-side tracking.
+// Daily usage is tracked both client-side (localStorage) and server-side (IP-based).
+// The server returns X-RateLimit-Remaining which is stored in threadlog_builtin_usage.
+// The client counter (threadlog_daily_usage) is used as a fallback display and
+// is synced with the server counter when a transform completes.
 
-const TRIAL_START_KEY = 'threadlog_trial_start';
 const DAILY_USAGE_KEY = 'threadlog_daily_usage';
-
-// ─── Trial Start Date ───
-
-/** Returns the stored trial start date as an ISO date string, or null if not set. */
-export function getTrialStartDate(): string | null {
-  return safeGetItem(TRIAL_START_KEY);
-}
-
-/** Sets the trial start date if not already set. */
-export function initTrial(): void {
-  if (!safeGetItem(TRIAL_START_KEY)) {
-    safeSetItem(TRIAL_START_KEY, new Date().toISOString().slice(0, 10));
-  }
-}
-
-/** Checks if the user is within the 7-day trial period. */
-export function isInTrialPeriod(): boolean {
-  const startStr = safeGetItem(TRIAL_START_KEY);
-  if (!startStr) return true; // Not yet initialized — treat as in trial
-  const start = new Date(startStr + 'T00:00:00');
-  const now = new Date();
-  const diffMs = now.getTime() - start.getTime();
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  return diffDays < TRIAL_DAYS;
-}
 
 // ─── Daily Usage ───
 
@@ -85,29 +58,17 @@ export interface CanTransformResult {
   allowed: boolean;
   reason?: string;
   remaining?: number;
-  trialDaysLeft?: number;
 }
 
 /**
  * Main guard: determines whether a transform is allowed.
- * Returns { allowed, reason?, remaining?, trialDaysLeft? }.
+ * Returns { allowed, reason?, remaining? }.
  */
 export function canTransform(): CanTransformResult {
-  initTrial(); // ensure trial start is recorded
-
   // Pro users bypass all limits
   if (isPro()) return { allowed: true };
 
-  if (isInTrialPeriod()) {
-    const startStr = safeGetItem(TRIAL_START_KEY)!;
-    const start = new Date(startStr + 'T00:00:00');
-    const now = new Date();
-    const diffMs = now.getTime() - start.getTime();
-    const daysLeft = Math.max(0, Math.ceil(TRIAL_DAYS - diffMs / (1000 * 60 * 60 * 24)));
-    return { allowed: true, trialDaysLeft: daysLeft };
-  }
-
-  // Post-trial: enforce daily limit
+  // Enforce daily limit
   const used = getDailyUsageCount();
   const remaining = Math.max(0, DAILY_LIMIT_FREE - used);
 
@@ -117,3 +78,8 @@ export function canTransform(): CanTransformResult {
 
   return { allowed: true, remaining };
 }
+
+// ─── Deprecated exports (kept for backward compat, no-ops) ───
+
+/** @deprecated Trial has been removed. Always returns false. */
+export function isInTrialPeriod(): boolean { return false; }
