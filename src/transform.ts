@@ -761,7 +761,10 @@ async function transformTodoOnlyOnce(sourceText: string, opts?: { onStream?: Str
 
   const userMessage = `${langInstruction}\n\nExtract a TODO list from the following conversation. Only include actions the user explicitly committed to.\n\nCHAT:\n${sourceText}`;
 
-  const req = { apiKey, system: TODO_ONLY_PROMPT, userMessage, maxTokens: 8192 };
+  const today = new Date().toISOString().slice(0, 10);
+  const year = new Date().getFullYear().toString();
+  const todoPrompt = TODO_ONLY_PROMPT.replace(/\{\{TODAY\}\}/g, today).replace(/\{\{YEAR\}\}/g, year);
+  const req = { apiKey, system: todoPrompt, userMessage, maxTokens: 8192 };
   const rawText = opts?.onStream
     ? await callProviderStream(req, opts.onStream)
     : await callProvider(req);
