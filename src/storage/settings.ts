@@ -55,7 +55,7 @@ export type ThemePref = 'light' | 'dark' | 'system' | 'high-contrast';
 export function getTheme(): ThemePref {
   const v = safeGetItem(THEME_KEY);
   if (v === 'light' || v === 'dark' || v === 'system' || v === 'high-contrast') return v;
-  return 'system';
+  return 'dark';
 }
 
 export function setTheme(theme: ThemePref): void {

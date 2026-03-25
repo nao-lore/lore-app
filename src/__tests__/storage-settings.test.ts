@@ -103,8 +103,8 @@ describe('storage/settings — language', () => {
 describe('storage/settings — theme', () => {
   beforeEach(() => store.clear());
 
-  it('getTheme returns system when not set', () => {
-    expect(getTheme()).toBe('system');
+  it('getTheme returns dark when not set', () => {
+    expect(getTheme()).toBe('dark');
   });
 
   it('setTheme and getTheme round-trip', () => {
@@ -112,9 +112,9 @@ describe('storage/settings — theme', () => {
     expect(getTheme()).toBe('dark');
   });
 
-  it('getTheme returns system for invalid value', () => {
+  it('getTheme returns dark for invalid value', () => {
     store.set('threadlog_theme', 'neon');
-    expect(getTheme()).toBe('system');
+    expect(getTheme()).toBe('dark');
   });
 
   it('all valid themes are accepted', () => {
