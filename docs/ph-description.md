@@ -14,7 +14,7 @@ Each session feeds into a **project dashboard** that tracks progress across all 
 - Project dashboard with progress tracking across sessions
 - 8 languages supported
 - Works offline as a PWA — your data stays in your browser
-- 700+ tests, open source, fully auditable
+- 1,250+ tests, open source, fully auditable
 
 **Free to use** — 20 transforms/day, no API key required to start.
 

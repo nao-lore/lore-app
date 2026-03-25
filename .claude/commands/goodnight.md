@@ -9,8 +9,8 @@
 3. 以下のファイルの相互参照を確認:
    - ~/Downloads/lore-project/運用マニュアル.md
    - ~/Downloads/lore-project/SESSION.md
-   - ~/threadlog/CLAUDE.md
-   - ~/threadlog/docs/job-search-plan.md
+   - ~/lore/CLAUDE.md
+   - ~/lore/docs/job-search-plan.md
 4. 「参照されてるファイル一覧」と「どこからも参照されてないファイル一覧」を作る
 
 ## Step 2: ファイル整理
@@ -65,7 +65,7 @@ session_protocol.md の「セッション終了時プロトコル」に従って
 
 ## Step 5: Git自動コミット
 ```bash
-cd ~/threadlog && git add -A && git commit -m "session end: $(date '+%Y-%m-%d %H:%M')"
+cd ~/lore && git add -A && git commit -m "session end: $(date '+%Y-%m-%d %H:%M')"
 ```
 
 ## Step 6: メモリ更新

@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/nn/threadlog && npx tsc --noEmit --pretty 2>&1 | head -20 || true"
+            "command": "cd /Users/nn/lore && npx tsc --noEmit --pretty 2>&1 | head -20 || true"
           }
         ]
       }
@@ -71,7 +71,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/nn/threadlog/.claude/hooks/check-careful.sh"
+            "command": "/Users/nn/lore/.claude/hooks/check-careful.sh"
           }
         ]
       },
@@ -80,7 +80,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/nn/threadlog/.claude/hooks/check-freeze.sh"
+            "command": "/Users/nn/lore/.claude/hooks/check-freeze.sh"
           }
         ]
       }
