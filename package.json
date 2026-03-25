@@ -1,5 +1,5 @@
 {
-  "name": "threadlog",
+  "name": "lore",
   "private": true,
   "overrides": {
     "serialize-javascript": ">=7.0.3"

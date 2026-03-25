@@ -1,11 +1,11 @@
 # 記事展開ステータス
 
-> 最終更新: 2026-03-23（数値確認済み: テスト780+, コミット217+）
+> 最終更新: 2026-03-25（数値確認済み: テスト1258+, コミット237+）
 
 ## 記事一覧
 
 ### 1. dev.to記事（英語）
-- **ファイル:** ~/threadlog/docs/devto-article.md
+- **ファイル:** ~/lore/docs/devto-article.md
 - **ステータス:** 完成済み（`published: false`）
 - **公開予定:** 3/27（PH当日、`published: true` に変更するだけ）
 - **ターゲット:** 英語圏のインディー開発者・AI活用者（PHと同じ層）
@@ -13,7 +13,7 @@
 - **TODO:** なし。PH当日に published: true にするだけ
 
 ### 2. note記事 — Lore（日本語）
-- **ファイル:** ~/threadlog/docs/note-article-draft.md
+- **ファイル:** ~/lore/docs/note-article-draft.md
 - **ステータス:** 公開済み
 - **ターゲット:** AIを日常的に使っているが技術者ではない人
 - **切り口:** 個人のストーリー。中退→開発→ローンチの全記録
@@ -25,7 +25,7 @@
 - **切り口:** X/YouTubeの情報収集をAIで効率化するツールの紹介
 
 ### 4. Zenn記事（日本語）
-- **ファイル:** ~/threadlog/docs/zenn-article.md
+- **ファイル:** ~/lore/docs/zenn-article.md
 - **ステータス:** 下書き完了
 - **公開予定:** 3/27（PH当日、dev.toと同日）
 - **ターゲット:** 日本語圏のエンジニア・技術者

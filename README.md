@@ -1,6 +1,8 @@
 <h1 align="center">Lore</h1>
 
 <p align="center">
+  <!-- TODO: Uncomment on PH launch day -->
+  <!-- <a href="https://www.producthunt.com/posts/lore"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=YOUR_POST_ID&theme=light" alt="Lore on Product Hunt" width="250" height="54"></a> -->
   <a href="https://github.com/nao-lore/lore-app/actions"><img src="https://github.com/nao-lore/lore-app/actions/workflows/playwright.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/nao-lore/lore-app/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
 </p>

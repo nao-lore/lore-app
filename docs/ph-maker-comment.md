@@ -1,13 +1,16 @@
 # Product Hunt — Maker Comment
 
-Hey everyone, I'm Nao. I built Lore because I got tired of re-explaining my projects to AI every single session.
+> NOTE: This is the same as ph-first-comment.md. On Product Hunt, the "first comment" = maker comment.
+> Canonical version: ph-first-comment.md
 
-I use Claude and ChatGPT daily for building software. The frustrating part isn't the AI — it's that every conversation starts from scratch. What did we decide about the auth flow? What's left on the TODO list? Where exactly did we leave off? That context just evaporates.
+Hey everyone! I'm Nao, 21, from Japan. I dropped out of college and taught myself to code about a year ago. Lore is the first real thing I've built, and I'm genuinely nervous launching it here.
 
-I was spending 10-15 minutes per session just getting the AI back up to speed. So I built Lore to do it automatically. Paste a conversation, and it pulls out the decisions, TODOs, blockers, and a resume checklist. Next session, the Chrome extension injects that context back in one click.
+Here's why I made it: I use Claude and ChatGPT every day for building software. The most frustrating part isn't the AI itself — it's that every conversation starts from scratch. "What did we decide about the auth flow?" "What's left on the TODO list?" That context just evaporates between sessions. I was spending 10-15 minutes every morning just getting the AI back up to speed.
 
-A few things worth mentioning: everything runs in your browser — there's no server, no account, no data leaving your machine. It works across Claude, ChatGPT, and Gemini, so you're not locked into one provider. And it's fully open source.
+So I built Lore. Paste a conversation from Claude, ChatGPT, or Gemini, and it extracts decisions, TODOs, blockers, and a resume checklist. Next session, the Chrome extension injects that context back in one click. Over time you build a structured history of your AI work across providers and projects.
 
-PH exclusive: use code PHLORE2026 for 1 month of Pro, free.
+Everything runs in your browser — no server, no account, no data leaving your machine. Fully open source: [github.com/nao-lore/lore-app](https://github.com/nao-lore/lore-app)
 
-I'd genuinely love to hear how you deal with AI context loss today — and what would make Lore more useful for your workflow.
+**PH exclusive:** Use code **PHLORE2026** for 1 month of Pro, free. No credit card, no strings.
+
+I'd love to hear how you deal with AI context loss in your workflow — and what would make Lore more useful. Happy to answer anything here!
