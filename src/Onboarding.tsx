@@ -61,8 +61,8 @@ function detectChromeExtension(): Promise<boolean> {
 
 export default function Onboarding({ lang, onLangChange, onClose, initialStep = 0 }: OnboardingProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(true);
-  // Clamp initialStep to valid range for 5 steps
-  const [step, setStep] = useState(Math.min(initialStep, 4));
+  // Clamp initialStep to valid range for 7 steps
+  const [step, setStep] = useState(Math.min(initialStep, 6));
   const [extensionDetected, setExtensionDetected] = useState(false);
 
   // Check for Chrome extension on mount
@@ -106,6 +106,16 @@ export default function Onboarding({ lang, onLangChange, onClose, initialStep = 
       descKey: 'onboardingPreviewDesc',
       descAlign: 'left',
       custom: 'snapshotPreview',
+    },
+    {
+      titleKey: 'onboardingProjectsTitle',
+      descKey: 'onboardingProjectsDesc',
+      descAlign: 'left',
+    },
+    {
+      titleKey: 'onboardingPrivacyTitle',
+      descKey: 'onboardingPrivacyDesc',
+      descAlign: 'left',
     },
     {
       titleKey: 'onboardingExtReadyTitle',
@@ -240,9 +250,11 @@ export default function Onboarding({ lang, onLangChange, onClose, initialStep = 
             )}
           </>
         ) : (
-          <p className="onboarding-desc">
-            {t(current.descKey as Parameters<typeof t>[0], lang)}
-          </p>
+          <div className="flex justify-center onboarding-section">
+            <p className={current.descAlign === 'left' ? 'onboarding-desc-left' : 'onboarding-desc'} style={{ whiteSpace: 'pre-line' }}>
+              {t(current.descKey as Parameters<typeof t>[0], lang)}
+            </p>
+          </div>
         )}
 
         {/* Navigation */}
