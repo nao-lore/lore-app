@@ -47,6 +47,13 @@ export default memo(function PostGenerationPreview({ savedResult, lang, showToas
     <div className="input-preview">
       <h3 className="mb-md result-heading">{wasFirstTransform ? `🎉 ${t('logSaved', lang)}` : t('logSaved', lang)}</h3>
 
+      {/* Hint to assign to project when unassigned */}
+      {!savedResult.log.projectId && (
+        <p className="text-sm text-muted mb-sm" style={{ background: 'var(--bg-secondary)', padding: '8px 12px', borderRadius: 8, lineHeight: 1.5 }}>
+          {t('logSavedProjectHint', lang)}
+        </p>
+      )}
+
       {/* #24 Extraction summary + #71 API cost display */}
       {(decisionsCount > 0 || actionsCount > 0 || blockersCount > 0 || (apiCallCount && apiCallCount > 0)) && (
         <p className="text-sm text-muted mb-sm">
