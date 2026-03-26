@@ -19,9 +19,10 @@ import { createInterface } from "node:readline";
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { join } from "node:path";
+import { homedir } from "node:os";
 
 // ─── パス定義 ───
-const BASE = "/Users/nn/Downloads/lore-project/就活";
+const BASE = join(homedir(), "Downloads", "lore-project", "就活");
 const CSV_PATH = join(BASE, "応募履歴.csv");
 
 // ─── 企業データ（応募先リストからパース） ───

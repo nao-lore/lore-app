@@ -11,10 +11,11 @@ import { createInterface } from "readline";
 import { execSync } from "child_process";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
+import { homedir } from "os";
 
 // ── Config ──────────────────────────────────────────────
 const PROGRESS_FILE = join(import.meta.dirname, ".ph-launch-progress.json");
-const REDDIT_DIR = "/Users/nn/Downloads/lore-project/Reddit";
+const REDDIT_DIR = join(homedir(), "Downloads", "lore-project", "Reddit");
 
 const URLS = {
   site: "https://loresync.dev",
