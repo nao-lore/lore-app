@@ -12,7 +12,7 @@ interface LandingPageProps {
   onChangeLang?: (lang: Lang) => void;
 }
 
-const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/lore-ai-conversation-snap/opkdpjpkahbljjnhnahliedmkc';
+const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/ioaccmbgjkaklailnmgklmipccmbneen';
 const GITHUB_URL = 'https://github.com/nao-lore/lore-app';
 const FEEDBACK_URL = 'https://github.com/nao-lore/lore-app/issues';
 const TEAMS_NOTIFY_URL = 'https://formspree.io/f/xldjqkdl';
