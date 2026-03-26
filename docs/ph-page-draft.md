@@ -35,7 +35,7 @@ Over time, you build a living record of everything you've done with AI — acros
 - Chrome extension injects context back into your next session with one click
 - Runs entirely in your browser — no backend, no account required
 - PWA with offline support — works without internet
-- 1,258 tests, open source, fully auditable
+- Comprehensive test suite, open source, fully auditable
 - 8 languages supported
 
 **Free:** 20 transforms/day, 3 projects

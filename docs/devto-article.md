@@ -95,4 +95,6 @@ Lore is fully open source and free to use:
 
 If you work with AI conversations regularly, I'd love for you to try it and tell me what's missing. I'm building this for people like me — people who live in AI tools and are tired of losing context between sessions.
 
+**Launching on Product Hunt today** — use code **PHLORE2026** at checkout for 1 month of Pro, free.
+
 Feedback, issues, PRs — all welcome. I'm [@nao-lore](https://github.com/nao-lore) on GitHub.
