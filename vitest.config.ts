@@ -2,12 +2,13 @@
 // that rely on @testing-library/react queries (getByRole, getByText, etc.).
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      'virtual:pwa-register': '/Users/nn/lore/src/__tests__/__mocks__/pwa-register.ts',
+      'virtual:pwa-register': resolve(__dirname, 'src/__tests__/__mocks__/pwa-register.ts'),
     },
   },
   test: {
