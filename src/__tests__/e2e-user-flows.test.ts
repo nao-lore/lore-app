@@ -776,21 +776,21 @@ describe('E2E: PWA Configuration', () => {
     // Verify the PWA config by reading the vite config
     // This is a static verification — the actual SW registration is runtime
     const fs = await import('fs');
-    const configContent = fs.readFileSync('/Users/nn/lore/vite.config.ts', 'utf-8');
+    const configContent = fs.readFileSync(`${process.cwd()}/vite.config.ts`, 'utf-8');
     expect(configContent).toContain("registerType: 'prompt'");
     expect(configContent).toContain('VitePWA');
   });
 
   it('workbox caches static assets', async () => {
     const fs = await import('fs');
-    const configContent = fs.readFileSync('/Users/nn/lore/vite.config.ts', 'utf-8');
+    const configContent = fs.readFileSync(`${process.cwd()}/vite.config.ts`, 'utf-8');
     expect(configContent).toContain('static-assets');
     expect(configContent).toContain('CacheFirst');
   });
 
   it('AI API calls use NetworkOnly (never cached)', async () => {
     const fs = await import('fs');
-    const configContent = fs.readFileSync('/Users/nn/lore/vite.config.ts', 'utf-8');
+    const configContent = fs.readFileSync(`${process.cwd()}/vite.config.ts`, 'utf-8');
     expect(configContent).toContain('NetworkOnly');
     expect(configContent).toContain('generativelanguage');
     expect(configContent).toContain('anthropic');
@@ -799,7 +799,7 @@ describe('E2E: PWA Configuration', () => {
 
   it('manifest.webmanifest exists in public folder', async () => {
     const fs = await import('fs');
-    const exists = fs.existsSync('/Users/nn/lore/public/manifest.webmanifest');
+    const exists = fs.existsSync(`${process.cwd()}/public/manifest.webmanifest`);
     expect(exists).toBe(true);
   });
 });

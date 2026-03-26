@@ -48,14 +48,14 @@ export interface LogEntry extends Trashable {
   relatedProjects: string[];
   tags: string[];
   // Handoff fields (only when outputMode === 'handoff')
-  currentStatus?: string[];   // 今どこ？ — current state + what's working/not
-  nextActions?: string[];     // 次何やる？
+  currentStatus?: string[];   // current state + what's working/not
+  nextActions?: string[];     // what to do next
   nextActionItems?: NextActionItem[];  // immediate only, max 4
-  actionBacklog?: NextActionItem[];   // そのうちやるもの, max 7
-  completed?: string[];       // 終わったこと
-  blockers?: string[];        // 注意点・未解決
-  constraints?: string[];     // 前提・制約
-  resumeContext?: string[];   // 再開入力 — derived from resumeChecklist
+  actionBacklog?: NextActionItem[];   // deferred items, max 7
+  completed?: string[];       // what's done
+  blockers?: string[];        // open issues / warnings
+  constraints?: string[];     // assumptions / constraints
+  resumeContext?: string[];   // derived from resumeChecklist
   resumeChecklist?: ResumeChecklistItem[];  // structured resume, max 3
   handoffMeta?: HandoffMeta;  // session-level context
   checkedActions?: number[];  // checked nextActions indices
