@@ -4,7 +4,7 @@
  * Tests: API failure UI feedback, network errors, invalid responses,
  * timeouts, rate limit retry behavior.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { AIError } from '../errors';
 import type { AIErrorCode } from '../errors';
 import { callWithRetry } from '../utils/retryManager';

@@ -147,7 +147,7 @@ export default function App() {
             <Download size={16} />
             <span>{t('pwaInstallApp', s.lang)}</span>
           </button>
-          <button className="pwa-install-dismiss" onClick={() => { setInstallDismissed(true); try { sessionStorage.setItem('pwa-install-dismissed', '1'); } catch {} }} aria-label="Dismiss install prompt">
+          <button className="pwa-install-dismiss" onClick={() => { setInstallDismissed(true); try { sessionStorage.setItem('pwa-install-dismissed', '1'); } catch { /* dismiss */ } }} aria-label="Dismiss install prompt">
             <X size={12} />
           </button>
         </div>

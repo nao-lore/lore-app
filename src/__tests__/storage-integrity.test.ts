@@ -76,7 +76,6 @@ import {
   deleteTodo,
   archiveTodo,
   unarchiveTodo,
-  deleteTodosForLog,
   exportAllData,
   validateBackup,
   importData,
@@ -86,7 +85,7 @@ import {
 } from '../storage';
 import { loadWithIdbFallback } from '../storage/core';
 import { saveToIdb } from '../storage/indexedDb';
-import type { LogEntry, Todo, MasterNote } from '../types';
+import type { LogEntry, MasterNote } from '../types';
 
 // ─── Helpers ───
 

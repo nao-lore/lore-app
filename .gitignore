@@ -43,6 +43,14 @@ extension.zip
 scripts/scrape-jobs.mjs
 scripts/scrape-reddit.mjs
 
+# Python cache
+__pycache__/
+*.pyc
+
+# Claude Code config (personal workflow)
+.claude/
+CLAUDE.md
+
 # Strategy docs (competitive intel, launch plans)
 docs/competitive-responses.md
 docs/PH_LAUNCH_MASTER_CHECKLIST.md

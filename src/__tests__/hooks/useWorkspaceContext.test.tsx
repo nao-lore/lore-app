@@ -2,7 +2,7 @@
  * useWorkspaceContext.test.tsx — Unit tests for the useWorkspaceContext hook
  * @vitest-environment jsdom
  */
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
 // Suppress console.error for expected error boundary throws

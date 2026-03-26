@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      'virtual:pwa-register': '/Users/nn/threadlog/src/__tests__/__mocks__/pwa-register.ts',
+      'virtual:pwa-register': '/Users/nn/lore/src/__tests__/__mocks__/pwa-register.ts',
     },
   },
   test: {

@@ -2,7 +2,7 @@
  * usePullToRefresh.test.tsx — Unit tests for the usePullToRefresh hook
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 
