@@ -5,6 +5,7 @@ import { exportAllData, validateBackup, importData, getDataUsage, formatBytes } 
 import type { LoreBackup } from '../storage';
 import { t, tf } from '../i18n';
 import type { Lang } from '../i18n';
+import { todayISO } from '../utils/dateFormat';
 
 interface SettingsDataManagementProps {
   lang: Lang;
@@ -23,7 +24,7 @@ export const SettingsDataManagement = memo(function SettingsDataManagement({ lan
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const date = new Date().toISOString().slice(0, 10);
+    const date = todayISO();
     a.href = url;
     a.download = `lore-backup-${date}.json`;
     a.click();

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, lazy, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import { Menu, ChevronUp, ArrowLeft, Download, X } from 'lucide-react';
 import Sidebar from './Sidebar';
 import CommandPalette from './CommandPalette';
@@ -98,14 +98,14 @@ export default function App() {
     }
   }, [deferredInstallPrompt]);
 
-  const viewLabelMap: Partial<Record<View, string>> = {
+  const viewLabelMap: Partial<Record<View, string>> = useMemo(() => ({
     input: t('tabTitleInput', s.lang), detail: t('tabTitleDetail', s.lang), dashboard: t('tabTitleDashboard', s.lang),
     history: t('tabTitleHistory', s.lang), todos: t('tabTitleTodos', s.lang), timeline: t('tabTitleTimeline', s.lang),
     projects: t('tabTitleProjects', s.lang), settings: t('tabTitleSettings', s.lang), help: t('tabTitleHelp', s.lang),
     pricing: t('tabTitlePricing', s.lang), masternote: t('tabTitleMasternote', s.lang), projecthome: t('tabTitleProjecthome', s.lang),
     weeklyreport: t('tabTitleWeeklyreport', s.lang), trash: t('tabTitleTrash', s.lang), summarylist: t('tabTitleSummarylist', s.lang),
     knowledgebase: t('tabTitleKnowledgebase', s.lang),
-  };
+  }), [s.lang]);
 
   useEffect(() => {
     const viewTitleMap: Partial<Record<View, string>> = { dashboard: `${t('tabTitleDashboard', s.lang)} — Lore`, todos: `${t('tabTitleTodos', s.lang)} — Lore`, history: `${t('tabTitleHistory', s.lang)} — Lore`, timeline: `${t('tabTitleTimeline', s.lang)} — Lore`, projects: `${t('tabTitleProjects', s.lang)} — Lore`, settings: `${t('tabTitleSettings', s.lang)} — Lore`, help: `${t('tabTitleHelp', s.lang)} — Lore`, pricing: `${t('tabTitlePricing', s.lang)} — Lore` };

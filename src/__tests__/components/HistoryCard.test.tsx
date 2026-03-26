@@ -36,6 +36,7 @@ vi.mock('../../projectColors', () => ({
 // Mock dateFormat
 vi.mock('../../utils/dateFormat', () => ({
   formatRelativeTime: () => '5 min ago',
+  todayISO: () => '2025-01-01',
 }));
 
 import {

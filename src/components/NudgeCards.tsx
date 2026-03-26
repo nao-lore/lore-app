@@ -4,6 +4,7 @@ import type { LogEntry, Project, Todo, MasterNote } from '../types';
 import { t, tf } from '../i18n';
 import type { Lang } from '../i18n';
 import { safeGetItem, safeSetItem } from '../storage';
+import { todayISO } from '../utils/dateFormat';
 
 // ── Notification dismissal ──
 const DISMISS_KEY = 'threadlog_notification_dismissals';
@@ -55,7 +56,7 @@ export default function NudgeCards({ todos, masterNotes, logs, handoffLogs, proj
 
   const nudges = useMemo(() => {
     const items: { key: string; label: string; sub: string; color: string; borderColor: string; icon: typeof Clock; onClick: () => void; dismissKeys: string[] }[] = [];
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayISO();
 
     // Overdue TODOs
     const overdueTodos = todos.filter((td) => !td.done && td.dueDate && td.dueDate < today);

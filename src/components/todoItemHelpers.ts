@@ -1,4 +1,5 @@
 import type { Todo } from '../types';
+import { todayISO } from '../utils/dateFormat';
 
 export function isOverdue(dueDate?: string): boolean {
   if (!dueDate) return false;
@@ -9,7 +10,7 @@ export function isOverdue(dueDate?: string): boolean {
 
 export function isDueToday(dueDate?: string): boolean {
   if (!dueDate) return false;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   return dueDate === today;
 }
 

@@ -31,6 +31,7 @@ vi.mock('../sounds', () => ({
 // Mock dateFormat
 vi.mock('../utils/dateFormat', () => ({
   formatDateGroup: () => 'Today',
+  todayISO: () => '2025-01-01',
 }));
 
 // Mock ConfirmDialog

@@ -8,9 +8,6 @@
  */
 export const STALENESS_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** @deprecated Use STALENESS_THRESHOLD_MS instead */
-export const SEVEN_DAYS = STALENESS_THRESHOLD_MS;
-
 /** Check if a master note is stale (not updated within the staleness threshold) */
 export function isStaleMasterNote(updatedAt: number): boolean {
   return Date.now() - updatedAt > STALENESS_THRESHOLD_MS;

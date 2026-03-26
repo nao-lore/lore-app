@@ -13,6 +13,7 @@ import { callWithRetry } from './utils/retryManager';
 import { parseSSEStream, extractGeminiText, extractAnthropicText, extractOpenAIText } from './utils/streamParser';
 import { encrypt, decrypt, isEncrypted, setCachedKey, readKeyForSlot } from './utils/crypto';
 import { acquire as acquireRateLimit } from './utils/rateLimiter';
+import { todayISO } from './utils/dateFormat';
 
 export type ProviderName = 'anthropic' | 'gemini' | 'openai';
 
@@ -452,7 +453,7 @@ const BUILTIN_DAILY_LIMIT = 20;
 
 function saveBuiltinUsage(remaining: number): void {
   try {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayISO();
     safeSetItem(BUILTIN_USAGE_KEY, JSON.stringify({ remaining, date: today }));
   } catch (err) { if (import.meta.env.DEV) console.warn('[provider] saveBuiltinUsage:', err); }
 }
@@ -463,7 +464,7 @@ export function getBuiltinUsage(): { used: number; limit: number; remaining: num
     const raw = safeGetItem(BUILTIN_USAGE_KEY);
     if (raw) {
       const { remaining, date } = JSON.parse(raw);
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayISO();
       if (date === today) {
         return { used: BUILTIN_DAILY_LIMIT - remaining, limit: BUILTIN_DAILY_LIMIT, remaining };
       }

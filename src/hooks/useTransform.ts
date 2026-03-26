@@ -363,39 +363,26 @@ export function useTransform(params: UseTransformParams) {
       // Note: the input text (textarea content) is intentionally preserved on error.
       // The `text` state lives in InputView and is never cleared by the transform hook,
       // so users can retry without losing their pasted content.
+      const codeToMessage: Record<string, string> = {
+        API_KEY_MISSING: t('errorApiKey', lang),
+        RATE_LIMIT: shouldUseBuiltinApi() ? t('errorRateLimitBuiltin', lang) : t('errorRateLimit', lang),
+        OVERLOADED: t('errorServiceDown', lang),
+        TRUNCATED: t('errorTruncated', lang),
+        PARSE_ERROR: t('errorParseResponse', lang),
+        CANCELLED: '',
+        TOO_LONG: t('errorTooLong', lang),
+        NETWORK: t('errorNetwork', lang),
+        EMPTY_RESPONSE: t('errorEmptyResponse', lang),
+        TIMEOUT: t('errorTimeout', lang),
+        GENERIC: t('errorGeneric', lang),
+      };
       if (err instanceof AIError) {
-        const codeToMessage: Record<string, string> = {
-          API_KEY_MISSING: t('errorApiKey', lang),
-          RATE_LIMIT: shouldUseBuiltinApi() ? t('errorRateLimitBuiltin', lang) : t('errorRateLimit', lang),
-          OVERLOADED: t('errorServiceDown', lang),
-          TRUNCATED: t('errorTruncated', lang),
-          PARSE_ERROR: t('errorParseResponse', lang),
-          CANCELLED: '',
-          TOO_LONG: t('errorTooLong', lang),
-          NETWORK: t('errorNetwork', lang),
-          EMPTY_RESPONSE: t('errorEmptyResponse', lang),
-          TIMEOUT: t('errorTimeout', lang),
-          GENERIC: t('errorGeneric', lang),
-        };
         setError(codeToMessage[err.code] ?? t('errorGeneric', lang));
       } else {
         // Try to convert plain Error with marker strings to AIError for structured handling
         const raw = err instanceof Error ? err.message : 'Transform failed.';
         const converted = inferAIErrorFromMessage(raw, err);
         if (converted) {
-          const codeToMessage: Record<string, string> = {
-            API_KEY_MISSING: t('errorApiKey', lang),
-            RATE_LIMIT: shouldUseBuiltinApi() ? t('errorRateLimitBuiltin', lang) : t('errorRateLimit', lang),
-            OVERLOADED: t('errorServiceDown', lang),
-            TRUNCATED: t('errorTruncated', lang),
-            PARSE_ERROR: t('errorParseResponse', lang),
-            CANCELLED: '',
-            TOO_LONG: t('errorTooLong', lang),
-            NETWORK: t('errorNetwork', lang),
-            EMPTY_RESPONSE: t('errorEmptyResponse', lang),
-            TIMEOUT: t('errorTimeout', lang),
-            GENERIC: t('errorGeneric', lang),
-          };
           // Special case: rate limit with cooldown
           if (converted.code === 'RATE_LIMIT') {
             const cooldownMatch = raw.match(/\[Rate Limit:(\d+)\]/);

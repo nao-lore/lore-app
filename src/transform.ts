@@ -12,12 +12,8 @@ import { parseJsonWithRepair } from './utils/jsonRepair';
 import { fuzzyDedupStrings } from './utils/fuzzyDedup';
 import { normalizeInput } from './utils/normalizeInput';
 import { callWithRetry } from './utils/retryManager';
-
-/** Safely coerce an unknown value to string[], filtering out non-strings. */
-function toStringArray(val: unknown): string[] {
-  if (!Array.isArray(val)) return [];
-  return val.filter((v): v is string => typeof v === 'string');
-}
+import { todayISO } from './utils/dateFormat';
+import { asStringArray } from './chunkMerger';
 
 // Prompts (SYSTEM_PROMPT, HANDOFF_PROMPT, BOTH_PROMPT, TODO_ONLY_PROMPT) are
 // defined in ./prompts.ts with PROMPT_VERSION for tracking.
@@ -378,7 +374,7 @@ const LANG_INSTRUCTIONS: Record<string, string> = {
   pt: 'You MUST output ALL fields in Portuguese (Português). Keep file names, code identifiers, API names, and technical terms in English.',
 };
 
-function resolveLang(sourceText: string): string {
+export function resolveLang(sourceText: string): string {
   const pref = getLang();
   if (pref !== 'auto') return pref;
   return detectLanguage(sourceText);
@@ -386,6 +382,11 @@ function resolveLang(sourceText: string): string {
 
 export function getLangInstruction(lang: string): string {
   return LANG_INSTRUCTIONS[lang] || LANG_INSTRUCTIONS.en;
+}
+
+/** Resolve language from preferences/auto-detect and return the instruction string */
+export function resolveLangInstruction(inputText: string): string {
+  return getLangInstruction(resolveLang(inputText));
 }
 
 // Single-call transform for texts ≤ CHUNK_THRESHOLD
@@ -613,13 +614,13 @@ export function normalizeHandoffFields(parsed: Record<string, unknown>): {
   const nextActionSet = new Set(nextActions.map(a => a.toLowerCase().trim()));
   const actionBacklog = finalActionBacklog.filter(item => !nextActionSet.has(item.action.toLowerCase().trim()));
   // Normalize remaining array fields with type coercion and dedup
-  const completed = fuzzyDedupStrings(toStringArray(parsed.completed));
-  const currentStatus = fuzzyDedupStrings(toStringArray(parsed.currentStatus));
+  const completed = fuzzyDedupStrings(asStringArray(parsed.completed));
+  const currentStatus = fuzzyDedupStrings(asStringArray(parsed.currentStatus));
   const blockers = fuzzyDedupStrings(
-    filterResolvedBlockers(toStringArray(parsed.blockers), completed, decisions),
+    filterResolvedBlockers(asStringArray(parsed.blockers), completed, decisions),
   );
-  const constraints = toStringArray(parsed.constraints);
-  const tags = toStringArray(parsed.tags);
+  const constraints = asStringArray(parsed.constraints);
+  const tags = asStringArray(parsed.tags);
 
   // #67: Tag language validation — detect if tags are in a different language than the content
   if (tags.length > 0 && (currentStatus.length > 0 || completed.length > 0 || decisions.length > 0)) {
@@ -761,7 +762,7 @@ async function transformTodoOnlyOnce(sourceText: string, opts?: { onStream?: Str
 
   const userMessage = `${langInstruction}\n\nExtract a TODO list from the following conversation. Only include actions the user explicitly committed to.\n\nCHAT:\n${sourceText}`;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const year = new Date().getFullYear().toString();
   const todoPrompt = TODO_ONLY_PROMPT.replace(/\{\{TODAY\}\}/g, today).replace(/\{\{YEAR\}\}/g, year);
   const req = { apiKey, system: todoPrompt, userMessage, maxTokens: 8192 };
@@ -840,11 +841,11 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
     const result: BothResult = {
       worklog: {
         title: typeof w.title === 'string' ? w.title || 'Untitled' : 'Untitled',
-        today: fuzzyDedupStrings(toStringArray(w.today)),
-        decisions: toStringArray(w.decisions),
-        todo: toStringArray(w.todo),
-        relatedProjects: toStringArray(w.relatedProjects),
-        tags: toStringArray(w.tags),
+        today: fuzzyDedupStrings(asStringArray(w.today)),
+        decisions: asStringArray(w.decisions),
+        todo: asStringArray(w.todo),
+        relatedProjects: asStringArray(w.relatedProjects),
+        tags: asStringArray(w.tags),
       },
       handoff: (() => {
         // Validate handoff fields (title, currentStatus, resumeChecklist, nextActions, completed, tags)
@@ -854,7 +855,7 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
         const hTitle = typeof h.title === 'string' ? h.title : '';
         const wTitle = typeof w.title === 'string' ? w.title : '';
         // For tags, fall back to worklog tags if handoff has none
-        const hTags = hFields.tags.length > 0 ? hFields.tags : toStringArray(w.tags);
+        const hTags = hFields.tags.length > 0 ? hFields.tags : asStringArray(w.tags);
         return {
           title: hTitle || wTitle || 'Untitled',
           handoffMeta: hFields.handoffMeta,
@@ -862,7 +863,7 @@ export async function transformBoth(sourceText: string, opts?: TransformBothOpti
           resumeChecklist: hFields.resumeChecklist,
           resumeContext: hFields.resumeChecklist.length > 0
             ? hFields.resumeChecklist.map(r => r.action)
-            : toStringArray(h.resumeContext),
+            : asStringArray(h.resumeContext),
           nextActions: hFields.nextActions,
           nextActionItems: hFields.nextActionItems,
           actionBacklog: hFields.actionBacklog.length > 0 ? hFields.actionBacklog : undefined,

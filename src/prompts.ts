@@ -553,3 +553,21 @@ Output ONLY valid JSON with this exact schema:
 
 Language: Match input. Japanese → Japanese (keep code terms in English). English → English.
 No markdown. No explanation. Start with { end with }.`;
+
+/** Shared extraction prompt for masterNote and knowledgeBase log summary extraction */
+export const EXTRACT_PROMPT = `Extract structured project information from this work log.
+
+Return JSON only:
+{
+  "summary": "1-2 sentence summary of what was done",
+  "decisions": ["key decisions made"],
+  "issues": ["open issues, blockers, unresolved problems"],
+  "actions": ["next actions, pending tasks"]
+}
+
+Rules:
+- Be concise — one sentence per item
+- Only include items that exist in the log
+- Empty arrays for missing sections
+- Match the language of the input (Japanese or English)
+{LANG_OVERRIDE}`;

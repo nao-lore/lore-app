@@ -31,6 +31,7 @@ vi.mock('../../storage', async (importOriginal) => {
 // Mock dateFormat
 vi.mock('../../utils/dateFormat', () => ({
   formatDateTimeFull: () => '2025-01-01 12:00',
+  todayISO: () => '2025-01-01',
 }));
 
 // Mock workload

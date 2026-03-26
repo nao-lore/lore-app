@@ -776,10 +776,6 @@ export class ChunkEngine {
     };
   }
 
-  private static getConcurrency(): number {
-    return getActiveProvider() === 'anthropic' ? 1 : 2;
-  }
-
   private async processGeneric(
     sourceText: string,
     apiKey: string,
@@ -896,7 +892,7 @@ export class ChunkEngine {
 
     if (workItems.length > 0) {
       try {
-        await this.runParallel(workItems, processChunk, ChunkEngine.getConcurrency());
+        await this.runParallel(workItems, processChunk, getEngineConcurrency());
       } catch (err) {
         const msg = err instanceof Error ? err.message : '';
         if (msg.includes('[Cancelled]')) {

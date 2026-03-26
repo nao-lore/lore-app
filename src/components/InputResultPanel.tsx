@@ -6,6 +6,7 @@ import type { Lang } from '../i18n';
 import { logToMarkdown, handoffResultToMarkdown } from '../markdown';
 import { copyToClipboard } from '../utils/clipboard';
 import { downloadFile } from '../utils/downloadFile';
+import { todayISO } from '../utils/dateFormat';
 import { HandoffResultDisplay, WorklogResultDisplay } from '../ResultDisplay';
 
 interface InputResultPanelProps {
@@ -50,7 +51,7 @@ export const InputResultPanel = memo(function InputResultPanel({
   };
 
   const handleExport = (format: 'md' | 'json') => {
-    const date = new Date().toISOString().slice(0, 10);
+    const date = todayISO();
     const type = outputMode === 'handoff' ? 'handoff' : 'worklog';
 
     if (format === 'md') {

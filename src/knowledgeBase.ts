@@ -1,34 +1,8 @@
 import type { LogEntry, KnowledgeBase, KnowledgeEntry, SourcedItem } from './types';
 import { callProvider, shouldUseBuiltinApi } from './provider';
-import { getApiKey, getLang, getLogSummary, saveLogSummary } from './storage';
-import { detectLanguage, getLangInstruction } from './transform';
-
-// Re-use the log summary extraction from masterNote.ts (cached per log)
-const EXTRACT_PROMPT = `Extract structured project information from this work log.
-
-Return JSON only:
-{
-  "summary": "1-2 sentence summary of what was done",
-  "decisions": ["key decisions made"],
-  "issues": ["open issues, blockers, unresolved problems"],
-  "actions": ["next actions, pending tasks"]
-}
-
-Rules:
-- Be concise — one sentence per item
-- Only include items that exist in the log
-- Empty arrays for missing sections
-- Match the language of the input (Japanese or English)
-{LANG_OVERRIDE}`;
-
-function resolveLangHint(inputText: string): string {
-  const lang = getLang();
-  if (lang === 'auto') {
-    const detected = detectLanguage(inputText);
-    return getLangInstruction(detected);
-  }
-  return getLangInstruction(lang);
-}
+import { getApiKey, getLogSummary, saveLogSummary } from './storage';
+import { resolveLangInstruction } from './transform';
+import { EXTRACT_PROMPT } from './prompts';
 
 function logToInputText(log: LogEntry): string {
   const parts: string[] = [];
@@ -55,7 +29,7 @@ async function ensureLogSummary(log: LogEntry, apiKey: string) {
   if (cached) return cached;
 
   const inputText = logToInputText(log);
-  const langInstruction = resolveLangHint(inputText);
+  const langInstruction = resolveLangInstruction(inputText);
   const rawText = await callProvider({
     apiKey,
     system: EXTRACT_PROMPT.replace('{LANG_OVERRIDE}', langInstruction),
@@ -166,7 +140,7 @@ export async function generateKnowledgeBase(
   }
 
   const input = `${summaries.length} log summaries from the project:\n\n${parts.join('\n\n')}`;
-  const langInstruction = resolveLangHint(input);
+  const langInstruction = resolveLangInstruction(input);
 
   const rawText = await callProvider({
     apiKey,

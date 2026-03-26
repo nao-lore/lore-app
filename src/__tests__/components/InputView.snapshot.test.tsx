@@ -147,6 +147,7 @@ vi.mock('../../ResultDisplay', () => ({
 // Mock utils/dateFormat
 vi.mock('../../utils/dateFormat', () => ({
   formatRelativeTime: () => '1 hour ago',
+  todayISO: () => '2025-01-01',
 }));
 
 // Mock ErrorRetryBanner

@@ -32,6 +32,7 @@ vi.mock('../search', () => ({
 vi.mock('../utils/dateFormat', () => ({
   formatDateGroup: () => 'Today',
   formatRelativeTime: () => '5 min ago',
+  todayISO: () => '2025-01-01',
 }));
 
 // Mock LogPickerModal

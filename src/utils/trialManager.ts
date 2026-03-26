@@ -1,5 +1,6 @@
 import { safeGetItem, safeSetItem } from '../storage/core';
 import { isPro } from './proManager';
+import { todayISO } from './dateFormat';
 
 // ─── Constants ───
 
@@ -38,7 +39,7 @@ function parseDailyUsage(): DailyUsage | null {
 
 /** Returns today's transform usage count. Resets if the date has changed. */
 export function getDailyUsageCount(): number {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const usage = parseDailyUsage();
   if (!usage || usage.date !== today) return 0;
   return usage.count;
@@ -46,7 +47,7 @@ export function getDailyUsageCount(): number {
 
 /** Increments today's transform counter. */
 export function incrementDailyUsage(): void {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const usage = parseDailyUsage();
   const count = (usage && usage.date === today) ? usage.count + 1 : 1;
   safeSetItem(DAILY_USAGE_KEY, JSON.stringify({ date: today, count }));
@@ -79,7 +80,3 @@ export function canTransform(): CanTransformResult {
   return { allowed: true, remaining };
 }
 
-// ─── Deprecated exports (kept for backward compat, no-ops) ───
-
-/** @deprecated Trial has been removed. Always returns false. */
-export function isInTrialPeriod(): boolean { return false; }

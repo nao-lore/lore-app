@@ -1,37 +1,8 @@
 import type { LogEntry, MasterNote, LogSummary, SourcedItem } from './types';
 import { callProvider, shouldUseBuiltinApi } from './provider';
-import { getApiKey, getLang, getLogSummary, saveLogSummary } from './storage';
-import { extractJson, detectLanguage, getLangInstruction } from './transform';
-
-// ---------------------------------------------------------------------------
-// Step 1: Extract structured summary from a single log (cached)
-// ---------------------------------------------------------------------------
-
-const EXTRACT_PROMPT = `Extract structured project information from this work log.
-
-Return JSON only:
-{
-  "summary": "1-2 sentence summary of what was done",
-  "decisions": ["key decisions made"],
-  "issues": ["open issues, blockers, unresolved problems"],
-  "actions": ["next actions, pending tasks"]
-}
-
-Rules:
-- Be concise — one sentence per item
-- Only include items that exist in the log
-- Empty arrays for missing sections
-- Match the language of the input (Japanese or English)
-{LANG_OVERRIDE}`;
-
-function resolveLangHint(inputText: string): string {
-  const lang = getLang();
-  if (lang === 'auto') {
-    const detected = detectLanguage(inputText);
-    return getLangInstruction(detected);
-  }
-  return getLangInstruction(lang);
-}
+import { getApiKey, getLogSummary, saveLogSummary } from './storage';
+import { extractJson, resolveLangInstruction } from './transform';
+import { EXTRACT_PROMPT } from './prompts';
 
 function logToInputText(log: LogEntry): string {
   const parts: string[] = [];
@@ -61,7 +32,7 @@ async function extractLogSummary(log: LogEntry, apiKey: string): Promise<LogSumm
 
   if (import.meta.env.DEV) console.log('[MasterNote] extractLogSummary API call:', log.id);
   const inputText = logToInputText(log);
-  const langInstruction = resolveLangHint(inputText);
+  const langInstruction = resolveLangInstruction(inputText);
   const rawText = await callProvider({
     apiKey,
     system: EXTRACT_PROMPT.replace('{LANG_OVERRIDE}', langInstruction),
@@ -216,7 +187,7 @@ export async function refineMasterNote(
   }, null, 2);
 
   const userMessage = `Current summary:\n${currentJson}\n\nUser instruction:\n${instruction}`;
-  const langInstruction = resolveLangHint(userMessage);
+  const langInstruction = resolveLangInstruction(userMessage);
   const rawText = await callProvider({
     apiKey,
     system: REFINE_PROMPT.replace('{LANG_OVERRIDE}', langInstruction),
@@ -279,7 +250,7 @@ export async function generateMasterNote(
   if (import.meta.env.DEV) console.log('[MasterNote] Starting merge with', summaries.length, 'summaries');
 
   const mergeInput = summariesToMergeInput(summaries, existing);
-  const langInstruction = resolveLangHint(mergeInput);
+  const langInstruction = resolveLangInstruction(mergeInput);
 
   const rawText = await callProvider({
     apiKey,

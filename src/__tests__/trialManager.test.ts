@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
-  isInTrialPeriod,
   getDailyUsageCount,
   incrementDailyUsage,
   canTransform,
@@ -23,12 +22,6 @@ describe('trialManager', () => {
   beforeEach(() => {
     clearStore();
     vi.restoreAllMocks();
-  });
-
-  // ─── isInTrialPeriod (deprecated, always false) ───
-
-  it('isInTrialPeriod always returns false (trial removed)', () => {
-    expect(isInTrialPeriod()).toBe(false);
   });
 
   // ─── getDailyUsageCount ───

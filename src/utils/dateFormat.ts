@@ -1,3 +1,8 @@
+/** Returns today's date as "YYYY-MM-DD" */
+export function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function isSameDay(a: Date, b: Date): boolean {

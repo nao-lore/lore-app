@@ -5,6 +5,7 @@ import { deleteLog } from './logs';
 import { deleteProject } from './projects';
 import { readKeyForSlot } from '../utils/crypto';
 import { safeJsonParse } from '../utils/safeJsonParse';
+import { todayISO } from '../utils/dateFormat';
 
 // ─── Settings ───
 
@@ -121,7 +122,7 @@ export function setLastReportDate(timestamp: number): void {
 const ACTIVITY_DATES_KEY = 'threadlog_activity_dates';
 
 export function recordActivity(): void {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   try {
     const raw = safeGetItem(ACTIVITY_DATES_KEY);
     const dates: string[] = safeJsonParse<string[]>(raw, []);

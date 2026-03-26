@@ -16,10 +16,6 @@ export type { View };
 const FONT_SIZE_KEY = 'threadlog_font_size';
 const LAST_PROJECT_KEY = 'threadlog_last_project';
 
-function resolveUiLang(): Lang {
-  return getUiLang();
-}
-
 /**
  * useAppState — intentionally large aggregator hook.
  *
@@ -36,7 +32,7 @@ export function useAppState() {
   const sidebar = useSidebarState();
 
   // ── Remaining app-level state ─────────────────────────────────
-  const [lang, setLangState] = useState<Lang>(resolveUiLang);
+  const [lang, setLangState] = useState<Lang>(getUiLang);
   const [themePref, setThemePref] = useState<ThemePref>(getTheme);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(() => safeGetItem(LAST_PROJECT_KEY) || null);
   const [fontSize, setFontSizeState] = useState<FontSize>(() => {

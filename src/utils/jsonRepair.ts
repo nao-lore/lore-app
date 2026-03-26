@@ -19,19 +19,8 @@ export function repairJson(raw: string): string {
   // Remove trailing commas before } or ]
   s = s.replace(/,\s*([}\]])/g, '$1');
 
-  // Try to balance braces
-  let braceCount = 0;
-  let bracketCount = 0;
-  for (const ch of s) {
-    if (ch === '{') braceCount++;
-    if (ch === '}') braceCount--;
-    if (ch === '[') bracketCount++;
-    if (ch === ']') bracketCount--;
-  }
-
-  // Add missing closing brackets/braces
-  while (bracketCount > 0) { s += ']'; bracketCount--; }
-  while (braceCount > 0) { s += '}'; braceCount--; }
+  // Balance unclosed brackets/braces (string-aware)
+  s = balanceBrackets(s);
 
   return s;
 }

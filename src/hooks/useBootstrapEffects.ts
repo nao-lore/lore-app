@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { purgeExpiredTrash, getAutoReportSetting, getLastReportDate, recordActivity, safeGetItem, safeSetItem, loadTodos } from '../storage';
+import { todayISO } from '../utils/dateFormat';
 import { isOnboardingDone } from '../onboardingState';
 import { registerSW } from 'virtual:pwa-register';
 import { t, tf } from '../i18n';
@@ -184,7 +185,7 @@ export function useBootstrapEffects(params: BootstrapParams): void {
       const lastReminder = safeGetItem(REMINDER_KEY);
       if (lastReminder) {
         const lastDate = new Date(lastReminder).toISOString().slice(0, 10);
-        const today = new Date().toISOString().slice(0, 10);
+        const today = todayISO();
         if (lastDate === today) return;
       }
 
@@ -208,7 +209,7 @@ export function useBootstrapEffects(params: BootstrapParams): void {
   useEffect(() => {
     ric(() => {
       const { lang, showToast } = paramsRef.current;
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayISO();
       const OVERDUE_TOAST_KEY = 'threadlog_overdue_toast_date';
       const lastToast = safeGetItem(OVERDUE_TOAST_KEY);
       if (lastToast === today) return;

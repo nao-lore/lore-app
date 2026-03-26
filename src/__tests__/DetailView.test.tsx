@@ -55,6 +55,7 @@ vi.mock('../integrations', () => ({
 vi.mock('../utils/dateFormat', () => ({
   formatDateFull: (d: string) => d,
   formatDateTimeFull: (d: string) => d,
+  todayISO: () => '2025-01-01',
 }));
 
 // Mock formatHandoff

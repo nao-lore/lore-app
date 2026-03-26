@@ -5,6 +5,7 @@ import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { t } from './i18n';
 import type { Lang } from './i18n';
 import { updateLog, trashLog, safeGetItem, safeSetItem } from './storage';
+import { todayISO } from './utils/dateFormat';
 import ContextMenu from './ContextMenu';
 import type { MenuItem } from './ContextMenu';
 import ConfirmDialog from './ConfirmDialog';
@@ -174,7 +175,7 @@ function Sidebar({ logs, projects, selectedId, activeProjectId, activeView, onSe
 
   // ── Notification dots (minimal, no numbers) ──
   const dots = useMemo(() => {
-    const overdueTodos = todos.some((td) => !td.done && td.dueDate && td.dueDate < new Date().toISOString().slice(0, 10));
+    const overdueTodos = todos.some((td) => !td.done && td.dueDate && td.dueDate < todayISO());
     const unassignedLogs = logs.some((l) => l.outputMode === 'handoff' && !l.projectId);
     let staleSummary = false;
     let dismissals: Record<string, number> = {};

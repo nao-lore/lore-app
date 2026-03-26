@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { loadLogs, loadProjects, loadTodos, loadMasterNotes } from '../storage';
+import { todayISO } from '../utils/dateFormat';
 
 /** Central data store hook — loads logs, projects, todos, masterNotes with cache-friendly refresh */
 export function useDataStore() {
@@ -14,7 +15,7 @@ export function useDataStore() {
   const lastLogCreatedAt = useMemo(() => logs.length > 0 ? logs[logs.length - 1].createdAt : null, [logs]);
   const pendingCount = useMemo(() => todos.filter((td) => !td.done).length, [todos]);
 
-  const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const todayKey = useMemo(() => todayISO(), []);
   const overdueTodos = useMemo(() => {
     return todos.filter((td) => !td.done && !td.archivedAt && td.dueDate && td.dueDate < todayKey);
   }, [todos, todayKey]);
