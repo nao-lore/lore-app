@@ -35,6 +35,30 @@ Paste your ChatGPT / Claude / Gemini conversation into Lore, and it automaticall
 - **Project Summary** — A living dashboard built from all your sessions
 - **AI Context** — Structured context your next AI session can instantly understand
 
+## Why Lore?
+
+**The problem:** AI conversations are ephemeral. Every time you start a new session, you lose context — what was decided, what's blocked, what to do next. Manually tracking project state across sessions is tedious and error-prone.
+
+**The approach:**
+
+- **Zero-backend architecture** — All data stays in your browser (localStorage + IndexedDB). No server, no accounts, no data leaves your machine. This was a deliberate privacy-first decision: users paste sensitive work conversations, and they shouldn't have to trust a third party with that data.
+- **AI-powered extraction** — Rather than asking users to manually organize their notes, Lore uses structured prompts with Zod schema validation to reliably extract TODOs, decisions, and status from unstructured conversation text.
+- **Chunk processing** — AI conversations can be extremely long. Lore's custom chunk engine splits large inputs, processes them in parallel, and merges the results — handling conversations that would exceed any single API call's token limit.
+
+## Technical Highlights
+
+| Area | Detail |
+|------|--------|
+| **Type Safety** | TypeScript strict mode, zero `as any` casts. AI responses validated at runtime with Zod schemas |
+| **Chunk Engine** | Custom pipeline that splits large conversations, processes chunks in parallel, and merges structured output |
+| **Client-Side Storage** | localStorage for app state + IndexedDB for large data. No backend required |
+| **Fuzzy Deduplication** | Jaccard similarity-based dedup prevents duplicate TODOs across handoffs |
+| **PWA** | Installable on desktop and mobile with offline support via service worker |
+| **Accessibility** | Semantic HTML, ARIA attributes, `forced-colors` media query support |
+| **i18n** | 8 languages with a custom lightweight translation system (no heavy i18n library) |
+| **Chrome Extension** | Companion extension that captures conversations from ChatGPT, Claude, and Gemini with one click |
+| **Testing** | Vitest for unit tests + Playwright for E2E, covering storage, transforms, schemas, and UI flows |
+
 ## Screenshots
 
 <details>
@@ -156,6 +180,10 @@ To install locally:
 ## Feedback
 
 Found a bug or have a suggestion? [Open an issue](https://github.com/nao-lore/lore-app/issues/new/choose) or use the in-app feedback button (Help → Feedback).
+
+## Built By
+
+Solo project by [Naoya Hanya](https://github.com/nao-lore) — designed, built, and launched in 2 weeks. Featured on [Product Hunt](https://www.producthunt.com/posts/lore-5).
 
 ## License
 

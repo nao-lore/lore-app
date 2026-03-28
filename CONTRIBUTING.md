@@ -1,4 +1,4 @@
-# Contributing to ThreadLog
+# Contributing to Lore
 
 Thanks for your interest in contributing! We welcome all contributions — bug reports, feature requests, and pull requests.
 
@@ -6,7 +6,7 @@ Thanks for your interest in contributing! We welcome all contributions — bug r
 
 ```bash
 git clone https://github.com/nao-lore/lore-app.git
-cd threadlog
+cd lore-app
 npm install
 npm run dev
 ```
