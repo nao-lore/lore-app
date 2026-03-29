@@ -1,7 +1,7 @@
 <h1 align="center">Lore</h1>
 
 <p align="center">
-  <a href="https://www.producthunt.com/posts/lore"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=lore&theme=light" alt="Lore on Product Hunt" width="250" height="54"></a>
+  <a href="https://www.producthunt.com/posts/lore-5"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=lore-5&theme=light" alt="Lore on Product Hunt" width="250" height="54"></a>
   <a href="https://github.com/nao-lore/lore-app/actions"><img src="https://github.com/nao-lore/lore-app/actions/workflows/playwright.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/nao-lore/lore-app/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
 </p>
@@ -166,7 +166,7 @@ To install locally:
 | Framework | React 19 + TypeScript (strict) |
 | Build | Vite 7 |
 | Testing | Vitest + Playwright |
-| Storage | localStorage (database migration planned) |
+| Storage | localStorage + IndexedDB |
 | Deploy | Vercel |
 | PWA | vite-plugin-pwa |
 
