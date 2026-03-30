@@ -103,33 +103,12 @@ export default function HelpView({ onBack, lang, onShowOnboarding, onFeedback }:
           </div>
         </div>
 
-        {/* 4. APIキーについて */}
+        {/* 4. AI変換について */}
         <div className="content-card">
           <div className="content-card-header">{t('helpApiKeysTitle', lang)}</div>
-          <p className="help-body-text-mb">
+          <p className="help-body-text">
             {t('helpApiKeysDesc', lang)}
           </p>
-          <div className="flex-col-gap-md" style={{ gap: 8 }}>
-            {[
-              { name: 'Claude (Anthropic)', url: 'https://console.anthropic.com' },
-              { name: 'Gemini (Google)', url: 'https://aistudio.google.com' },
-              { name: 'OpenAI', url: 'https://platform.openai.com' },
-            ].map((provider) => (
-              <div key={provider.name} className="provider-row">
-                <span className="provider-name">
-                  {provider.name}
-                </span>
-                <a
-                  href={provider.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="provider-link"
-                >
-                  {provider.url}
-                </a>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* 5. データについての注意 */}

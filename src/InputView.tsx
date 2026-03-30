@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, memo } from 'react';
+import { HelpCircle } from 'lucide-react';
 import { CHAR_WARN, needsChunking } from './transform';
 import { getChunkTarget, getEngineConcurrency } from './chunkEngine';
 import { getStreak, isDemoMode } from './storage';
@@ -39,7 +40,7 @@ function buildSourceReference(_pastedText: string, files: ImportedFile[], charCo
   return { sourceType: 'paste', importedAt: now, charCount };
 }
 
-function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, pendingTodosCount, lastLogCreatedAt, onRefresh }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onDirtyChange?: (dirty: boolean) => void; pendingTodosCount: number; lastLogCreatedAt: string | null; onRefresh?: () => void }) {
+function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showToast, onDirtyChange, pendingTodosCount, lastLogCreatedAt, onRefresh, onShowOnboarding }: { onSaved: (id: string) => void; onOpenLog: (id: string) => void; lang: Lang; activeProjectId: string | null; projects: Project[]; showToast?: (msg: string, type?: 'default' | 'success' | 'error', action?: { label: string; onClick: () => void }) => void; onDirtyChange?: (dirty: boolean) => void; pendingTodosCount: number; lastLogCreatedAt: string | null; onRefresh?: () => void; onShowOnboarding?: () => void }) {
   const [text, setText] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const shared = params.get('text');
@@ -107,9 +108,22 @@ function InputView({ onSaved, onOpenLog, lang, activeProjectId, projects, showTo
 
   return (
     <div className="workspace-content-centered" onDrop={fh.handleDrop} onDragOver={fh.handleDragOver} onDragLeave={fh.handleDragLeave}>
-      <h1 className="text-center input-greeting">
-        {getGreeting(lang)}{(() => { const streak = getStreak(); return streak > 1 ? <span className="streak-badge" title={`${streak} day streak`}> {'\uD83D\uDD25'} {streak}</span> : null; })()}
-      </h1>
+      <div style={{ position: 'relative' }}>
+        <h1 className="text-center input-greeting">
+          {getGreeting(lang)}{(() => { const streak = getStreak(); return streak > 1 ? <span className="streak-badge" title={`${streak} day streak`}> {'\uD83D\uDD25'} {streak}</span> : null; })()}
+        </h1>
+        {onShowOnboarding && (
+          <button
+            className="btn-icon dashboard-help-btn"
+            onClick={onShowOnboarding}
+            title={t('dashboardHelpTooltip', lang)}
+            aria-label={t('dashboardHelpTooltip', lang)}
+            style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }}
+          >
+            <HelpCircle size={18} />
+          </button>
+        )}
+      </div>
       {(() => { const parts: string[] = []; if (pendingTodosCount > 0) parts.push(lang === 'ja' ? `未完了TODO ${pendingTodosCount}件` : `${pendingTodosCount} pending TODO${pendingTodosCount !== 1 ? 's' : ''}`); if (lastLogCreatedAt) parts.push((lang === 'ja' ? '最終変換: ' : 'Last: ') + formatRelativeTime(lastLogCreatedAt, lang as 'en' | 'ja')); return parts.length > 0 ? <p className="text-center input-stats">{parts.join(' · ')}</p> : null; })()}
 
       {savedResult && <PostGenerationPreview savedResult={savedResult} lang={lang} showToast={showToast} onStartNew={handleStartNew} wasFirstTransform={wasFirstTransform} apiCallCount={apiCallCount} />}
