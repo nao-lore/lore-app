@@ -4267,6 +4267,35 @@ button[disabled] {
   .dashboard-steps { grid-template-columns: 1fr; gap: 10px; }
 }
 
+/* Dashboard sample preview */
+.dashboard-sample-preview {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* Dashboard help button */
+.dashboard-help-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-placeholder);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.dashboard-help-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-bg, rgba(99,102,241,0.06));
+}
+
 /* Modal backdrop fade */
 @keyframes backdrop-fade-in {
   from { opacity: 0; }
