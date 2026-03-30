@@ -1,8 +1,12 @@
+import { ExternalLink } from 'lucide-react';
 import type { ThemePref } from './storage';
 import { resetOnboarding } from './onboardingState';
 import { t } from './i18n';
 import type { Lang } from './i18n';
 import type { FontSize } from './types';
+
+const PRIVACY_URL = '/privacy.html';
+const TERMS_URL = '/terms.html';
 
 // Extracted components
 import { SettingsApiKeys } from './components/SettingsApiKeys';
@@ -49,6 +53,31 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
         <SettingsFeatures lang={lang} />
 
         <SettingsDataManagement lang={lang} showToast={showToast} />
+
+        {/* Legal links */}
+        <div className="content-card">
+          <div className="content-card-header">{t('settingsLegalTitle', lang)}</div>
+          <div className="flex-col" style={{ gap: 8, padding: '0 0 4px' }}>
+            <a
+              href={PRIVACY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--accent)', textDecoration: 'none' }}
+            >
+              {t('settingsPrivacyPolicy', lang)}
+              <ExternalLink size={13} />
+            </a>
+            <a
+              href={TERMS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--accent)', textDecoration: 'none' }}
+            >
+              {t('settingsTermsOfService', lang)}
+              <ExternalLink size={13} />
+            </a>
+          </div>
+        </div>
 
         {/* Show onboarding again */}
         {onShowOnboarding && (

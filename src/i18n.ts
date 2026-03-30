@@ -1259,6 +1259,21 @@ const labels = {
   slackWebhookError: { ja: 'Slack Webhook URLの形式が正しくありません', en: 'Invalid Slack Webhook URL format', es: 'Formato de Webhook URL de Slack no válido', fr: 'Format de Webhook URL Slack invalide', de: 'Ungültiges Slack Webhook URL-Format', zh: 'Slack Webhook URL格式无效', ko: 'Slack Webhook URL 형식이 올바르지 않습니다', pt: 'Formato de URL de Webhook Slack inválido' },
   showOnboardingAgain: { ja: 'オンボーディングをもう一度見る', en: 'Show onboarding again', es: 'Mostrar bienvenida de nuevo', fr: 'Revoir l\'introduction', de: 'Onboarding erneut anzeigen', zh: '再次查看引导', ko: '온보딩 다시 보기', pt: 'Mostrar introdução novamente' },
 
+  // Legal links
+  settingsLegalTitle: { ja: '法的情報', en: 'Legal', es: 'Legal', fr: 'Mentions légales', de: 'Rechtliches', zh: '法律信息', ko: '법적 정보', pt: 'Informações legais' },
+  settingsPrivacyPolicy: { ja: 'プライバシーポリシー', en: 'Privacy Policy', es: 'Política de privacidad', fr: 'Politique de confidentialité', de: 'Datenschutzrichtlinie', zh: '隐私政策', ko: '개인정보 처리방침', pt: 'Política de privacidade' },
+  settingsTermsOfService: { ja: '利用規約', en: 'Terms of Service', es: 'Términos de servicio', fr: 'Conditions d\'utilisation', de: 'Nutzungsbedingungen', zh: '服务条款', ko: '이용약관', pt: 'Termos de serviço' },
+
+  // Dashboard help button
+  dashboardHelpTooltip: { ja: '使い方ガイド', en: 'How to use', es: 'Cómo usar', fr: 'Comment utiliser', de: 'Anleitung', zh: '使用指南', ko: '사용 방법', pt: 'Como usar' },
+
+  // Empty state sample preview
+  dashboardSamplePreviewTitle: { ja: 'こんな画面になります', en: 'Here\'s what it looks like', es: 'Así se verá', fr: 'Voici à quoi ça ressemble', de: 'So sieht es aus', zh: '界面预览', ko: '이런 화면이 됩니다', pt: 'Veja como ficará' },
+  dashboardSampleProject: { ja: 'マイプロジェクト', en: 'My Project', es: 'Mi proyecto', fr: 'Mon projet', de: 'Mein Projekt', zh: '我的项目', ko: '내 프로젝트', pt: 'Meu projeto' },
+  dashboardSampleTask1: { ja: 'APIエンドポイントの実装', en: 'Implement API endpoints', es: 'Implementar endpoints de API', fr: 'Implémenter les endpoints API', de: 'API-Endpunkte implementieren', zh: '实现API端点', ko: 'API 엔드포인트 구현', pt: 'Implementar endpoints de API' },
+  dashboardSampleTask2: { ja: 'ユーザー認証のテスト', en: 'Test user authentication', es: 'Probar autenticación de usuario', fr: 'Tester l\'authentification', de: 'Benutzerauthentifizierung testen', zh: '测试用户认证', ko: '사용자 인증 테스트', pt: 'Testar autenticação de usuário' },
+  dashboardSampleTask3: { ja: 'デプロイ手順の文書化', en: 'Document deployment steps', es: 'Documentar pasos de despliegue', fr: 'Documenter les étapes de déploiement', de: 'Bereitstellungsschritte dokumentieren', zh: '文档化部署步骤', ko: '배포 단계 문서화', pt: 'Documentar etapas de implantação' },
+
   // Weekly Report extras
   weeklyReportTodoCompletionRate: { ja: 'TODO 完了率', en: 'TODO Done', es: 'TODO completados', fr: 'TODOs terminés', de: 'TODO-Abschlussrate', zh: 'TODO 完成率', ko: 'TODO 완료율', pt: 'Taxa de Conclusão de TODO' },
   weeklyReportGeneratedAt: { ja: '生成日時', en: 'Generated', es: 'Generado', fr: 'Généré', de: 'Generiert am', zh: '生成时间', ko: '생성 일시', pt: 'Gerado em' },

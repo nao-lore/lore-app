@@ -1,5 +1,5 @@
 import { useMemo, useState, memo } from 'react';
-import { Square, CheckSquare, AlertTriangle, ChevronDown, ChevronRight, Plus, PlayCircle, FileText } from 'lucide-react';
+import { Square, CheckSquare, AlertTriangle, ChevronDown, ChevronRight, Plus, PlayCircle, FileText, HelpCircle } from 'lucide-react';
 import type { LogEntry, Project, Todo, MasterNote } from './types';
 import { t, tf } from './i18n';
 import type { Lang } from './i18n';
@@ -24,6 +24,7 @@ interface DashboardViewProps {
   onNewLog: () => void;
   onToggleAction: (logId: string, actionIndex: number) => void;
   onOpenWeeklyReport?: () => void;
+  onShowOnboarding?: () => void;
 }
 
 interface PendingAction {
@@ -45,7 +46,7 @@ interface ProjectSnapshot {
   blockers: string[];
 }
 
-function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject, onOpenTodos, onOpenSummaryList, onOpenHistory, onNewLog, onToggleAction, onOpenWeeklyReport }: DashboardViewProps) {
+function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject, onOpenTodos, onOpenSummaryList, onOpenHistory, onNewLog, onToggleAction, onOpenWeeklyReport, onShowOnboarding }: DashboardViewProps) {
   const [moreTasksOpen, setMoreTasksOpen] = useState(false);
 
   const handoffLogs = useMemo(() =>
@@ -134,6 +135,62 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
               {t('dashboardCreateFirstSnapshot', lang)}
             </button>
           </FirstUseTooltip>
+
+          {/* Sample preview — show what populated dashboard looks like */}
+          <div className="dashboard-sample-preview">
+            <p className="font-semibold text-sm" style={{ color: 'var(--text-placeholder)', marginBottom: 12 }}>
+              {t('dashboardSamplePreviewTitle', lang)}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 360 }}>
+              {/* Sample project card */}
+              <div style={{
+                padding: '12px 16px', borderRadius: 10,
+                background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
+                opacity: 0.6, pointerEvents: 'none',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 16 }}>📂</span>
+                  <span className="font-semibold text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    {t('dashboardSampleProject', lang)}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'var(--border-subtle)' }}>
+                    <div style={{ width: '33%', height: '100%', borderRadius: 2, background: 'var(--accent)' }} />
+                  </div>
+                  <span style={{ fontSize: 10, color: 'var(--text-placeholder)' }}>1/3</span>
+                </div>
+              </div>
+              {/* Sample tasks */}
+              {[
+                t('dashboardSampleTask1', lang),
+                t('dashboardSampleTask2', lang),
+                t('dashboardSampleTask3', lang),
+              ].map((task, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '8px 14px', borderRadius: 8,
+                  background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
+                  opacity: 0.6, pointerEvents: 'none',
+                }}>
+                  <Square size={12} style={{ color: 'var(--text-placeholder)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{task}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Help button — replay onboarding */}
+          {onShowOnboarding && (
+            <button
+              className="btn text-sm"
+              onClick={onShowOnboarding}
+              style={{ marginTop: 16, color: 'var(--text-placeholder)', gap: 6, display: 'flex', alignItems: 'center' }}
+            >
+              <HelpCircle size={14} />
+              {t('dashboardHelpTooltip', lang)}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -144,10 +201,21 @@ function DashboardView({ logs, projects, todos, masterNotes, lang, onOpenProject
     <div className="workspace-content-wide">
 
         {/* ── Greeting (centered, Notion-style) ── */}
-        <div className="text-center mt-xl" style={{ marginBottom: 36 }}>
+        <div className="text-center mt-xl" style={{ marginBottom: 36, position: 'relative' }}>
           <div className="font-extrabold" style={{ fontSize: 32, color: 'var(--text-secondary)', lineHeight: 1.2 }}>
             {getGreeting(lang)}
           </div>
+          {onShowOnboarding && (
+            <button
+              className="btn-icon dashboard-help-btn"
+              onClick={onShowOnboarding}
+              title={t('dashboardHelpTooltip', lang)}
+              aria-label={t('dashboardHelpTooltip', lang)}
+              style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }}
+            >
+              <HelpCircle size={18} />
+            </button>
+          )}
         </div>
 
         {/* ── Nudge cards (extracted component) ── */}
