@@ -4,7 +4,6 @@ import { t, tf } from '../i18n';
 import type { Lang } from '../i18n';
 import type { TransformAction } from '../hooks/useTransform';
 import FirstUseTooltip from '../FirstUseTooltip';
-import { shouldUseBuiltinApi, getBuiltinUsage } from '../provider';
 import { canTransform, DAILY_LIMIT_FREE } from '../utils/trialManager';
 
 /** Strip BOM and normalize line endings before processing */
@@ -126,14 +125,6 @@ export const InputTextArea = memo(function InputTextArea({
 
       {/* Transform button */}
       <div className="flex-row gap-xs input-transform-area">
-        {!loading && shouldUseBuiltinApi() && (() => {
-          const { used, limit } = getBuiltinUsage();
-          return (
-            <span className="input-usage-counter">
-              {used}/{limit}
-            </span>
-          );
-        })()}
         {!loading && (() => {
           const check = canTransform();
           if (!check.allowed) {
