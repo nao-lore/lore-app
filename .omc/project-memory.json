@@ -308,6 +308,30 @@
   },
   "hotPaths": [
     {
+      "path": "src/chunkEngine.ts",
+      "accessCount": 7,
+      "lastAccessed": 1775455970242,
+      "type": "file"
+    },
+    {
+      "path": "src/transform.ts",
+      "accessCount": 7,
+      "lastAccessed": 1775455976333,
+      "type": "file"
+    },
+    {
+      "path": "src/provider.ts",
+      "accessCount": 4,
+      "lastAccessed": 1775455977638,
+      "type": "directory"
+    },
+    {
+      "path": "src/schemas.ts",
+      "accessCount": 3,
+      "lastAccessed": 1775455979023,
+      "type": "file"
+    },
+    {
       "path": "",
       "accessCount": 2,
       "lastAccessed": 1775358413206,
@@ -317,6 +341,36 @@
       "path": ".claude/commands/reddit/tone-guide.md",
       "accessCount": 2,
       "lastAccessed": 1775358416303,
+      "type": "file"
+    },
+    {
+      "path": "src/classify.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775455945659,
+      "type": "file"
+    },
+    {
+      "path": "src/integrations.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775455945688,
+      "type": "file"
+    },
+    {
+      "path": "src/utils/jsonRepair.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775455957939,
+      "type": "file"
+    },
+    {
+      "path": "src/utils/crypto.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775455958996,
+      "type": "directory"
+    },
+    {
+      "path": "docs/interview-cheatsheet.md",
+      "accessCount": 1,
+      "lastAccessed": 1775530897177,
       "type": "file"
     }
   ],
