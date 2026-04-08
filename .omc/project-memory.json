@@ -308,21 +308,33 @@
   },
   "hotPaths": [
     {
-      "path": "src/chunkEngine.ts",
-      "accessCount": 7,
-      "lastAccessed": 1775455970242,
+      "path": "src/transform.ts",
+      "accessCount": 9,
+      "lastAccessed": 1775624125041,
       "type": "file"
     },
     {
-      "path": "src/transform.ts",
-      "accessCount": 7,
-      "lastAccessed": 1775455976333,
+      "path": "src/chunkEngine.ts",
+      "accessCount": 8,
+      "lastAccessed": 1775624125800,
       "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 7,
+      "lastAccessed": 1775624136930,
+      "type": "directory"
     },
     {
       "path": "src/provider.ts",
+      "accessCount": 6,
+      "lastAccessed": 1775624118859,
+      "type": "directory"
+    },
+    {
+      "path": "",
       "accessCount": 4,
-      "lastAccessed": 1775455977638,
+      "lastAccessed": 1775624158718,
       "type": "directory"
     },
     {
@@ -330,12 +342,6 @@
       "accessCount": 3,
       "lastAccessed": 1775455979023,
       "type": "file"
-    },
-    {
-      "path": "",
-      "accessCount": 2,
-      "lastAccessed": 1775358413206,
-      "type": "directory"
     },
     {
       "path": ".claude/commands/reddit/tone-guide.md",
@@ -362,6 +368,18 @@
       "type": "file"
     },
     {
+      "path": "src/components/SettingsApiKeys.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775624117946,
+      "type": "file"
+    },
+    {
+      "path": "src/i18n.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775624154494,
+      "type": "directory"
+    },
+    {
       "path": "src/utils/crypto.ts",
       "accessCount": 1,
       "lastAccessed": 1775455958996,
@@ -372,6 +390,54 @@
       "accessCount": 1,
       "lastAccessed": 1775530897177,
       "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1775624119011,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1775624126293,
+      "type": "file"
+    },
+    {
+      "path": "api/generate.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775624145736,
+      "type": "file"
+    },
+    {
+      "path": "api/stripe-webhook.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775624146439,
+      "type": "file"
+    },
+    {
+      "path": "supabase/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1775624147742,
+      "type": "file"
+    },
+    {
+      "path": "src/utils/proManager.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775624147804,
+      "type": "file"
+    },
+    {
+      "path": "src/storage/indexedDb.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775624156473,
+      "type": "directory"
+    },
+    {
+      "path": "src/SettingsPanel.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775624160148,
+      "type": "directory"
     }
   ],
   "userDirectives": []
