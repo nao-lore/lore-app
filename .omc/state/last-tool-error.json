@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"ls ~/lore/ 2>&1 | head -30; echo \\\"---\\\"; ls ~/lore/.vercel/ 2>&1; echo \\\"---\\\"; ls ~/lore/wrangler* ~/lore/_headers ~/lore/_redirects 2>&1\",\"description\":\"Check Lore directory structure f...",
-  "error": "Exit code 1\napi\nauto-improve-daily\nbin\nCHANGELOG.md\ncheckpoints\nCLAUDE.md\nCONTRIBUTING.md\ndist\ndocs\ne2e\neslint.config.js\nextension\nextension.zip\nflake.lock\nflake.nix\nindex.html\nLICENSE\nlore-landing\nlp\nnode_modules\npackage-lock.json\npackage.json\nplaywright-report\nplaywright.config.ts\npublic\nREADME.md\nscripts\nsrc\nsupabase\ntest-results\n---\nproject.json\nREADME.txt\n---\n(eval):1: no matches found: /Users/nn/lore/wrangler*\n[rerun: b34]",
-  "timestamp": "2026-04-09T05:15:59.635Z",
-  "retry_count": 1
-}
