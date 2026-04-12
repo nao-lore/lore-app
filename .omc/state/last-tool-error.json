@@ -1,0 +1,7 @@
+{
+  "tool_name": "WebFetch",
+  "tool_input_preview": "{\"url\":\"https://j-sox.smoove.jp\",\"prompt\":\"smoove J-SOXのサービス概要、ターゲット顧客、特徴、価格帯、LP流入数500%等の実績、公認会計士との関係について詳しく抽出してください。\"}",
+  "error": "timeout of 60000ms exceeded",
+  "timestamp": "2026-04-12T02:25:27.050Z",
+  "retry_count": 1
+}
