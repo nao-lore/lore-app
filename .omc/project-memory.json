@@ -326,27 +326,27 @@
       "type": "directory"
     },
     {
+      "path": "",
+      "accessCount": 7,
+      "lastAccessed": 1776048962083,
+      "type": "directory"
+    },
+    {
       "path": "src/provider.ts",
       "accessCount": 6,
       "lastAccessed": 1775624118859,
       "type": "directory"
     },
     {
-      "path": "",
-      "accessCount": 6,
-      "lastAccessed": 1775878302529,
-      "type": "directory"
+      "path": ".claude/commands/reddit/tone-guide.md",
+      "accessCount": 4,
+      "lastAccessed": 1776048966194,
+      "type": "file"
     },
     {
       "path": "src/schemas.ts",
       "accessCount": 3,
       "lastAccessed": 1775455979023,
-      "type": "file"
-    },
-    {
-      "path": ".claude/commands/reddit/tone-guide.md",
-      "accessCount": 3,
-      "lastAccessed": 1775878308655,
       "type": "file"
     },
     {
