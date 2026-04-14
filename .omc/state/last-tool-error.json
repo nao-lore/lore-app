@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"awk '/^### 主な成果（4\\\\/13/,/^## ⬜ 次にやること/' /Users/nn/Downloads/lore-project/SESSION.md | head -n -1 > /tmp/session_413_archive.md && wc -l /tmp/session_413_archive.md\",\"description\":\"Extract ...",
+  "error": "Exit code 1\nhead: illegal line count -- -1\n[rerun: b25]",
+  "timestamp": "2026-04-14T14:46:45.581Z",
+  "retry_count": 1
+}
