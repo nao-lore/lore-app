@@ -27,6 +27,7 @@
  */
 
 import fs from 'node:fs';
+import fsp from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import matter from 'gray-matter';
@@ -34,7 +35,10 @@ import type { DataSource, DataSnapshot } from '../ports/data-source.js';
 import type { Result } from '../result.js';
 import { ok, err } from '../result.js';
 import type { LoreMcpError } from '../errors.js';
+import type { Logger } from '../logger.js';
+import { createStderrLogger } from '../logger.js';
 import type { EntryKind, LoreEntry } from './types.js';
+import { escapeRegExp } from '../util/regex.js';
 
 /**
  * Returns the configured data directory, preferring `LORE_DATA_DIR` env var
@@ -100,8 +104,9 @@ const KNOWN_FRONTMATTER_KEYS = new Set([
  * }
  * ```
  */
-export function parseFile(
+export function parseFileContent(
   filePath: string,
+  raw: string,
   dataDir: string,
 ): Result<LoreEntry, LoreMcpError> {
   // Path-traversal guard: resolved path must stay inside dataDir
@@ -109,16 +114,6 @@ export function parseFile(
   const resolvedDir = path.resolve(dataDir);
   if (!resolved.startsWith(resolvedDir + path.sep) && resolved !== resolvedDir) {
     return err({ code: 'PATH_TRAVERSAL', path: filePath });
-  }
-
-  let raw: string;
-  try {
-    raw = fs.readFileSync(filePath, 'utf-8');
-  } catch (cause) {
-    return err({
-      code: 'INTERNAL_ERROR',
-      message: cause instanceof Error ? cause.message : String(cause),
-    });
   }
 
   let parsed: matter.GrayMatterFile<string>;
@@ -178,6 +173,36 @@ export function parseFile(
 }
 
 /**
+ * Parse a single `.md` file into a {@link LoreEntry} (synchronous read).
+ *
+ * Kept for backward compatibility with code that calls the two-argument form.
+ * Prefer {@link parseFileContent} for async usage.
+ */
+export function parseFile(
+  filePath: string,
+  dataDir: string,
+): Result<LoreEntry, LoreMcpError> {
+  // Path-traversal guard first — avoid reading before checking
+  const resolved = path.resolve(filePath);
+  const resolvedDir = path.resolve(dataDir);
+  if (!resolved.startsWith(resolvedDir + path.sep) && resolved !== resolvedDir) {
+    return err({ code: 'PATH_TRAVERSAL', path: filePath });
+  }
+
+  let raw: string;
+  try {
+    raw = fs.readFileSync(filePath, 'utf-8');
+  } catch (cause) {
+    return err({
+      code: 'INTERNAL_ERROR',
+      message: cause instanceof Error ? cause.message : String(cause),
+    });
+  }
+
+  return parseFileContent(filePath, raw, dataDir);
+}
+
+/**
  * MCP data source adapter that reads `~/.lore/projects/*.md` files.
  *
  * Implements the {@link DataSource} port. Instantiate with an explicit directory
@@ -194,9 +219,11 @@ export function parseFile(
  */
 export class MarkdownDataSource implements DataSource {
   private readonly dir: string;
+  private readonly logger: Logger;
 
-  constructor(dir?: string) {
+  constructor(dir?: string, logger?: Logger) {
     this.dir = dir ?? getDataDir();
+    this.logger = logger ?? createStderrLogger('warn');
   }
 
   /** Returns true if the directory exists and is accessible. */
@@ -209,7 +236,7 @@ export class MarkdownDataSource implements DataSource {
   }
 
   /**
-   * Load all valid `.md` entries from the directory.
+   * Load all valid `.md` entries from the directory asynchronously.
    *
    * Parse errors on individual files are logged as warnings but do not fail
    * the entire load — a single malformed file should not prevent other entries
@@ -223,9 +250,10 @@ export class MarkdownDataSource implements DataSource {
       return err({ code: 'DATA_SOURCE_MISSING', dir: this.dir });
     }
 
-    let files: string[];
+    let fileNames: string[];
     try {
-      files = fs.readdirSync(this.dir).filter((f) => f.endsWith('.md'));
+      const allFiles = await fsp.readdir(this.dir);
+      fileNames = allFiles.filter((f) => f.endsWith('.md'));
     } catch (cause) {
       return err({
         code: 'INTERNAL_ERROR',
@@ -233,14 +261,39 @@ export class MarkdownDataSource implements DataSource {
       });
     }
 
+    // Read all files in parallel for non-blocking I/O.
+    const rawResults = await Promise.all(
+      fileNames.map(async (file) => {
+        const filePath = path.join(this.dir, file);
+        try {
+          const raw = await fsp.readFile(filePath, 'utf-8');
+          return { filePath, raw, error: null };
+        } catch (cause) {
+          return {
+            filePath,
+            raw: null,
+            error: cause instanceof Error ? cause.message : String(cause),
+          };
+        }
+      }),
+    );
+
     const entries: LoreEntry[] = [];
-    for (const file of files) {
-      const filePath = path.join(this.dir, file);
-      const result = parseFile(filePath, this.dir);
+    for (const { filePath, raw, error } of rawResults) {
+      if (error !== null || raw === null) {
+        this.logger.warn('markdown_reader.read_failed', { path: filePath, error });
+        continue;
+      }
+      const result = parseFileContent(filePath, raw, this.dir);
       if (result.ok) {
         entries.push(result.value);
+      } else {
+        this.logger.warn('markdown_reader.parse_failed', {
+          path: filePath,
+          error: result.error.code,
+          message: 'message' in result.error ? result.error.message : undefined,
+        });
       }
-      // Silently skip malformed files — individual parse errors don't fail the load
     }
 
     return ok({ entries, loaded_at: Date.now() });
@@ -272,9 +325,7 @@ export function searchEntries(
   project_id: string | undefined,
   limit: number,
 ): LoreEntry[] {
-  // Escape all regex metacharacters so the query is treated as a literal string
-  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp(escapedQuery, 'i');
+  const pattern = new RegExp(escapeRegExp(query), 'i');
 
   const results: LoreEntry[] = [];
   for (const entry of snapshot.entries) {
