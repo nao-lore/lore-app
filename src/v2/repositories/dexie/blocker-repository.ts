@@ -14,7 +14,10 @@ function toMessage(e: unknown): string {
 }
 
 export class DexieBlockerRepository implements BlockerRepository {
-  constructor(private readonly db: LoreV2DB) {}
+  private readonly db: LoreV2DB;
+  constructor(db: LoreV2DB) {
+    this.db = db;
+  }
 
   async findById(id: BlockerId): Promise<Result<Blocker, LoreError>> {
     try {

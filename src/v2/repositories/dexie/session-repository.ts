@@ -15,7 +15,10 @@ import { ok, err, type Result } from '../../result';
 import type { LoreError } from '../../errors';
 
 export class DexieSessionRepository implements SessionRepository {
-  constructor(private readonly db: LoreV2DB) {}
+  private readonly db: LoreV2DB;
+  constructor(db: LoreV2DB) {
+    this.db = db;
+  }
 
   async findById(id: SessionId): Promise<Result<Session, LoreError>> {
     try {

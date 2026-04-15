@@ -23,7 +23,10 @@ function validateProvenance(decision: Decision): Result<void, LoreError> {
 }
 
 export class DexieDecisionRepository implements DecisionRepository {
-  constructor(private readonly db: LoreV2DB) {}
+  private readonly db: LoreV2DB;
+  constructor(db: LoreV2DB) {
+    this.db = db;
+  }
 
   async findById(id: DecisionId): Promise<Result<Decision, LoreError>> {
     try {

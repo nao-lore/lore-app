@@ -14,7 +14,10 @@ function toMessage(e: unknown): string {
 }
 
 export class DexieTodoRepository implements TodoRepository {
-  constructor(private readonly db: LoreV2DB) {}
+  private readonly db: LoreV2DB;
+  constructor(db: LoreV2DB) {
+    this.db = db;
+  }
 
   async findById(id: TodoId): Promise<Result<Todo, LoreError>> {
     try {

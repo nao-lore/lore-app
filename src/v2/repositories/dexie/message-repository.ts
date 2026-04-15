@@ -15,7 +15,10 @@ function toMessage(e: unknown): string {
 }
 
 export class DexieMessageRepository implements MessageRepository {
-  constructor(private readonly db: LoreV2DB) {}
+  private readonly db: LoreV2DB;
+  constructor(db: LoreV2DB) {
+    this.db = db;
+  }
 
   async findById(id: MessageId): Promise<Result<Message, LoreError>> {
     try {
