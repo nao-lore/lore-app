@@ -58,8 +58,16 @@ export function withoutUpdatedAt<T extends object>(obj: T): Omit<T, 'updated_at'
  * 1. `thinking` blocks removed entirely
  * 2. `id` field removed from `tool_use` blocks
  *
+ * **Exhaustiveness**: The return value is typed as `Record<keyof Message, unknown>`.
+ * If a new field is added to `Message`, TypeScript will error here until the field
+ * is explicitly handled (included or consciously excluded).
+ *
  * @param msg - Message to prepare
  * @returns A plain object safe to pass to {@link canonicalJSONStringify}
+ *
+ * NOTE: When adding a new field to `Message`, update this function:
+ * - Semantic field → add it to the returned object
+ * - Bookkeeping field (like `updated_at`) → omit it and add a comment explaining why
  */
 function prepareMessageForHash(msg: Message): unknown {
   const contentBlocks = msg.content_blocks
@@ -73,7 +81,9 @@ function prepareMessageForHash(msg: Message): unknown {
       return block;
     });
 
-  return {
+  // Typed as Record<keyof Message, unknown> so TypeScript enforces exhaustive coverage.
+  // Adding a field to Message without updating this object is a compile error.
+  const prepared: Record<keyof Message, unknown> = {
     id: msg.id,
     session_id: msg.session_id,
     parent_message_id: msg.parent_message_id,
@@ -86,6 +96,7 @@ function prepareMessageForHash(msg: Message): unknown {
     latency_ms: msg.latency_ms,
     created_at: msg.created_at,
   };
+  return prepared;
 }
 
 // ---------------------------------------------------------------------------
