@@ -1,0 +1,112 @@
+[
+  {
+    "id": "log-001-aaaaaaaaaaaaaaaaaaaa",
+    "createdAt": "2025-03-10T09:00:00.000Z",
+    "title": "Lore MVP kickoff",
+    "projectId": "proj-lore",
+    "decisions": ["Use React + Vite over Next.js for PWA simplicity"],
+    "todo": ["Set up CI", "Write README"],
+    "blockers": ["Need Stripe test keys"],
+    "tags": ["lore", "mvp"]
+  },
+  {
+    "id": "log-002-bbbbbbbbbbbbbbbbbbbb",
+    "createdAt": "2025-03-11T10:00:00.000Z",
+    "title": "Storage layer design",
+    "projectId": "proj-lore",
+    "decisionRationales": [
+      {
+        "title": "Use IndexedDB via Dexie",
+        "rationale": "Structured queries, better than localStorage for large logs"
+      },
+      {
+        "title": "Keep v1 DB name 'lore' unchanged",
+        "rationale": "Avoid breaking existing users on upgrade"
+      }
+    ],
+    "todo": ["Implement safeGetItem wrapper", "Add migrations"],
+    "blockers": [],
+    "tags": ["storage"]
+  },
+  {
+    "id": "log-003-cccccccccccccccccccc",
+    "createdAt": "2025-03-12T11:00:00.000Z",
+    "title": "Transform pipeline spike",
+    "sourceText": "User: Can you build a session summarizer?\nAssistant: Sure, here's the approach...",
+    "decisions": ["Use chunked processing for large sessions", "Stream tokens to reduce latency"],
+    "todo": ["Implement chunkEngine", "Test with Claude API"],
+    "blockers": ["API rate limits unclear"],
+    "tags": ["transform"]
+  },
+  {
+    "id": "log-004-dddddddddddddddddddd",
+    "createdAt": "2025-03-13T12:00:00.000Z",
+    "title": "i18n setup",
+    "decisions": ["Bundle all 8 languages at build time", "No lazy loading for MVP"],
+    "todo": ["Add Korean translations", "Add Portuguese translations"],
+    "blockers": [],
+    "tags": ["i18n"]
+  },
+  {
+    "id": "log-005-eeeeeeeeeeeeeeeeeeee",
+    "createdAt": "2025-03-14T13:00:00.000Z",
+    "title": "PWA manifest and service worker",
+    "projectId": "proj-lore",
+    "decisions": ["Use vite-plugin-pwa", "registerType: prompt (not autoUpdate)"],
+    "todo": ["Test offline mode", "Configure workbox cache strategies"],
+    "blockers": ["Chrome DevTools PWA audit needed"],
+    "tags": ["pwa"]
+  },
+  {
+    "id": "log-006-ffffffffffffffffffff",
+    "createdAt": "2025-03-15T09:00:00.000Z",
+    "title": "Session with only todos (no decisions)",
+    "decisions": [],
+    "todo": ["Write migration tests", "Add fixture data"],
+    "blockers": [],
+    "tags": []
+  },
+  {
+    "id": "log-007-gggggggggggggggggggg",
+    "createdAt": "2025-03-16T10:00:00.000Z",
+    "title": "Session with only blockers",
+    "decisions": [],
+    "todo": [],
+    "blockers": ["Dexie multiEntry index behavior on Safari unclear", "fake-indexeddb v5 missing some APIs"],
+    "tags": []
+  },
+  {
+    "id": "log-008-hhhhhhhhhhhhhhhhhhhh",
+    "createdAt": "2025-03-17T11:00:00.000Z",
+    "title": "Pricing page design session",
+    "projectId": "proj-lore",
+    "decisionRationales": [
+      {
+        "title": "Stripe Checkout over custom payment form",
+        "rationale": "PCI compliance, lower maintenance burden"
+      }
+    ],
+    "todo": ["Set up Stripe webhook", "Implement Pro gate"],
+    "blockers": ["Need to verify Stripe test webhook URL"],
+    "tags": ["stripe", "pricing"]
+  },
+  {
+    "id": "log-009-iiiiiiiiiiiiiiiiiiii",
+    "createdAt": "2025-03-18T12:00:00.000Z",
+    "title": "Empty log entry (edge case)",
+    "decisions": [],
+    "todo": [],
+    "blockers": [],
+    "tags": []
+  },
+  {
+    "id": "log-010-jjjjjjjjjjjjjjjjjjjj",
+    "createdAt": "2025-03-19T13:00:00.000Z",
+    "title": "Performance audit session",
+    "sourceText": "We profiled the render pipeline and found unnecessary re-renders in the HistoryView component.",
+    "decisions": ["Wrap HistoryView items in React.memo", "Debounce search input by 300ms"],
+    "todo": ["Profile with React DevTools", "Add virtualization to long lists"],
+    "blockers": [],
+    "tags": ["performance"]
+  }
+]

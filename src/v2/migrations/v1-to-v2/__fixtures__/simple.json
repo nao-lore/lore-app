@@ -1,0 +1,10 @@
+{
+  "id": "log-simple-0000000000000000001",
+  "createdAt": "2025-03-10T09:00:00.000Z",
+  "title": "Simple session with all fields",
+  "projectId": "proj-lore-000000000000000001",
+  "decisions": ["Use React + Vite over Next.js for PWA simplicity"],
+  "todo": ["Set up CI", "Write README"],
+  "blockers": ["Need Stripe test keys"],
+  "tags": ["lore", "mvp"]
+}
