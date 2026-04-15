@@ -16,7 +16,7 @@
  * ```
  */
 
-import type { SessionId } from './__stub__/entities-stub';
+import type { SessionId } from './schemas/ids';
 
 export type LoreError =
   /** A Zod or manual validation failure. */
