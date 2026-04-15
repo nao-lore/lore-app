@@ -56,6 +56,22 @@ Call sites use `as SessionId` to narrow a validated string into the branded type
 3. **Opaque type via type intersection** (`type SessionId = string & { __brand: 'SessionId' }`) — rejected: equivalent to Zod branding but loses the one-stop-shop benefit of having schema + type in the same declaration.
 4. **Runtime UUID objects via `ts-brand` / `type-fest` `Opaque`** — rejected: same shape as Zod branding but introduces a second library for a single-feature purpose. Zod is already a core dependency.
 
+## Readonly Depth Note
+
+Entity types use `Readonly<z.infer<typeof Schema>>` which applies **shallow** immutability only.
+Nested objects (e.g. `tokens`, `content_blocks`, `alternatives_considered`) are not recursively
+readonly at the type level. This is a deliberate trade-off:
+
+- Deep-readonly helpers (e.g. `DeepReadonly<T>` from `type-fest`) introduce a third-party
+  dependency and produce unwieldy types in IDE hover output.
+- In practice, domain code treats entities as immutable by convention: mutations produce new
+  values via `{ ...entity, field: newValue }` rather than in-place updates.
+- If a specific nested field requires strong immutability guarantees, annotate it explicitly
+  in the Zod schema (e.g. `z.array(...).readonly()`).
+
+**Summary**: `readonly` in this codebase is a surface-level type-level constraint, not a
+deep-immutability guarantee. Reviewers should not treat missing deep-readonly as a defect.
+
 ## References
 
 - Zod brand docs: <https://zod.dev/?id=brand>
