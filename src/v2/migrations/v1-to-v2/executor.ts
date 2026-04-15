@@ -28,6 +28,7 @@
 import type { LoreV2DB, MigrationLogRow } from '../../db';
 import type { Clock, IdGenerator } from '../../ports';
 import type { Logger } from '../../logger';
+import type { Session, Message, Checkpoint, Decision, Todo, Blocker } from '../../schemas/entities';
 import { convertLog, type V1LogEntry } from './converter';
 
 // ---- Constants ----
@@ -59,12 +60,22 @@ export interface MigrationResult {
  * ```
  */
 export class MigrationExecutor {
+  private readonly db: LoreV2DB;
+  private readonly clock: Clock;
+  private readonly idGenerator: IdGenerator;
+  private readonly logger: Logger;
+
   constructor(
-    private readonly db: LoreV2DB,
-    private readonly clock: Clock,
-    private readonly idGenerator: IdGenerator,
-    private readonly logger: Logger,
-  ) {}
+    db: LoreV2DB,
+    clock: Clock,
+    idGenerator: IdGenerator,
+    logger: Logger,
+  ) {
+    this.db = db;
+    this.clock = clock;
+    this.idGenerator = idGenerator;
+    this.logger = logger;
+  }
 
   /**
    * Run the migration for the given array of v1 log entries.
@@ -91,13 +102,13 @@ export class MigrationExecutor {
     // Archive v1 raw data (upsert — idempotent).
     await this.db.meta.put({ key: 'v1_archive', value: v1Logs });
 
-    // Accumulate entity batches.
-    const sessionsBatch: unknown[] = [];
-    const messagesBatch: unknown[] = [];
-    const checkpointsBatch: unknown[] = [];
-    const decisionsBatch: unknown[] = [];
-    const todosBatch: unknown[] = [];
-    const blockersBatch: unknown[] = [];
+    // Accumulate entity batches using concrete types so bulkPut is type-safe.
+    const sessionsBatch: Session[] = [];
+    const messagesBatch: Message[] = [];
+    const checkpointsBatch: Checkpoint[] = [];
+    const decisionsBatch: Decision[] = [];
+    const todosBatch: Todo[] = [];
+    const blockersBatch: Blocker[] = [];
 
     const flush = async (): Promise<void> => {
       if (
@@ -119,22 +130,16 @@ export class MigrationExecutor {
         ],
         async () => {
           if (sessionsBatch.length > 0)
-            // @ts-expect-error: bulkPut accepts typed arrays; cast via unknown[] for batch accumulation
             await this.db.sessions.bulkPut(sessionsBatch);
           if (messagesBatch.length > 0)
-            // @ts-expect-error: same as above
             await this.db.messages.bulkPut(messagesBatch);
           if (checkpointsBatch.length > 0)
-            // @ts-expect-error: same as above
             await this.db.checkpoints.bulkPut(checkpointsBatch);
           if (decisionsBatch.length > 0)
-            // @ts-expect-error: same as above
             await this.db.decisions.bulkPut(decisionsBatch);
           if (todosBatch.length > 0)
-            // @ts-expect-error: same as above
             await this.db.todos.bulkPut(todosBatch);
           if (blockersBatch.length > 0)
-            // @ts-expect-error: same as above
             await this.db.blockers.bulkPut(blockersBatch);
         },
       );
@@ -209,11 +214,11 @@ export class MigrationExecutor {
           blockers: bls.length,
         });
       } catch (e) {
-        const message = e instanceof Error ? e.message : String(e);
-        errors.push(`log ${log.id}: ${message}`);
+        const msg = e instanceof Error ? e.message : String(e);
+        errors.push(`log ${log.id}: ${msg}`);
         failed++;
-        await this.db.migration_log.put({ ...logRow, error: message });
-        this.logger.error('migration.log_failed', { logId: log.id, error: message });
+        await this.db.migration_log.put({ ...logRow, error: msg });
+        this.logger.error('migration.log_failed', { logId: log.id, error: msg });
       }
     }
 

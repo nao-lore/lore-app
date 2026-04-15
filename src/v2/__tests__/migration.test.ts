@@ -1,5 +1,5 @@
 /**
- * Tests for migrateV1toV2 (src/v2/migrations/v1_to_v2.ts)
+ * Tests for v1→v2 migration via MigrationExecutor (src/v2/migrations/v1-to-v2/).
  *
  * Covers spec §5 tests #7 and #8:
  * #7 — v1→v2 migration preserves all LogEntry data
@@ -15,7 +15,17 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { LoreV2DB } from '../db';
-import { migrateV1toV2 } from '../migrations/v1_to_v2';
+import { MigrationExecutor } from '../migrations/v1-to-v2/executor';
+import { systemClock, sequentialIdGenerator } from '../ports';
+import { createMemoryLogger } from '../logger';
+import type { V1LogEntry } from '../migrations/v1-to-v2/converter';
+
+/** Thin adapter matching the old migrateV1toV2(db, logs) call signature used in tests. */
+async function migrateV1toV2(db: LoreV2DB, v1Logs: readonly V1LogEntry[]) {
+  const logger = createMemoryLogger();
+  const executor = new MigrationExecutor(db, systemClock, sequentialIdGenerator(), logger);
+  return executor.run(v1Logs);
+}
 
 import fixtureData from './fixtures/v1-log-entries.json';
 
