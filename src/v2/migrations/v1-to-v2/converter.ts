@@ -40,6 +40,13 @@ import type {
   Todo,
   Blocker,
   Provenance,
+  SessionId,
+  MessageId,
+  CheckpointId,
+  DecisionId,
+  TodoId,
+  BlockerId,
+  ProjectId,
 } from '../../schemas/entities';
 
 // ---- v1 types (internal to migration, not imported from src/types.ts) ----
@@ -85,30 +92,53 @@ export interface ConvertedLog {
 
 // ---- Placeholder hash ----
 
-const PLACEHOLDER_HASH =
-  '0000000000000000000000000000000000000000000000000000000000000000' as const;
+/**
+ * Sentinel SHA-256 hex used for v1-migrated checkpoints whose message_state_hash
+ * cannot be computed at migration time (messages are synthetic, not real turns).
+ * The bootstrap phase recomputes this hash once the session is fully loaded.
+ * See ADR-0007 for the v1-migrated checkpoint special-case handling.
+ *
+ * Value: 'feedc0de' prefix makes it identifiable as a migration sentinel.
+ * All lowercase hex to satisfy SHA256Hex schema (64-char [a-f0-9]).
+ */
+const MIGRATION_PLACEHOLDER_HASH: string = 'feedc0de' + '0'.repeat(56);
 
 // ---- Deterministic ID derivation ----
 
 /**
  * Derive a stable, deterministic 26-char ID from a v1 log ID and a role prefix.
  *
+ * Migration boundary: IDs are cast to branded types here. Derived IDs are
+ * deterministic across runs (idempotency) but do not conform to the Crockford
+ * Base32 ULID alphabet — they are valid 26-char strings used as stable keys.
+ *
  * Guarantees: same input → same output across runs (idempotency).
  * Collision probability: negligible for expected dataset sizes (<1M entries).
  */
-function deriveId(logId: string, role: 'S' | 'M' | 'C'): string {
-  const raw = `${role}1${logId.replace(/[^A-Z0-9]/gi, '')}`;
-  return raw.slice(0, 26).padEnd(26, '0').toUpperCase();
+function deriveSessionId(logId: string): SessionId {
+  const raw = `S1${logId.replace(/[^A-Z0-9]/gi, '')}`;
+  return raw.slice(0, 26).padEnd(26, '0').toUpperCase() as SessionId;
+}
+
+function deriveMessageId(logId: string): MessageId {
+  const raw = `M1${logId.replace(/[^A-Z0-9]/gi, '')}`;
+  return raw.slice(0, 26).padEnd(26, '0').toUpperCase() as MessageId;
+}
+
+function deriveCheckpointId(logId: string): CheckpointId {
+  const raw = `C1${logId.replace(/[^A-Z0-9]/gi, '')}`;
+  return raw.slice(0, 26).padEnd(26, '0').toUpperCase() as CheckpointId;
 }
 
 // ---- Provenance builder ----
 
-function makeProvenance(messageId: string, now: number): Provenance {
+function makeProvenance(messageId: MessageId, now: number): Provenance {
   return {
     message_ids: [messageId],
     extractor_model: 'v1_migration',
-    extractor_prompt_hash: PLACEHOLDER_HASH,
-    confidence: 0.5,
+    extractor_prompt_hash: MIGRATION_PLACEHOLDER_HASH,
+    // integer basis-points per ADR-0003: 5000 = 50.00% confidence
+    confidence: 5000,
     extracted_at: now,
   };
 }
@@ -150,14 +180,15 @@ export function convertLog(
     });
   }
 
-  const sessionId = deriveId(logEntry.id, 'S');
-  const messageId = deriveId(logEntry.id, 'M');
-  const checkpointId = deriveId(logEntry.id, 'C');
+  const sessionId = deriveSessionId(logEntry.id);
+  const messageId = deriveMessageId(logEntry.id);
+  const checkpointId = deriveCheckpointId(logEntry.id);
+  const projectId = (logEntry.projectId ?? null) as ProjectId | null;
 
   // ---- Session ----
   const session: Session = {
     id: sessionId,
-    project_id: logEntry.projectId ?? null,
+    project_id: projectId,
     title: String(logEntry.title ?? '[migrated from v1]').slice(0, 500),
     started_at: startedAt,
     ended_at: startedAt,
@@ -192,8 +223,8 @@ export function convertLog(
     id: checkpointId,
     session_id: sessionId,
     parent_checkpoint_id: null,
-    message_state_hash: PLACEHOLDER_HASH,
-    extraction_state_hash: PLACEHOLDER_HASH,
+    message_state_hash: MIGRATION_PLACEHOLDER_HASH,
+    extraction_state_hash: MIGRATION_PLACEHOLDER_HASH,
     label: 'v1 migration checkpoint',
     auto: true,
     summary: `Migrated from v1 log: ${logEntry.title ?? logEntry.id}`,
@@ -214,9 +245,9 @@ export function convertLog(
       const title = String(dr.title ?? dr.decision ?? '').trim();
       if (!title) continue;
       decisions.push({
-        id: idGenerator.next(),
+        id: idGenerator.next() as DecisionId,
         session_id: sessionId,
-        project_id: logEntry.projectId ?? null,
+        project_id: projectId,
         first_checkpoint_id: checkpointId,
         title: title.slice(0, 500),
         rationale: String(dr.rationale ?? '').slice(0, 10_000),
@@ -233,9 +264,9 @@ export function convertLog(
       const title = String(d).trim();
       if (!title) continue;
       decisions.push({
-        id: idGenerator.next(),
+        id: idGenerator.next() as DecisionId,
         session_id: sessionId,
-        project_id: logEntry.projectId ?? null,
+        project_id: projectId,
         first_checkpoint_id: checkpointId,
         title: title.slice(0, 500),
         rationale: '',
@@ -256,9 +287,9 @@ export function convertLog(
       const title = String(t).trim();
       if (!title) continue;
       todos.push({
-        id: idGenerator.next(),
+        id: idGenerator.next() as TodoId,
         session_id: sessionId,
-        project_id: logEntry.projectId ?? null,
+        project_id: projectId,
         first_checkpoint_id: checkpointId,
         title: title.slice(0, 500),
         body: '',
@@ -281,9 +312,9 @@ export function convertLog(
       const title = String(b).trim();
       if (!title) continue;
       blockers.push({
-        id: idGenerator.next(),
+        id: idGenerator.next() as BlockerId,
         session_id: sessionId,
-        project_id: logEntry.projectId ?? null,
+        project_id: projectId,
         first_checkpoint_id: checkpointId,
         title: title.slice(0, 500),
         description: '',
