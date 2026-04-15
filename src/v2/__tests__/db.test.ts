@@ -22,7 +22,7 @@ import type {
   Blocker,
   Learning,
   Project,
-} from '../__stub__/entities-stub';
+} from '../schemas/entities';
 
 // ---- helpers ----
 
