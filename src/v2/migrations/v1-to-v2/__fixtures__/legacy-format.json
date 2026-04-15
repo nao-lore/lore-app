@@ -1,0 +1,21 @@
+{
+  "id": "log-legacy-000000000000000001",
+  "createdAt": "2025-01-05T08:30:00.000Z",
+  "title": "Legacy format with deprecated fields",
+  "projectId": "proj-legacy-00000000000000001",
+  "_comment": "Contains deprecated fields (inProgress, resumePoint) that should be ignored during migration",
+  "inProgress": ["Working on transform pipeline"],
+  "resumePoint": "Pick up from the chunkEngine refactor",
+  "decisions": [
+    "Use chunked processing for large sessions",
+    "Stream tokens to reduce latency"
+  ],
+  "todo": ["Implement chunkEngine", "Test with Claude API"],
+  "blockers": ["API rate limits unclear"],
+  "tags": ["transform", "legacy"],
+  "sourceText": "User: Can you help me design a chunking strategy?\nAssistant: Sure. Here's the approach for handling large context windows...",
+  "outputMode": "worklog",
+  "today": ["Spiked the transform pipeline", "Reviewed Claude API docs"],
+  "relatedProjects": [],
+  "workloadLevel": "high"
+}
