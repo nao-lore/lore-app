@@ -380,12 +380,6 @@
       "type": "directory"
     },
     {
-      "path": "src/v2/__tests__/db.test.ts",
-      "accessCount": 2,
-      "lastAccessed": 1776228939046,
-      "type": "file"
-    },
-    {
       "path": "src/utils/crypto.ts",
       "accessCount": 1,
       "lastAccessed": 1775455958996,

@@ -20,19 +20,31 @@ import { z } from 'zod';
 import { MarkdownDataSource } from './data/markdown_reader.js';
 import {
   LoreSearchInput,
+  LoreSearchOutput,
   GetProjectDnaInput,
+  GetProjectDnaOutput,
   ListOpenTodosInput,
+  ListOpenTodosOutput,
 } from './tools/definitions.js';
 import { runLoreSearch } from './tools/search.js';
 import { runGetProjectDna } from './tools/project_dna.js';
 import { runListOpenTodos } from './tools/open_todos.js';
 import { formatMcpError } from './errors.js';
+import type { LogLevel } from './logger.js';
 import { createStderrLogger } from './logger.js';
 import type { DataSource } from './ports/data-source.js';
 
-const log = createStderrLogger(
-  (process.env['LOG_LEVEL'] as 'debug' | 'info' | 'warn' | 'error' | undefined) ?? 'info',
-);
+// Validate LORE_LOG_LEVEL at startup — invalid value causes immediate failure.
+const LogLevelSchema = z.enum(['debug', 'info', 'warn', 'error'] as const);
+const rawLogLevel = process.env['LORE_LOG_LEVEL'] ?? 'info';
+const logLevelResult = LogLevelSchema.safeParse(rawLogLevel);
+if (!logLevelResult.success) {
+  process.stderr.write(
+    `Fatal: invalid LORE_LOG_LEVEL "${rawLogLevel}". Must be one of: debug, info, warn, error\n`,
+  );
+  process.exit(1);
+}
+const log = createStderrLogger(logLevelResult.data as LogLevel);
 
 /**
  * Build and wire the MCP server.
@@ -80,11 +92,19 @@ export function createServer(dataSource?: DataSource): McpServer {
         };
       }
 
-      const output = runLoreSearch(loadResult.value, parsed.data);
-      log.info('tool.lore_search.ok', { total_matched: output.total_matched });
+      const rawOutput = runLoreSearch(loadResult.value, parsed.data);
+      const outputParsed = LoreSearchOutput.safeParse(rawOutput);
+      if (!outputParsed.success) {
+        log.error('tool.lore_search.output_validation_failed', { error: outputParsed.error.message });
+        return {
+          content: [{ type: 'text', text: 'Output validation failed' }],
+          isError: true,
+        };
+      }
+      log.info('tool.lore_search.ok', { total_matched: outputParsed.data.total_matched });
       return {
-        content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-        structuredContent: output,
+        content: [{ type: 'text', text: JSON.stringify(outputParsed.data, null, 2) }],
+        structuredContent: outputParsed.data,
       };
     },
   );
@@ -117,11 +137,19 @@ export function createServer(dataSource?: DataSource): McpServer {
         };
       }
 
-      const output = runGetProjectDna(loadResult.value, parsed.data);
+      const rawOutput = runGetProjectDna(loadResult.value, parsed.data);
+      const outputParsed = GetProjectDnaOutput.safeParse(rawOutput);
+      if (!outputParsed.success) {
+        log.error('tool.lore_get_project_dna.output_validation_failed', { error: outputParsed.error.message });
+        return {
+          content: [{ type: 'text', text: 'Output validation failed' }],
+          isError: true,
+        };
+      }
       log.info('tool.lore_get_project_dna.ok', { project_id: parsed.data.project_id });
       return {
-        content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-        structuredContent: output,
+        content: [{ type: 'text', text: JSON.stringify(outputParsed.data, null, 2) }],
+        structuredContent: outputParsed.data,
       };
     },
   );
@@ -157,11 +185,19 @@ export function createServer(dataSource?: DataSource): McpServer {
         };
       }
 
-      const output = runListOpenTodos(loadResult.value, parsed.data);
-      log.info('tool.lore_list_open_todos.ok', { count: output.todos.length });
+      const rawOutput = runListOpenTodos(loadResult.value, parsed.data);
+      const outputParsed = ListOpenTodosOutput.safeParse(rawOutput);
+      if (!outputParsed.success) {
+        log.error('tool.lore_list_open_todos.output_validation_failed', { error: outputParsed.error.message });
+        return {
+          content: [{ type: 'text', text: 'Output validation failed' }],
+          isError: true,
+        };
+      }
+      log.info('tool.lore_list_open_todos.ok', { count: outputParsed.data.todos.length });
       return {
-        content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
-        structuredContent: output,
+        content: [{ type: 'text', text: JSON.stringify(outputParsed.data, null, 2) }],
+        structuredContent: outputParsed.data,
       };
     },
   );
@@ -170,11 +206,9 @@ export function createServer(dataSource?: DataSource): McpServer {
 }
 
 // ---- Main entrypoint ----
-const server = createServer();
-const transport = new StdioServerTransport();
 
 /** Graceful shutdown: close the MCP server cleanly on SIGTERM/SIGINT. */
-async function shutdown(signal: string): Promise<void> {
+async function shutdown(server: McpServer, signal: string): Promise<void> {
   log.info('server.shutdown', { signal });
   try {
     await server.close();
@@ -184,8 +218,24 @@ async function shutdown(signal: string): Promise<void> {
   process.exit(0);
 }
 
-process.on('SIGTERM', () => void shutdown('SIGTERM'));
-process.on('SIGINT', () => void shutdown('SIGINT'));
+/**
+ * Entry point — gated behind import.meta.url check so that importing this
+ * module in tests does not start the server.
+ */
+async function main(): Promise<void> {
+  const server = createServer();
+  const transport = new StdioServerTransport();
 
-await server.connect(transport);
-log.info('server.started', { version: '0.1.0' });
+  process.on('SIGTERM', () => void shutdown(server, 'SIGTERM'));
+  process.on('SIGINT', () => void shutdown(server, 'SIGINT'));
+
+  await server.connect(transport);
+  log.info('server.started', { version: '0.1.0' });
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err: unknown) => {
+    log.error('server.fatal', { cause: err instanceof Error ? err.message : String(err) });
+    process.exit(1);
+  });
+}

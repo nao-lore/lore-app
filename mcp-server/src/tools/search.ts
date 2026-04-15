@@ -19,6 +19,7 @@ import type { LoreEntry } from '../data/types.js';
 import type { DataSnapshot } from '../ports/data-source.js';
 import { searchEntries } from '../data/markdown_reader.js';
 import type { LoreSearchInput, LoreSearchOutput } from './definitions.js';
+import { escapeRegExp } from '../util/regex.js';
 
 /**
  * Build a result object from a matched entry, including a context-aware snippet.
@@ -80,8 +81,7 @@ export function runLoreSearch(
   );
 
   // Build the regex once for snippet extraction (same escaping as searchEntries)
-  const escapedQuery = input.query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp(escapedQuery, 'i');
+  const pattern = new RegExp(escapeRegExp(input.query), 'i');
 
   return {
     results: matched.map((entry) => entryToResult(entry, pattern)),
