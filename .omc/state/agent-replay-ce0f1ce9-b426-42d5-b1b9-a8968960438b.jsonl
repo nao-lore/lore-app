@@ -1,0 +1,11 @@
+{"t":0,"agent":"a05fe80","agent_type":"general-purpose","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"a05fe80","agent_type":"general-purpose","event":"agent_stop","success":true,"duration_ms":9078}
+{"t":0,"agent":"system","event":"skill_invoked","skill_name":"daily-routine"}
+{"t":0,"agent":"system","event":"keyword_detected","keyword":"ultrathink"}
+{"t":0,"agent":"ab7eab4","agent_type":"general-purpose","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"a8290f1","agent_type":"general-purpose","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"ab7eab4","agent_type":"general-purpose","event":"agent_stop","success":true,"duration_ms":116593}
+{"t":0,"agent":"a334a69","agent_type":"general-purpose","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"a8290f1","agent_type":"general-purpose","event":"agent_stop","success":true,"duration_ms":194292}
+{"t":0,"agent":"a334a69","agent_type":"general-purpose","event":"agent_stop","success":true,"duration_ms":542549}
+{"t":0,"agent":"system","event":"skill_invoked","skill_name":"goodnight"}

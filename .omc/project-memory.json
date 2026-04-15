@@ -1,0 +1,444 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775376000290,
+  "projectRoot": "/Users/nn/lore",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "react",
+        "version": "19.2.0",
+        "category": "frontend"
+      },
+      {
+        "name": "react-dom",
+        "version": "19.2.0",
+        "category": "frontend"
+      },
+      {
+        "name": "@playwright/test",
+        "version": "1.58.2",
+        "category": "testing"
+      },
+      {
+        "name": "vite",
+        "version": "7.3.1",
+        "category": "build"
+      },
+      {
+        "name": "vitest",
+        "version": "4.0.18",
+        "category": "testing"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "npm run build",
+    "testCommand": "npm test",
+    "lintCommand": "npm run lint",
+    "devCommand": "npm run dev",
+    "scripts": {
+      "dev": "vite",
+      "build": "tsc -b && vite build",
+      "lint": "eslint .",
+      "test": "vitest run",
+      "test:watch": "vitest",
+      "typecheck": "tsc -b",
+      "preview": "vite preview",
+      "precheck": "tsc -b && eslint . && vitest run",
+      "test:e2e": "playwright test",
+      "test:e2e:ui": "playwright test --ui"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": "type-based"
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "bin",
+      "docs",
+      "public",
+      "scripts",
+      "src"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "api": {
+      "path": "api",
+      "purpose": "API routes",
+      "fileCount": 2,
+      "lastAccessed": 1775376000252,
+      "keyFiles": [
+        "generate.ts",
+        "stripe-webhook.ts"
+      ]
+    },
+    "auto-improve-daily": {
+      "path": "auto-improve-daily",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1775376000253,
+      "keyFiles": [
+        "daily-routine.md",
+        "eval.py",
+        "program.md",
+        "results.json"
+      ]
+    },
+    "bin": {
+      "path": "bin",
+      "purpose": "Executable scripts",
+      "fileCount": 1,
+      "lastAccessed": 1775376000255,
+      "keyFiles": [
+        "suggest-claude-md-hook.sh"
+      ]
+    },
+    "checkpoints": {
+      "path": "checkpoints",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775376000255,
+      "keyFiles": [
+        "google--gemma-4-26B-A4B-it.jsonl"
+      ]
+    },
+    "dist": {
+      "path": "dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 19,
+      "lastAccessed": 1775376000256,
+      "keyFiles": [
+        "apple-touch-icon.png",
+        "favicon-16.png",
+        "favicon-32.png",
+        "favicon.ico",
+        "hero-screenshot.png"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 24,
+      "lastAccessed": 1775376000256,
+      "keyFiles": [
+        "PH_LAUNCH_MASTER_CHECKLIST.md",
+        "article-status.md",
+        "competitive-responses.md",
+        "devto-article.md",
+        "incident-templates.md"
+      ]
+    },
+    "e2e": {
+      "path": "e2e",
+      "purpose": null,
+      "fileCount": 7,
+      "lastAccessed": 1775376000257,
+      "keyFiles": [
+        "dogfooding.spec.ts",
+        "import-export.spec.ts",
+        "log-crud.spec.ts",
+        "navigation.spec.ts",
+        "project-crud.spec.ts"
+      ]
+    },
+    "extension": {
+      "path": "extension",
+      "purpose": null,
+      "fileCount": 14,
+      "lastAccessed": 1775376000257,
+      "keyFiles": [
+        "background.js",
+        "content-banner.css",
+        "content-banner.js",
+        "content-extract.js",
+        "content-inject.js"
+      ]
+    },
+    "lore-landing": {
+      "path": "lore-landing",
+      "purpose": null,
+      "fileCount": 8,
+      "lastAccessed": 1775376000257,
+      "keyFiles": [
+        "feedback.html",
+        "hero-screenshot.png",
+        "index.html",
+        "og-image.png",
+        "robots.txt"
+      ]
+    },
+    "lp": {
+      "path": "lp",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1775376000258,
+      "keyFiles": [
+        "index.html",
+        "privacy.html",
+        "terms.html",
+        "tokushoho.html"
+      ]
+    },
+    "playwright-report": {
+      "path": "playwright-report",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775376000258,
+      "keyFiles": [
+        "index.html"
+      ]
+    },
+    "public": {
+      "path": "public",
+      "purpose": "Public files",
+      "fileCount": 16,
+      "lastAccessed": 1775376000259,
+      "keyFiles": [
+        "apple-touch-icon.png",
+        "favicon-16.png",
+        "favicon-32.png",
+        "favicon.ico",
+        "hero-screenshot.png"
+      ]
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 7,
+      "lastAccessed": 1775376000259,
+      "keyFiles": [
+        "apply-helper.mjs",
+        "check-links.sh",
+        "ph-launch.mjs",
+        "pre-launch-check.sh",
+        "run-golden-tests.sh"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 86,
+      "lastAccessed": 1775376000259,
+      "keyFiles": [
+        "ActivityHeatmap.tsx",
+        "App.css",
+        "App.tsx",
+        "BottomNav.tsx",
+        "CommandPalette.tsx"
+      ]
+    },
+    "supabase": {
+      "path": "supabase",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1775376000260,
+      "keyFiles": [
+        "README.md",
+        "schema.sql"
+      ]
+    },
+    "test-results": {
+      "path": "test-results",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775376000260,
+      "keyFiles": []
+    },
+    "tools": {
+      "path": "tools",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1775376000261,
+      "keyFiles": [
+        "autoresearch-investigation.md",
+        "composio-agent-orchestrator.md",
+        "dexter-financial-agent.md"
+      ]
+    },
+    "dist/assets": {
+      "path": "dist/assets",
+      "purpose": "Static assets",
+      "fileCount": 46,
+      "lastAccessed": 1775376000262,
+      "keyFiles": [
+        "DashboardView-D_gYIkjF.js",
+        "DetailView-DsXPzNOB.js",
+        "DropdownMenu-CgRnh2ti.js"
+      ]
+    },
+    "playwright-report/data": {
+      "path": "playwright-report/data",
+      "purpose": "Data files",
+      "fileCount": 1,
+      "lastAccessed": 1775376000263,
+      "keyFiles": [
+        "ef3f220dafb20f4fc88989a415d68a0c511c75d8.md"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src/transform.ts",
+      "accessCount": 9,
+      "lastAccessed": 1775624125041,
+      "type": "file"
+    },
+    {
+      "path": "src/chunkEngine.ts",
+      "accessCount": 8,
+      "lastAccessed": 1775624125800,
+      "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 7,
+      "lastAccessed": 1775624136930,
+      "type": "directory"
+    },
+    {
+      "path": "",
+      "accessCount": 7,
+      "lastAccessed": 1776048962083,
+      "type": "directory"
+    },
+    {
+      "path": "src/provider.ts",
+      "accessCount": 6,
+      "lastAccessed": 1775624118859,
+      "type": "directory"
+    },
+    {
+      "path": ".claude/commands/reddit/tone-guide.md",
+      "accessCount": 5,
+      "lastAccessed": 1776129552685,
+      "type": "file"
+    },
+    {
+      "path": "src/schemas.ts",
+      "accessCount": 3,
+      "lastAccessed": 1775455979023,
+      "type": "file"
+    },
+    {
+      "path": "src/classify.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775455945659,
+      "type": "file"
+    },
+    {
+      "path": "src/integrations.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775455945688,
+      "type": "file"
+    },
+    {
+      "path": "src/utils/jsonRepair.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775455957939,
+      "type": "file"
+    },
+    {
+      "path": "src/components/SettingsApiKeys.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1775624117946,
+      "type": "file"
+    },
+    {
+      "path": "src/i18n.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775624154494,
+      "type": "directory"
+    },
+    {
+      "path": "src/utils/crypto.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775455958996,
+      "type": "directory"
+    },
+    {
+      "path": "docs/interview-cheatsheet.md",
+      "accessCount": 1,
+      "lastAccessed": 1775530897177,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1775624119011,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1775624126293,
+      "type": "file"
+    },
+    {
+      "path": "api/generate.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775624145736,
+      "type": "file"
+    },
+    {
+      "path": "api/stripe-webhook.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775624146439,
+      "type": "file"
+    },
+    {
+      "path": "supabase/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1775624147742,
+      "type": "file"
+    },
+    {
+      "path": "src/utils/proManager.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775624147804,
+      "type": "file"
+    },
+    {
+      "path": "src/storage/indexedDb.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775624156473,
+      "type": "directory"
+    },
+    {
+      "path": "src/SettingsPanel.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775624160148,
+      "type": "directory"
+    }
+  ],
+  "userDirectives": []
+}

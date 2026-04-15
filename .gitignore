@@ -58,3 +58,5 @@ docs/ph-launch-email.md
 docs/reddit-posts.md
 docs/reddit-claudeai-post.md
 docs/incident-templates.md
+.aidesigner/*
+!.aidesigner/.gitkeep
