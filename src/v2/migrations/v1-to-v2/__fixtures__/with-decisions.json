@@ -1,0 +1,23 @@
+{
+  "id": "log-withDecisions-000000000001",
+  "createdAt": "2025-03-11T10:00:00.000Z",
+  "title": "Session with structured decision rationales",
+  "projectId": "proj-lore-000000000000000001",
+  "decisionRationales": [
+    {
+      "title": "Use IndexedDB via Dexie",
+      "rationale": "Structured queries, far superior to localStorage for large logs; Dexie provides clean TypeScript generics over raw IDBDatabase."
+    },
+    {
+      "title": "Keep v1 DB name 'lore' unchanged",
+      "rationale": "Avoid breaking existing users on silent upgrade. New DB 'lore_v2' runs side-by-side."
+    },
+    {
+      "decision": "Adopt Repository pattern",
+      "rationale": "Decouple business logic from Dexie so the service layer can be tested with in-memory fakes."
+    }
+  ],
+  "todo": ["Implement safeGetItem wrapper", "Add migrations", "Write repository tests"],
+  "blockers": [],
+  "tags": ["storage", "dexie", "architecture"]
+}

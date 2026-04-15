@@ -1,0 +1,37 @@
+{
+  "_description": "Fixture containing intentionally malformed entries for failure-path testing. Load as an array.",
+  "entries": [
+    {
+      "id": "log-corrupted-bad-date-00000001",
+      "createdAt": "NOT-A-DATE",
+      "title": "Entry with unparseable createdAt",
+      "decisions": ["A decision"],
+      "todo": [],
+      "blockers": []
+    },
+    {
+      "id": "log-corrupted-empty-title-000001",
+      "createdAt": "2025-02-01T00:00:00.000Z",
+      "title": "",
+      "decisions": [],
+      "todo": ["Something to do"],
+      "blockers": []
+    },
+    {
+      "id": "log-corrupted-blank-items-00001",
+      "createdAt": "2025-02-02T00:00:00.000Z",
+      "title": "Entry with blank decision and todo strings",
+      "decisions": ["", "   ", "Valid decision after blanks"],
+      "todo": ["", "Valid todo"],
+      "blockers": ["  "]
+    },
+    {
+      "id": "log-corrupted-no-project-00001",
+      "createdAt": "2025-02-03T00:00:00.000Z",
+      "title": "Entry with no projectId (null project)",
+      "decisions": ["Decision without project context"],
+      "todo": [],
+      "blockers": []
+    }
+  ]
+}
