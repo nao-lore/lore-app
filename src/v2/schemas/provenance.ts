@@ -61,8 +61,10 @@ export const Provenance = z.object({
    * Model-reported confidence in the extraction, as integer basis-points in
    * the range `[0, 10000]`. `10000` = certain, `0` = completely uncertain.
    *
-   * Integer (not float) so that Provenance participates in RFC 8785 canonical
-   * JSON hashing without violating the "integers only" rule. See ADR-0003.
+   * **Breaking change from spec §1.2**: Original spec defined `confidence` as
+   * a float in `[0, 1]`. Changed to integer basis-points `[0, 10000]` so that
+   * Provenance participates in RFC 8785 canonical JSON hashing without violating
+   * the "integers only" rule — see ADR-0003.
    */
   confidence: z.number().int().min(0).max(10000),
   /**

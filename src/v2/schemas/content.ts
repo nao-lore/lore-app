@@ -48,8 +48,12 @@ export const TextBlock = z.object({
  */
 export const ToolUseBlock = z.object({
   type: z.literal('tool_use'),
-  /** Provider-assigned ephemeral identifier. Excluded from canonical hash. */
-  id: z.string(),
+  /**
+   * Provider-assigned ephemeral identifier. Excluded from canonical hash.
+   * Per spec §1.2: Anthropic API always returns a non-empty unique id;
+   * empty string is not a valid tool_use id.
+   */
+  id: z.string().min(1),
   /** Name of the tool being invoked. */
   name: z.string(),
   /** Tool-specific input payload. Schema is tool-defined. */

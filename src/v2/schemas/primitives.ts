@@ -47,6 +47,9 @@ export const SHA256Hex = z.string().length(64).regex(/^[a-f0-9]{64}$/);
  * consistent serialization and canonical JSON hashing. Convert via
  * `Date.now()` or `new Date(iso).getTime()`.
  *
+ * Upper bound: `Number.MAX_SAFE_INTEGER` (year ~285,428,751 CE).
+ * Values beyond this cannot be represented exactly as a JavaScript integer.
+ *
  * @example
  * ```ts
  * EpochMs.parse(Date.now()); // ok
@@ -54,7 +57,7 @@ export const SHA256Hex = z.string().length(64).regex(/^[a-f0-9]{64}$/);
  * EpochMs.parse(1234.5);     // throws — must be integer
  * ```
  */
-export const EpochMs = z.number().int().positive();
+export const EpochMs = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
 
 /**
  * ISO 8601 UTC datetime string with no timezone offset.
@@ -76,6 +79,9 @@ export const ISO8601UTC = z.string().datetime({ offset: false });
  * 1 USD = 1,000,000 micros. Avoids floating-point imprecision
  * and satisfies the RFC 8785 integer-only constraint for canonical hashing.
  *
+ * Upper bound: `Number.MAX_SAFE_INTEGER` (~$9,007,199,254 USD).
+ * Values beyond this cannot be represented exactly as a JavaScript integer.
+ *
  * @example
  * ```ts
  * UsdMicros.parse(1_000_000); // ok — $1.00
@@ -84,7 +90,7 @@ export const ISO8601UTC = z.string().datetime({ offset: false });
  * UsdMicros.parse(0.5);       // throws — must be integer
  * ```
  */
-export const UsdMicros = z.number().int().nonnegative();
+export const UsdMicros = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 
 export type ULID = z.infer<typeof ULID>;
 export type SHA256Hex = z.infer<typeof SHA256Hex>;
