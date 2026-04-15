@@ -15,6 +15,8 @@
  * ```
  */
 
+import { ulid } from 'ulid';
+
 // ---- Clock ----
 
 /**
@@ -68,21 +70,17 @@ export interface IdGenerator {
 }
 
 /**
- * Production ID generator using `crypto.randomUUID()` mapped to a 26-char
- * uppercase hex string. Suitable wherever ULID-length uniqueness is required.
- *
- * Note: True ULID (time-ordered) requires the `ulid` package. This implementation
- * satisfies uniqueness and length requirements for MVP; time-ordering can be added
- * in a follow-up.
+ * Production ID generator using the `ulid` package.
+ * Produces 26-char Crockford Base32 ULIDs — time-ordered and URL-safe.
  *
  * @example
  * ```ts
- * const id = cryptoIdGenerator.next(); // '550E8400E29B41D4A716446655440000'
+ * const id = cryptoIdGenerator.next(); // '01JXXXXXXXXXXXXXXXXXXXXX' (26 chars)
  * ```
  */
 export const cryptoIdGenerator: IdGenerator = {
   next(): string {
-    return crypto.randomUUID().replace(/-/g, '').toUpperCase().slice(0, 26);
+    return ulid();
   },
 };
 
