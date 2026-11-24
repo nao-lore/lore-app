@@ -183,7 +183,7 @@ Found a bug or have a suggestion? [Open an issue](https://github.com/nao-lore/lo
 
 ## Built By
 
-Solo project by [Naoya Hanya](https://github.com/nao-lore) — designed, built, and launched in 2 weeks. Featured on [Product Hunt](https://www.producthunt.com/posts/lore-5).
+Solo project by [nao-lore](https://github.com/nao-lore) — designed, built, and launched in 2 weeks. Featured on [Product Hunt](https://www.producthunt.com/posts/lore-5).
 
 ## License
 
