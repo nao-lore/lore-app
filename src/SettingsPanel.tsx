@@ -24,9 +24,11 @@ interface SettingsPanelProps {
   onFontSizeChange: (size: FontSize) => void;
   showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void;
   onShowOnboarding?: () => void;
+  /** Called after a data import so the app reloads its data */
+  onDataChange?: () => void;
 }
 
-export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref, onThemeChange, fontSize, onFontSizeChange, showToast, onShowOnboarding }: SettingsPanelProps) {
+export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref, onThemeChange, fontSize, onFontSizeChange, showToast, onShowOnboarding, onDataChange }: SettingsPanelProps) {
   return (
     <div className="workspace-content">
       <div className="page-header">
@@ -52,7 +54,7 @@ export default function SettingsPanel({ onBack, lang, onUiLangChange, themePref,
 
         <SettingsFeatures lang={lang} />
 
-        <SettingsDataManagement lang={lang} showToast={showToast} />
+        <SettingsDataManagement lang={lang} showToast={showToast} onDataChange={onDataChange} />
 
         {/* Legal links */}
         <div className="content-card">

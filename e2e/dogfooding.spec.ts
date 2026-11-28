@@ -108,28 +108,14 @@ test.describe('Onboarding flow', () => {
     // Step 1: Language selector — verify language buttons are shown
     await expect(page.locator('.onboarding-lang-btn').first()).toBeVisible();
 
-    // Click Next to go to step 2
-    await page.getByRole('button', { name: 'Next' }).click();
+    // Steps 2-6 (how to use, how it works, preview, projects, privacy):
+    // each has a Next button and keeps the overlay open
+    for (let i = 0; i < 6; i++) {
+      await page.getByRole('button', { name: 'Next' }).click();
+      await expect(overlay).toBeVisible();
+    }
 
-    // Step 2: How to use — should show step content
-    await expect(overlay).toBeVisible();
-
-    // Click Next to go to step 3
-    await page.getByRole('button', { name: 'Next' }).click();
-
-    // Step 3: How it works
-    await expect(overlay).toBeVisible();
-
-    // Click Next to go to step 4
-    await page.getByRole('button', { name: 'Next' }).click();
-
-    // Step 4: Snapshot preview
-    await expect(overlay).toBeVisible();
-
-    // Click Next to go to step 5 (final)
-    await page.getByRole('button', { name: 'Next' }).click();
-
-    // Step 5: Final — should show "Get Started" button
+    // Step 7 (final) — should show "Get Started" button
     await page.getByRole('button', { name: 'Get Started' }).click();
 
     // Onboarding should disappear, sidebar should be visible
