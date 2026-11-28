@@ -4,7 +4,7 @@ import { t, tf, OUTPUT_LANGS } from './i18n';
 import type { Lang } from './i18n';
 import { getTotalSnapshots } from './storage';
 import { safeSetItem } from './storage/core';
-import { redirectToCheckout } from './utils/stripe';
+import { redirectToCheckout, PRO_SALES_PAUSED } from './utils/stripe';
 
 interface LandingPageProps {
   lang: Lang;
@@ -360,13 +360,14 @@ function LandingPage({ lang, onGetStarted, onChangeLang }: LandingPageProps) {
             <h3 className="lp-pricing-plan">{t('lpPricingFree', lang)}</h3>
             <p className="lp-pricing-desc">{t('lpPricingFreeDesc', lang)}</p>
           </div>
-          <div className="lp-pricing-card lp-pricing-card-pro" onClick={() => { if (typeof gtag === 'function') gtag('event', 'pro_click'); redirectToCheckout('monthly'); }} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { if (typeof gtag === 'function') gtag('event', 'pro_click'); redirectToCheckout('monthly'); } }}>
+          <div className="lp-pricing-card lp-pricing-card-pro" {...(PRO_SALES_PAUSED ? {} : { onClick: () => { if (typeof gtag === 'function') gtag('event', 'pro_click'); redirectToCheckout('monthly'); }, role: 'button', tabIndex: 0, onKeyDown: (e: { key: string }) => { if (e.key === 'Enter' || e.key === ' ') { if (typeof gtag === 'function') gtag('event', 'pro_click'); redirectToCheckout('monthly'); } } })}>
             <h3 className="lp-pricing-plan">{t('lpPricingPro', lang)}</h3>
             <p className="lp-pricing-price">{t('lpPricingProPrice', lang)}</p>
             <p className="lp-pricing-annual lp-pricing-annual-highlight">
               {t('lpPricingAnnual', lang)}
             </p>
             <p className="lp-pricing-desc">{t('lpPricingProDesc', lang)}</p>
+            {PRO_SALES_PAUSED && <p className="lp-pricing-desc"><strong>{t('proSalesPaused', lang)}</strong></p>}
           </div>
         </div>
 

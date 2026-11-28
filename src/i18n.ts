@@ -2166,6 +2166,7 @@ const labels = {
     ko: `만료: ${date}`,
     pt: `Expira em: ${date}`,
   }),
+  proSalesPaused: { ja: 'Proプランは準備中です（現在は購入できません）', en: 'Pro is coming soon (not available for purchase yet)', es: 'Pro estará disponible pronto (aún no se puede comprar)', fr: 'Pro arrive bientôt (pas encore disponible à l’achat)', de: 'Pro kommt bald (noch nicht kaufbar)', zh: 'Pro 套餐即将推出（暂不可购买）', ko: 'Pro 플랜은 준비 중입니다 (아직 구매할 수 없습니다)', pt: 'O Pro chega em breve (ainda não disponível para compra)' },
   checkoutSuccess: { ja: 'Proへようこそ！無制限の変換がアンロックされました。', en: 'Welcome to Pro! Unlimited transforms unlocked.', es: 'Bienvenido a Pro. Transformaciones ilimitadas desbloqueadas.', fr: 'Bienvenue sur Pro ! Transformations illimitées débloquées.', de: 'Willkommen bei Pro! Unbegrenzte Transformationen freigeschaltet.', zh: '欢迎加入Pro！无限转换已解锁。', ko: 'Pro에 오신 것을 환영합니다! 무제한 변환이 잠금 해제되었습니다.', pt: 'Bem-vindo ao Pro! Transformações ilimitadas desbloqueadas.' },
   checkoutCancelled: { ja: 'チェックアウトがキャンセルされました', en: 'Checkout cancelled', es: 'Pago cancelado', fr: 'Paiement annulé', de: 'Checkout abgebrochen', zh: '结账已取消', ko: '결제가 취소되었습니다', pt: 'Checkout cancelado' },
   manageSubscription: { ja: 'サブスクリプション管理', en: 'Manage subscription', es: 'Gestionar suscripción', fr: 'Gérer l\'abonnement', de: 'Abonnement verwalten', zh: '管理订阅', ko: '구독 관리', pt: 'Gerenciar assinatura' },
