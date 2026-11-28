@@ -3,7 +3,7 @@ import { t, tf } from './i18n';
 import type { Lang } from './i18n';
 import { shouldUseBuiltinApi } from './provider';
 import { isPro, checkProStatus } from './utils/proManager';
-import { redirectToCheckout, STRIPE_CUSTOMER_PORTAL_URL } from './utils/stripe';
+import { redirectToCheckout, STRIPE_CUSTOMER_PORTAL_URL, PRO_SALES_PAUSED } from './utils/stripe';
 import { getDailyUsageCount, DAILY_LIMIT_FREE } from './utils/trialManager';
 
 interface PricingViewProps {
@@ -187,6 +187,12 @@ export default function PricingView({ onBack, lang, showToast }: PricingViewProp
                 >
                   {t('manageSubscription', lang)}
                 </a>
+              </div>
+            ) : PRO_SALES_PAUSED ? (
+              <div className="flex-col gap-10">
+                <button className="btn pricing-btn-full" disabled>
+                  {t('proSalesPaused', lang)}
+                </button>
               </div>
             ) : (
               <div className="flex-col gap-10">

@@ -20,6 +20,7 @@ import { useThemeSync } from './hooks/useThemeSync';
 import type { View } from './hooks/useAppState';
 import { isOnboardingDone } from './onboardingState';
 import { setProFromCheckout } from './utils/proManager';
+import { PRO_SALES_PAUSED } from './utils/stripe';
 
 // Extracted components
 import { DemoBanner, OverdueBanner, ReportReminderBanner, OfflineBanner } from './components/AppBanners';
@@ -69,7 +70,7 @@ export default function App() {
     const checkout = params.get('checkout');
     if (!checkout) return;
     checkoutHandledRef.current = true;
-    if (checkout === 'success') { setProFromCheckout(params.get('session_id') || `checkout_${Date.now()}`); s.showToast(t('checkoutSuccess', s.lang), 'success'); }
+    if (checkout === 'success' && !PRO_SALES_PAUSED) { setProFromCheckout(params.get('session_id') || `checkout_${Date.now()}`); s.showToast(t('checkoutSuccess', s.lang), 'success'); }
     else if (checkout === 'cancelled') s.showToast(t('checkoutCancelled', s.lang), 'default');
     const url = new URL(window.location.href); url.searchParams.delete('checkout'); url.searchParams.delete('session_id'); window.history.replaceState({}, '', url.pathname);
   }, [s, s.lang]);
