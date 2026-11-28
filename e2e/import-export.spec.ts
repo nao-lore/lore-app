@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -52,7 +53,7 @@ test('export data downloads a JSON file', async ({ page }) => {
   expect(download.suggestedFilename()).toMatch(/^lore-backup-\d{4}-\d{2}-\d{2}\.json$/);
 
   // Save and verify content
-  const filePath = path.join('/tmp', download.suggestedFilename());
+  const filePath = path.join(os.tmpdir(), download.suggestedFilename());
   await download.saveAs(filePath);
   const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 
@@ -98,7 +99,7 @@ test('import data from a JSON file', async ({ page }) => {
     },
   };
 
-  const importFilePath = path.join('/tmp', 'test-import.json');
+  const importFilePath = path.join(os.tmpdir(), 'test-import.json');
   fs.writeFileSync(importFilePath, JSON.stringify(backup));
 
   // Trigger file import

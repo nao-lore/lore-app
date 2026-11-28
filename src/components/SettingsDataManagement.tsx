@@ -10,9 +10,11 @@ import { todayISO } from '../utils/dateFormat';
 interface SettingsDataManagementProps {
   lang: Lang;
   showToast?: (msg: string, type?: 'default' | 'success' | 'error') => void;
+  /** Called after an import so the app reloads logs, projects and todos */
+  onDataChange?: () => void;
 }
 
-export const SettingsDataManagement = memo(function SettingsDataManagement({ lang, showToast }: SettingsDataManagementProps) {
+export const SettingsDataManagement = memo(function SettingsDataManagement({ lang, showToast, onDataChange }: SettingsDataManagementProps) {
   const [importError, setImportError] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<{ backup: LoreBackup; mode: 'merge' | 'overwrite' } | null>(null);
   const importTrapRef = useFocusTrap<HTMLDivElement>(!!pendingImport);
@@ -59,6 +61,7 @@ export const SettingsDataManagement = memo(function SettingsDataManagement({ lan
     if (!pendingImport) return;
     const result = importData(pendingImport.backup, pendingImport.mode);
     setPendingImport(null);
+    onDataChange?.();
     showToast?.(tf('dataImportSuccess', lang, result.logs, result.projects, result.todos), 'success');
   };
 
